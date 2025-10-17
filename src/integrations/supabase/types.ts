@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      rank_rent_clients: {
+        Row: {
+          access_token: string | null
+          company: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          company?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          company?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       rank_rent_conversions: {
         Row: {
           created_at: string
@@ -22,6 +67,7 @@ export type Database = {
           id: string
           ip_address: string | null
           metadata: Json | null
+          page_id: string | null
           page_path: string
           page_url: string
           referrer: string | null
@@ -35,6 +81,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          page_id?: string | null
           page_path: string
           page_url: string
           referrer?: string | null
@@ -48,6 +95,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          page_id?: string | null
           page_path?: string
           page_url?: string
           referrer?: string | null
@@ -55,6 +103,27 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "rank_rent_conversions_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_daily_stats"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_conversions_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_page_metrics"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_conversions_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_pages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rank_rent_conversions_site_id_fkey"
             columns: ["site_id"]
@@ -64,6 +133,86 @@ export type Database = {
           },
           {
             foreignKeyName: "rank_rent_conversions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rank_rent_pages: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          cta_config: Json | null
+          id: string
+          is_rented: boolean | null
+          last_scraped_at: string | null
+          monthly_rent_value: number | null
+          page_path: string
+          page_title: string | null
+          page_url: string
+          phone_number: string | null
+          site_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          cta_config?: Json | null
+          id?: string
+          is_rented?: boolean | null
+          last_scraped_at?: string | null
+          monthly_rent_value?: number | null
+          page_path: string
+          page_title?: string | null
+          page_url: string
+          phone_number?: string | null
+          site_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          cta_config?: Json | null
+          id?: string
+          is_rented?: boolean | null
+          last_scraped_at?: string | null
+          monthly_rent_value?: number | null
+          page_path?: string
+          page_title?: string | null
+          page_url?: string
+          phone_number?: string | null
+          site_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_pages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_client_metrics"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_sites"
@@ -169,6 +318,65 @@ export type Database = {
       }
     }
     Views: {
+      rank_rent_client_metrics: {
+        Row: {
+          access_token: string | null
+          client_id: string | null
+          client_name: string | null
+          company: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string | null
+          email: string | null
+          phone: string | null
+          total_conversions: number | null
+          total_monthly_value: number | null
+          total_page_views: number | null
+          total_pages_rented: number | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      rank_rent_daily_stats: {
+        Row: {
+          client_id: string | null
+          conversions: number | null
+          date: string | null
+          page_id: string | null
+          page_views: number | null
+          site_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_pages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_client_metrics"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rank_rent_metrics: {
         Row: {
           client_name: string | null
@@ -190,6 +398,58 @@ export type Database = {
           user_id: string | null
         }
         Relationships: []
+      }
+      rank_rent_page_metrics: {
+        Row: {
+          client_id: string | null
+          client_name: string | null
+          conversion_rate: number | null
+          created_at: string | null
+          is_rented: boolean | null
+          last_conversion_at: string | null
+          monthly_rent_value: number | null
+          page_id: string | null
+          page_path: string | null
+          page_title: string | null
+          page_url: string | null
+          phone_number: string | null
+          site_id: string | null
+          site_name: string | null
+          status: string | null
+          total_conversions: number | null
+          total_page_views: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_pages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_client_metrics"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
