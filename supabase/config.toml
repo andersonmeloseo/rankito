@@ -1,0 +1,4 @@
+project_id = "jhzmgexprjnpgadkxjup"
+
+[functions.track-rank-rent-conversion]
+verify_jwt = false
