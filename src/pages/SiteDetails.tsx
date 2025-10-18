@@ -31,6 +31,10 @@ import { PageViewsTimelineChart } from "@/components/analytics/PageViewsTimeline
 import { TopReferrersChart } from "@/components/analytics/TopReferrersChart";
 import { PagePerformanceChart } from "@/components/analytics/PagePerformanceChart";
 import { PageViewsTable } from "@/components/analytics/PageViewsTable";
+import { ConversionsTimelineChart } from "@/components/analytics/ConversionsTimelineChart";
+import { TopConversionPagesChart } from "@/components/analytics/TopConversionPagesChart";
+import { ConversionTypeDistributionChart } from "@/components/analytics/ConversionTypeDistributionChart";
+import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { format, subDays } from "date-fns";
 
@@ -1116,6 +1120,27 @@ const SiteDetails = () => {
               </TabsContent>
               
               <TabsContent value="conversions" className="space-y-6 mt-6">
+                <ConversionsTimelineChart 
+                  data={analyticsData.conversionsTimeline || []} 
+                  isLoading={analyticsData.isLoading}
+                />
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <TopConversionPagesChart 
+                    data={analyticsData.topConversionPages || []} 
+                    isLoading={analyticsData.isLoading}
+                  />
+                  <ConversionTypeDistributionChart 
+                    data={analyticsData.conversionTypeDistribution || []} 
+                    isLoading={analyticsData.isLoading}
+                  />
+                </div>
+                
+                <ConversionHeatmapChart 
+                  data={analyticsData.conversionHourlyData || {}} 
+                  isLoading={analyticsData.isLoading}
+                />
+                
                 <ConversionsTable 
                   conversions={analyticsData.conversions || []} 
                   isLoading={analyticsData.isLoading}

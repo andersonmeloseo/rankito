@@ -62,6 +62,15 @@ const Analytics = () => {
     customEndDate,
   });
 
+  // Debug logs
+  console.log('🔍 Analytics Data Debug:', {
+    conversionsTimeline,
+    topConversionPages,
+    conversionTypeDistribution,
+    conversionHourlyData,
+    isLoading
+  });
+
   if (!siteId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
