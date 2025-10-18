@@ -379,6 +379,45 @@ export const useAnalytics = ({
     enabled: !!siteId,
   });
 
+  // Conversion rate over time
+  const { data: conversionRateData } = useQuery({
+    queryKey: ["analytics-conversion-rate", siteId, startDate, endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_conversions")
+        .select("created_at, event_type")
+        .eq("site_id", siteId)
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (error) throw error;
+
+      const dailyStats: Record<string, { pageViews: number; conversions: number }> = {};
+      
+      data?.forEach(conv => {
+        const dateStr = new Date(conv.created_at).toISOString().split('T')[0];
+        
+        if (!dailyStats[dateStr]) {
+          dailyStats[dateStr] = { pageViews: 0, conversions: 0 };
+        }
+
+        if (conv.event_type === "page_view") {
+          dailyStats[dateStr].pageViews++;
+        } else {
+          dailyStats[dateStr].conversions++;
+        }
+      });
+
+      return Object.entries(dailyStats)
+        .map(([date, stats]) => ({
+          date,
+          rate: stats.pageViews > 0 ? (stats.conversions / stats.pageViews) * 100 : 0,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    },
+    enabled: !!siteId,
+  });
+
   const isLoading = 
     metricsLoading || 
     timelineLoading || 
@@ -398,6 +437,7 @@ export const useAnalytics = ({
     funnelData,
     hourlyData,
     sparklineData,
+    conversionRateData,
     isLoading,
   };
 };

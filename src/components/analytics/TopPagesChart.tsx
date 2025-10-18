@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface TopPagesChartProps {
   data: any[];
@@ -9,9 +9,12 @@ interface TopPagesChartProps {
 export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
   if (isLoading) {
     return (
-      <Card className="shadow-card">
+      <Card className="shadow-lg border-border/50 animate-fade-in">
         <CardHeader>
-          <CardTitle>Top 10 Páginas</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            🏆 Top 10 Páginas Mais Visitadas
+          </CardTitle>
+          <CardDescription>Páginas com maior número de eventos</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[400px] flex items-center justify-center">
@@ -24,9 +27,12 @@ export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="shadow-card">
+      <Card className="shadow-lg border-border/50 animate-fade-in">
         <CardHeader>
-          <CardTitle>Top 10 Páginas</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            🏆 Top 10 Páginas Mais Visitadas
+          </CardTitle>
+          <CardDescription>Páginas com maior número de eventos</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[400px] flex items-center justify-center text-muted-foreground">
@@ -37,15 +43,35 @@ export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
     );
   }
 
+  // Adiciona gradiente de cores baseado na performance
+  const maxCount = Math.max(...data.map(item => item.count));
+  const getBarColor = (count: number) => {
+    const intensity = count / maxCount;
+    if (intensity > 0.7) return "hsl(var(--primary))";
+    if (intensity > 0.4) return "hsl(142, 76%, 36%)"; // verde
+    return "hsl(39, 100%, 57%)"; // laranja
+  };
+
   return (
-    <Card className="shadow-card">
+    <Card className="shadow-lg border-border/50 animate-fade-in hover:shadow-xl transition-all">
       <CardHeader>
-        <CardTitle>Top 10 Páginas</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          🏆 Top 10 Páginas Mais Visitadas
+        </CardTitle>
+        <CardDescription>
+          Ranking de páginas por volume de eventos
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={data} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+          <BarChart data={data} layout="vertical" margin={{ left: 10, right: 30 }}>
+            <defs>
+              <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={1} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
             <XAxis 
               type="number" 
               className="text-xs text-muted-foreground"
@@ -54,24 +80,42 @@ export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
             <YAxis 
               dataKey="path" 
               type="category" 
-              width={200}
+              width={220}
               className="text-xs text-muted-foreground"
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
-              tickFormatter={(value) => value.length > 30 ? value.substring(0, 30) + '...' : value}
+              tickFormatter={(value) => value.length > 32 ? value.substring(0, 32) + '...' : value}
             />
             <Tooltip 
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               }}
+              formatter={(value: number, name: string, props: any) => [
+                <>
+                  <div><strong>{value}</strong> eventos</div>
+                  <div className="text-xs text-muted-foreground mt-1">{props.payload.path}</div>
+                </>,
+                ""
+              ]}
+              labelFormatter={() => ""}
             />
             <Bar 
               dataKey="count" 
-              fill="hsl(var(--primary))" 
-              radius={[0, 4, 4, 0]}
+              radius={[0, 8, 8, 0]}
               name="Eventos"
-            />
+              animationDuration={1200}
+              animationEasing="ease-out"
+            >
+              {data.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={getBarColor(entry.count)}
+                  className="hover:opacity-80 transition-opacity cursor-pointer"
+                />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
