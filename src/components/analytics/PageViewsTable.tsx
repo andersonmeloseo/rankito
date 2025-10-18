@@ -24,27 +24,40 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
   const [browserFilter, setBrowserFilter] = useState("all");
   const [referrerFilter, setReferrerFilter] = useState("all");
   const [sortConfig, setSortConfig] = useState<{
-    key: "created_at" | "page_path" | "device" | "browser" | "ip_address" | "referrer";
+    key: "created_at" | "page_path" | "device" | "browser" | "city" | "referrer";
     direction: "asc" | "desc";
   }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
 
   // Utility functions - must be defined before useMemo hooks
-  const getBrowserInfo = (userAgent: string | null) => {
-    if (!userAgent) return { name: "Desconhecido", icon: Globe };
+  const getBrowserInfo = (userAgent: string) => {
+    if (!userAgent) return { name: "Desconhecido", icon: Globe, color: "text-muted-foreground" };
     
-    if (userAgent.includes("Chrome")) return { name: "Chrome", icon: Chrome };
-    if (userAgent.includes("Firefox")) return { name: "Firefox", icon: Globe };
-    if (userAgent.includes("Safari")) return { name: "Safari", icon: Globe };
-    return { name: "Outro", icon: Globe };
+    const ua = userAgent.toLowerCase();
+    if (ua.includes("chrome") && !ua.includes("edg")) {
+      return { name: "Chrome", icon: Chrome, color: "text-yellow-600" };
+    }
+    if (ua.includes("safari") && !ua.includes("chrome")) {
+      return { name: "Safari", icon: Globe, color: "text-blue-600" };
+    }
+    if (ua.includes("firefox")) {
+      return { name: "Firefox", icon: Globe, color: "text-orange-600" };
+    }
+    if (ua.includes("edg")) {
+      return { name: "Edge", icon: Globe, color: "text-blue-800" };
+    }
+    return { name: "Outro", icon: Globe, color: "text-muted-foreground" };
   };
 
   const getDeviceInfo = (device: string) => {
-    switch(device) {
-      case "mobile": return { icon: Smartphone, color: "text-blue-600", bgColor: "bg-blue-100 dark:bg-blue-900/30" };
-      case "tablet": return { icon: Tablet, color: "text-purple-600", bgColor: "bg-purple-100 dark:bg-purple-900/30" };
-      default: return { icon: Monitor, color: "text-green-600", bgColor: "bg-green-100 dark:bg-green-900/30" };
+    const deviceLower = device?.toLowerCase() || "desktop";
+    if (deviceLower.includes("mobile") || deviceLower.includes("android") || deviceLower.includes("iphone")) {
+      return { icon: Smartphone, color: "text-blue-500", label: "Mobile" };
     }
+    if (deviceLower.includes("tablet") || deviceLower.includes("ipad")) {
+      return { icon: Tablet, color: "text-purple-500", label: "Tablet" };
+    }
+    return { icon: Monitor, color: "text-green-500", label: "Desktop" };
   };
 
   // Get unique browsers from pageViews
@@ -109,27 +122,37 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
       let bValue: any;
 
       switch (sortConfig.key) {
+        case "created_at":
+          aValue = new Date(a.created_at).getTime();
+          bValue = new Date(b.created_at).getTime();
+          break;
+        case "page_path":
+          aValue = a.page_path || "";
+          bValue = b.page_path || "";
+          break;
         case "device":
           aValue = a.metadata?.device || "desktop";
           bValue = b.metadata?.device || "desktop";
           break;
         case "browser":
-          aValue = getBrowserInfo(a.user_agent).name;
-          bValue = getBrowserInfo(b.user_agent).name;
+          aValue = a.user_agent || "";
+          bValue = b.user_agent || "";
+          break;
+        case "city":
+          aValue = a.city || "Desconhecido";
+          bValue = b.city || "Desconhecido";
           break;
         case "referrer":
           aValue = a.referrer || "";
           bValue = b.referrer || "";
           break;
         default:
-          aValue = a[sortConfig.key] || "";
-          bValue = b[sortConfig.key] || "";
+          return 0;
       }
 
-      if (sortConfig.direction === "asc") {
-        return aValue > bValue ? 1 : -1;
-      }
-      return aValue < bValue ? 1 : -1;
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
     });
 
     return filtered;
@@ -168,16 +191,17 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
       return;
     }
 
-    const headers = ["Data", "Hora", "Página", "Dispositivo", "Browser", "IP", "Referrer", "User Agent"];
+    const headers = ["Data", "Hora", "Página", "Dispositivo", "Browser", "Cidade", "Estado", "País", "Referrer"];
     const rows = filteredPageViews.map(pv => [
       new Date(pv.created_at).toLocaleDateString("pt-BR"),
       new Date(pv.created_at).toLocaleTimeString("pt-BR"),
       pv.page_path,
-      pv.metadata?.device || "desktop",
+      pv.metadata?.device || "-",
       getBrowserInfo(pv.user_agent).name,
-      pv.ip_address || "-",
+      pv.city || "-",
+      pv.region || "-",
+      pv.country || "-",
       pv.referrer || "-",
-      pv.user_agent || "-",
     ]);
 
     const csvContent = [
@@ -394,16 +418,16 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
                   </TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => handleSort("ip_address")}
+                    onClick={() => handleSort("city")}
                   >
                     <div className="flex items-center gap-2">
-                      IP
-                      {sortConfig.key === "ip_address" && (
+                      Localização
+                      {sortConfig.key === "city" && (
                         sortConfig.direction === "asc" ? 
                           <ArrowUp className="w-4 h-4" /> : 
                           <ArrowDown className="w-4 h-4" />
                       )}
-                      {sortConfig.key !== "ip_address" && <ArrowUpDown className="w-4 h-4 opacity-30" />}
+                      {sortConfig.key !== "city" && <ArrowUpDown className="w-4 h-4 opacity-30" />}
                     </div>
                   </TableHead>
                   <TableHead 
@@ -424,11 +448,8 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
               </TableHeader>
               <TableBody>
                 {currentPageViews.map((pv) => {
-                  const device = pv.metadata?.device || "desktop";
-                  const deviceInfo = getDeviceInfo(device);
-                  const browserInfo = getBrowserInfo(pv.user_agent);
+                  const deviceInfo = getDeviceInfo(pv.metadata?.device);
                   const DeviceIcon = deviceInfo.icon;
-                  const BrowserIcon = browserInfo.icon;
 
                   return (
                     <TableRow key={pv.id} className="hover:bg-muted/50 transition-colors">
@@ -441,34 +462,44 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs truncate font-medium" title={pv.page_path}>
-                          {pv.page_path}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`${deviceInfo.bgColor} ${deviceInfo.color} border-0 gap-1.5`}>
-                          <DeviceIcon className="w-3.5 h-3.5" />
-                          {device}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         <Tooltip>
-                          <TooltipTrigger>
-                            <Badge variant="secondary" className="gap-1.5 cursor-help">
-                              <BrowserIcon className="w-3.5 h-3.5" />
-                              {browserInfo.name}
-                            </Badge>
+                          <TooltipTrigger asChild>
+                            <div className="max-w-xs truncate cursor-help">
+                              {pv.page_path}
+                            </div>
                           </TooltipTrigger>
-                          <TooltipContent className="max-w-md">
-                            <p className="text-xs break-all">{pv.user_agent || "N/A"}</p>
+                          <TooltipContent>
+                            <p className="max-w-sm">{pv.page_path}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {pv.ip_address || "-"}
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <DeviceIcon className={`w-4 h-4 ${deviceInfo.color}`} />
+                          <span className="text-sm">{deviceInfo.label}</span>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs truncate text-xs text-muted-foreground" title={pv.referrer || "-"}>
+                        {(() => {
+                          const browserInfo = getBrowserInfo(pv.user_agent);
+                          const BrowserIcon = browserInfo.icon;
+                          return (
+                            <div className="flex items-center gap-2">
+                              <BrowserIcon className={`w-4 h-4 ${browserInfo.color}`} />
+                              <span className="text-sm">{browserInfo.name}</span>
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {pv.city && pv.region 
+                            ? `${pv.city}, ${pv.region}`
+                            : pv.city || pv.region || "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate text-sm text-muted-foreground" title={pv.referrer || "-"}>
                           {pv.referrer || "Direto"}
                         </div>
                       </TableCell>
