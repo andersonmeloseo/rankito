@@ -139,14 +139,20 @@ serve(async (req) => {
         const pagePath = url.pathname;
         const existingPage = existingPagesMap.get(pageUrl);
 
-        pagesToUpsert.push({
-          id: existingPage?.id,
+        const pageData: any = {
           site_id,
           page_url: pageUrl,
           page_path: pagePath,
           last_scraped_at: new Date().toISOString(),
           status: 'active'
-        });
+        };
+
+        // Só adiciona ID se página já existe (para update), senão deixa o banco gerar
+        if (existingPage) {
+          pageData.id = existingPage.id;
+        }
+
+        pagesToUpsert.push(pageData);
 
       } catch (pageError) {
         console.error(`Error processing ${pageUrl}:`, pageError);
