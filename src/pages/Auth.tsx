@@ -13,6 +13,9 @@ import { Session } from "@supabase/supabase-js";
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
@@ -42,28 +45,105 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validations
+    if (!fullName || fullName.length < 3) {
+      toast({
+        title: "Nome inválido",
+        description: "O nome deve ter pelo menos 3 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!whatsapp) {
+      toast({
+        title: "WhatsApp obrigatório",
+        description: "Por favor, informe seu WhatsApp.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (website && !website.startsWith('http')) {
+      toast({
+        title: "URL inválida",
+        description: "O site deve começar com http:// ou https://",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     const redirectUrl = `${window.location.origin}/dashboard`;
 
-    const { error } = await supabase.auth.signUp({
+    // Create auth account
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
+        data: {
+          full_name: fullName,
+        },
       },
     });
 
-    if (error) {
+    if (authError) {
       toast({
         title: "Erro ao criar conta",
-        description: error.message,
+        description: authError.message,
         variant: "destructive",
       });
-    } else {
+      setLoading(false);
+      return;
+    }
+
+    if (authData.user) {
+      // Update profile with additional data
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          whatsapp,
+          website,
+          country_code: 'BR', // You can add country selector later
+        })
+        .eq('id', authData.user.id);
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+      }
+
+      // Create trial subscription (14 days)
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 14);
+
+      // Get starter plan
+      const { data: plans } = await supabase
+        .from('subscription_plans')
+        .select('id')
+        .eq('slug', 'starter')
+        .single();
+
+      if (plans) {
+        const periodStart = new Date();
+        const periodEnd = new Date(trialEndDate);
+
+        await supabase.from('user_subscriptions').insert({
+          user_id: authData.user.id,
+          plan_id: plans.id,
+          status: 'trial',
+          trial_end_date: trialEndDate.toISOString().split('T')[0],
+          current_period_start: periodStart.toISOString().split('T')[0],
+          current_period_end: periodEnd.toISOString().split('T')[0],
+        });
+      }
+
       toast({
         title: "Conta criada com sucesso!",
-        description: "Você já pode fazer login.",
+        description: "Você ganhou 14 dias de trial gratuito.",
       });
       navigate("/dashboard");
     }
@@ -161,6 +241,18 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
+                    <Label htmlFor="fullname-signup">Nome Completo</Label>
+                    <Input
+                      id="fullname-signup"
+                      type="text"
+                      placeholder="Seu nome completo"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      minLength={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="email-signup">E-mail</Label>
                     <Input
                       id="email-signup"
@@ -176,15 +268,37 @@ const Auth = () => {
                     <Input
                       id="password-signup"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Mínimo 8 caracteres"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      minLength={6}
+                      minLength={8}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp-signup">WhatsApp</Label>
+                    <Input
+                      id="whatsapp-signup"
+                      type="tel"
+                      placeholder="+55 11 99999-9999"
+                      value={whatsapp}
+                      onChange={(e) => setWhatsapp(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="website-signup">Site Principal</Label>
+                    <Input
+                      id="website-signup"
+                      type="url"
+                      placeholder="https://seusite.com"
+                      value={website}
+                      onChange={(e) => setWebsite(e.target.value)}
+                      required
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Criando conta..." : "Criar conta"}
+                    {loading ? "Criando conta..." : "Criar conta grátis (14 dias trial)"}
                   </Button>
                 </form>
               </TabsContent>

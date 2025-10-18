@@ -8,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRole } from "@/contexts/RoleContext";
 import { UserManagement } from "@/components/super-admin/UserManagement";
+import { OverviewDashboard } from "@/components/super-admin/OverviewDashboard";
+import { UsersManagementTable } from "@/components/super-admin/UsersManagementTable";
 import { SubscriptionMetricsCards } from "@/components/super-admin/SubscriptionMetricsCards";
 import { PlansManagementTable } from "@/components/super-admin/PlansManagementTable";
 import { SubscriptionsTable } from "@/components/super-admin/SubscriptionsTable";
 import { PaymentsHistoryTable } from "@/components/super-admin/PaymentsHistoryTable";
-import { useQuery } from "@tanstack/react-query";
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
@@ -24,23 +25,6 @@ const SuperAdminDashboard = () => {
     }
   }, [isSuperAdmin, isLoading, navigate]);
 
-  const { data: stats } = useQuery({
-    queryKey: ['super-admin-stats', user?.id],
-    enabled: !!user?.id && isSuperAdmin,
-    queryFn: async () => {
-      const [sitesData, clientsData, conversionsData] = await Promise.all([
-        supabase.from('rank_rent_sites').select('*', { count: 'exact', head: true }),
-        supabase.from('rank_rent_clients').select('*', { count: 'exact', head: true }),
-        supabase.from('rank_rent_conversions').select('*', { count: 'exact', head: true }),
-      ]);
-
-      return {
-        totalSites: sitesData.count || 0,
-        totalClients: clientsData.count || 0,
-        totalConversions: conversionsData.count || 0,
-      };
-    },
-  });
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -80,92 +64,48 @@ const SuperAdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Sites</CardTitle>
-              <Globe className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalSites || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Sites de todos os clientes
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalClients || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Clientes cadastrados
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Conversões</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalConversions || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Conversões totais
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Tabs */}
-        <Tabs defaultValue="users" className="space-y-4">
+        <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="bg-white/50 backdrop-blur">
-            <TabsTrigger value="users">
-              <Users className="mr-2 h-4 w-4" />
-              Usuários
-            </TabsTrigger>
-            <TabsTrigger value="subscriptions">
-              <DollarSign className="mr-2 h-4 w-4" />
-              Assinaturas
-            </TabsTrigger>
             <TabsTrigger value="overview">
               <BarChart3 className="mr-2 h-4 w-4" />
               Visão Geral
             </TabsTrigger>
+            <TabsTrigger value="users">
+              <Users className="mr-2 h-4 w-4" />
+              Usuários
+            </TabsTrigger>
+            <TabsTrigger value="financial">
+              <DollarSign className="mr-2 h-4 w-4" />
+              Financeiro
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users">
-            <UserManagement />
+          <TabsContent value="overview">
+            <OverviewDashboard />
           </TabsContent>
 
-          <TabsContent value="subscriptions">
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestão de Usuários</CardTitle>
+                <CardDescription>
+                  Gerencie todos os usuários do SaaS
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <UsersManagementTable />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="financial">
             <div className="space-y-6">
               <SubscriptionMetricsCards />
               <PlansManagementTable />
               <SubscriptionsTable />
               <PaymentsHistoryTable />
             </div>
-          </TabsContent>
-
-          <TabsContent value="overview">
-            <Card>
-              <CardHeader>
-                <CardTitle>Visão Geral do Sistema</CardTitle>
-                <CardDescription>
-                  Estatísticas e métricas globais
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Dashboard de métricas em desenvolvimento...
-                </p>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
