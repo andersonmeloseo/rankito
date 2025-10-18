@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Search, ArrowUpDown, ArrowUp, ArrowDown, X, Smartphone, Monitor, Tablet } from "lucide-react";
+import { Download, Search, ArrowUpDown, ArrowUp, ArrowDown, X, Smartphone, Monitor, Tablet, Chrome, Globe } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -52,22 +52,22 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
   };
 
   const getBrowserInfo = (userAgent: string) => {
-    if (!userAgent) return { name: "Desconhecido", icon: Monitor, color: "text-muted-foreground" };
+    if (!userAgent) return { name: "Desconhecido", icon: Globe, color: "text-muted-foreground" };
     
     const ua = userAgent.toLowerCase();
     if (ua.includes("chrome") && !ua.includes("edg")) {
-      return { name: "Chrome", icon: Monitor, color: "text-yellow-500" };
+      return { name: "Chrome", icon: Chrome, color: "text-yellow-600" };
     }
     if (ua.includes("safari") && !ua.includes("chrome")) {
-      return { name: "Safari", icon: Monitor, color: "text-blue-500" };
+      return { name: "Safari", icon: Globe, color: "text-blue-600" };
     }
     if (ua.includes("firefox")) {
-      return { name: "Firefox", icon: Monitor, color: "text-orange-500" };
+      return { name: "Firefox", icon: Globe, color: "text-orange-600" };
     }
     if (ua.includes("edg")) {
-      return { name: "Edge", icon: Monitor, color: "text-blue-600" };
+      return { name: "Edge", icon: Globe, color: "text-blue-800" };
     }
-    return { name: "Outro", icon: Monitor, color: "text-muted-foreground" };
+    return { name: "Outro", icon: Globe, color: "text-muted-foreground" };
   };
 
   const filteredConversions = useMemo(() => {
