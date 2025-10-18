@@ -75,8 +75,22 @@ const Analytics = () => {
     conversionsTimeline,
     topConversionPages,
     conversionTypeDistribution,
-    conversionHourlyData,
-    isLoading
+  });
+
+  console.log('🚨 Props sendo passadas para ConversionsTable:', {
+    conversions: conversions,
+    conversionsLength: conversions?.length,
+    conversionsIsArray: Array.isArray(conversions),
+    conversionsIsUndefined: conversions === undefined,
+    firstConversion: conversions?.[0]
+  });
+
+  console.log('🚨 Props sendo passadas para PageViewsTable:', {
+    pageViews: pageViewsList,
+    pageViewsLength: pageViewsList?.length,
+    pageViewsIsArray: Array.isArray(pageViewsList),
+    pageViewsIsUndefined: pageViewsList === undefined,
+    firstPageView: pageViewsList?.[0]
   });
 
   if (!siteId) {
@@ -188,11 +202,10 @@ const Analytics = () => {
             />
             
             <ConversionsTable 
-              conversions={conversions || []} 
+              conversions={conversions || []}
               isLoading={isLoading}
               siteId={siteId}
               onPeriodChange={(startDate, endDate) => {
-                // A filtragem é feita no lado do cliente dentro da ConversionsTable
                 console.log('Período de conversões alterado:', { startDate, endDate });
               }}
             />
@@ -228,7 +241,7 @@ const Analytics = () => {
             </div>
 
             <PageViewsTable 
-              pageViews={pageViewsList || []} 
+              pageViews={pageViewsList || []}
               isLoading={isLoading}
               siteId={siteId}
             />

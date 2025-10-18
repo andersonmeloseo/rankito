@@ -258,7 +258,10 @@ export const useAnalytics = ({
         total: data?.length || 0,
         types: data?.map(d => d.event_type),
         hasPageViews: data?.some(d => d.event_type === 'page_view'),
-        sample: data?.[0]
+        sample: data?.[0],
+        returningData: !!data,
+        isEmptyArray: Array.isArray(data) && data.length === 0,
+        isUndefined: data === undefined
       });
 
       return data;
@@ -291,7 +294,10 @@ export const useAnalytics = ({
         total: data?.length || 0,
         types: data?.map(d => d.event_type),
         allPageViews: data?.every(d => d.event_type === 'page_view'),
-        sample: data?.[0]
+        sample: data?.[0],
+        returningData: !!data,
+        isEmptyArray: Array.isArray(data) && data.length === 0,
+        isUndefined: data === undefined
       });
 
       return data;
