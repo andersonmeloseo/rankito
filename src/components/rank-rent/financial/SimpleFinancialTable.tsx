@@ -44,10 +44,7 @@ export const SimpleFinancialTable = ({ metrics }: SimpleFinancialTableProps) => 
           <TableBody>
             {metrics.map((metric) => {
               const revenue = Number(metric.monthly_revenue) || 0;
-              const costs =
-                Number(metric.monthly_conversion_costs) +
-                Number(metric.proportional_fixed_cost) +
-                Number(metric.acquisition_cost);
+              const costs = Number(metric.proportional_fixed_cost) || 0;
               const profit = Number(metric.monthly_profit) || 0;
               const roi = Number(metric.roi_percentage) || 0;
 
