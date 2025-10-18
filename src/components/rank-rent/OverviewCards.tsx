@@ -20,7 +20,25 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
 
       const totalSites = sites?.length || 0;
       const rentedSites = sites?.filter((s) => s.is_rented).length || 0;
+      const availableSites = totalSites - rentedSites;
       const monthlyRevenue = sites?.reduce((acc, s) => acc + Number(s.monthly_rent_value || 0), 0) || 0;
+
+      // Contratos vencendo nos próximos 30 dias
+      const today = new Date();
+      const thirtyDaysFromNow = new Date(today);
+      thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+      const expiringContracts = sites?.filter((s) => {
+        if (!s.contract_end_date || !s.is_rented) return false;
+        const endDate = new Date(s.contract_end_date);
+        return endDate >= today && endDate <= thirtyDaysFromNow;
+      }).length || 0;
+
+      // Taxa de ocupação
+      const occupancyRate = totalSites > 0 ? Math.round((rentedSites / totalSites) * 100) : 0;
+
+      // Ticket médio
+      const averageTicket = rentedSites > 0 ? monthlyRevenue / rentedSites : 0;
 
       // Get total conversions
       const { data: conversions, error: convError } = await supabase
@@ -38,7 +56,11 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
       return {
         totalSites,
         rentedSites,
+        availableSites,
         monthlyRevenue,
+        expiringContracts,
+        occupancyRate,
+        averageTicket,
         totalConversions,
       };
     },
@@ -47,32 +69,32 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
 
   const cards = [
     {
-      title: "Total de Sites",
-      value: metrics?.totalSites || 0,
+      title: "Projetos Alugados",
+      value: metrics?.rentedSites || 0,
       icon: Globe,
-      description: `${metrics?.rentedSites || 0} alugados`,
+      description: `${metrics?.availableSites || 0} disponíveis`,
       color: "text-primary",
     },
     {
-      title: "Receita Mensal",
+      title: "Receita Mensal Total",
       value: `R$ ${(metrics?.monthlyRevenue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
       icon: DollarSign,
-      description: "Valor total dos aluguéis",
+      description: "Soma de todos os aluguéis",
       color: "text-success",
     },
     {
-      title: "Conversões Totais",
-      value: (metrics?.totalConversions || 0).toLocaleString(),
+      title: "Contratos Vencendo",
+      value: metrics?.expiringContracts || 0,
       icon: TrendingUp,
-      description: "Cliques em CTAs",
-      color: "text-accent",
+      description: "Próximos 30 dias",
+      color: "text-warning",
     },
     {
       title: "Taxa de Ocupação",
-      value: metrics?.totalSites ? `${Math.round((metrics.rentedSites / metrics.totalSites) * 100)}%` : "0%",
+      value: `${metrics?.occupancyRate || 0}%`,
       icon: BarChart3,
-      description: `${metrics?.rentedSites || 0} de ${metrics?.totalSites || 0} sites`,
-      color: "text-warning",
+      description: `${metrics?.rentedSites || 0} de ${metrics?.totalSites || 0} projetos`,
+      color: "text-accent",
     },
   ];
 
