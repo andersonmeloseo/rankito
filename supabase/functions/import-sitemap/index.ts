@@ -82,7 +82,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { site_id, sitemap_url } = await req.json();
+    const { 
+      site_id, 
+      sitemap_url,
+      fetch_content = false, // Por padrão, apenas importar URLs
+      max_urls = 5000, // Limite máximo de URLs
+      batch_size = 50 // Tamanho do batch para inserção
+    } = await req.json();
 
     if (!site_id || !sitemap_url) {
       return new Response(
@@ -97,36 +103,44 @@ serve(async (req) => {
     const parser = new DOMParser();
     const urls = await processSitemap(sitemap_url, parser);
 
-    console.log(`Total URLs found: ${urls.length}`);
+    // Aplicar limite de URLs
+    const limitedUrls = urls.slice(0, max_urls);
+    console.log(`Processing ${limitedUrls.length} URLs (limit: ${max_urls})`);
 
     let newPages = 0;
     let updatedPages = 0;
     let errors = 0;
 
-    // Process each URL
-    for (const pageUrl of urls) {
+    // Buscar todas as páginas existentes de uma vez
+    const { data: existingPages } = await supabase
+      .from('rank_rent_pages')
+      .select('page_url, id, page_title, phone_number')
+      .eq('site_id', site_id);
+
+    const existingPagesMap = new Map(
+      (existingPages || []).map(p => [p.page_url, p])
+    );
+
+    // Preparar dados para inserção/atualização em batch
+    const pagesToUpsert = [];
+
+    for (const pageUrl of limitedUrls) {
       try {
         if (!pageUrl) continue;
 
         const url = new URL(pageUrl);
         const pagePath = url.pathname;
+        const existingPage = existingPagesMap.get(pageUrl);
 
-        // Check if page already exists
-        const { data: existingPage } = await supabase
-          .from('rank_rent_pages')
-          .select('id, page_title, phone_number')
-          .eq('page_url', pageUrl)
-          .maybeSingle();
-
-        // Fetch page content to extract title and phone
         let pageTitle = existingPage?.page_title || null;
         let phoneNumber = existingPage?.phone_number || null;
 
-        // Only fetch if we don't have title or phone yet
-        if (!pageTitle || !phoneNumber) {
+        // Apenas fazer fetch se fetch_content = true
+        if (fetch_content && (!pageTitle || !phoneNumber)) {
           try {
             const pageResponse = await fetch(pageUrl, {
-              headers: { 'User-Agent': 'Mozilla/5.0 RankRentBot/1.0' }
+              headers: { 'User-Agent': 'Mozilla/5.0 RankRentBot/1.0' },
+              signal: AbortSignal.timeout(5000) // Timeout de 5s por página
             });
             
             if (pageResponse.ok) {
@@ -134,13 +148,11 @@ serve(async (req) => {
               const pageDoc = parser.parseFromString(html, "text/html");
               
               if (pageDoc) {
-                // Extract title
                 const titleEl = pageDoc.querySelector('title');
                 if (titleEl && !pageTitle) {
                   pageTitle = titleEl.textContent?.trim() || null;
                 }
 
-                // Extract phone number using regex
                 if (!phoneNumber) {
                   const bodyText = pageDoc.body?.textContent || '';
                   const phoneRegex = /(\(?\d{2}\)?\s?9?\d{4}[-\s]?\d{4})/g;
@@ -154,70 +166,74 @@ serve(async (req) => {
           }
         }
 
-        if (existingPage) {
-          // Update existing page
-          const { error } = await supabase
-            .from('rank_rent_pages')
-            .update({
-              page_title: pageTitle,
-              phone_number: phoneNumber,
-              last_scraped_at: new Date().toISOString(),
-              status: 'active'
-            })
-            .eq('id', existingPage.id);
+        pagesToUpsert.push({
+          id: existingPage?.id,
+          site_id,
+          page_url: pageUrl,
+          page_path: pagePath,
+          page_title: pageTitle,
+          phone_number: phoneNumber,
+          last_scraped_at: new Date().toISOString(),
+          status: 'active'
+        });
 
-          if (error) throw error;
-          updatedPages++;
-        } else {
-          // Insert new page
-          const { error } = await supabase
-            .from('rank_rent_pages')
-            .insert({
-              site_id,
-              page_url: pageUrl,
-              page_path: pagePath,
-              page_title: pageTitle,
-              phone_number: phoneNumber,
-              last_scraped_at: new Date().toISOString(),
-              status: 'active'
-            });
-
-          if (error) throw error;
-          newPages++;
-        }
       } catch (pageError) {
         console.error(`Error processing ${pageUrl}:`, pageError);
         errors++;
       }
     }
 
-    // Mark pages not in sitemap as inactive
-    const { data: allPages } = await supabase
-      .from('rank_rent_pages')
-      .select('id, page_url')
-      .eq('site_id', site_id);
-
-    if (allPages) {
-      const sitemapUrls = new Set(urls);
-      const pagesToDeactivate = allPages.filter(p => !sitemapUrls.has(p.page_url));
+    // Processar em batches
+    console.log(`Upserting ${pagesToUpsert.length} pages in batches of ${batch_size}`);
+    
+    for (let i = 0; i < pagesToUpsert.length; i += batch_size) {
+      const batch = pagesToUpsert.slice(i, i + batch_size);
       
-      if (pagesToDeactivate.length > 0) {
-        await supabase
-          .from('rank_rent_pages')
-          .update({ status: 'inactive' })
-          .in('id', pagesToDeactivate.map(p => p.id));
+      const { error, data } = await supabase
+        .from('rank_rent_pages')
+        .upsert(batch, { 
+          onConflict: 'page_url',
+          ignoreDuplicates: false 
+        })
+        .select('id');
+
+      if (error) {
+        console.error('Batch upsert error:', error);
+        errors += batch.length;
+      } else {
+        // Contar novos vs atualizados
+        const batchIds = batch.map(p => p.id).filter(Boolean);
+        const isNew = batch.filter(p => !p.id);
+        newPages += isNew.length;
+        updatedPages += batch.length - isNew.length;
       }
     }
 
-    console.log('Import complete:', { newPages, updatedPages, errors });
+    // Mark pages not in sitemap as inactive
+    const sitemapUrlsSet = new Set(limitedUrls);
+    const pagesToDeactivate = (existingPages || [])
+      .filter(p => !sitemapUrlsSet.has(p.page_url))
+      .map(p => p.id);
+    
+    if (pagesToDeactivate.length > 0) {
+      await supabase
+        .from('rank_rent_pages')
+        .update({ status: 'inactive' })
+        .in('id', pagesToDeactivate);
+    }
+
+    console.log('Import complete:', { newPages, updatedPages, errors, deactivated: pagesToDeactivate.length });
 
     return new Response(
       JSON.stringify({
         success: true,
         newPages,
         updatedPages,
-        deactivatedPages: allPages?.length ? allPages.length - urls.length : 0,
-        totalUrls: urls.length,
+        deactivatedPages: pagesToDeactivate.length,
+        totalUrls: limitedUrls.length,
+        totalFound: urls.length,
+        limited: urls.length > max_urls,
+        contentFetched: fetch_content,
         errors
       }), 
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
