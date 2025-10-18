@@ -218,8 +218,8 @@ const SiteDetails = () => {
         .select("*")
         .eq("site_id", siteId)
         .eq("event_type", "page_view")
-        .gte("created_at", pageViewsPeriod.startDate)
-        .lte("created_at", pageViewsPeriod.endDate)
+        .gte("created_at", `${pageViewsPeriod.startDate}T00:00:00Z`)
+        .lte("created_at", `${pageViewsPeriod.endDate}T23:59:59Z`)
         .order("created_at", { ascending: false });
         
       if (error) throw error;
