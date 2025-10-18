@@ -37,6 +37,20 @@ export const useAnalytics = ({
 
   const { startDate, endDate } = getDatesFromPeriod();
 
+  // Calcular período anterior para comparação
+  const getPreviousPeriodDates = () => {
+    const currentStart = new Date(startDate);
+    const currentEnd = new Date(endDate);
+    const diffDays = Math.ceil((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const previousEnd = startOfDay(subDays(currentStart, 1)).toISOString();
+    const previousStart = startOfDay(subDays(currentStart, diffDays)).toISOString();
+    
+    return { previousStart, previousEnd };
+  };
+
+  const { previousStart, previousEnd } = getPreviousPeriodDates();
+
   // Métricas principais
   const { data: metrics, isLoading: metricsLoading } = useQuery({
     queryKey: ["analytics-metrics", siteId, startDate, endDate, eventType, device],
@@ -191,6 +205,30 @@ export const useAnalytics = ({
     enabled: !!siteId,
   });
 
+  // Métricas do período anterior para comparação
+  const { data: previousMetrics } = useQuery({
+    queryKey: ["analytics-previous-metrics", siteId, previousStart, previousEnd],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_conversions")
+        .select("*")
+        .eq("site_id", siteId)
+        .gte("created_at", previousStart)
+        .lte("created_at", previousEnd);
+
+      if (error) throw error;
+
+      const pageViews = data?.filter(d => d.event_type === "page_view").length || 0;
+      const conversions = data?.filter(d => d.event_type !== "page_view").length || 0;
+      const uniqueIps = new Set(data?.map(d => d.ip_address));
+      const uniqueVisitors = uniqueIps.size;
+      const conversionRate = pageViews > 0 ? (conversions / pageViews * 100).toFixed(2) : "0.00";
+
+      return { uniqueVisitors, pageViews, conversions, conversionRate };
+    },
+    enabled: !!siteId,
+  });
+
   // Lista completa de conversões (últimas 100)
   const { data: conversions, isLoading: conversionsLoading } = useQuery({
     queryKey: ["analytics-conversions", siteId, startDate, endDate, eventType, device],
@@ -205,7 +243,7 @@ export const useAnalytics = ({
         .order("created_at", { ascending: false })
         .limit(100);
 
-      if (eventType !== "all") {
+      if (eventType !== "all" && eventType !== "page_view") {
         query = query.eq("event_type", eventType as any);
       }
 
@@ -221,19 +259,145 @@ export const useAnalytics = ({
     enabled: !!siteId,
   });
 
+  // Lista de page views separada
+  const { data: pageViewsList, isLoading: pageViewsLoading } = useQuery({
+    queryKey: ["analytics-page-views", siteId, startDate, endDate, device],
+    queryFn: async () => {
+      let query = supabase
+        .from("rank_rent_conversions")
+        .select("*")
+        .eq("site_id", siteId)
+        .eq("event_type", "page_view")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (device !== "all") {
+        query = query.ilike("metadata->>device", device);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return data;
+    },
+    enabled: !!siteId,
+  });
+
+  // Dados para funil de conversão
+  const { data: funnelData } = useQuery({
+    queryKey: ["analytics-funnel", siteId, startDate, endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_conversions")
+        .select("event_type")
+        .eq("site_id", siteId)
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (error) throw error;
+
+      const pageViews = data?.filter(d => d.event_type === "page_view").length || 0;
+      const conversions = data?.filter(d => d.event_type !== "page_view").length || 0;
+      const interactions = conversions; // Para simplificar
+
+      return { pageViews, interactions, conversions };
+    },
+    enabled: !!siteId,
+  });
+
+  // Heatmap por hora do dia
+  const { data: hourlyData } = useQuery({
+    queryKey: ["analytics-hourly", siteId, startDate, endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_conversions")
+        .select("created_at")
+        .eq("site_id", siteId)
+        .neq("event_type", "page_view")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (error) throw error;
+
+      const hourCounts = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }));
+      
+      data?.forEach(conv => {
+        const hour = new Date(conv.created_at).getHours();
+        hourCounts[hour].count++;
+      });
+
+      return hourCounts;
+    },
+    enabled: !!siteId,
+  });
+
+  // Sparkline data (últimos 7 dias)
+  const { data: sparklineData } = useQuery({
+    queryKey: ["analytics-sparkline", siteId],
+    queryFn: async () => {
+      const last7Days = startOfDay(subDays(new Date(), 7)).toISOString();
+      const now = endOfDay(new Date()).toISOString();
+
+      const { data, error } = await supabase
+        .from("rank_rent_conversions")
+        .select("created_at, event_type")
+        .eq("site_id", siteId)
+        .gte("created_at", last7Days)
+        .lte("created_at", now);
+
+      if (error) throw error;
+
+      const dailyCounts = Array.from({ length: 7 }, (_, i) => {
+        const date = subDays(new Date(), 6 - i);
+        const dateStr = date.toISOString().split('T')[0];
+        return {
+          pageViews: 0,
+          conversions: 0,
+          date: dateStr
+        };
+      });
+
+      data?.forEach(conv => {
+        const dateStr = new Date(conv.created_at).toISOString().split('T')[0];
+        const dayIndex = dailyCounts.findIndex(d => d.date === dateStr);
+        if (dayIndex !== -1) {
+          if (conv.event_type === "page_view") {
+            dailyCounts[dayIndex].pageViews++;
+          } else {
+            dailyCounts[dayIndex].conversions++;
+          }
+        }
+      });
+
+      return {
+        pageViews: dailyCounts.map(d => d.pageViews),
+        conversions: dailyCounts.map(d => d.conversions),
+      };
+    },
+    enabled: !!siteId,
+  });
+
   const isLoading = 
     metricsLoading || 
     timelineLoading || 
     eventsLoading || 
     topPagesLoading || 
-    conversionsLoading;
+    conversionsLoading ||
+    pageViewsLoading;
 
   return {
     metrics,
+    previousMetrics,
     timeline,
     events,
     topPages,
     conversions,
+    pageViewsList,
+    funnelData,
+    hourlyData,
+    sparklineData,
     isLoading,
   };
 };

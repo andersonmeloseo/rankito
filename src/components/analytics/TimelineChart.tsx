@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface TimelineChartProps {
   data: any[];
@@ -44,8 +44,18 @@ export const TimelineChart = ({ data, isLoading }: TimelineChartProps) => {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+          <AreaChart data={data}>
+            <defs>
+              <linearGradient id="colorPageViews" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="colorConversions" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
             <XAxis 
               dataKey="date" 
               className="text-xs text-muted-foreground"
@@ -63,23 +73,25 @@ export const TimelineChart = ({ data, isLoading }: TimelineChartProps) => {
               }}
             />
             <Legend />
-            <Line 
-              type="monotone" 
-              dataKey="pageViews" 
-              stroke="hsl(var(--primary))" 
+            <Area
+              type="monotone"
+              dataKey="pageViews"
+              stroke="hsl(var(--primary))"
               strokeWidth={2}
+              fillOpacity={1}
+              fill="url(#colorPageViews)"
               name="Visualizações"
-              dot={{ fill: 'hsl(var(--primary))' }}
             />
-            <Line 
-              type="monotone" 
-              dataKey="conversions" 
-              stroke="hsl(var(--success))" 
+            <Area
+              type="monotone"
+              dataKey="conversions"
+              stroke="hsl(var(--success))"
               strokeWidth={2}
+              fillOpacity={1}
+              fill="url(#colorConversions)"
               name="Conversões"
-              dot={{ fill: 'hsl(var(--success))' }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>

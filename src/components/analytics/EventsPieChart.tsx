@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { useMemo } from "react";
 
 interface EventsPieChartProps {
   data: any[];
@@ -15,6 +16,10 @@ const COLORS = [
 ];
 
 export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
+  const totalEvents = useMemo(() => {
+    return data?.reduce((sum, entry) => sum + (entry.value as number), 0) || 0;
+  }, [data]);
+
   if (isLoading) {
     return (
       <Card className="shadow-card">
@@ -59,9 +64,11 @@ export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
               cy="50%"
               labelLine={false}
               label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              outerRadius={80}
+              innerRadius={60}
+              outerRadius={100}
               fill="#8884d8"
               dataKey="value"
+              paddingAngle={2}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -75,6 +82,24 @@ export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
               }}
             />
             <Legend />
+            <text
+              x="50%"
+              y="50%"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="text-2xl font-bold fill-foreground"
+            >
+              {totalEvents}
+            </text>
+            <text
+              x="50%"
+              y="57%"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="text-xs fill-muted-foreground"
+            >
+              Total
+            </text>
           </PieChart>
         </ResponsiveContainer>
       </CardContent>
