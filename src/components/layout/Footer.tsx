@@ -2,7 +2,7 @@ import { Mountain, Mail, Phone } from "lucide-react";
 
 export const Footer = () => {
   return (
-    <footer className="bg-black text-white mt-20">
+    <footer className="bg-black text-white mt-32">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Coluna 1 - Logo e Descrição */}

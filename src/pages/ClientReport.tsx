@@ -74,7 +74,7 @@ export default function ClientReport() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-muted">
       <Header showSubtitle={false} />
-      <div className="flex-1 p-4 md:p-8">
+      <div className="flex-1 p-4 pb-20 md:p-8 md:pb-20">
         <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-card rounded-lg p-6 border shadow-sm">
