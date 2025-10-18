@@ -272,7 +272,17 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
     shouldShowEmptyState: !conversions || conversions.length === 0
   });
 
-  return (
+  console.log('📊 Dados filtrados antes do render:', {
+    filteredCount: filteredConversions?.length,
+    currentPageCount: currentConversions?.length,
+    currentPage,
+    totalPages
+  });
+
+  console.log('✅ Iniciando renderização da tabela de conversões');
+
+  try {
+    return (
     <TooltipProvider>
       <Card className="shadow-card">
         <CardHeader>
@@ -497,4 +507,19 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
       </Card>
     </TooltipProvider>
   );
+  } catch (error) {
+    console.error('❌ Erro ao renderizar ConversionsTable:', error);
+    return (
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle>Conversões Detalhadas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[400px] flex items-center justify-center text-destructive">
+            Erro ao renderizar tabela: {error instanceof Error ? error.message : 'Erro desconhecido'}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 };

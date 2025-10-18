@@ -236,7 +236,17 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
     shouldShowEmptyState: !pageViews || pageViews.length === 0
   });
 
-  return (
+  console.log('📊 Dados filtrados antes do render:', {
+    filteredCount: filteredPageViews?.length,
+    currentPageCount: currentPageViews?.length,
+    currentPage,
+    totalPages
+  });
+
+  console.log('✅ Iniciando renderização da tabela de page views');
+
+  try {
+    return (
     <Card className="shadow-card">
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -526,4 +536,19 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
       </CardContent>
     </Card>
   );
+  } catch (error) {
+    console.error('❌ Erro ao renderizar PageViewsTable:', error);
+    return (
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle>Visualizações de Página</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[400px] flex items-center justify-center text-destructive">
+            Erro ao renderizar tabela: {error instanceof Error ? error.message : 'Erro desconhecido'}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 };
