@@ -70,6 +70,8 @@ const Analytics = () => {
     topConversionPages,
     conversionTypeDistribution,
     conversionHourlyData,
+    pageViewHourlyData,
+    pageViewsListLength: pageViewsList?.length || 0,
     isLoading
   });
 

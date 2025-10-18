@@ -11,6 +11,14 @@ const DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const HOURS = Array.from({ length: 24 }, (_, i) => `${i}h`);
 
 export const PageViewsHeatmapChart = ({ data, isLoading }: PageViewsHeatmapChartProps) => {
+  console.log('🗺️ Heatmap Render Debug:', {
+    dataReceived: data,
+    dataKeys: Object.keys(data || {}),
+    dataSize: Object.keys(data || {}).length,
+    isLoading,
+    maxValue: Math.max(...Object.values(data || {}), 1)
+  });
+
   if (isLoading) {
     return (
       <Card className="shadow-lg border-border/50 backdrop-blur-sm">

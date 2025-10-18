@@ -645,6 +645,15 @@ export const useAnalytics = ({
     return acc;
   }, {} as Record<string, number>) || {};
 
+  // Debug: verificar agregação de page views
+  console.log('🔍 Page View Hourly Data Debug:', {
+    pageViewsListLength: pageViewsList?.length || 0,
+    pageViewsListSample: pageViewsList?.[0],
+    pageViewHourlyDataKeys: Object.keys(pageViewHourlyData || {}),
+    pageViewHourlyDataValues: pageViewHourlyData,
+    pageViewHourlyDataSize: Object.keys(pageViewHourlyData || {}).length
+  });
+
   const isLoading =
     metricsLoading || 
     timelineLoading || 
