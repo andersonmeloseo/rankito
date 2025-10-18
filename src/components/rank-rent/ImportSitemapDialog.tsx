@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +27,6 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [sitemapUrl, setSitemapUrl] = useState("");
-  const [fetchContent, setFetchContent] = useState(false);
   const [result, setResult] = useState<any>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,7 +42,6 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
         body: {
           site_id: siteId,
           sitemap_url: sitemapUrl,
-          fetch_content: fetchContent,
         },
       });
 
@@ -67,7 +64,6 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
       setTimeout(() => {
         onOpenChange(false);
         setSitemapUrl("");
-        setFetchContent(false);
         setProgress(0);
         setResult(null);
       }, 3000);
@@ -111,33 +107,11 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
             </p>
           </div>
 
-          <div className="flex items-start space-x-2 p-3 rounded-lg bg-muted/50">
-            <Checkbox 
-              id="fetch_content" 
-              checked={fetchContent}
-              onCheckedChange={(checked) => setFetchContent(checked as boolean)}
-              disabled={loading}
-            />
-            <div className="space-y-1">
-              <Label 
-                htmlFor="fetch_content" 
-                className="text-sm font-normal cursor-pointer"
-              >
-                Extrair títulos e telefones das páginas
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                ⚡ Deixar desmarcado para importação rápida (recomendado). Você pode extrair os dados depois.
-              </p>
-            </div>
-          </div>
-
           {loading && (
             <div className="space-y-2">
               <Progress value={progress} className="w-full" />
               <p className="text-sm text-muted-foreground text-center">
-                {fetchContent 
-                  ? "Importando e extraindo conteúdo... Isso pode levar vários minutos."
-                  : "Importando páginas rapidamente..."}
+                Importando URLs do sitemap...
               </p>
             </div>
           )}
@@ -149,12 +123,11 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
                 Importação concluída!
               </div>
               <div className="text-sm space-y-1">
-                <p>✅ {result.newPages} páginas novas adicionadas</p>
+                <p>✅ {result.newPages} páginas novas</p>
                 <p>🔄 {result.updatedPages} páginas atualizadas</p>
-                <p>📊 {result.totalUrls} URLs processadas{result.limited && ` (de ${result.totalFound} encontradas)`}</p>
-                {result.contentFetched && <p>📄 Conteúdo extraído das páginas</p>}
+                <p>📊 {result.totalUrls} URLs processadas{result.limited && ` (limite de 5.000)`}</p>
                 {result.errors > 0 && (
-                  <p className="text-destructive">⚠️ {result.errors} erros encontrados</p>
+                  <p className="text-destructive">⚠️ {result.errors} erros</p>
                 )}
               </div>
             </div>

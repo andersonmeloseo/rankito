@@ -7,11 +7,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Process a single sitemap or sitemap index recursively
+// Process a single sitemap or sitemap index recursively with limits
 async function processSitemap(
   sitemapUrl: string, 
   parser: DOMParser,
-  depth: number = 0
+  depth: number = 0,
+  maxSitemaps: number = 10,
+  sitemapOffset: number = 0
 ): Promise<string[]> {
   // Prevent infinite recursion
   if (depth > 2) {
@@ -31,7 +33,7 @@ async function processSitemap(
     }
 
     const xml = await response.text();
-    const doc = parser.parseFromString(xml, "text/html"); // Use text/html for better compatibility
+    const doc = parser.parseFromString(xml, "text/html");
     
     if (!doc) {
       console.error(`Failed to parse sitemap: ${sitemapUrl}`);
@@ -42,19 +44,22 @@ async function processSitemap(
     const sitemapElements = doc.querySelectorAll('sitemapindex > sitemap > loc, sitemapindex sitemap loc');
     
     if (sitemapElements.length > 0) {
-      // It's a sitemap index - process each child sitemap
-      console.log(`Found sitemap index with ${sitemapElements.length} child sitemaps`);
+      // It's a sitemap index - process limited child sitemaps
+      const allSitemaps = Array.from(sitemapElements);
+      const limitedSitemaps = allSitemaps.slice(sitemapOffset, sitemapOffset + maxSitemaps);
+      
+      console.log(`Found sitemap index with ${allSitemaps.length} child sitemaps, processing ${limitedSitemaps.length} (offset: ${sitemapOffset})`);
       const allUrls: string[] = [];
       
-      for (const sitemapEl of Array.from(sitemapElements)) {
+      for (const sitemapEl of limitedSitemaps) {
         const childSitemapUrl = sitemapEl.textContent?.trim();
         if (childSitemapUrl) {
-          const childUrls = await processSitemap(childSitemapUrl, parser, depth + 1);
+          const childUrls = await processSitemap(childSitemapUrl, parser, depth + 1, maxSitemaps, 0);
           allUrls.push(...childUrls);
         }
       }
       
-      console.log(`Sitemap index processed: ${allUrls.length} total URLs found`);
+      console.log(`Sitemap index processed: ${allUrls.length} URLs found from ${limitedSitemaps.length} sitemaps`);
       return allUrls;
     } else {
       // It's a regular sitemap - extract URLs
@@ -85,9 +90,10 @@ serve(async (req) => {
     const { 
       site_id, 
       sitemap_url,
-      fetch_content = false, // Por padrão, apenas importar URLs
-      max_urls = 5000, // Limite máximo de URLs
-      batch_size = 50 // Tamanho do batch para inserção
+      max_urls = 5000,
+      batch_size = 1000, // Aumentado para 1000 para reduzir operações
+      max_sitemaps = 10, // Processar apenas 10 sitemaps por vez
+      sitemap_offset = 0 // Offset para continuar processamento
     } = await req.json();
 
     if (!site_id || !sitemap_url) {
@@ -98,10 +104,11 @@ serve(async (req) => {
     }
 
     console.log('Importing sitemap from:', sitemap_url, 'for site:', site_id);
+    console.log('Processing with limits:', { max_urls, batch_size, max_sitemaps, sitemap_offset });
 
-    // Process sitemap (handles both regular sitemaps and sitemap indexes)
+    // Process sitemap with limits
     const parser = new DOMParser();
-    const urls = await processSitemap(sitemap_url, parser);
+    const urls = await processSitemap(sitemap_url, parser, 0, max_sitemaps, sitemap_offset);
 
     // Aplicar limite de URLs
     const limitedUrls = urls.slice(0, max_urls);
@@ -111,17 +118,17 @@ serve(async (req) => {
     let updatedPages = 0;
     let errors = 0;
 
-    // Buscar todas as páginas existentes de uma vez
+    // Buscar apenas IDs e URLs das páginas existentes (otimizado)
     const { data: existingPages } = await supabase
       .from('rank_rent_pages')
-      .select('page_url, id, page_title, phone_number')
+      .select('page_url, id')
       .eq('site_id', site_id);
 
     const existingPagesMap = new Map(
       (existingPages || []).map(p => [p.page_url, p])
     );
 
-    // Preparar dados para inserção/atualização em batch
+    // Preparar dados para inserção/atualização em batch (apenas URLs, sem scraping)
     const pagesToUpsert = [];
 
     for (const pageUrl of limitedUrls) {
@@ -132,47 +139,11 @@ serve(async (req) => {
         const pagePath = url.pathname;
         const existingPage = existingPagesMap.get(pageUrl);
 
-        let pageTitle = existingPage?.page_title || null;
-        let phoneNumber = existingPage?.phone_number || null;
-
-        // Apenas fazer fetch se fetch_content = true
-        if (fetch_content && (!pageTitle || !phoneNumber)) {
-          try {
-            const pageResponse = await fetch(pageUrl, {
-              headers: { 'User-Agent': 'Mozilla/5.0 RankRentBot/1.0' },
-              signal: AbortSignal.timeout(5000) // Timeout de 5s por página
-            });
-            
-            if (pageResponse.ok) {
-              const html = await pageResponse.text();
-              const pageDoc = parser.parseFromString(html, "text/html");
-              
-              if (pageDoc) {
-                const titleEl = pageDoc.querySelector('title');
-                if (titleEl && !pageTitle) {
-                  pageTitle = titleEl.textContent?.trim() || null;
-                }
-
-                if (!phoneNumber) {
-                  const bodyText = pageDoc.body?.textContent || '';
-                  const phoneRegex = /(\(?\d{2}\)?\s?9?\d{4}[-\s]?\d{4})/g;
-                  const matches = bodyText.match(phoneRegex);
-                  phoneNumber = matches ? matches[0] : null;
-                }
-              }
-            }
-          } catch (fetchError) {
-            console.error(`Error fetching page ${pageUrl}:`, fetchError);
-          }
-        }
-
         pagesToUpsert.push({
           id: existingPage?.id,
           site_id,
           page_url: pageUrl,
           page_path: pagePath,
-          page_title: pageTitle,
-          phone_number: phoneNumber,
           last_scraped_at: new Date().toISOString(),
           status: 'active'
         });
@@ -233,7 +204,6 @@ serve(async (req) => {
         totalUrls: limitedUrls.length,
         totalFound: urls.length,
         limited: urls.length > max_urls,
-        contentFetched: fetch_content,
         errors
       }), 
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
