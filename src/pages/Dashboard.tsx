@@ -3,19 +3,26 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Users, LayoutDashboard, Globe } from "lucide-react";
+import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewCards } from "@/components/rank-rent/OverviewCards";
 import { SitesList } from "@/components/rank-rent/SitesList";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
 import { ClientsList } from "@/components/rank-rent/ClientsList";
+import { GlobalFinancialOverview } from "@/components/rank-rent/financial/GlobalFinancialOverview";
+import { GlobalFinancialTable } from "@/components/rank-rent/financial/GlobalFinancialTable";
+import { GlobalCostSettings } from "@/components/rank-rent/financial/GlobalCostSettings";
+import { useGlobalFinancialMetrics } from "@/hooks/useGlobalFinancialMetrics";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddSite, setShowAddSite] = useState(false);
   const navigate = useNavigate();
+  
+  const { sitesMetrics, summary, isLoading: financialLoading } = useGlobalFinancialMetrics(user?.id || "");
 
   useEffect(() => {
     // Check authentication
@@ -93,7 +100,7 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+          <TabsList className="grid w-full grid-cols-4 max-w-3xl">
             <TabsTrigger value="overview" className="gap-2">
               <LayoutDashboard className="w-4 h-4" />
               Overview
@@ -101,6 +108,10 @@ const Dashboard = () => {
             <TabsTrigger value="sites" className="gap-2">
               <Globe className="w-4 h-4" />
               Sites
+            </TabsTrigger>
+            <TabsTrigger value="financial" className="gap-2">
+              <DollarSign className="w-4 h-4" />
+              Financeiro
             </TabsTrigger>
             <TabsTrigger value="clients" className="gap-2">
               <Users className="w-4 h-4" />
@@ -115,6 +126,22 @@ const Dashboard = () => {
 
           <TabsContent value="sites">
             <SitesList userId={user.id} />
+          </TabsContent>
+
+          <TabsContent value="financial" className="space-y-6">
+            {financialLoading ? (
+              <div className="space-y-4">
+                {[...Array(6)].map((_, i) => (
+                  <Skeleton key={i} className="h-32" />
+                ))}
+              </div>
+            ) : (
+              <>
+                <GlobalFinancialOverview summary={summary} />
+                <GlobalFinancialTable sitesMetrics={sitesMetrics} />
+                <GlobalCostSettings userId={user.id} />
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="clients">
