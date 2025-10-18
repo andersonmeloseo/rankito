@@ -23,7 +23,7 @@ import { MetricsCards } from "@/components/analytics/MetricsCards";
 import { TimelineChart } from "@/components/analytics/TimelineChart";
 import { TopPagesChart } from "@/components/analytics/TopPagesChart";
 import { EventsPieChart } from "@/components/analytics/EventsPieChart";
-
+import { FinancialHub } from "@/components/rank-rent/financial/FinancialHub";
 import { ConversionRateChart } from "@/components/analytics/ConversionRateChart";
 import { ConversionFunnelChart } from "@/components/analytics/ConversionFunnelChart";
 import { HourlyHeatmap } from "@/components/analytics/HourlyHeatmap";
@@ -979,66 +979,9 @@ const SiteDetails = () => {
             </Card>
           </TabsContent>
 
-          {/* Análise Tab */}
-          <TabsContent value="analytics">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Análise e Métricas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Performance Geral</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-foreground">Total de Visualizações</span>
-                        <span className="font-semibold text-foreground">{site.total_page_views?.toLocaleString() || 0}</span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between items-center">
-                        <span className="text-foreground">Total de Conversões</span>
-                        <span className="font-semibold text-success">{site.total_conversions || 0}</span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between items-center">
-                        <span className="text-foreground">Taxa de Conversão</span>
-                        <span className="font-semibold text-foreground">{site.conversion_rate || 0}%</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Informações Financeiras</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-foreground">Valor Mensal Atual</span>
-                        <span className="font-semibold text-success">
-                          R$ {Number(site.monthly_rent_value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between items-center">
-                        <span className="text-foreground">Páginas Alugadas</span>
-                        <span className="font-semibold text-foreground">
-                          {pages?.filter((p) => p.is_rented).length || 0} / {pages?.length || 0}
-                        </span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between items-center">
-                        <span className="text-foreground">Valor Médio por Página</span>
-                        <span className="font-semibold text-foreground">
-                          R${" "}
-                          {pages && pages.length > 0
-                            ? (Number(site.monthly_rent_value || 0) / pages.length).toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                              })
-                            : "0,00"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Análise Tab - Financial Hub */}
+          <TabsContent value="analytics" className="space-y-6">
+            <FinancialHub siteId={siteId!} />
           </TabsContent>
 
           {/* Advanced Analytics Tab */}
