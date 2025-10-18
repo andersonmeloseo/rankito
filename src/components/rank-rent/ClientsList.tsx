@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, ExternalLink, Copy } from "lucide-react";
+import { Plus, ExternalLink, Copy, Settings } from "lucide-react";
 import { useState } from "react";
 import { AddClientDialog } from "./AddClientDialog";
+import { AssignPagesToClientDialog } from "./AssignPagesToClientDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -35,6 +36,8 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
   const { toast } = useToast();
   const [showAddClient, setShowAddClient] = useState(false);
   const [nicheFilter, setNicheFilter] = useState<string>("all");
+  const [managingClientId, setManagingClientId] = useState<string | null>(null);
+  const [managingClientName, setManagingClientName] = useState<string>("");
 
   const { data: clients, isLoading } = useQuery<ClientMetric[]>({
     queryKey: ["rank-rent-clients", userId],
@@ -143,6 +146,17 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
                 )}
               </div>
               <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    setManagingClientId(client.client_id);
+                    setManagingClientName(client.client_name);
+                  }}
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Gerenciar Páginas
+                </Button>
                 {client.access_token && (
                   <>
                     <Button
@@ -164,6 +178,14 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
                 )}
               </div>
             </div>
+
+            {client.total_pages_rented === 0 && (
+              <div className="mb-4 p-3 bg-muted rounded-md border-l-4 border-amber-500">
+                <p className="text-sm text-muted-foreground">
+                  ⚠️ Este cliente ainda não possui páginas vinculadas
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
@@ -204,6 +226,20 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
         open={showAddClient}
         onOpenChange={setShowAddClient}
       />
+
+      {managingClientId && (
+        <AssignPagesToClientDialog
+          clientId={managingClientId}
+          clientName={managingClientName}
+          open={!!managingClientId}
+          onOpenChange={(open) => {
+            if (!open) {
+              setManagingClientId(null);
+              setManagingClientName("");
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
