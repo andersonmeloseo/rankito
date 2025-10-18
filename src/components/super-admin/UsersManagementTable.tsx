@@ -13,8 +13,8 @@ import { ptBR } from "date-fns/locale";
 
 export const UsersManagementTable = () => {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [planFilter, setPlanFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [planFilter, setPlanFilter] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userToBlock, setUserToBlock] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -22,8 +22,8 @@ export const UsersManagementTable = () => {
 
   const { users, isLoading, blockUser, unblockUser } = useSaasUsers({
     search,
-    status: statusFilter || undefined,
-    plan: planFilter || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter,
+    plan: planFilter === "all" ? undefined : planFilter,
   });
 
   const getStatusBadge = (user: any) => {
@@ -81,7 +81,7 @@ export const UsersManagementTable = () => {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="active">Ativo</SelectItem>
             <SelectItem value="trial">Trial</SelectItem>
             <SelectItem value="past_due">Atrasado</SelectItem>
@@ -94,7 +94,7 @@ export const UsersManagementTable = () => {
             <SelectValue placeholder="Plano" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="Starter">Starter</SelectItem>
             <SelectItem value="Professional">Professional</SelectItem>
             <SelectItem value="Enterprise">Enterprise</SelectItem>
