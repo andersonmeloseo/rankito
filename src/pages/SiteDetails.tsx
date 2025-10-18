@@ -18,6 +18,7 @@ import { EditPageDialog } from "@/components/rank-rent/EditPageDialog";
 import { ImportSitemapDialog } from "@/components/rank-rent/ImportSitemapDialog";
 import { PluginDownloadCard } from "@/components/rank-rent/PluginDownloadCard";
 import { PluginInstallationGuide } from "@/components/rank-rent/PluginInstallationGuide";
+import { PluginStatusMonitor } from "@/components/rank-rent/PluginStatusMonitor";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
 import { MetricsCards } from "@/components/analytics/MetricsCards";
 import { TimelineChart } from "@/components/analytics/TimelineChart";
@@ -1239,13 +1240,7 @@ const SiteDetails = () => {
 
           {/* Plugin WordPress Tab */}
           <TabsContent value="plugin">
-            <PluginDownloadCard 
-              onOpenGuide={() => setShowPluginGuide(true)}
-              siteId={siteId}
-              trackingToken={site.tracking_token}
-              trackingPixelInstalled={site.tracking_pixel_installed}
-              siteName={site.site_name}
-            />
+            <PluginStatusMonitor userId={site.user_id} />
           </TabsContent>
         </Tabs>
       </div>
