@@ -35,6 +35,7 @@ import { ConversionsTimelineChart } from "@/components/analytics/ConversionsTime
 import { TopConversionPagesChart } from "@/components/analytics/TopConversionPagesChart";
 import { ConversionTypeDistributionChart } from "@/components/analytics/ConversionTypeDistributionChart";
 import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
+import { TestPageViewButton } from "@/components/analytics/TestPageViewButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { format, subDays } from "date-fns";
 
@@ -1165,14 +1166,29 @@ const SiteDetails = () => {
                   isLoading={analyticsData.isLoading} 
                 />
                 
-                <PageViewsTable 
-                  pageViews={pageViewsData || []} 
-                  isLoading={pageViewsLoading}
-                  siteId={siteId || ""}
-                  onPeriodChange={(startDate, endDate) => {
-                    setPageViewsPeriod({ startDate, endDate });
-                  }}
-                />
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Page Views Detalhados</CardTitle>
+                      <TestPageViewButton 
+                        siteId={siteId || ""}
+                        onSuccess={() => {
+                          queryClient.invalidateQueries({ queryKey: ["page-views-detailed", siteId] });
+                        }}
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <PageViewsTable 
+                      pageViews={pageViewsData || []} 
+                      isLoading={pageViewsLoading}
+                      siteId={siteId || ""}
+                      onPeriodChange={(startDate, endDate) => {
+                        setPageViewsPeriod({ startDate, endDate });
+                      }}
+                    />
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </TabsContent>
