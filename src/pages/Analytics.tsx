@@ -19,13 +19,16 @@ import { TopConversionPagesChart } from "@/components/analytics/TopConversionPag
 import { ConversionTypeDistributionChart } from "@/components/analytics/ConversionTypeDistributionChart";
 import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
+import { TestPageViewButton } from "@/components/analytics/TestPageViewButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Analytics = () => {
   const { siteId } = useParams<{ siteId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   const [period, setPeriod] = useState("30");
   const [eventType, setEventType] = useState("all");
@@ -185,6 +188,18 @@ const Analytics = () => {
           </TabsContent>
           
           <TabsContent value="pageviews" className="mt-6 space-y-6">
+            <div className="flex justify-end mb-4">
+              <TestPageViewButton 
+                siteId={siteId}
+                onSuccess={() => {
+                  // Recarregar dados do analytics
+                  queryClient.invalidateQueries({ queryKey: ["analytics-page-views"] });
+                  queryClient.invalidateQueries({ queryKey: ["analytics-metrics"] });
+                  queryClient.invalidateQueries({ queryKey: ["analytics-pageviews-timeline"] });
+                }}
+              />
+            </div>
+            
             <PageViewsTimelineChart 
               data={pageViewsTimeline || []} 
               isLoading={isLoading}
