@@ -418,13 +418,152 @@ export const useAnalytics = ({
     enabled: !!siteId,
   });
 
+  // Timeline comparativa de Page Views
+  const { data: pageViewsTimeline, isLoading: pageViewsTimelineLoading } = useQuery({
+    queryKey: ["analytics-pageviews-timeline", siteId, startDate, endDate, device],
+    queryFn: async () => {
+      let currentQuery = supabase
+        .from("rank_rent_conversions")
+        .select("created_at")
+        .eq("site_id", siteId)
+        .eq("event_type", "page_view")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      let previousQuery = supabase
+        .from("rank_rent_conversions")
+        .select("created_at")
+        .eq("site_id", siteId)
+        .eq("event_type", "page_view")
+        .gte("created_at", previousStart)
+        .lte("created_at", previousEnd);
+
+      if (device !== "all") {
+        currentQuery = currentQuery.ilike("metadata->>device", device);
+        previousQuery = previousQuery.ilike("metadata->>device", device);
+      }
+
+      const [{ data: currentData }, { data: previousData }] = await Promise.all([
+        currentQuery,
+        previousQuery,
+      ]);
+
+      const currentStats: Record<string, number> = {};
+      const previousStats: Record<string, number> = {};
+
+      currentData?.forEach(pv => {
+        const dateStr = new Date(pv.created_at).toISOString().split('T')[0];
+        currentStats[dateStr] = (currentStats[dateStr] || 0) + 1;
+      });
+
+      previousData?.forEach(pv => {
+        const dateStr = new Date(pv.created_at).toISOString().split('T')[0];
+        previousStats[dateStr] = (previousStats[dateStr] || 0) + 1;
+      });
+
+      const allDates = new Set([...Object.keys(currentStats), ...Object.keys(previousStats)]);
+      return Array.from(allDates)
+        .map(date => ({
+          date,
+          current: currentStats[date] || 0,
+          previous: previousStats[date] || 0,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    },
+    enabled: !!siteId,
+  });
+
+  // Top Referrers
+  const { data: topReferrers, isLoading: topReferrersLoading } = useQuery({
+    queryKey: ["analytics-top-referrers", siteId, startDate, endDate, device],
+    queryFn: async () => {
+      let query = supabase
+        .from("rank_rent_conversions")
+        .select("referrer")
+        .eq("site_id", siteId)
+        .eq("event_type", "page_view")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (device !== "all") {
+        query = query.ilike("metadata->>device", device);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const referrerCounts: Record<string, number> = {};
+      data?.forEach(pv => {
+        const ref = pv.referrer || "Direto";
+        referrerCounts[ref] = (referrerCounts[ref] || 0) + 1;
+      });
+
+      const total = Object.values(referrerCounts).reduce((sum, count) => sum + count, 0);
+
+      return Object.entries(referrerCounts)
+        .map(([referrer, count]) => ({
+          referrer: referrer.length > 40 ? referrer.substring(0, 40) + "..." : referrer,
+          count,
+          percentage: (count / total) * 100,
+        }))
+        .sort((a, b) => b.count - a.count);
+    },
+    enabled: !!siteId,
+  });
+
+  // Page Performance (views + conversions por página)
+  const { data: pagePerformance, isLoading: pagePerformanceLoading } = useQuery({
+    queryKey: ["analytics-page-performance", siteId, startDate, endDate, device],
+    queryFn: async () => {
+      let query = supabase
+        .from("rank_rent_conversions")
+        .select("page_path, event_type")
+        .eq("site_id", siteId)
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (device !== "all") {
+        query = query.ilike("metadata->>device", device);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const pageStats: Record<string, { views: number; conversions: number }> = {};
+      
+      data?.forEach(conv => {
+        if (!pageStats[conv.page_path]) {
+          pageStats[conv.page_path] = { views: 0, conversions: 0 };
+        }
+        if (conv.event_type === "page_view") {
+          pageStats[conv.page_path].views++;
+        } else {
+          pageStats[conv.page_path].conversions++;
+        }
+      });
+
+      return Object.entries(pageStats)
+        .map(([page, stats]) => ({
+          page: page.length > 30 ? page.substring(0, 30) + "..." : page,
+          views: stats.views,
+          conversions: stats.conversions,
+          conversionRate: stats.views > 0 ? (stats.conversions / stats.views) * 100 : 0,
+        }))
+        .sort((a, b) => b.views - a.views);
+    },
+    enabled: !!siteId,
+  });
+
   const isLoading = 
     metricsLoading || 
     timelineLoading || 
     eventsLoading || 
     topPagesLoading || 
     conversionsLoading ||
-    pageViewsLoading;
+    pageViewsLoading ||
+    pageViewsTimelineLoading ||
+    topReferrersLoading ||
+    pagePerformanceLoading;
 
   return {
     metrics,
@@ -438,6 +577,9 @@ export const useAnalytics = ({
     hourlyData,
     sparklineData,
     conversionRateData,
+    pageViewsTimeline,
+    topReferrers,
+    pagePerformance,
     isLoading,
   };
 };

@@ -4,9 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Search } from "lucide-react";
+import { Download, Search, Smartphone, Monitor, Tablet, Chrome, Globe } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PageViewsTableProps {
   pageViews: any[];
@@ -36,6 +37,23 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId }: PageViewsTableP
   const endIndex = startIndex + itemsPerPage;
   const currentPageViews = filteredPageViews.slice(startIndex, endIndex);
 
+  const getBrowserInfo = (userAgent: string | null) => {
+    if (!userAgent) return { name: "Desconhecido", icon: Globe };
+    
+    if (userAgent.includes("Chrome")) return { name: "Chrome", icon: Chrome };
+    if (userAgent.includes("Firefox")) return { name: "Firefox", icon: Globe };
+    if (userAgent.includes("Safari")) return { name: "Safari", icon: Globe };
+    return { name: "Outro", icon: Globe };
+  };
+
+  const getDeviceInfo = (device: string) => {
+    switch(device) {
+      case "mobile": return { icon: Smartphone, color: "text-blue-500", bgColor: "bg-blue-500/10" };
+      case "tablet": return { icon: Tablet, color: "text-purple-500", bgColor: "bg-purple-500/10" };
+      default: return { icon: Monitor, color: "text-green-500", bgColor: "bg-green-500/10" };
+    }
+  };
+
   const exportToCSV = () => {
     if (!filteredPageViews || filteredPageViews.length === 0) {
       toast({
@@ -46,12 +64,13 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId }: PageViewsTableP
       return;
     }
 
-    const headers = ["Data", "Hora", "Página", "Dispositivo", "IP", "Referrer", "User Agent"];
+    const headers = ["Data", "Hora", "Página", "Dispositivo", "Browser", "IP", "Referrer", "User Agent"];
     const rows = filteredPageViews.map(pv => [
       new Date(pv.created_at).toLocaleDateString("pt-BR"),
       new Date(pv.created_at).toLocaleTimeString("pt-BR"),
       pv.page_path,
       pv.metadata?.device || "desktop",
+      getBrowserInfo(pv.user_agent).name,
       pv.ip_address || "-",
       pv.referrer || "-",
       pv.user_agent || "-",
@@ -152,49 +171,74 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId }: PageViewsTableP
         </div>
 
         <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead>Página</TableHead>
-                <TableHead>Dispositivo</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead>Referrer</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentPageViews.map((pv) => (
-                <TableRow key={pv.id}>
-                  <TableCell className="whitespace-nowrap">
-                    <div className="text-sm">
-                      {new Date(pv.created_at).toLocaleDateString("pt-BR")}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(pv.created_at).toLocaleTimeString("pt-BR")}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-xs truncate" title={pv.page_path}>
-                      {pv.page_path}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {pv.metadata?.device || "desktop"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {pv.ip_address || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-xs truncate text-xs text-muted-foreground" title={pv.referrer || "-"}>
-                      {pv.referrer || "Direto"}
-                    </div>
-                  </TableCell>
+          <TooltipProvider>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data/Hora</TableHead>
+                  <TableHead>Página</TableHead>
+                  <TableHead>Dispositivo</TableHead>
+                  <TableHead>Browser</TableHead>
+                  <TableHead>IP</TableHead>
+                  <TableHead>Referrer</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {currentPageViews.map((pv) => {
+                  const device = pv.metadata?.device || "desktop";
+                  const deviceInfo = getDeviceInfo(device);
+                  const browserInfo = getBrowserInfo(pv.user_agent);
+                  const DeviceIcon = deviceInfo.icon;
+                  const BrowserIcon = browserInfo.icon;
+
+                  return (
+                    <TableRow key={pv.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell className="whitespace-nowrap">
+                        <div className="text-sm">
+                          {new Date(pv.created_at).toLocaleDateString("pt-BR")}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(pv.created_at).toLocaleTimeString("pt-BR")}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate font-medium" title={pv.page_path}>
+                          {pv.page_path}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`${deviceInfo.bgColor} ${deviceInfo.color} border-0 gap-1.5`}>
+                          <DeviceIcon className="w-3.5 h-3.5" />
+                          {device}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Badge variant="secondary" className="gap-1.5 cursor-help">
+                              <BrowserIcon className="w-3.5 h-3.5" />
+                              {browserInfo.name}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-md">
+                            <p className="text-xs break-all">{pv.user_agent || "N/A"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {pv.ip_address || "-"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate text-xs text-muted-foreground" title={pv.referrer || "-"}>
+                          {pv.referrer || "Direto"}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TooltipProvider>
         </div>
 
         {totalPages > 1 && (

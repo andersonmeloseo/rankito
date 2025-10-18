@@ -8,6 +8,9 @@ import { EventsPieChart } from "@/components/analytics/EventsPieChart";
 import { TopPagesChart } from "@/components/analytics/TopPagesChart";
 import { ConversionsTable } from "@/components/analytics/ConversionsTable";
 import { PageViewsTable } from "@/components/analytics/PageViewsTable";
+import { PageViewsTimelineChart } from "@/components/analytics/PageViewsTimelineChart";
+import { TopReferrersChart } from "@/components/analytics/TopReferrersChart";
+import { PagePerformanceChart } from "@/components/analytics/PagePerformanceChart";
 import { ConversionFunnelChart } from "@/components/analytics/ConversionFunnelChart";
 import { HourlyHeatmap } from "@/components/analytics/HourlyHeatmap";
 import { ConversionRateChart } from "@/components/analytics/ConversionRateChart";
@@ -38,6 +41,9 @@ const Analytics = () => {
     hourlyData,
     sparklineData,
     conversionRateData,
+    pageViewsTimeline,
+    topReferrers,
+    pagePerformance,
     isLoading 
   } = useAnalytics({
     siteId: siteId!,
@@ -140,7 +146,23 @@ const Analytics = () => {
             />
           </TabsContent>
           
-          <TabsContent value="pageviews" className="mt-6">
+          <TabsContent value="pageviews" className="mt-6 space-y-6">
+            <PageViewsTimelineChart 
+              data={pageViewsTimeline || []} 
+              isLoading={isLoading}
+            />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <TopReferrersChart 
+                data={topReferrers || []} 
+                isLoading={isLoading}
+              />
+              <PagePerformanceChart 
+                data={pagePerformance || []} 
+                isLoading={isLoading}
+              />
+            </div>
+
             <PageViewsTable 
               pageViews={pageViewsList || []} 
               isLoading={isLoading}
