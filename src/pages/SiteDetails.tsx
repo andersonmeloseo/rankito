@@ -377,6 +377,21 @@ const SiteDetails = () => {
 
           {/* Páginas Tab */}
           <TabsContent value="pages">
+            {/* Stats Card */}
+            <Card className="bg-muted/50 mb-4">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    <strong className="text-lg text-foreground">{pagesData?.total || 0}</strong> páginas cadastradas
+                  </div>
+                  <Button onClick={() => setShowImportDialog(true)} variant="outline" size="sm">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Importar/Atualizar Sitemap
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="shadow-card">
               <CardHeader>
                 <div className="flex items-center justify-between">

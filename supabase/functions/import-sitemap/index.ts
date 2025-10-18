@@ -51,6 +51,10 @@ async function processSitemap(
       console.log(`Found sitemap index with ${allSitemaps.length} child sitemaps, processing ${limitedSitemaps.length} (offset: ${sitemapOffset})`);
       const allUrls: string[] = [];
       
+      // Store total sitemaps count for response
+      (allUrls as any).totalSitemapsFound = allSitemaps.length;
+      (allUrls as any).sitemapsProcessed = limitedSitemaps.length;
+      
       for (const sitemapEl of limitedSitemaps) {
         const childSitemapUrl = sitemapEl.textContent?.trim();
         if (childSitemapUrl) {
@@ -90,10 +94,10 @@ serve(async (req) => {
     const { 
       site_id, 
       sitemap_url,
-      max_urls = 5000,
-      batch_size = 1000, // Aumentado para 1000 para reduzir operações
-      max_sitemaps = 10, // Processar apenas 10 sitemaps por vez
-      sitemap_offset = 0 // Offset para continuar processamento
+      max_urls = 50000,
+      batch_size = 1000,
+      max_sitemaps = 999, // Processar todos os sitemaps
+      sitemap_offset = 0
     } = await req.json();
 
     if (!site_id || !sitemap_url) {
@@ -109,6 +113,10 @@ serve(async (req) => {
     // Process sitemap with limits
     const parser = new DOMParser();
     const urls = await processSitemap(sitemap_url, parser, 0, max_sitemaps, sitemap_offset);
+    
+    // Extract sitemap statistics
+    const totalSitemapsFound = (urls as any).totalSitemapsFound || 1;
+    const sitemapsProcessed = (urls as any).sitemapsProcessed || 1;
 
     // Aplicar limite de URLs
     const limitedUrls = urls.slice(0, max_urls);
@@ -209,11 +217,13 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        totalSitemapsFound,
+        sitemapsProcessed,
+        totalUrlsFound: urls.length,
+        urlsImported: limitedUrls.length,
         newPages,
         updatedPages,
         deactivatedPages: pagesToDeactivate.length,
-        totalUrls: limitedUrls.length,
-        totalFound: urls.length,
         limited: urls.length > max_urls,
         errors
       }), 

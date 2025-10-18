@@ -52,11 +52,24 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
       setResult(data);
       setProgress(100);
 
+      const stats = [
+        `📊 ${data.sitemapsProcessed} de ${data.totalSitemapsFound} sitemaps processados`,
+        `🔗 ${data.totalUrlsFound} URLs encontradas`,
+        `✨ ${data.newPages} páginas novas`,
+        `🔄 ${data.updatedPages} páginas atualizadas`,
+      ];
+      
+      if (data.deactivatedPages > 0) {
+        stats.push(`⚠️ ${data.deactivatedPages} páginas desativadas`);
+      }
+      
+      if (data.limited) {
+        stats.push(`⚡ Limite de ${data.urlsImported} URLs aplicado`);
+      }
+
       toast({
-        title: "Sitemap importado!",
-        description: data.limited 
-          ? `${data.newPages} novas páginas, ${data.updatedPages} atualizadas (limite de ${data.totalUrls} aplicado)`
-          : `${data.newPages} novas páginas, ${data.updatedPages} atualizadas`,
+        title: "✅ Importação Concluída!",
+        description: stats.join(' • '),
       });
 
       queryClient.invalidateQueries({ queryKey: ["rank-rent-pages"] });
@@ -123,9 +136,16 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
                 Importação concluída!
               </div>
               <div className="text-sm space-y-1">
-                <p>✅ {result.newPages} páginas novas</p>
+                <p>📊 {result.sitemapsProcessed} de {result.totalSitemapsFound} sitemaps processados</p>
+                <p>🔗 {result.totalUrlsFound} URLs encontradas</p>
+                <p>✨ {result.newPages} páginas novas</p>
                 <p>🔄 {result.updatedPages} páginas atualizadas</p>
-                <p>📊 {result.totalUrls} URLs processadas{result.limited && ` (limite de 5.000)`}</p>
+                {result.deactivatedPages > 0 && (
+                  <p>⚠️ {result.deactivatedPages} páginas desativadas</p>
+                )}
+                {result.limited && (
+                  <p className="text-warning">⚡ Limite de {result.urlsImported} URLs aplicado</p>
+                )}
                 {result.errors > 0 && (
                   <p className="text-destructive">⚠️ {result.errors} erros</p>
                 )}
