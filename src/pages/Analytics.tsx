@@ -20,6 +20,7 @@ import { ConversionTypeDistributionChart } from "@/components/analytics/Conversi
 import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
 import { TestPageViewButton } from "@/components/analytics/TestPageViewButton";
+import { ROIAnalysisCard } from "@/components/analytics/ROIAnalysisCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -127,6 +128,8 @@ const Analytics = () => {
           sparklineData={sparklineData}
           isLoading={isLoading} 
         />
+
+        <ROIAnalysisCard siteId={siteId!} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TimelineChart data={timeline} isLoading={isLoading} />
