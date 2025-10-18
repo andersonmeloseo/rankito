@@ -16,6 +16,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { EditPageDialog } from "@/components/rank-rent/EditPageDialog";
 import { ImportSitemapDialog } from "@/components/rank-rent/ImportSitemapDialog";
+import { PluginDownloadCard } from "@/components/rank-rent/PluginDownloadCard";
+import { PluginInstallationGuide } from "@/components/rank-rent/PluginInstallationGuide";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
 import { MetricsCards } from "@/components/analytics/MetricsCards";
 import { TimelineChart } from "@/components/analytics/TimelineChart";
@@ -34,6 +36,7 @@ const SiteDetails = () => {
   const [selectedPage, setSelectedPage] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showPluginGuide, setShowPluginGuide] = useState(false);
   
   // Pagination States
   const [currentPage, setCurrentPage] = useState(1);
@@ -624,11 +627,12 @@ const SiteDetails = () => {
 
         {/* Tabs Section */}
         <Tabs defaultValue="pages" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 max-w-5xl">
+          <TabsList className="grid w-full grid-cols-7 max-w-6xl">
             <TabsTrigger value="pages">Páginas</TabsTrigger>
             <TabsTrigger value="analytics">Análise</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Analytics Avançado</TabsTrigger>
             <TabsTrigger value="client">Cliente</TabsTrigger>
+            <TabsTrigger value="plugin">Plugin</TabsTrigger>
             <TabsTrigger value="settings">Pixel</TabsTrigger>
             <TabsTrigger value="conversions">Conversões</TabsTrigger>
           </TabsList>
@@ -1183,6 +1187,15 @@ const SiteDetails = () => {
             </Card>
           </TabsContent>
 
+          {/* Plugin WordPress Tab */}
+          <TabsContent value="plugin">
+            <PluginDownloadCard 
+              onOpenGuide={() => setShowPluginGuide(true)}
+              siteId={siteId}
+              trackingToken={site.tracking_token}
+            />
+          </TabsContent>
+
           {/* Pixel Tab */}
           <TabsContent value="settings">
             {/* Status Card */}
@@ -1429,6 +1442,7 @@ const SiteDetails = () => {
         <EditPageDialog page={selectedPage} open={showEditDialog} onOpenChange={setShowEditDialog} />
       )}
       <ImportSitemapDialog siteId={siteId || ""} open={showImportDialog} onOpenChange={setShowImportDialog} />
+      <PluginInstallationGuide open={showPluginGuide} onOpenChange={setShowPluginGuide} />
     </div>
   );
 };
