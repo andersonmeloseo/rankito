@@ -14,6 +14,10 @@ import { PagePerformanceChart } from "@/components/analytics/PagePerformanceChar
 import { ConversionFunnelChart } from "@/components/analytics/ConversionFunnelChart";
 import { HourlyHeatmap } from "@/components/analytics/HourlyHeatmap";
 import { ConversionRateChart } from "@/components/analytics/ConversionRateChart";
+import { ConversionsTimelineChart } from "@/components/analytics/ConversionsTimelineChart";
+import { TopConversionPagesChart } from "@/components/analytics/TopConversionPagesChart";
+import { ConversionTypeDistributionChart } from "@/components/analytics/ConversionTypeDistributionChart";
+import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
@@ -44,6 +48,10 @@ const Analytics = () => {
     pageViewsTimeline,
     topReferrers,
     pagePerformance,
+    conversionsTimeline,
+    topConversionPages,
+    conversionTypeDistribution,
+    conversionHourlyData,
     isLoading 
   } = useAnalytics({
     siteId: siteId!,
@@ -138,7 +146,28 @@ const Analytics = () => {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="conversions" className="mt-6">
+          <TabsContent value="conversions" className="mt-6 space-y-6">
+            <ConversionsTimelineChart 
+              data={conversionsTimeline || []} 
+              isLoading={isLoading}
+            />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <TopConversionPagesChart 
+                data={topConversionPages || []} 
+                isLoading={isLoading}
+              />
+              <ConversionTypeDistributionChart 
+                data={conversionTypeDistribution || []} 
+                isLoading={isLoading}
+              />
+            </div>
+            
+            <ConversionHeatmapChart 
+              data={conversionHourlyData || {}} 
+              isLoading={isLoading}
+            />
+            
             <ConversionsTable 
               conversions={conversions || []} 
               isLoading={isLoading}

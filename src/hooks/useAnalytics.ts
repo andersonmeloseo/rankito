@@ -554,7 +554,87 @@ export const useAnalytics = ({
     enabled: !!siteId,
   });
 
-  const isLoading = 
+  // Conversions timeline (agrupado por data + tipo)
+  const conversionsTimeline = conversions?.reduce((acc: any[], conv: any) => {
+    const dateObj = new Date(conv.created_at);
+    const dateStr = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
+    
+    let existing = acc.find(item => item.date === dateStr);
+    
+    if (!existing) {
+      existing = {
+        date: dateStr,
+        whatsapp_click: 0,
+        phone_click: 0,
+        email_click: 0,
+        form_submit: 0,
+        total: 0,
+      };
+      acc.push(existing);
+    }
+    
+    if (conv.event_type === 'whatsapp_click') existing.whatsapp_click++;
+    else if (conv.event_type === 'phone_click') existing.phone_click++;
+    else if (conv.event_type === 'email_click') existing.email_click++;
+    else if (conv.event_type === 'form_submit') existing.form_submit++;
+    
+    existing.total++;
+    
+    return acc;
+  }, []) || [];
+
+  // Top Conversion Pages
+  const topConversionPages = conversions?.reduce((acc: any[], conv: any) => {
+    const page = conv.page_path || '/';
+    const existing = acc.find(item => item.page === page);
+    
+    if (existing) {
+      existing.conversions += 1;
+    } else {
+      acc.push({ page, conversions: 1 });
+    }
+    
+    return acc;
+  }, [])
+    .sort((a: any, b: any) => b.conversions - a.conversions)
+    .slice(0, 10) || [];
+
+  // Conversion Type Distribution
+  const conversionTypeDistribution = conversions?.reduce((acc: Record<string, number>, conv: any) => {
+    const type = conv.event_type;
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const conversionTypeDistributionArray = conversionTypeDistribution 
+    ? Object.entries(conversionTypeDistribution).map(([type, count]) => {
+        const total = conversions?.length || 1;
+        const typeLabel = type === 'whatsapp_click' ? 'WhatsApp' 
+          : type === 'phone_click' ? 'Telefone'
+          : type === 'email_click' ? 'Email'
+          : type === 'form_submit' ? 'Formulário'
+          : type;
+        
+        return {
+          name: typeLabel,
+          value: count,
+          percentage: ((count / total) * 100).toFixed(1)
+        };
+      })
+    : [];
+
+  // Conversion Hourly Data (usa o hourlyData existente mas adaptado)
+  const conversionHourlyData = conversions?.reduce((acc: Record<string, number>, conv: any) => {
+    const date = new Date(conv.created_at);
+    const hour = date.getHours();
+    const day = date.getDay();
+    const key = `${day}-${hour}`;
+    
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) || {};
+
+  const isLoading =
     metricsLoading || 
     timelineLoading || 
     eventsLoading || 
@@ -580,6 +660,10 @@ export const useAnalytics = ({
     pageViewsTimeline,
     topReferrers,
     pagePerformance,
+    conversionsTimeline,
+    topConversionPages,
+    conversionTypeDistribution: conversionTypeDistributionArray,
+    conversionHourlyData,
     isLoading,
   };
 };
