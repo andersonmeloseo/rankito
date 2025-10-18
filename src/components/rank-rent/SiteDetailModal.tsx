@@ -91,9 +91,11 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
   const generatePixelCode = () => {
     if (!site) return "";
 
+    const trackingUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`;
+
     return `<script>
 (function() {
-  const TRACKING_ENDPOINT = '${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion';
+  const TRACKING_ENDPOINT = '${trackingUrl}';
   const SITE_NAME = '${site.site_name}';
 
   // Detectar telefone na página

@@ -276,6 +276,7 @@ export type Database = {
           site_name: string
           site_url: string
           tracking_pixel_installed: boolean | null
+          tracking_token: string | null
           updated_at: string
           user_id: string
         }
@@ -295,6 +296,7 @@ export type Database = {
           site_name: string
           site_url: string
           tracking_pixel_installed?: boolean | null
+          tracking_token?: string | null
           updated_at?: string
           user_id: string
         }
@@ -314,6 +316,7 @@ export type Database = {
           site_name?: string
           site_url?: string
           tracking_pixel_installed?: boolean | null
+          tracking_token?: string | null
           updated_at?: string
           user_id?: string
         }

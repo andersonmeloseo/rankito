@@ -1,17 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Copy, Check, FileCode } from "lucide-react";
+import { Download, Copy, Check, FileCode, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PluginDownloadCardProps {
   onOpenGuide: () => void;
+  siteId?: string;
+  trackingToken?: string;
 }
 
-export function PluginDownloadCard({ onOpenGuide }: PluginDownloadCardProps) {
+export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken }: PluginDownloadCardProps) {
   const [copied, setCopied] = useState(false);
   
-  const trackingUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion`;
+  const trackingUrl = trackingToken 
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${trackingToken}`
+    : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion`;
 
   const handleDownload = () => {
     // Trigger download of the plugin file
@@ -50,6 +55,16 @@ export function PluginDownloadCard({ onOpenGuide }: PluginDownloadCardProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Warning if no token */}
+        {!trackingToken && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Configure o site primeiro para obter a URL de rastreamento única!
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Download Button */}
         <div className="flex flex-col gap-3">
           <Button onClick={handleDownload} size="lg" className="w-full gap-2">
@@ -63,18 +78,21 @@ export function PluginDownloadCard({ onOpenGuide }: PluginDownloadCardProps) {
 
         {/* Tracking URL */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">URL de Rastreamento:</label>
+          <label className="text-sm font-medium">
+            URL de Rastreamento {trackingToken && <span className="text-success">(Única para este site)</span>}:
+          </label>
           <div className="flex gap-2">
             <input
               type="text"
               value={trackingUrl}
               readOnly
-              className="flex-1 px-3 py-2 text-sm border rounded-md bg-muted/50"
+              className="flex-1 px-3 py-2 text-sm border rounded-md bg-muted/50 font-mono"
             />
             <Button
               variant="outline"
               size="icon"
               onClick={handleCopy}
+              disabled={!trackingToken}
             >
               {copied ? (
                 <Check className="w-4 h-4 text-green-600" />
@@ -84,7 +102,9 @@ export function PluginDownloadCard({ onOpenGuide }: PluginDownloadCardProps) {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Use esta URL na configuração do plugin WordPress
+            {trackingToken 
+              ? "Esta URL é única e segura para este site específico"
+              : "Selecione um site primeiro para obter a URL única"}
           </p>
         </div>
 

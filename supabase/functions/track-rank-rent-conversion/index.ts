@@ -17,6 +17,18 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Extract token from URL
+    const url = new URL(req.url);
+    const token = url.searchParams.get('token');
+
+    if (!token) {
+      console.error('Missing tracking token');
+      return new Response(
+        JSON.stringify({ error: 'Missing tracking token' }), 
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { 
       site_name, 
       page_url, 
@@ -25,35 +37,59 @@ serve(async (req) => {
       metadata 
     } = await req.json();
 
-    console.log('Tracking event:', { site_name, page_url, event_type });
+    console.log('Tracking event:', { token, site_name, page_url, event_type });
 
     // Validate required fields
-    if (!site_name || !page_url || !event_type) {
-      console.error('Missing required fields:', { site_name, page_url, event_type });
+    if (!page_url || !event_type) {
+      console.error('Missing required fields:', { page_url, event_type });
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: site_name, page_url, event_type' }), 
+        JSON.stringify({ error: 'Missing required fields: page_url, event_type' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Find site by site_name
+    // Handle connection test
+    if (event_type === 'test') {
+      // Validate token exists
+      const { data: site, error: siteError } = await supabase
+        .from('rank_rent_sites')
+        .select('id, site_name')
+        .eq('tracking_token', token)
+        .single();
+
+      if (siteError || !site) {
+        console.error('Invalid tracking token:', token);
+        return new Response(
+          JSON.stringify({ error: 'Invalid tracking token' }), 
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Connection test successful for site:', site.site_name);
+      return new Response(
+        JSON.stringify({ success: true, message: 'Connection test successful', site_name: site.site_name }), 
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Find site by tracking token (more secure than site_name)
     const { data: site, error: siteError } = await supabase
       .from('rank_rent_sites')
-      .select('id')
-      .eq('site_name', site_name)
+      .select('id, site_name')
+      .eq('tracking_token', token)
       .single();
 
     if (siteError || !site) {
-      console.error('Site not found:', site_name, siteError);
+      console.error('Invalid tracking token:', token);
       return new Response(
-        JSON.stringify({ error: 'Site not registered in system' }), 
+        JSON.stringify({ error: 'Invalid tracking token' }), 
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Extract page_path from URL
-    const url = new URL(page_url);
-    const page_path = url.pathname;
+    const pageUrl = new URL(page_url);
+    const page_path = pageUrl.pathname;
 
     // Extract IP and User-Agent from headers
     const ip_address = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
