@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
+import { useRole } from "@/contexts/RoleContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -24,8 +25,23 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showAddSite, setShowAddSite] = useState(false);
   const navigate = useNavigate();
-  
+  const { role, isSuperAdmin, isEndClient, isLoading: roleLoading } = useRole();
+
   const { sitesMetrics, summary, isLoading: financialLoading } = useGlobalFinancialMetrics(user?.id || "");
+
+  // Redirecionar baseado em role
+  useEffect(() => {
+    if (!roleLoading && role) {
+      if (isSuperAdmin) {
+        navigate("/super-admin");
+        return;
+      }
+      if (isEndClient) {
+        navigate("/end-client-portal");
+        return;
+      }
+    }
+  }, [role, isSuperAdmin, isEndClient, roleLoading, navigate]);
 
   useEffect(() => {
     // 1. Configurar listener PRIMEIRO

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          company: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          parent_user_id: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          parent_user_id?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          parent_user_id?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       rank_rent_clients: {
         Row: {
           access_token: string | null
@@ -507,6 +540,7 @@ export type Database = {
           contract_start_date: string | null
           contract_status: string | null
           created_at: string
+          created_by_user_id: string
           id: string
           is_rented: boolean | null
           location: string
@@ -514,13 +548,13 @@ export type Database = {
           next_payment_date: string | null
           niche: string
           notes: string | null
+          owner_user_id: string | null
           payment_status: string | null
           site_name: string
           site_url: string
           tracking_pixel_installed: boolean | null
           tracking_token: string | null
           updated_at: string
-          user_id: string
         }
         Insert: {
           auto_renew?: boolean | null
@@ -532,6 +566,7 @@ export type Database = {
           contract_start_date?: string | null
           contract_status?: string | null
           created_at?: string
+          created_by_user_id: string
           id?: string
           is_rented?: boolean | null
           location: string
@@ -539,13 +574,13 @@ export type Database = {
           next_payment_date?: string | null
           niche: string
           notes?: string | null
+          owner_user_id?: string | null
           payment_status?: string | null
           site_name: string
           site_url: string
           tracking_pixel_installed?: boolean | null
           tracking_token?: string | null
           updated_at?: string
-          user_id: string
         }
         Update: {
           auto_renew?: boolean | null
@@ -557,6 +592,7 @@ export type Database = {
           contract_start_date?: string | null
           contract_status?: string | null
           created_at?: string
+          created_by_user_id?: string
           id?: string
           is_rented?: boolean | null
           location?: string
@@ -564,13 +600,13 @@ export type Database = {
           next_payment_date?: string | null
           niche?: string
           notes?: string | null
+          owner_user_id?: string | null
           payment_status?: string | null
           site_name?: string
           site_url?: string
           tracking_pixel_installed?: boolean | null
           tracking_token?: string | null
           updated_at?: string
-          user_id?: string
         }
         Relationships: [
           {
@@ -588,6 +624,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -911,12 +968,28 @@ export type Database = {
       }
     }
     Functions: {
+      get_parent_user_id: {
+        Args: { _user_id: string }
+        Returns: string
+      }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       update_contract_statuses: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }
     Enums: {
+      app_role: "super_admin" | "client" | "end_client"
       event_type:
         | "page_view"
         | "phone_click"
@@ -1051,6 +1124,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["super_admin", "client", "end_client"],
       event_type: [
         "page_view",
         "phone_click",

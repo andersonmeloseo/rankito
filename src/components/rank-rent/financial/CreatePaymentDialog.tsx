@@ -30,7 +30,7 @@ export const CreatePaymentDialog = ({ userId, open, onOpenChange }: CreatePaymen
       const { data, error } = await supabase
         .from("rank_rent_sites")
         .select("id, site_name, monthly_rent_value, client_id, rank_rent_clients(name)")
-        .eq("user_id", userId)
+        .eq("owner_user_id", userId)
         .eq("is_rented", true)
         .order("site_name");
 

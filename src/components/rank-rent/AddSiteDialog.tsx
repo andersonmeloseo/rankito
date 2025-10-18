@@ -33,7 +33,8 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
 
     try {
       const { error } = await supabase.from("rank_rent_sites").insert({
-        user_id: userId,
+        created_by_user_id: userId,
+        owner_user_id: userId,
         site_name: formData.site_name,
         site_url: formData.site_url,
         niche: formData.niche,

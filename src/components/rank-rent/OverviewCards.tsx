@@ -14,7 +14,7 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
       const { data: sites, error } = await supabase
         .from("rank_rent_sites")
         .select("*")
-        .eq("user_id", userId);
+        .eq("owner_user_id", userId);
 
       if (error) throw error;
 

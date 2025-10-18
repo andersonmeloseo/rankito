@@ -38,7 +38,7 @@ export const useGlobalFinancialMetrics = (userId: string) => {
       const { data: sites, error: sitesError } = await supabase
         .from("rank_rent_sites")
         .select("*")
-        .eq("user_id", userId);
+        .eq("owner_user_id", userId);
 
       if (sitesError) throw sitesError;
       if (!sites || sites.length === 0) return [];
