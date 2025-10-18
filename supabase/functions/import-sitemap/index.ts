@@ -7,6 +7,71 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Process a single sitemap or sitemap index recursively
+async function processSitemap(
+  sitemapUrl: string, 
+  parser: DOMParser,
+  depth: number = 0
+): Promise<string[]> {
+  // Prevent infinite recursion
+  if (depth > 2) {
+    console.warn(`Max depth reached for: ${sitemapUrl}`);
+    return [];
+  }
+
+  try {
+    console.log(`Fetching sitemap (depth ${depth}): ${sitemapUrl}`);
+    const response = await fetch(sitemapUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 RankRentBot/1.0' }
+    });
+    
+    if (!response.ok) {
+      console.error(`Failed to fetch ${sitemapUrl}: ${response.statusText}`);
+      return [];
+    }
+
+    const xml = await response.text();
+    const doc = parser.parseFromString(xml, "text/html"); // Use text/html for better compatibility
+    
+    if (!doc) {
+      console.error(`Failed to parse sitemap: ${sitemapUrl}`);
+      return [];
+    }
+
+    // Check if it's a sitemap index
+    const sitemapElements = doc.querySelectorAll('sitemapindex > sitemap > loc, sitemapindex sitemap loc');
+    
+    if (sitemapElements.length > 0) {
+      // It's a sitemap index - process each child sitemap
+      console.log(`Found sitemap index with ${sitemapElements.length} child sitemaps`);
+      const allUrls: string[] = [];
+      
+      for (const sitemapEl of Array.from(sitemapElements)) {
+        const childSitemapUrl = sitemapEl.textContent?.trim();
+        if (childSitemapUrl) {
+          const childUrls = await processSitemap(childSitemapUrl, parser, depth + 1);
+          allUrls.push(...childUrls);
+        }
+      }
+      
+      console.log(`Sitemap index processed: ${allUrls.length} total URLs found`);
+      return allUrls;
+    } else {
+      // It's a regular sitemap - extract URLs
+      const urlElements = doc.querySelectorAll('url > loc, urlset url loc');
+      const urls = Array.from(urlElements)
+        .map((el) => el.textContent?.trim())
+        .filter(Boolean) as string[];
+      
+      console.log(`Regular sitemap processed: ${urls.length} URLs found`);
+      return urls;
+    }
+  } catch (error) {
+    console.error(`Error processing sitemap ${sitemapUrl}:`, error);
+    return [];
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,25 +93,11 @@ serve(async (req) => {
 
     console.log('Importing sitemap from:', sitemap_url, 'for site:', site_id);
 
-    // Fetch sitemap XML
-    const sitemapResponse = await fetch(sitemap_url);
-    if (!sitemapResponse.ok) {
-      throw new Error(`Failed to fetch sitemap: ${sitemapResponse.statusText}`);
-    }
-
-    const sitemapXml = await sitemapResponse.text();
+    // Process sitemap (handles both regular sitemaps and sitemap indexes)
     const parser = new DOMParser();
-    const doc = parser.parseFromString(sitemapXml, "text/xml");
-    
-    if (!doc) {
-      throw new Error('Failed to parse sitemap XML');
-    }
+    const urls = await processSitemap(sitemap_url, parser);
 
-    // Extract all URLs from sitemap
-    const urlElements = doc.querySelectorAll('url > loc');
-    const urls = Array.from(urlElements).map((el) => el.textContent?.trim()).filter(Boolean);
-
-    console.log(`Found ${urls.length} URLs in sitemap`);
+    console.log(`Total URLs found: ${urls.length}`);
 
     let newPages = 0;
     let updatedPages = 0;
