@@ -47,22 +47,10 @@ export const SitesList = ({ userId }: SitesListProps) => {
   const { data: sites, isLoading } = useQuery({
     queryKey: ["rank-rent-site-metrics", userId],
     queryFn: async () => {
-      console.log("🔍 [SitesList] Fetching sites for userId:", userId);
-      
-      const authUser = await supabase.auth.getUser();
-      console.log("🔍 [SitesList] Auth user:", authUser.data.user?.id);
-      
       const { data, error } = await supabase
         .from("rank_rent_site_metrics")
         .select("*")
         .order("created_at", { ascending: false });
-
-      console.log("🔍 [SitesList] Query result - sites count:", data?.length || 0);
-      console.log("🔍 [SitesList] Query error:", error);
-      if (data && data.length > 0) {
-        console.log("🔍 [SitesList] First site:", data[0]);
-        console.log("🔍 [SitesList] All user_ids:", data.map(s => s.user_id));
-      }
 
       if (error) throw error;
       return data;
