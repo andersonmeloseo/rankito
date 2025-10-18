@@ -41,22 +41,6 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
     enabled: !!siteId && open,
   });
 
-  const { data: recentConversions } = useQuery({
-    queryKey: ["site-conversions", siteId],
-    queryFn: async () => {
-      if (!siteId) return [];
-      const { data, error } = await supabase
-        .from("rank_rent_conversions")
-        .select("*")
-        .eq("site_id", siteId)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!siteId && open,
-  });
 
   const { data: pages, isLoading: loadingPages } = useQuery({
     queryKey: ["site-pages", siteId],
@@ -198,11 +182,10 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
         </DialogHeader>
 
         <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="info">Informações</TabsTrigger>
             <TabsTrigger value="pixel">Código Pixel</TabsTrigger>
             <TabsTrigger value="pages">Páginas</TabsTrigger>
-            <TabsTrigger value="conversions">Conversões</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-4">
@@ -412,33 +395,6 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
             </Card>
           </TabsContent>
 
-          <TabsContent value="conversions">
-            <Card>
-              <CardHeader>
-                <CardTitle>Últimas 10 Conversões</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {!recentConversions || recentConversions.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">Nenhuma conversão registrada ainda.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {recentConversions.map((conv) => (
-                      <div key={conv.id} className="flex justify-between items-center p-3 bg-muted/50 rounded">
-                        <div>
-                          <Badge className="mb-1">{conv.event_type}</Badge>
-                          <p className="text-sm font-medium">{conv.page_path}</p>
-                          {conv.cta_text && <p className="text-xs text-muted-foreground">"{conv.cta_text}"</p>}
-                        </div>
-                        <div className="text-right text-xs text-muted-foreground">
-                          {new Date(conv.created_at).toLocaleString("pt-BR")}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </DialogContent>
 
