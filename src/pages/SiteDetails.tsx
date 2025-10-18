@@ -44,6 +44,7 @@ const SiteDetails = () => {
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [fetchingTitles, setFetchingTitles] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   
   // Debounce search term
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -387,6 +388,58 @@ const SiteDetails = () => {
 </script>`;
     navigator.clipboard.writeText(code);
     toast({ title: "Código copiado!", description: "Cole no seu site antes do </body>" });
+  };
+
+  const testConnection = async () => {
+    if (!site?.tracking_token) {
+      toast({
+        title: "❌ Erro",
+        description: "Token de rastreamento não encontrado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTesting(true);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_type: 'test',
+            page_url: window.location.href,
+            site_name: site.site_name,
+          })
+        }
+      );
+      
+      if (response.ok) {
+        toast({ 
+          title: "✅ Conexão testada com sucesso!",
+          description: "O plugin está funcionando corretamente"
+        });
+        queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+      } else {
+        const errorData = await response.json();
+        toast({ 
+          title: "❌ Erro no teste", 
+          description: errorData.error || "Verifique o token e tente novamente",
+          variant: "destructive" 
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao testar conexão:", error);
+      toast({ 
+        title: "❌ Falha na conexão", 
+        description: "Não foi possível conectar com o servidor",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   if (siteLoading) {
@@ -1076,14 +1129,35 @@ const SiteDetails = () => {
             {site.tracking_pixel_installed ? (
               <Card className="mb-6 border-green-200 bg-green-50/50">
                 <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
-                      <Activity className="w-6 h-6 text-white" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
+                        <Activity className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-green-900">Plugin WordPress Conectado</p>
+                        <p className="text-sm text-green-700">O sistema está rastreando conversões automaticamente</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-green-900">Plugin WordPress Conectado</p>
-                      <p className="text-sm text-green-700">O sistema está rastreando conversões automaticamente</p>
-                    </div>
+                    <Button
+                      onClick={testConnection}
+                      disabled={isTesting}
+                      variant="outline"
+                      size="sm"
+                      className="border-green-600 text-green-700 hover:bg-green-100"
+                    >
+                      {isTesting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Testando...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Testar Conexão
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -1138,10 +1212,29 @@ const SiteDetails = () => {
                   <div className="flex gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">3</div>
                     <div className="flex-1">
-                      <p className="font-medium">Teste no WordPress</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Clique em "Test Connection"
+                      <p className="font-medium">Teste a conexão</p>
+                      <p className="text-sm text-muted-foreground mt-1 mb-3">
+                        Após configurar no WordPress, teste aqui se está funcionando
                       </p>
+                      <Button
+                        onClick={testConnection}
+                        disabled={isTesting}
+                        variant="outline"
+                        size="sm"
+                        className="border-orange-600 text-orange-700 hover:bg-orange-100"
+                      >
+                        {isTesting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Testando conexão...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Testar Conexão Agora
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
