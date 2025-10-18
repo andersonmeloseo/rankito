@@ -1050,9 +1050,9 @@ const SiteDetails = () => {
             
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="overview">📊 Visão Geral</TabsTrigger>
-                <TabsTrigger value="conversions">🎯 Conversões</TabsTrigger>
-                <TabsTrigger value="pageviews">👁️ Page Views</TabsTrigger>
+                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="conversions">Conversões</TabsTrigger>
+                <TabsTrigger value="pageviews">Page Views</TabsTrigger>
               </TabsList>
               
               <TabsContent value="overview" className="space-y-6 mt-6">
