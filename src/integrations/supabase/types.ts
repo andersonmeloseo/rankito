@@ -17,33 +17,51 @@ export type Database = {
       profiles: {
         Row: {
           company: string | null
+          country_code: string | null
           created_at: string | null
           email: string
           full_name: string | null
           id: string
+          is_active: boolean | null
+          last_activity_at: string | null
+          onboarding_completed: boolean | null
           parent_user_id: string | null
           phone: string | null
           updated_at: string | null
+          website: string | null
+          whatsapp: string | null
         }
         Insert: {
           company?: string | null
+          country_code?: string | null
           created_at?: string | null
           email: string
           full_name?: string | null
           id: string
+          is_active?: boolean | null
+          last_activity_at?: string | null
+          onboarding_completed?: boolean | null
           parent_user_id?: string | null
           phone?: string | null
           updated_at?: string | null
+          website?: string | null
+          whatsapp?: string | null
         }
         Update: {
           company?: string | null
+          country_code?: string | null
           created_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          is_active?: boolean | null
+          last_activity_at?: string | null
+          onboarding_completed?: boolean | null
           parent_user_id?: string | null
           phone?: string | null
           updated_at?: string | null
+          website?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
