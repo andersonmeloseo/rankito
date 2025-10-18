@@ -3,16 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Settings } from "lucide-react";
-import { useState } from "react";
-import { SiteDetailModal } from "./SiteDetailModal";
+import { ExternalLink, FolderOpen } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface SitesListProps {
   userId: string;
 }
 
 export const SitesList = ({ userId }: SitesListProps) => {
-  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const { data: sites, isLoading } = useQuery({
     queryKey: ["rank-rent-sites", userId],
@@ -124,11 +123,11 @@ export const SitesList = ({ userId }: SitesListProps) => {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setSelectedSiteId(site.site_id)}
+                        onClick={() => navigate(`/dashboard/site/${site.site_id}`)}
                         className="gap-1"
                       >
-                        <Settings className="w-4 h-4" />
-                        Detalhes
+                        <FolderOpen className="w-4 h-4" />
+                        Abrir Projeto
                       </Button>
                     </td>
                   </tr>
@@ -138,12 +137,6 @@ export const SitesList = ({ userId }: SitesListProps) => {
           </div>
         </CardContent>
       </Card>
-
-      <SiteDetailModal
-        siteId={selectedSiteId}
-        open={!!selectedSiteId}
-        onOpenChange={(open) => !open && setSelectedSiteId(null)}
-      />
     </>
   );
 };
