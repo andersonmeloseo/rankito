@@ -13,6 +13,8 @@ import { ClientsList } from "@/components/rank-rent/ClientsList";
 import { GlobalFinancialOverview } from "@/components/rank-rent/financial/GlobalFinancialOverview";
 import { GlobalFinancialTable } from "@/components/rank-rent/financial/GlobalFinancialTable";
 import { GlobalCostSettings } from "@/components/rank-rent/financial/GlobalCostSettings";
+import { PaymentAlerts } from "@/components/rank-rent/financial/PaymentAlerts";
+import { PaymentsList } from "@/components/rank-rent/financial/PaymentsList";
 import { useGlobalFinancialMetrics } from "@/hooks/useGlobalFinancialMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -129,6 +131,8 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="financial" className="space-y-6">
+            <PaymentAlerts userId={user.id} />
+            
             {financialLoading ? (
               <div className="space-y-4">
                 {[...Array(6)].map((_, i) => (
@@ -136,11 +140,31 @@ const Dashboard = () => {
                 ))}
               </div>
             ) : (
-              <>
-                <GlobalFinancialOverview summary={summary} />
-                <GlobalFinancialTable sitesMetrics={sitesMetrics} />
-                <GlobalCostSettings userId={user.id} />
-              </>
+              <Tabs defaultValue="overview" className="space-y-6">
+                <TabsList className="w-full max-w-2xl">
+                  <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                  <TabsTrigger value="payments">Pagamentos</TabsTrigger>
+                  <TabsTrigger value="projects">Projetos</TabsTrigger>
+                  <TabsTrigger value="settings">Configurações</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="space-y-6">
+                  <GlobalFinancialOverview summary={summary} userId={user.id} />
+                  <GlobalFinancialTable sitesMetrics={sitesMetrics} />
+                </TabsContent>
+
+                <TabsContent value="payments">
+                  <PaymentsList userId={user.id} />
+                </TabsContent>
+
+                <TabsContent value="projects">
+                  <GlobalFinancialTable sitesMetrics={sitesMetrics} />
+                </TabsContent>
+
+                <TabsContent value="settings">
+                  <GlobalCostSettings userId={user.id} />
+                </TabsContent>
+              </Tabs>
             )}
           </TabsContent>
 

@@ -1,12 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, DollarSign, AlertCircle, Globe, BarChart3, TrendingDown } from "lucide-react";
+import { TrendingUp, DollarSign, AlertCircle, Globe, CheckCircle2, Calendar } from "lucide-react";
 import { GlobalFinancialSummary } from "@/hooks/useGlobalFinancialMetrics";
+import { usePayments } from "@/hooks/usePayments";
 
 interface GlobalFinancialOverviewProps {
   summary: GlobalFinancialSummary;
+  userId: string;
 }
 
-export const GlobalFinancialOverview = ({ summary }: GlobalFinancialOverviewProps) => {
+export const GlobalFinancialOverview = ({ summary, userId }: GlobalFinancialOverviewProps) => {
+  const { summary: paymentsSummary } = usePayments(userId);
+  
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -14,54 +18,50 @@ export const GlobalFinancialOverview = ({ summary }: GlobalFinancialOverviewProp
     }).format(value);
   };
 
-  const rentabilityRate = summary.totalSitesWithMetrics > 0 
-    ? (summary.profitableSites / summary.totalSitesWithMetrics) * 100 
-    : 0;
-
   const sitesAwaitingData = summary.totalSitesWithMetrics - summary.profitableSites - summary.unprofitableSites;
 
   const cards = [
     {
-      title: "Receita Total Mensal",
+      title: "Receita Mensal Total",
       value: formatCurrency(summary.totalRevenue),
       icon: TrendingUp,
-      description: "Soma de todos os projetos",
+      description: `${summary.totalSitesWithMetrics} projeto${summary.totalSitesWithMetrics !== 1 ? 's' : ''} ativo${summary.totalSitesWithMetrics !== 1 ? 's' : ''}`,
       color: "text-green-600",
     },
     {
-      title: "Lucro Líquido Mensal",
-      value: formatCurrency(summary.totalProfit),
-      icon: summary.totalProfit > 0 ? DollarSign : TrendingDown,
-      description: `Margem: ${summary.avgProfitMargin.toFixed(1)}%`,
-      color: summary.totalProfit > 0 ? "text-green-600" : "text-red-600",
+      title: "Pagamentos Recebidos",
+      value: formatCurrency(paymentsSummary.totalPaid),
+      icon: CheckCircle2,
+      description: `${paymentsSummary.paidCount} pagamento${paymentsSummary.paidCount !== 1 ? 's' : ''} confirmado${paymentsSummary.paidCount !== 1 ? 's' : ''}`,
+      color: "text-green-600",
     },
     {
-      title: "ROI Médio",
-      value: `${summary.avgROI.toFixed(1)}%`,
-      icon: TrendingUp,
-      description: `${summary.profitableSites} projetos lucrativos`,
-      color: summary.avgROI > 0 ? "text-green-600" : "text-red-600",
+      title: "Pagamentos Pendentes",
+      value: formatCurrency(paymentsSummary.totalPending),
+      icon: Calendar,
+      description: `${paymentsSummary.pendingCount} aguardando pagamento`,
+      color: "text-yellow-600",
     },
     {
-      title: "Custos Totais",
-      value: formatCurrency(summary.totalCosts),
+      title: "Pagamentos Atrasados",
+      value: formatCurrency(paymentsSummary.totalOverdue),
       icon: AlertCircle,
-      description: `${summary.totalConversions} conversões`,
-      color: "text-orange-600",
+      description: `${paymentsSummary.overdueCount} pagamento${paymentsSummary.overdueCount !== 1 ? 's' : ''} em atraso`,
+      color: "text-red-600",
+    },
+    {
+      title: "Lucro Mensal",
+      value: formatCurrency(summary.totalProfit),
+      icon: DollarSign,
+      description: `ROI médio: ${summary.avgROI.toFixed(1)}%`,
+      color: summary.totalProfit >= 0 ? "text-green-600" : "text-red-600",
     },
     {
       title: "Projetos Ativos",
       value: summary.totalSitesWithMetrics.toString(),
       icon: Globe,
-      description: sitesAwaitingData > 0 ? `${sitesAwaitingData} aguardando dados` : `${summary.unprofitableSites} precisam atenção`,
+      description: `${summary.profitableSites} lucrativo${summary.profitableSites !== 1 ? 's' : ''}${sitesAwaitingData > 0 ? `, ${sitesAwaitingData} aguardando dados` : ''}`,
       color: "text-blue-600",
-    },
-    {
-      title: "Taxa de Rentabilidade",
-      value: `${rentabilityRate.toFixed(0)}%`,
-      icon: BarChart3,
-      description: `${summary.profitableSites}/${summary.totalSitesWithMetrics} lucrativos`,
-      color: "text-purple-600",
     },
   ];
 

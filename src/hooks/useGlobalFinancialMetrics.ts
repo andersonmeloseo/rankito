@@ -66,16 +66,21 @@ export const useGlobalFinancialMetrics = (userId: string) => {
         const siteMetrics = metrics?.filter(m => m.site_id === site.id) || [];
         const siteConfig = configs?.find(c => c.site_id === site.id);
         
-        const monthly_revenue = siteMetrics.reduce((sum, m) => sum + Number(m.monthly_revenue || 0), 0);
+        // CORREÇÃO: Receita vem do monthly_rent_value do site quando está alugado
+        const monthly_revenue = site.is_rented ? Number(site.monthly_rent_value || 0) : 0;
+        
         const monthly_costs = siteMetrics.reduce((sum, m) => 
           sum + Number(m.proportional_fixed_cost || 0) + Number(m.monthly_conversion_costs || 0), 0
         );
-        const monthly_profit = siteMetrics.reduce((sum, m) => sum + Number(m.monthly_profit || 0), 0);
+        
         const total_conversions = siteMetrics.reduce((sum, m) => sum + Number(m.total_conversions || 0), 0);
         const total_pages = siteMetrics.length;
 
         // Se não tem métricas mas tem configuração, calcular custo fixo
         const effectiveCosts = monthly_costs > 0 ? monthly_costs : Number(siteConfig?.monthly_fixed_costs || 0);
+        
+        // Lucro = Receita - Custos
+        const monthly_profit = monthly_revenue - effectiveCosts;
 
         siteMap.set(site.id, {
           site_id: site.id,
