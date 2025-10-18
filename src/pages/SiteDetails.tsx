@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Activity, Settings } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -54,7 +54,6 @@ const SiteDetails = () => {
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [fetchingTitles, setFetchingTitles] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
   
   // Analytics States
   const [analyticsPeriod, setAnalyticsPeriod] = useState("7");
@@ -387,88 +386,6 @@ const SiteDetails = () => {
     return sortAscending ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
   };
 
-  const copyTrackingCode = () => {
-    const code = `<script>
-(function() {
-  var siteId = '${siteId}';
-  var apiUrl = '${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion';
-  
-  document.addEventListener('click', function(e) {
-    var target = e.target.closest('a[href^="tel:"], button[onclick*="tel:"]');
-    if (target) {
-      fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          site_id: siteId,
-          page_url: window.location.href,
-          page_path: window.location.pathname,
-          event_type: 'phone_click',
-          cta_text: target.textContent || target.innerText,
-          referrer: document.referrer,
-          user_agent: navigator.userAgent
-        })
-      });
-    }
-  });
-})();
-</script>`;
-    navigator.clipboard.writeText(code);
-    toast({ title: "Código copiado!", description: "Cole no seu site antes do </body>" });
-  };
-
-  const testConnection = async () => {
-    if (!site?.tracking_token) {
-      toast({
-        title: "❌ Erro",
-        description: "Token de rastreamento não encontrado",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsTesting(true);
-    
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event_type: 'test',
-            page_url: window.location.href,
-            site_name: site.site_name,
-          })
-        }
-      );
-      
-      if (response.ok) {
-        toast({ 
-          title: "✅ Conexão testada com sucesso!",
-          description: "O plugin está funcionando corretamente"
-        });
-        queryClient.invalidateQueries({ queryKey: ['site', siteId] });
-      } else {
-        const errorData = await response.json();
-        toast({ 
-          title: "❌ Erro no teste", 
-          description: errorData.error || "Verifique o token e tente novamente",
-          variant: "destructive" 
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao testar conexão:", error);
-      toast({ 
-        title: "❌ Falha na conexão", 
-        description: "Não foi possível conectar com o servidor",
-        variant: "destructive" 
-      });
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
   if (siteLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
@@ -627,13 +544,12 @@ const SiteDetails = () => {
 
         {/* Tabs Section */}
         <Tabs defaultValue="pages" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 max-w-6xl">
+          <TabsList className="grid w-full grid-cols-6 max-w-5xl">
             <TabsTrigger value="pages">Páginas</TabsTrigger>
             <TabsTrigger value="analytics">Análise</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Analytics Avançado</TabsTrigger>
             <TabsTrigger value="client">Cliente</TabsTrigger>
-            <TabsTrigger value="plugin">Plugin</TabsTrigger>
-            <TabsTrigger value="settings">Pixel</TabsTrigger>
+            <TabsTrigger value="plugin">Plugin WordPress</TabsTrigger>
             <TabsTrigger value="conversions">Conversões</TabsTrigger>
           </TabsList>
 
@@ -1193,186 +1109,9 @@ const SiteDetails = () => {
               onOpenGuide={() => setShowPluginGuide(true)}
               siteId={siteId}
               trackingToken={site.tracking_token}
+              trackingPixelInstalled={site.tracking_pixel_installed}
+              siteName={site.site_name}
             />
-          </TabsContent>
-
-          {/* Pixel Tab */}
-          <TabsContent value="settings">
-            {/* Status Card */}
-            {site.tracking_pixel_installed ? (
-              <Card className="mb-6 border-green-200 bg-green-50/50">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
-                        <Activity className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-green-900">Plugin WordPress Conectado</p>
-                        <p className="text-sm text-green-700">O sistema está rastreando conversões automaticamente</p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={testConnection}
-                      disabled={isTesting}
-                      variant="outline"
-                      size="sm"
-                      className="border-green-600 text-green-700 hover:bg-green-100"
-                    >
-                      {isTesting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Testando...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Testar Conexão
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="mb-6 border-orange-200 bg-orange-50/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-orange-900">
-                    <Settings className="w-5 h-5" />
-                    Configure o Plugin WordPress
-                  </CardTitle>
-                  <CardDescription>
-                    Siga os 3 passos abaixo para conectar
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Passo 1 */}
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">1</div>
-                    <div className="flex-1">
-                      <p className="font-medium">Copie sua URL de rastreamento</p>
-                      <div className="mt-2 flex gap-2">
-                        <Input 
-                          value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`}
-                          readOnly
-                          className="font-mono text-sm"
-                        />
-                        <Button 
-                          size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`);
-                            toast({ title: "✅ URL copiada!" });
-                          }}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Passo 2 */}
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">2</div>
-                    <div className="flex-1">
-                      <p className="font-medium">Cole no WordPress</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Settings → Rank & Rent → Campo "Tracking URL"
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Passo 3 */}
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">3</div>
-                    <div className="flex-1">
-                      <p className="font-medium">Teste a conexão</p>
-                      <p className="text-sm text-muted-foreground mt-1 mb-3">
-                        Após configurar no WordPress, teste aqui se está funcionando
-                      </p>
-                      <Button
-                        onClick={testConnection}
-                        disabled={isTesting}
-                        variant="outline"
-                        size="sm"
-                        className="border-orange-600 text-orange-700 hover:bg-orange-100"
-                      >
-                        {isTesting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Testando conexão...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Testar Conexão Agora
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Código de Tracking (Pixel)</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Cole este código antes da tag <code className="bg-muted px-2 py-1 rounded">&lt;/body&gt;</code> em todas as
-                    páginas do seu site.
-                  </p>
-                  <div className="relative">
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs">
-                      <code>{`<script>
-(function() {
-  var siteId = '${siteId}';
-  var apiUrl = '${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion';
-  
-  document.addEventListener('click', function(e) {
-    var target = e.target.closest('a[href^="tel:"], button[onclick*="tel:"]');
-    if (target) {
-      fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          site_id: siteId,
-          page_url: window.location.href,
-          page_path: window.location.pathname,
-          event_type: 'phone_click',
-          cta_text: target.textContent || target.innerText,
-          referrer: document.referrer,
-          user_agent: navigator.userAgent
-        })
-      });
-    }
-  });
-})();
-</script>`}</code>
-                    </pre>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="absolute top-2 right-2 gap-2"
-                      onClick={copyTrackingCode}
-                    >
-                      <Copy className="w-4 h-4" />
-                      Copiar
-                    </Button>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-foreground mb-2">Status da Instalação</h3>
-                  {site.tracking_pixel_installed ? (
-                    <Badge className="bg-success text-success-foreground">Instalado</Badge>
-                  ) : (
-                    <Badge variant="outline">Não instalado</Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Conversões Tab */}

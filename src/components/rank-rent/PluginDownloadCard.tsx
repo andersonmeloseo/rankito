@@ -1,22 +1,70 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Copy, Check, FileCode, AlertCircle } from "lucide-react";
+import { Download, Copy, Check, FileCode, AlertCircle, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PluginDownloadCardProps {
   onOpenGuide: () => void;
   siteId?: string;
   trackingToken?: string;
+  trackingPixelInstalled?: boolean;
+  siteName?: string;
 }
 
-export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken }: PluginDownloadCardProps) {
+export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackingPixelInstalled, siteName }: PluginDownloadCardProps) {
   const [copied, setCopied] = useState(false);
+  const [testing, setTesting] = useState(false);
   
   const trackingUrl = trackingToken 
     ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${trackingToken}`
     : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion`;
+
+  const handleTestConnection = async () => {
+    if (!trackingToken || !siteName) {
+      toast({
+        title: "Erro",
+        description: "Token de rastreamento ou nome do site não encontrado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTesting(true);
+    try {
+      const response = await fetch(trackingUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          site_name: siteName,
+          page_url: window.location.origin,
+          event_type: "test",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao testar conexão");
+      }
+
+      toast({
+        title: "Conexão bem-sucedida!",
+        description: "O plugin está configurado corretamente.",
+      });
+    } catch (error) {
+      console.error("Erro ao testar conexão:", error);
+      toast({
+        title: "Erro na conexão",
+        description: "Verifique se o plugin está instalado e configurado corretamente no WordPress.",
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(false);
+    }
+  };
 
   const handleDownload = () => {
     // Trigger download of the plugin file
@@ -55,6 +103,42 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken }: Plugi
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Connection Status Card */}
+        <Card className={trackingPixelInstalled ? "border-green-500/50 bg-green-500/5" : "border-yellow-500/50 bg-yellow-500/5"}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              {trackingPixelInstalled ? (
+                <>
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="text-green-600">Conectado</span>
+                </>
+              ) : (
+                <>
+                  <XCircle className="w-5 h-5 text-yellow-600" />
+                  <span className="text-yellow-600">Aguardando Conexão</span>
+                </>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {trackingPixelInstalled 
+                ? "O plugin WordPress está instalado e funcionando corretamente." 
+                : "Instale o plugin no WordPress e configure a URL de rastreamento."}
+            </p>
+            <Button
+              onClick={handleTestConnection}
+              disabled={!trackingToken || testing}
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${testing ? 'animate-spin' : ''}`} />
+              {testing ? 'Testando...' : 'Testar Conexão'}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Warning if no token */}
         {!trackingToken && (
           <Alert variant="destructive">
