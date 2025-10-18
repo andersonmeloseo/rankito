@@ -29,10 +29,27 @@ export const useAnalytics = ({
     }
     
     const days = parseInt(period);
-    const endDate = endOfDay(new Date()).toISOString();
-    const startDate = startOfDay(subDays(new Date(), days)).toISOString();
+    const now = new Date();
     
-    return { startDate, endDate };
+    // Criar datas diretamente em UTC
+    const endDateUTC = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      23, 59, 59, 999
+    ));
+    
+    const startDateUTC = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - days,
+      0, 0, 0, 0
+    ));
+    
+    return {
+      startDate: startDateUTC.toISOString(),
+      endDate: endDateUTC.toISOString(),
+    };
   };
 
   const { startDate, endDate } = getDatesFromPeriod();
@@ -43,10 +60,25 @@ export const useAnalytics = ({
     const currentEnd = new Date(endDate);
     const diffDays = Math.ceil((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24));
     
-    const previousEnd = startOfDay(subDays(currentStart, 1)).toISOString();
-    const previousStart = startOfDay(subDays(currentStart, diffDays)).toISOString();
+    // Calcular diretamente em UTC
+    const previousEndUTC = new Date(Date.UTC(
+      currentStart.getUTCFullYear(),
+      currentStart.getUTCMonth(),
+      currentStart.getUTCDate() - 1,
+      23, 59, 59, 999
+    ));
     
-    return { previousStart, previousEnd };
+    const previousStartUTC = new Date(Date.UTC(
+      currentStart.getUTCFullYear(),
+      currentStart.getUTCMonth(),
+      currentStart.getUTCDate() - diffDays,
+      0, 0, 0, 0
+    ));
+    
+    return {
+      previousEnd: previousEndUTC.toISOString(),
+      previousStart: previousStartUTC.toISOString()
+    };
   };
 
   const { previousStart, previousEnd } = getPreviousPeriodDates();
@@ -233,34 +265,6 @@ export const useAnalytics = ({
   const { data: conversions, isLoading: conversionsLoading, dataUpdatedAt: conversionsUpdatedAt } = useQuery({
     queryKey: ["analytics-conversions", siteId, startDate, endDate, eventType, device],
     queryFn: async () => {
-      // 🔍 Debug detalhado de parâmetros de query
-      console.log('🔍 Query Params (Conversions):', {
-        siteId,
-        startDate,
-        endDate,
-        startDateLocal: new Date(startDate).toString(),
-        endDateLocal: new Date(endDate).toString(),
-        nowLocal: new Date().toString(),
-        nowUTC: new Date().toISOString(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      });
-
-      // 🧪 Query de diagnóstico sem filtro de data (temporária)
-      const { data: allConversionsTest, error: testError } = await supabase
-        .from("rank_rent_conversions")
-        .select("*")
-        .eq("site_id", siteId)
-        .neq("event_type", "page_view")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      console.log('🧪 Teste sem filtro de data:', {
-        total: allConversionsTest?.length || 0,
-        latestConversion: allConversionsTest?.[0]?.created_at,
-        types: allConversionsTest?.map(d => d.event_type),
-        error: testError
-      });
-
       let query = supabase
         .from("rank_rent_conversions")
         .select("*")
