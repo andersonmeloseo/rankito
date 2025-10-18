@@ -274,6 +274,7 @@ export type Database = {
       rank_rent_sites: {
         Row: {
           client_email: string | null
+          client_id: string | null
           client_name: string | null
           client_phone: string | null
           contract_end_date: string | null
@@ -294,6 +295,7 @@ export type Database = {
         }
         Insert: {
           client_email?: string | null
+          client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
           contract_end_date?: string | null
@@ -314,6 +316,7 @@ export type Database = {
         }
         Update: {
           client_email?: string | null
+          client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
           contract_end_date?: string | null
@@ -332,7 +335,22 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_sites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_client_metrics"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_sites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

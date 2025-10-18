@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, FolderOpen, Pencil } from "lucide-react";
+import { ExternalLink, FolderOpen, Pencil, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EditSiteDialog } from "./EditSiteDialog";
 
@@ -18,13 +18,16 @@ export const SitesList = ({ userId }: SitesListProps) => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const { data: sites, isLoading } = useQuery({
-    queryKey: ["rank-rent-sites", userId],
+    queryKey: ["rank-rent-sites-with-clients", userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("rank_rent_metrics")
-        .select("*")
+        .from("rank_rent_sites")
+        .select(`
+          *,
+          client:rank_rent_clients(id, name)
+        `)
         .eq("user_id", userId)
-        .order("total_conversions", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data;
@@ -40,6 +43,7 @@ export const SitesList = ({ userId }: SitesListProps) => {
         .from("rank_rent_sites")
         .select("*")
         .eq("id", editingSiteId)
+        .eq("user_id", userId)
         .single();
       if (error) throw error;
       return data;
@@ -94,9 +98,7 @@ export const SitesList = ({ userId }: SitesListProps) => {
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Site</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Nicho</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Localização</th>
-                  <th className="text-right p-3 text-sm font-medium text-muted-foreground">Page Views</th>
-                  <th className="text-right p-3 text-sm font-medium text-muted-foreground">Conversões</th>
-                  <th className="text-right p-3 text-sm font-medium text-muted-foreground">Taxa Conv.</th>
+                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Cliente</th>
                   <th className="text-right p-3 text-sm font-medium text-muted-foreground">Aluguel/mês</th>
                   <th className="text-center p-3 text-sm font-medium text-muted-foreground">Status</th>
                   <th className="text-center p-3 text-sm font-medium text-muted-foreground">Ações</th>
@@ -104,7 +106,7 @@ export const SitesList = ({ userId }: SitesListProps) => {
               </thead>
               <tbody>
                 {sites.map((site) => (
-                  <tr key={site.site_id} className="border-b hover:bg-muted/50 transition-colors">
+                  <tr key={site.id} className="border-b hover:bg-muted/50 transition-colors">
                     <td className="p-3">
                       <div>
                         <div className="font-semibold text-foreground">{site.site_name}</div>
@@ -121,21 +123,26 @@ export const SitesList = ({ userId }: SitesListProps) => {
                     </td>
                     <td className="p-3 text-foreground">{site.niche}</td>
                     <td className="p-3 text-foreground">{site.location}</td>
-                    <td className="p-3 text-right text-foreground">
-                      {site.total_page_views?.toLocaleString() || 0}
+                    <td className="p-3">
+                      {site.client ? (
+                        <div className="flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-sm text-foreground">{site.client.name}</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
                     </td>
-                    <td className="p-3 text-right font-semibold text-foreground">
-                      {site.total_conversions || 0}
-                    </td>
-                    <td className="p-3 text-right text-foreground">{site.conversion_rate || 0}%</td>
                     <td className="p-3 text-right font-medium text-success">
                       R$ {Number(site.monthly_rent_value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                     </td>
                     <td className="p-3 text-center">
-                      {site.is_rented ? (
+                      {site.client_id ? (
                         <Badge className="bg-success text-success-foreground">Alugado</Badge>
+                      ) : site.tracking_pixel_installed ? (
+                        <Badge variant="secondary">Ativo</Badge>
                       ) : (
-                        <Badge variant="outline">Disponível</Badge>
+                        <Badge variant="outline">Inativo</Badge>
                       )}
                     </td>
                     <td className="p-3 text-center">
@@ -144,7 +151,7 @@ export const SitesList = ({ userId }: SitesListProps) => {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            setEditingSiteId(site.site_id);
+                            setEditingSiteId(site.id);
                             setEditDialogOpen(true);
                           }}
                           className="gap-1"
@@ -155,7 +162,7 @@ export const SitesList = ({ userId }: SitesListProps) => {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => navigate(`/dashboard/site/${site.site_id}`)}
+                          onClick={() => navigate(`/dashboard/site/${site.id}`)}
                           className="gap-1"
                         >
                           <FolderOpen className="w-4 h-4" />

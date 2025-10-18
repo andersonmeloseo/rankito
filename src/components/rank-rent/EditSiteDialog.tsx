@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 interface EditSiteDialogProps {
@@ -17,6 +18,8 @@ interface EditSiteDialogProps {
     location: string;
     monthly_rent_value: number;
     notes: string | null;
+    client_id: string | null;
+    user_id: string;
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -33,6 +36,22 @@ export function EditSiteDialog({ site, open, onOpenChange }: EditSiteDialogProps
     location: site.location,
     monthly_rent_value: site.monthly_rent_value,
     notes: site.notes || "",
+    client_id: site.client_id || null,
+  });
+
+  // Buscar clientes do usuário
+  const { data: clients } = useQuery({
+    queryKey: ["rank-rent-clients", site.user_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_clients")
+        .select("id, name")
+        .eq("user_id", site.user_id)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
   });
 
   useEffect(() => {
@@ -43,6 +62,7 @@ export function EditSiteDialog({ site, open, onOpenChange }: EditSiteDialogProps
       location: site.location,
       monthly_rent_value: site.monthly_rent_value,
       notes: site.notes || "",
+      client_id: site.client_id || null,
     });
   }, [site]);
 
@@ -60,6 +80,7 @@ export function EditSiteDialog({ site, open, onOpenChange }: EditSiteDialogProps
           location: formData.location,
           monthly_rent_value: formData.monthly_rent_value,
           notes: formData.notes,
+          client_id: formData.client_id,
         })
         .eq("id", site.id);
 
@@ -151,6 +172,28 @@ export function EditSiteDialog({ site, open, onOpenChange }: EditSiteDialogProps
               placeholder="0.00"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="client_id">Cliente Vinculado</Label>
+            <Select
+              value={formData.client_id || "none"}
+              onValueChange={(value) => 
+                setFormData({ ...formData, client_id: value === "none" ? null : value })
+              }
+            >
+              <SelectTrigger id="client_id">
+                <SelectValue placeholder="Selecione um cliente (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum cliente</SelectItem>
+                {clients?.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
