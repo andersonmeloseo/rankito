@@ -135,6 +135,61 @@ serve(async (req) => {
 
     const device = detectDevice(user_agent);
 
+    // Get geolocation data
+    const getGeolocation = async (ip: string, apiKey: string) => {
+      try {
+        // Ignorar IPs locais
+        if (ip === 'unknown' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+          return { city: null, region: null, country: null, country_code: null };
+        }
+
+        // Extrair primeiro IP se houver múltiplos (x-forwarded-for pode ter lista)
+        const cleanIp = ip.split(',')[0].trim();
+        
+        console.log('Fetching geolocation for IP:', cleanIp);
+        
+        const response = await fetch(
+          `https://api.ipgeolocation.io/ipgeo?apiKey=${apiKey}&ip=${cleanIp}`,
+          {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+          }
+        );
+
+        if (!response.ok) {
+          console.error('Geolocation API error:', response.status);
+          return { city: null, region: null, country: null, country_code: null };
+        }
+
+        const data = await response.json();
+        
+        console.log('Geolocation result:', {
+          city: data.city,
+          region: data.state_prov,
+          country: data.country_name,
+          country_code: data.country_code2
+        });
+        
+        return {
+          city: data.city || null,
+          region: data.state_prov || null,
+          country: data.country_name || null,
+          country_code: data.country_code2 || null
+        };
+      } catch (error) {
+        console.error('Error fetching geolocation:', error);
+        return { city: null, region: null, country: null, country_code: null };
+      }
+    };
+
+    const geoApiKey = Deno.env.get('IPGEOLOCATION_API_KEY');
+    const geoData = geoApiKey 
+      ? await getGeolocation(ip_address, geoApiKey)
+      : { city: null, region: null, country: null, country_code: null };
+
+    console.log('IP Address:', ip_address);
+    console.log('Geolocation data:', geoData);
+
     // Find or create page
     let pageId = null;
     const { data: existingPage } = await supabase
@@ -185,6 +240,10 @@ serve(async (req) => {
         ip_address,
         user_agent,
         referrer,
+        city: geoData.city,
+        region: geoData.region,
+        country: geoData.country,
+        country_code: geoData.country_code,
       });
 
     if (insertError) {

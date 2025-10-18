@@ -21,7 +21,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const [deviceFilter, setDeviceFilter] = useState("all");
   const [sortConfig, setSortConfig] = useState<{
-    key: "created_at" | "event_type" | "page_path" | "device" | "browser" | "ip_address";
+    key: "created_at" | "event_type" | "page_path" | "device" | "browser" | "city";
     direction: "asc" | "desc";
   }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
@@ -72,9 +72,9 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
 
   const filteredConversions = useMemo(() => {
     let filtered = conversions?.filter(conv => {
-      const matchesSearch = searchTerm === "" || 
-        conv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        conv.ip_address?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = searchTerm === "" || 
+      conv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conv.city?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesEventType = eventTypeFilter === "all" || conv.event_type === eventTypeFilter;
       
@@ -109,14 +109,14 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
           aValue = a.metadata?.device || "desktop";
           bValue = b.metadata?.device || "desktop";
           break;
-        case "browser":
-          aValue = a.user_agent || "";
-          bValue = b.user_agent || "";
-          break;
-        case "ip_address":
-          aValue = a.ip_address || "";
-          bValue = b.ip_address || "";
-          break;
+      case "browser":
+        aValue = a.user_agent || "";
+        bValue = b.user_agent || "";
+        break;
+      case "city":
+        aValue = a.city || "Desconhecido";
+        bValue = b.city || "Desconhecido";
+        break;
         default:
           return 0;
       }
@@ -144,7 +144,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
       return;
     }
 
-    const headers = ["Data", "Hora", "Tipo", "Página", "Dispositivo", "Browser", "IP"];
+    const headers = ["Data", "Hora", "Tipo", "Página", "Dispositivo", "Browser", "Cidade", "Estado", "País"];
     const rows = filteredConversions.map(conv => [
       new Date(conv.created_at).toLocaleDateString("pt-BR"),
       new Date(conv.created_at).toLocaleTimeString("pt-BR"),
@@ -152,7 +152,9 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
       conv.page_path,
       conv.metadata?.device || "-",
       getBrowserInfo(conv.user_agent).name,
-      conv.ip_address || "-",
+      conv.city || "-",
+      conv.region || "-",
+      conv.country || "-",
     ]);
 
     const csvContent = [
@@ -251,7 +253,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por página ou IP..."
+                placeholder="Buscar por página ou cidade..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -336,24 +338,24 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                       <SortIcon columnKey="device" />
                     </div>
                   </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort("browser")}
-                  >
-                    <div className="flex items-center">
-                      Browser
-                      <SortIcon columnKey="browser" />
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort("ip_address")}
-                  >
-                    <div className="flex items-center">
-                      IP
-                      <SortIcon columnKey="ip_address" />
-                    </div>
-                  </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("browser")}
+                >
+                  <div className="flex items-center">
+                    Browser
+                    <SortIcon columnKey="browser" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("city")}
+                >
+                  <div className="flex items-center">
+                    Localização
+                    <SortIcon columnKey="city" />
+                  </div>
+                </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -406,8 +408,12 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground font-mono">
-                        {conv.ip_address || "-"}
+                      <TableCell>
+                        <div className="text-sm">
+                          {conv.city && conv.region 
+                            ? `${conv.city}, ${conv.region}`
+                            : conv.city || conv.region || "-"}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

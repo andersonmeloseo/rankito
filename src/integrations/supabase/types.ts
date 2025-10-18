@@ -64,6 +64,9 @@ export type Database = {
       }
       rank_rent_conversions: {
         Row: {
+          city: string | null
+          country: string | null
+          country_code: string | null
           created_at: string
           cta_text: string | null
           event_type: Database["public"]["Enums"]["event_type"]
@@ -74,10 +77,14 @@ export type Database = {
           page_path: string
           page_url: string
           referrer: string | null
+          region: string | null
           site_id: string
           user_agent: string | null
         }
         Insert: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
           created_at?: string
           cta_text?: string | null
           event_type: Database["public"]["Enums"]["event_type"]
@@ -88,10 +95,14 @@ export type Database = {
           page_path: string
           page_url: string
           referrer?: string | null
+          region?: string | null
           site_id: string
           user_agent?: string | null
         }
         Update: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
           created_at?: string
           cta_text?: string | null
           event_type?: Database["public"]["Enums"]["event_type"]
@@ -102,6 +113,7 @@ export type Database = {
           page_path?: string
           page_url?: string
           referrer?: string | null
+          region?: string | null
           site_id?: string
           user_agent?: string | null
         }
