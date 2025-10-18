@@ -32,7 +32,7 @@ export const EditPageDialog = ({ page, open, onOpenChange }: EditPageDialogProps
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    client_id: page.client_id || "",
+    client_id: page.client_id || "none",
     phone_number: page.phone_number || "",
     monthly_rent_value: page.monthly_rent_value || 0,
     is_rented: page.is_rented || false,
@@ -41,7 +41,7 @@ export const EditPageDialog = ({ page, open, onOpenChange }: EditPageDialogProps
 
   useEffect(() => {
     setFormData({
-      client_id: page.client_id || "",
+      client_id: page.client_id || "none",
       phone_number: page.phone_number || "",
       monthly_rent_value: page.monthly_rent_value || 0,
       is_rented: page.is_rented || false,
@@ -71,8 +71,8 @@ export const EditPageDialog = ({ page, open, onOpenChange }: EditPageDialogProps
         .from("rank_rent_pages")
         .update({
           ...formData,
-          client_id: formData.client_id || null,
-          is_rented: !!formData.client_id,
+          client_id: formData.client_id === "none" ? null : formData.client_id || null,
+          is_rented: !!(formData.client_id && formData.client_id !== "none"),
         })
         .eq("id", page.page_id);
 
@@ -119,7 +119,7 @@ export const EditPageDialog = ({ page, open, onOpenChange }: EditPageDialogProps
                 <SelectValue placeholder="Selecione um cliente" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum (Disponível)</SelectItem>
+                <SelectItem value="none">Nenhum (Disponível)</SelectItem>
                 {clients?.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
