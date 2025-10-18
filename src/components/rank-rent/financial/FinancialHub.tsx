@@ -1,12 +1,17 @@
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { FinancialSummaryCards } from "./FinancialSummaryCards";
-import { CostConfigurationForm } from "./CostConfigurationForm";
-import { FinancialPerformanceTable } from "./FinancialPerformanceTable";
+import { QuickCostEditor } from "./QuickCostEditor";
+import { ScenarioSimulator } from "./ScenarioSimulator";
+import { IntelligentPricingSuggestions } from "./IntelligentPricingSuggestions";
+import { EnhancedFinancialPerformanceTable } from "./EnhancedFinancialPerformanceTable";
 import { ProfitabilityCharts } from "./ProfitabilityCharts";
 import { ComparativeAnalysis } from "./ComparativeAnalysis";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface FinancialHubProps {
   siteId: string;
@@ -14,6 +19,31 @@ interface FinancialHubProps {
 
 export const FinancialHub = ({ siteId }: FinancialHubProps) => {
   const { config, metrics, summary, isLoading, saveConfig } = useFinancialMetrics(siteId);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const handleApplyPrice = async (pageId: string, newPrice: number) => {
+    try {
+      const { error } = await supabase
+        .from("rank_rent_pages")
+        .update({ monthly_rent_value: newPrice })
+        .eq("id", pageId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["financial-metrics", siteId] });
+      toast({
+        title: "Preço atualizado",
+        description: "O novo preço foi aplicado e as métricas recalculadas.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao aplicar preço",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -56,12 +86,19 @@ export const FinancialHub = ({ siteId }: FinancialHubProps) => {
         </Alert>
       )}
 
-      {/* Cost Configuration Form */}
-      <CostConfigurationForm
+      {/* Quick Cost Editor */}
+      <QuickCostEditor
         config={config}
         onSave={(newConfig) => saveConfig.mutate(newConfig)}
         isSaving={saveConfig.isPending}
+        totalPages={summary.totalPages}
       />
+
+      {/* Scenario Simulator & Intelligent Pricing */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <ScenarioSimulator metrics={metrics} config={config} />
+        <IntelligentPricingSuggestions metrics={metrics} onApplyPrice={handleApplyPrice} />
+      </div>
 
       {/* Charts */}
       <ProfitabilityCharts metrics={metrics} />
@@ -69,8 +106,8 @@ export const FinancialHub = ({ siteId }: FinancialHubProps) => {
       {/* Comparative Analysis */}
       <ComparativeAnalysis metrics={metrics} />
 
-      {/* Performance Table */}
-      <FinancialPerformanceTable metrics={metrics} />
+      {/* Enhanced Performance Table */}
+      <EnhancedFinancialPerformanceTable metrics={metrics} />
     </div>
   );
 };
