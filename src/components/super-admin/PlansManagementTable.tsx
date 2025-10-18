@@ -3,13 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Eye, EyeOff } from "lucide-react";
+import { Edit, Eye, EyeOff, Plus } from "lucide-react";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { EditPlanDialog } from "./EditPlanDialog";
+import { CreatePlanDialog } from "./CreatePlanDialog";
 
 export const PlansManagementTable = () => {
   const { plans, isLoading, updatePlan } = useSubscriptionPlans();
   const [editingPlan, setEditingPlan] = useState<any>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -30,10 +32,18 @@ export const PlansManagementTable = () => {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Gestão de Planos</CardTitle>
-          <CardDescription>
-            Configure os planos de assinatura disponíveis
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Gestão de Planos</CardTitle>
+              <CardDescription>
+                Configure os planos de assinatura disponíveis
+              </CardDescription>
+            </div>
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Plano
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -108,6 +118,11 @@ export const PlansManagementTable = () => {
           onOpenChange={(open) => !open && setEditingPlan(null)}
         />
       )}
+
+      <CreatePlanDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      />
     </>
   );
 };

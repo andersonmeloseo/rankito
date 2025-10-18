@@ -59,9 +59,34 @@ export const useSubscriptionPlans = () => {
     },
   });
 
+  const createPlan = useMutation({
+    mutationFn: async (newPlan: Omit<SubscriptionPlan, 'id' | 'created_at' | 'updated_at'>) => {
+      const { error } = await supabase
+        .from('subscription_plans')
+        .insert([newPlan]);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+      toast({
+        title: "Plano criado",
+        description: "O novo plano foi criado com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar plano",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     plans,
     isLoading,
     updatePlan: updatePlan.mutate,
+    createPlan: createPlan.mutate,
   };
 };
