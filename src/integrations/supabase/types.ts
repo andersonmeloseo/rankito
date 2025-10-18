@@ -526,6 +526,7 @@ export type Database = {
           page_title: string | null
           page_url: string | null
           profit_margin: number | null
+          proportional_fixed_cost: number | null
           roi_percentage: number | null
           site_id: string | null
           total_conversions: number | null

@@ -114,7 +114,7 @@ export const FinancialPerformanceTable = ({ metrics }: FinancialPerformanceTable
             </TableHeader>
             <TableBody>
               {sortedMetrics.map((metric) => {
-                const totalCosts = Number(metric.monthly_conversion_costs) + Number(metric.monthly_fixed_costs);
+                const totalCosts = Number(metric.monthly_conversion_costs) + Number(metric.proportional_fixed_cost);
                 const profit = Number(metric.monthly_profit);
                 const roi = Number(metric.roi_percentage);
                 const margin = Number(metric.profit_margin);

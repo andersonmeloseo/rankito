@@ -30,6 +30,7 @@ export interface FinancialMetric {
   cost_per_conversion: number;
   monthly_fixed_costs: number;
   acquisition_cost: number;
+  proportional_fixed_cost: number;
   business_model: string;
   monthly_revenue: number;
   monthly_conversion_costs: number;
@@ -117,7 +118,7 @@ export const useFinancialMetrics = (siteId: string) => {
   // Calculate summary metrics
   const summary = {
     totalRevenue: metrics?.reduce((sum, m) => sum + Number(m.monthly_revenue), 0) || 0,
-    totalCosts: metrics?.reduce((sum, m) => sum + Number(m.monthly_conversion_costs) + Number(m.monthly_fixed_costs), 0) || 0,
+    totalCosts: metrics?.reduce((sum, m) => sum + Number(m.monthly_conversion_costs) + Number(m.proportional_fixed_cost), 0) || 0,
     totalProfit: metrics?.reduce((sum, m) => sum + Number(m.monthly_profit), 0) || 0,
     avgROI: metrics && metrics.length > 0 
       ? metrics.reduce((sum, m) => sum + Number(m.roi_percentage), 0) / metrics.length 
