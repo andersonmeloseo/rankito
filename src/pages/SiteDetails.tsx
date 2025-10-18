@@ -572,7 +572,7 @@ const SiteDetails = () => {
             <TabsTrigger value="pages">Páginas</TabsTrigger>
             <TabsTrigger value="analytics">Análise Financeira</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Analytics Avançado</TabsTrigger>
-            <TabsTrigger value="plugin">Plugin WordPress</TabsTrigger>
+            <TabsTrigger value="plugin">Conexão com WordPress</TabsTrigger>
           </TabsList>
 
           {/* Páginas Tab */}
