@@ -3,7 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 import { SiteFinancialSummary } from "@/hooks/useGlobalFinancialMetrics";
+import { EditProjectCostsDialog } from "./EditProjectCostsDialog";
 
 interface GlobalFinancialTableProps {
   sitesMetrics: SiteFinancialSummary[];
@@ -12,6 +15,8 @@ interface GlobalFinancialTableProps {
 export const GlobalFinancialTable = ({ sitesMetrics }: GlobalFinancialTableProps) => {
   const [sortBy, setSortBy] = useState<"revenue" | "profit" | "roi" | "margin">("profit");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
+  const [editingSiteName, setEditingSiteName] = useState<string>("");
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -97,6 +102,7 @@ export const GlobalFinancialTable = ({ sitesMetrics }: GlobalFinancialTableProps
                 <TableHead className="text-right">Margem</TableHead>
                 <TableHead className="text-right">Páginas</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -119,6 +125,18 @@ export const GlobalFinancialTable = ({ sitesMetrics }: GlobalFinancialTableProps
                   <TableCell className="text-right">{site.profit_margin.toFixed(1)}%</TableCell>
                   <TableCell className="text-right">{site.total_pages}</TableCell>
                   <TableCell>{getStatusBadge(site.monthly_profit, site.roi_percentage)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingSiteId(site.site_id);
+                        setEditingSiteName(site.site_name);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -168,12 +186,38 @@ export const GlobalFinancialTable = ({ sitesMetrics }: GlobalFinancialTableProps
                       <p className="font-medium">{site.total_pages}</p>
                     </div>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-3"
+                    onClick={() => {
+                      setEditingSiteId(site.site_id);
+                      setEditingSiteName(site.site_name);
+                    }}
+                  >
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Editar Custos
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </CardContent>
+
+      {editingSiteId && (
+        <EditProjectCostsDialog
+          open={!!editingSiteId}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingSiteId(null);
+              setEditingSiteName("");
+            }
+          }}
+          siteId={editingSiteId}
+          siteName={editingSiteName}
+        />
+      )}
     </Card>
   );
 };
