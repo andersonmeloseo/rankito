@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { EditPageDialog } from "@/components/rank-rent/EditPageDialog";
 import { ImportSitemapDialog } from "@/components/rank-rent/ImportSitemapDialog";
@@ -18,6 +20,7 @@ import { ImportSitemapDialog } from "@/components/rank-rent/ImportSitemapDialog"
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   // UI States
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,6 +39,11 @@ const SiteDetails = () => {
   // Filter States
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [clientFilter, setClientFilter] = useState<string>("all");
+  
+  // Selection States
+  const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  const [fetchingTitles, setFetchingTitles] = useState(false);
   
   // Debounce search term
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -82,10 +90,12 @@ const SiteDetails = () => {
       }
       
       // Apply status filter
-      if (statusFilter === "rented") {
+      if (statusFilter === "review") {
+        query = query.eq("status", "needs_review");
+      } else if (statusFilter === "rented") {
         query = query.eq("is_rented", true);
       } else if (statusFilter === "available") {
-        query = query.eq("is_rented", false);
+        query = query.eq("is_rented", false).eq("status", "active");
       }
       
       // Apply client filter
@@ -135,6 +145,19 @@ const SiteDetails = () => {
   });
   
   const uniqueClients = allClientsData || [];
+  
+  // Fetch clients for bulk assignment
+  const { data: clients } = useQuery({
+    queryKey: ["rank-rent-clients-bulk"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_clients")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   // Fetch recent conversions
   const { data: conversions, isLoading: conversionsLoading } = useQuery({
@@ -177,8 +200,156 @@ const SiteDetails = () => {
   };
   
   const handlePageSizeChange = (newSize: string) => {
-    setPageSize(Number(newSize));
+    const size = Number(newSize);
+    if (size === 99999 && (pagesData?.total || 0) > 1000) {
+      toast({
+        title: "⚠️ Muitas Páginas",
+        description: "Para melhor performance, use os filtros ou selecione até 500 por página",
+        variant: "destructive",
+      });
+      return;
+    }
+    setPageSize(size);
     setCurrentPage(1);
+  };
+  
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(pages.map(p => p.page_id));
+      setSelectedPages(allIds);
+      setSelectAll(true);
+    } else {
+      setSelectedPages(new Set());
+      setSelectAll(false);
+    }
+  };
+  
+  const handleToggleSelect = (pageId: string) => {
+    const newSelected = new Set(selectedPages);
+    if (newSelected.has(pageId)) {
+      newSelected.delete(pageId);
+    } else {
+      newSelected.add(pageId);
+    }
+    setSelectedPages(newSelected);
+    setSelectAll(newSelected.size === pages.length);
+  };
+  
+  const handleBulkStatusChange = async (action: string) => {
+    if (selectedPages.size === 0) return;
+    
+    const updates: any = {};
+    
+    switch (action) {
+      case 'available':
+        updates.is_rented = false;
+        updates.client_id = null;
+        updates.status = 'active';
+        break;
+      case 'rented':
+        updates.is_rented = true;
+        updates.status = 'active';
+        break;
+      case 'review':
+        updates.status = 'needs_review';
+        break;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('rank_rent_pages')
+        .update(updates)
+        .in('id', Array.from(selectedPages));
+      
+      if (error) throw error;
+      
+      toast({
+        title: "✅ Páginas Atualizadas!",
+        description: `${selectedPages.size} página(s) foram atualizadas`,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      setSelectedPages(new Set());
+      setSelectAll(false);
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar as páginas",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleBulkClientChange = async (clientId: string) => {
+    if (selectedPages.size === 0) return;
+    
+    try {
+      const { error } = await supabase
+        .from('rank_rent_pages')
+        .update({
+          client_id: clientId === 'none' ? null : clientId,
+          is_rented: clientId !== 'none',
+        })
+        .in('id', Array.from(selectedPages));
+      
+      if (error) throw error;
+      
+      toast({
+        title: "✅ Cliente Atribuído!",
+        description: `${selectedPages.size} página(s) foram atualizadas`,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      setSelectedPages(new Set());
+      setSelectAll(false);
+    } catch (error) {
+      console.error("Erro ao atribuir cliente:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atribuir o cliente",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleFetchMetaTitles = async () => {
+    if (selectedPages.size === 0) {
+      toast({
+        title: "Nenhuma página selecionada",
+        description: "Selecione as páginas que deseja buscar os títulos",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setFetchingTitles(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-page-titles", {
+        body: { page_ids: Array.from(selectedPages) },
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "✅ Títulos Atualizados!",
+        description: `${data.updated} de ${data.processed} páginas tiveram seus títulos atualizados`,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      setSelectedPages(new Set());
+      setSelectAll(false);
+    } catch (error) {
+      console.error("Erro ao buscar títulos:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível buscar os títulos",
+        variant: "destructive",
+      });
+    } finally {
+      setFetchingTitles(false);
+    }
   };
   
   const SortIcon = ({ column }: { column: string }) => {
@@ -436,6 +607,7 @@ const SiteDetails = () => {
                             <SelectItem value="all">Todos os Status</SelectItem>
                             <SelectItem value="rented">Alugadas</SelectItem>
                             <SelectItem value="available">Disponíveis</SelectItem>
+                            <SelectItem value="review">Em Revisão</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -470,6 +642,77 @@ const SiteDetails = () => {
                     )}
                   </CardContent>
                 </Card>
+                
+                {/* Bulk Actions Bar */}
+                {selectedPages.size > 0 && (
+                  <Card className="bg-primary/5 border-primary/20">
+                    <CardContent className="py-3">
+                      <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-3">
+                          <span className="font-semibold text-foreground">
+                            {selectedPages.size} página(s) selecionada(s)
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedPages(new Set());
+                              setSelectAll(false);
+                            }}
+                          >
+                            Limpar Seleção
+                          </Button>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Select onValueChange={handleBulkStatusChange}>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Alterar Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="available">Marcar como Disponível</SelectItem>
+                              <SelectItem value="rented">Marcar como Alugado</SelectItem>
+                              <SelectItem value="review">Marcar para Revisão</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          
+                          <Select onValueChange={handleBulkClientChange}>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Atribuir Cliente" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Remover Cliente</SelectItem>
+                              {clients?.map((client) => (
+                                <SelectItem key={client.id} value={client.id}>
+                                  {client.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={handleFetchMetaTitles}
+                            disabled={fetchingTitles}
+                          >
+                            {fetchingTitles ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Buscando...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Buscar Meta Titles
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Table */}
                 {pagesLoading ? (
@@ -483,6 +726,13 @@ const SiteDetails = () => {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="w-12">
+                              <Checkbox
+                                checked={selectAll}
+                                onCheckedChange={handleSelectAll}
+                                aria-label="Selecionar todas"
+                              />
+                            </TableHead>
                             <TableHead 
                               className="cursor-pointer hover:bg-muted/50 select-none"
                               onClick={() => handleSort("page_title")}
@@ -553,6 +803,13 @@ const SiteDetails = () => {
                           {pages.map((page) => (
                             <TableRow key={page.page_id}>
                               <TableCell>
+                                <Checkbox
+                                  checked={selectedPages.has(page.page_id)}
+                                  onCheckedChange={() => handleToggleSelect(page.page_id)}
+                                  aria-label={`Selecionar ${page.page_title || page.page_url}`}
+                                />
+                              </TableCell>
+                              <TableCell>
                                 <div className="max-w-xs">
                                   <div className="font-medium text-foreground truncate">
                                     {page.page_title || "Sem título"}
@@ -584,7 +841,11 @@ const SiteDetails = () => {
                                 })}
                               </TableCell>
                               <TableCell className="text-center">
-                                {page.is_rented ? (
+                                {page.status === 'needs_review' ? (
+                                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                                    Em Revisão
+                                  </Badge>
+                                ) : page.is_rented ? (
                                   <Badge className="bg-success text-success-foreground">Alugada</Badge>
                                 ) : (
                                   <Badge variant="outline">Disponível</Badge>
@@ -626,9 +887,12 @@ const SiteDetails = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="10">10 por página</SelectItem>
                             <SelectItem value="50">50 por página</SelectItem>
                             <SelectItem value="100">100 por página</SelectItem>
                             <SelectItem value="200">200 por página</SelectItem>
+                            <SelectItem value="500">500 por página</SelectItem>
+                            <SelectItem value="99999">Mostrar Tudo</SelectItem>
                           </SelectContent>
                         </Select>
                         
