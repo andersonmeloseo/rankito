@@ -322,6 +322,9 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
                 <span className="ml-2 text-xs text-muted-foreground">
                   • Atualizado {getTimeSinceUpdate()}
                 </span>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  • Fuso: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                </span>
               </CardDescription>
             </div>
             <div className="flex gap-2 items-center">

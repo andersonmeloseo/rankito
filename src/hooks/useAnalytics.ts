@@ -233,6 +233,34 @@ export const useAnalytics = ({
   const { data: conversions, isLoading: conversionsLoading, dataUpdatedAt: conversionsUpdatedAt } = useQuery({
     queryKey: ["analytics-conversions", siteId, startDate, endDate, eventType, device],
     queryFn: async () => {
+      // 🔍 Debug detalhado de parâmetros de query
+      console.log('🔍 Query Params (Conversions):', {
+        siteId,
+        startDate,
+        endDate,
+        startDateLocal: new Date(startDate).toString(),
+        endDateLocal: new Date(endDate).toString(),
+        nowLocal: new Date().toString(),
+        nowUTC: new Date().toISOString(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      });
+
+      // 🧪 Query de diagnóstico sem filtro de data (temporária)
+      const { data: allConversionsTest, error: testError } = await supabase
+        .from("rank_rent_conversions")
+        .select("*")
+        .eq("site_id", siteId)
+        .neq("event_type", "page_view")
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      console.log('🧪 Teste sem filtro de data:', {
+        total: allConversionsTest?.length || 0,
+        latestConversion: allConversionsTest?.[0]?.created_at,
+        types: allConversionsTest?.map(d => d.event_type),
+        error: testError
+      });
+
       let query = supabase
         .from("rank_rent_conversions")
         .select("*")
