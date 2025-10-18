@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.generate-client-report]
 verify_jwt = false
+
+[functions.check-plugin-status]
+verify_jwt = false

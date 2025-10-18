@@ -65,6 +65,16 @@ serve(async (req) => {
         );
       }
 
+      // Update plugin installation status
+      const { error: updateError } = await supabase
+        .from('rank_rent_sites')
+        .update({ tracking_pixel_installed: true })
+        .eq('id', site.id);
+
+      if (updateError) {
+        console.error('Error updating plugin status:', updateError);
+      }
+
       console.log('Connection test successful for site:', site.site_name);
       return new Response(
         JSON.stringify({ success: true, message: 'Connection test successful', site_name: site.site_name }), 
