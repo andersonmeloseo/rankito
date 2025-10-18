@@ -50,20 +50,23 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     fetchRole();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
+        // Only synchronous state updates here
+        setUser(session?.user ?? null);
+        
+        // Defer Supabase calls with setTimeout
         if (session?.user) {
-          setUser(session.user);
-          
-          // Buscar role diretamente sem chamar fetchRole()
-          const { data } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          
-          setRole(data?.role as AppRole || null);
+          setTimeout(() => {
+            supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .maybeSingle()
+              .then(({ data }) => {
+                setRole(data?.role as AppRole || null);
+              });
+          }, 0);
         } else {
-          setUser(null);
           setRole(null);
         }
       }
