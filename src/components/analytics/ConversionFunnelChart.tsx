@@ -65,7 +65,7 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
             <div className="flex justify-center">
               <div 
                 className="h-24 bg-gradient-to-r from-orange-500/40 to-orange-400/30 rounded-xl flex items-center justify-between px-6 transition-all hover:shadow-md border border-orange-500/30"
-                style={{ width: `${(interactions / pageViews * 100) || 0}%` }}
+                style={{ width: `${(interactions / pageViews * 100) || 0}%`, minWidth: "75%" }}
               >
                 <div>
                   <p className="text-sm text-orange-700 dark:text-orange-300 font-medium">Interações</p>
