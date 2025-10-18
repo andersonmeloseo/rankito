@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddSite, setShowAddSite] = useState(false);
   const navigate = useNavigate();
@@ -27,25 +28,25 @@ const Dashboard = () => {
   const { sitesMetrics, summary, isLoading: financialLoading } = useGlobalFinancialMetrics(user?.id || "");
 
   useEffect(() => {
-    // Check authentication
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUser(session.user);
-      } else {
-        navigate("/");
-      }
-      setLoading(false);
-    });
-
-    // Listen for auth changes
+    // 1. Configurar listener PRIMEIRO
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setUser(session.user);
-      } else {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (!session) {
         navigate("/");
       }
+    });
+
+    // 2. DEPOIS verificar sessão existente
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (!session) {
+        navigate("/");
+      }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
