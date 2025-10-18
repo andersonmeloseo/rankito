@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { EditPageDialog } from "@/components/rank-rent/EditPageDialog";
 import { ImportSitemapDialog } from "@/components/rank-rent/ImportSitemapDialog";
@@ -17,10 +18,35 @@ import { ImportSitemapDialog } from "@/components/rank-rent/ImportSitemapDialog"
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
   const navigate = useNavigate();
+  
+  // UI States
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPage, setSelectedPage] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  
+  // Sorting States
+  const [sortColumn, setSortColumn] = useState<string>("total_page_views");
+  const [sortAscending, setSortAscending] = useState(false);
+  
+  // Filter States
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
+  
+  // Debounce search term
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1); // Reset to first page on search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Fetch site details
   const { data: site, isLoading: siteLoading } = useQuery({
@@ -38,22 +64,77 @@ const SiteDetails = () => {
     enabled: !!siteId,
   });
 
-  // Fetch pages for this site
-  const { data: pages, isLoading: pagesLoading } = useQuery({
-    queryKey: ["site-pages", siteId],
+  // Fetch pages for this site with pagination, sorting, and filters
+  const { data: pagesData, isLoading: pagesLoading } = useQuery({
+    queryKey: ["site-pages", siteId, currentPage, pageSize, sortColumn, sortAscending, debouncedSearch, statusFilter, clientFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+      
+      let query = supabase
         .from("rank_rent_page_metrics")
-        .select("*")
-        .eq("site_id", siteId)
-        .order("total_page_views", { ascending: false });
+        .select("*", { count: 'exact' })
+        .eq("site_id", siteId);
+      
+      // Apply search filter
+      if (debouncedSearch) {
+        query = query.or(`page_url.ilike.%${debouncedSearch}%,page_title.ilike.%${debouncedSearch}%,client_name.ilike.%${debouncedSearch}%`);
+      }
+      
+      // Apply status filter
+      if (statusFilter === "rented") {
+        query = query.eq("is_rented", true);
+      } else if (statusFilter === "available") {
+        query = query.eq("is_rented", false);
+      }
+      
+      // Apply client filter
+      if (clientFilter !== "all") {
+        if (clientFilter === "none") {
+          query = query.is("client_name", null);
+        } else {
+          query = query.eq("client_name", clientFilter);
+        }
+      }
+      
+      // Apply sorting
+      query = query.order(sortColumn, { ascending: sortAscending });
+      
+      // Apply pagination
+      query = query.range(from, to);
+      
+      const { data, error, count } = await query;
 
       if (error) throw error;
-      return data || [];
+      return { pages: data || [], total: count || 0 };
     },
     enabled: !!siteId,
     refetchInterval: 30000,
   });
+  
+  const pages = pagesData?.pages || [];
+  const totalPages = Math.ceil((pagesData?.total || 0) / pageSize);
+  
+  // Get unique clients for filter dropdown
+  const { data: allClientsData } = useQuery({
+    queryKey: ["all-clients-for-filter", siteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_page_metrics")
+        .select("client_name")
+        .eq("site_id", siteId)
+        .not("client_name", "is", null);
+      
+      if (error) throw error;
+      
+      // Get unique client names
+      const uniqueClients = [...new Set(data?.map(p => p.client_name).filter(Boolean))];
+      return uniqueClients;
+    },
+    enabled: !!siteId,
+  });
+  
+  const uniqueClients = allClientsData || [];
 
   // Fetch recent conversions
   const { data: conversions, isLoading: conversionsLoading } = useQuery({
@@ -73,18 +154,38 @@ const SiteDetails = () => {
     refetchInterval: 30000,
   });
 
-  const filteredPages = pages?.filter((page) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      page.page_url?.toLowerCase().includes(searchLower) ||
-      page.page_title?.toLowerCase().includes(searchLower) ||
-      page.client_name?.toLowerCase().includes(searchLower)
-    );
-  });
-
   const handleEditPage = (page: any) => {
     setSelectedPage(page);
     setShowEditDialog(true);
+  };
+  
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortAscending(!sortAscending);
+    } else {
+      setSortColumn(column);
+      setSortAscending(false);
+    }
+    setCurrentPage(1); // Reset to first page on sort
+  };
+  
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setClientFilter("all");
+    setCurrentPage(1);
+  };
+  
+  const handlePageSizeChange = (newSize: string) => {
+    setPageSize(Number(newSize));
+    setCurrentPage(1);
+  };
+  
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />;
+    }
+    return sortAscending ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
   };
 
   const copyTrackingCode = () => {
@@ -282,7 +383,11 @@ const SiteDetails = () => {
                   <div>
                     <CardTitle>Páginas do Site</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {filteredPages?.length || 0} página(s) encontrada(s)
+                      {pagesData?.total || 0} página(s) total
+                      {debouncedSearch || statusFilter !== "all" || clientFilter !== "all" 
+                        ? ` (mostrando ${pages.length} filtrada(s))`
+                        : ""
+                      }
                     </p>
                   </div>
                   <Button onClick={() => setShowImportDialog(true)} className="gap-2">
@@ -291,103 +396,273 @@ const SiteDetails = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <Input
-                    placeholder="Buscar por URL, título ou cliente..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="max-w-md"
-                  />
-                </div>
+              <CardContent className="space-y-4">
+                {/* Filters Panel */}
+                <Card className="bg-muted/30">
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-1">
+                        <Input
+                          placeholder="Buscar por URL, título ou cliente..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Select value={statusFilter} onValueChange={(value) => {
+                          setStatusFilter(value);
+                          setCurrentPage(1);
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos os Status</SelectItem>
+                            <SelectItem value="rented">Alugadas</SelectItem>
+                            <SelectItem value="available">Disponíveis</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Select value={clientFilter} onValueChange={(value) => {
+                          setClientFilter(value);
+                          setCurrentPage(1);
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Cliente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos os Clientes</SelectItem>
+                            <SelectItem value="none">Sem Cliente</SelectItem>
+                            {uniqueClients.map((client) => (
+                              <SelectItem key={client} value={client}>
+                                {client}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    {(debouncedSearch || statusFilter !== "all" || clientFilter !== "all") && (
+                      <div className="mt-4">
+                        <Button variant="outline" size="sm" onClick={handleClearFilters}>
+                          Limpar Filtros
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
+                {/* Table */}
                 {pagesLoading ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+                    <p className="text-sm text-muted-foreground mt-2">Carregando páginas...</p>
                   </div>
-                ) : filteredPages && filteredPages.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Página</TableHead>
-                          <TableHead className="text-right">Views</TableHead>
-                          <TableHead className="text-right">Conversões</TableHead>
-                          <TableHead className="text-right">Taxa Conv.</TableHead>
-                          <TableHead className="text-right">Valor Mensal</TableHead>
-                          <TableHead className="text-center">Status</TableHead>
-                          <TableHead>Cliente</TableHead>
-                          <TableHead className="text-center">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredPages.map((page) => (
-                          <TableRow key={page.page_id}>
-                            <TableCell>
-                              <div className="max-w-xs">
-                                <div className="font-medium text-foreground truncate">
-                                  {page.page_title || "Sem título"}
-                                </div>
-                                <a
-                                  href={page.page_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                                >
-                                  {page.page_path}
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
+                ) : pages && pages.length > 0 ? (
+                  <>
+                    <div className="overflow-x-auto rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead 
+                              className="cursor-pointer hover:bg-muted/50 select-none"
+                              onClick={() => handleSort("page_title")}
+                            >
+                              <div className="flex items-center gap-2">
+                                Página
+                                <SortIcon column="page_title" />
                               </div>
-                            </TableCell>
-                            <TableCell className="text-right text-foreground">
-                              {page.total_page_views?.toLocaleString() || 0}
-                            </TableCell>
-                            <TableCell className="text-right font-semibold text-foreground">
-                              {page.total_conversions || 0}
-                            </TableCell>
-                            <TableCell className="text-right text-foreground">
-                              {page.conversion_rate || 0}%
-                            </TableCell>
-                            <TableCell className="text-right font-medium text-success">
-                              R${" "}
-                              {Number(page.monthly_rent_value || 0).toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {page.is_rented ? (
-                                <Badge className="bg-success text-success-foreground">Alugada</Badge>
-                              ) : (
-                                <Badge variant="outline">Disponível</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {page.client_name ? (
-                                <span className="text-sm text-foreground">{page.client_name}</span>
-                              ) : (
-                                <span className="text-sm text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleEditPage(page)}
-                                className="gap-1"
-                              >
-                                <Edit className="w-4 h-4" />
-                                Editar
-                              </Button>
-                            </TableCell>
+                            </TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                              onClick={() => handleSort("total_page_views")}
+                            >
+                              <div className="flex items-center justify-end gap-2">
+                                Views
+                                <SortIcon column="total_page_views" />
+                              </div>
+                            </TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                              onClick={() => handleSort("total_conversions")}
+                            >
+                              <div className="flex items-center justify-end gap-2">
+                                Conversões
+                                <SortIcon column="total_conversions" />
+                              </div>
+                            </TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                              onClick={() => handleSort("conversion_rate")}
+                            >
+                              <div className="flex items-center justify-end gap-2">
+                                Taxa Conv.
+                                <SortIcon column="conversion_rate" />
+                              </div>
+                            </TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                              onClick={() => handleSort("monthly_rent_value")}
+                            >
+                              <div className="flex items-center justify-end gap-2">
+                                Valor Mensal
+                                <SortIcon column="monthly_rent_value" />
+                              </div>
+                            </TableHead>
+                            <TableHead 
+                              className="text-center cursor-pointer hover:bg-muted/50 select-none"
+                              onClick={() => handleSort("is_rented")}
+                            >
+                              <div className="flex items-center justify-center gap-2">
+                                Status
+                                <SortIcon column="is_rented" />
+                              </div>
+                            </TableHead>
+                            <TableHead 
+                              className="cursor-pointer hover:bg-muted/50 select-none"
+                              onClick={() => handleSort("client_name")}
+                            >
+                              <div className="flex items-center gap-2">
+                                Cliente
+                                <SortIcon column="client_name" />
+                              </div>
+                            </TableHead>
+                            <TableHead className="text-center">Ações</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                        </TableHeader>
+                        <TableBody>
+                          {pages.map((page) => (
+                            <TableRow key={page.page_id}>
+                              <TableCell>
+                                <div className="max-w-xs">
+                                  <div className="font-medium text-foreground truncate">
+                                    {page.page_title || "Sem título"}
+                                  </div>
+                                  <a
+                                    href={page.page_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    {page.page_path}
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right text-foreground">
+                                {page.total_page_views?.toLocaleString() || 0}
+                              </TableCell>
+                              <TableCell className="text-right font-semibold text-foreground">
+                                {page.total_conversions || 0}
+                              </TableCell>
+                              <TableCell className="text-right text-foreground">
+                                {page.conversion_rate || 0}%
+                              </TableCell>
+                              <TableCell className="text-right font-medium text-success">
+                                R${" "}
+                                {Number(page.monthly_rent_value || 0).toLocaleString("pt-BR", {
+                                  minimumFractionDigits: 2,
+                                })}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {page.is_rented ? (
+                                  <Badge className="bg-success text-success-foreground">Alugada</Badge>
+                                ) : (
+                                  <Badge variant="outline">Disponível</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {page.client_name ? (
+                                  <span className="text-sm text-foreground">{page.client_name}</span>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditPage(page)}
+                                  className="gap-1"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                  Editar
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    
+                    {/* Pagination Controls */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                      <div className="text-sm text-muted-foreground">
+                        Mostrando {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, pagesData?.total || 0)} de {pagesData?.total || 0} páginas
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="50">50 por página</SelectItem>
+                            <SelectItem value="100">100 por página</SelectItem>
+                            <SelectItem value="200">200 por página</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(1)}
+                          >
+                            Primeira
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(p => p - 1)}
+                          >
+                            Anterior
+                          </Button>
+                          <span className="px-3 py-1 text-sm">
+                            Página {currentPage} de {totalPages}
+                          </span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(p => p + 1)}
+                          >
+                            Próxima
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(totalPages)}
+                          >
+                            Última
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground">
-                      {searchTerm ? "Nenhuma página encontrada com esse critério." : "Nenhuma página cadastrada ainda."}
+                      {debouncedSearch || statusFilter !== "all" || clientFilter !== "all"
+                        ? "Nenhuma página encontrada com esses filtros."
+                        : "Nenhuma página cadastrada ainda."}
                     </p>
                   </div>
                 )}
