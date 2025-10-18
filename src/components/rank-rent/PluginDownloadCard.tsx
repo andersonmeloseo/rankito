@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Copy, Check, FileCode, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { Copy, Check, FileCode, AlertCircle, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import { useTestPluginConnection } from "@/hooks/useTestPluginConnection";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PluginDownloadCardProps {
@@ -15,6 +16,7 @@ interface PluginDownloadCardProps {
 
 export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackingPixelInstalled, siteName }: PluginDownloadCardProps) {
   const [copied, setCopied] = useState(false);
+  const { testConnection, isTestingConnection } = useTestPluginConnection();
   
   const trackingUrl = trackingToken 
     ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${trackingToken}`
@@ -28,6 +30,18 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
       description: "Cole esta URL nas configurações do plugin.",
     });
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleTestConnection = async () => {
+    if (!siteId || !siteName) {
+      toast({
+        title: "Erro",
+        description: "Informações do site não disponíveis",
+        variant: "destructive",
+      });
+      return;
+    }
+    await testConnection(siteId, siteName);
   };
 
   return (
@@ -45,18 +59,28 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
         {/* Connection Status Card */}
         <Card className={trackingPixelInstalled ? "border-green-500/50 bg-green-500/5" : "border-yellow-500/50 bg-yellow-500/5"}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              {trackingPixelInstalled ? (
-                <>
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-green-600">Conectado</span>
-                </>
-              ) : (
-                <>
-                  <XCircle className="w-5 h-5 text-yellow-600" />
-                  <span className="text-yellow-600">Aguardando Conexão</span>
-                </>
-              )}
+            <CardTitle className="text-base flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {trackingPixelInstalled ? (
+                  <>
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <span className="text-green-600">Conectado</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-5 h-5 text-yellow-600" />
+                    <span className="text-yellow-600">Aguardando Conexão</span>
+                  </>
+                )}
+              </div>
+              <Button
+                onClick={handleTestConnection}
+                disabled={isTestingConnection || !siteId}
+                variant="ghost"
+                size="sm"
+              >
+                <RefreshCw className={`w-4 h-4 ${isTestingConnection ? 'animate-spin' : ''}`} />
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -112,14 +136,25 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
           </div>
         </div>
 
-        {/* Installation Guide Button */}
-        <Button
-          variant="outline"
-          onClick={onOpenGuide}
-          className="w-full gap-2"
-        >
-          📖 Ver Guia de Instalação Completo
-        </Button>
+        {/* Installation Guide and Test Connection Buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            onClick={onOpenGuide}
+            className="gap-2"
+          >
+            📖 Guia de Instalação
+          </Button>
+          <Button
+            onClick={handleTestConnection}
+            disabled={isTestingConnection || !siteId}
+            variant="default"
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isTestingConnection ? 'animate-spin' : ''}`} />
+            {isTestingConnection ? 'Testando...' : 'Testar Conexão'}
+          </Button>
+        </div>
 
         {/* Quick Tips */}
         <div className="bg-muted/50 rounded-lg p-4 space-y-2">
