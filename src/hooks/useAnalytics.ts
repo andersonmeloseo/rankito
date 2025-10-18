@@ -263,6 +263,14 @@ export const useAnalytics = ({
   const { data: pageViewsList, isLoading: pageViewsLoading } = useQuery({
     queryKey: ["analytics-page-views", siteId, startDate, endDate, device],
     queryFn: async () => {
+      console.log('🔍 PageViewsList Query Debug:', {
+        siteId,
+        startDate,
+        endDate,
+        device,
+        periodDays: period
+      });
+
       let query = supabase
         .from("rank_rent_conversions")
         .select("*")
@@ -278,6 +286,13 @@ export const useAnalytics = ({
       }
 
       const { data, error } = await query;
+      
+      console.log('🔍 PageViewsList Query Result:', {
+        dataCount: data?.length || 0,
+        error: error?.message,
+        firstRecord: data?.[0]
+      });
+
       if (error) throw error;
 
       return data;
