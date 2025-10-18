@@ -44,24 +44,28 @@ async function processSitemap(
     const sitemapElements = doc.querySelectorAll('sitemapindex > sitemap > loc, sitemapindex sitemap loc');
     
     if (sitemapElements.length > 0) {
-      // It's a sitemap index - process limited child sitemaps
+      // It's a sitemap index - process limited child sitemaps IN PARALLEL
       const allSitemaps = Array.from(sitemapElements);
       const limitedSitemaps = allSitemaps.slice(sitemapOffset, sitemapOffset + maxSitemaps);
       
       console.log(`Found sitemap index with ${allSitemaps.length} child sitemaps, processing ${limitedSitemaps.length} (offset: ${sitemapOffset})`);
-      const allUrls: string[] = [];
       
       // Store total sitemaps count for response
+      const allUrls: string[] = [];
       (allUrls as any).totalSitemapsFound = allSitemaps.length;
       (allUrls as any).sitemapsProcessed = limitedSitemaps.length;
       
-      for (const sitemapEl of limitedSitemaps) {
+      // Process all sitemaps in parallel for better performance
+      const sitemapPromises = limitedSitemaps.map(async (sitemapEl) => {
         const childSitemapUrl = sitemapEl.textContent?.trim();
         if (childSitemapUrl) {
-          const childUrls = await processSitemap(childSitemapUrl, parser, depth + 1, maxSitemaps, 0);
-          allUrls.push(...childUrls);
+          return await processSitemap(childSitemapUrl, parser, depth + 1, maxSitemaps, 0);
         }
-      }
+        return [];
+      });
+
+      const results = await Promise.all(sitemapPromises);
+      allUrls.push(...results.flat());
       
       console.log(`Sitemap index processed: ${allUrls.length} URLs found from ${limitedSitemaps.length} sitemaps`);
       return allUrls;
@@ -96,8 +100,9 @@ serve(async (req) => {
       sitemap_url,
       max_urls = 50000,
       batch_size = 1000,
-      max_sitemaps = 999, // Processar todos os sitemaps
-      sitemap_offset = 0
+      max_sitemaps = 20, // Default: 20 sitemaps per batch
+      sitemap_offset = 0,
+      is_final_batch = false
     } = await req.json();
 
     if (!site_id || !sitemap_url) {
@@ -199,20 +204,24 @@ serve(async (req) => {
       }
     }
 
-    // Mark pages not in sitemap as inactive
-    const sitemapUrlsSet = new Set(limitedUrls);
-    const pagesToDeactivate = (existingPages || [])
-      .filter(p => !sitemapUrlsSet.has(p.page_url))
-      .map(p => p.id);
-    
-    if (pagesToDeactivate.length > 0) {
-      await supabase
-        .from('rank_rent_pages')
-        .update({ status: 'inactive' })
-        .in('id', pagesToDeactivate);
+    // Only mark pages as inactive on final batch to avoid premature deactivation
+    let deactivatedCount = 0;
+    if (is_final_batch) {
+      const sitemapUrlsSet = new Set(limitedUrls);
+      const pagesToDeactivate = (existingPages || [])
+        .filter(p => !sitemapUrlsSet.has(p.page_url))
+        .map(p => p.id);
+      
+      if (pagesToDeactivate.length > 0) {
+        await supabase
+          .from('rank_rent_pages')
+          .update({ status: 'inactive' })
+          .in('id', pagesToDeactivate);
+        deactivatedCount = pagesToDeactivate.length;
+      }
     }
 
-    console.log('Import complete:', { newPages, updatedPages, errors, deactivated: pagesToDeactivate.length });
+    console.log('Import complete:', { newPages, updatedPages, errors, deactivated: deactivatedCount });
 
     return new Response(
       JSON.stringify({
@@ -223,10 +232,10 @@ serve(async (req) => {
         urlsImported: limitedUrls.length,
         newPages,
         updatedPages,
-        deactivatedPages: pagesToDeactivate.length,
+        deactivatedPages: deactivatedCount,
         limited: urls.length > max_urls,
         errors
-      }), 
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
