@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Users } from "lucide-react";
+import { LogOut, Plus, Users, LayoutDashboard, Globe } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewCards } from "@/components/rank-rent/OverviewCards";
@@ -94,8 +94,14 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 max-w-2xl">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="sites">Sites</TabsTrigger>
+            <TabsTrigger value="overview" className="gap-2">
+              <LayoutDashboard className="w-4 h-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="sites" className="gap-2">
+              <Globe className="w-4 h-4" />
+              Sites
+            </TabsTrigger>
             <TabsTrigger value="clients" className="gap-2">
               <Users className="w-4 h-4" />
               Clientes
