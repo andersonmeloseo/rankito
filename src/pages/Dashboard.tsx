@@ -10,15 +10,13 @@ import { OverviewCards } from "@/components/rank-rent/OverviewCards";
 import { SitesList } from "@/components/rank-rent/SitesList";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
 import { ClientsList } from "@/components/rank-rent/ClientsList";
-import { PluginDownloadCard } from "@/components/rank-rent/PluginDownloadCard";
-import { PluginInstallationGuide } from "@/components/rank-rent/PluginInstallationGuide";
 import { PluginStatusMonitor } from "@/components/rank-rent/PluginStatusMonitor";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddSite, setShowAddSite] = useState(false);
-  const [showPluginGuide, setShowPluginGuide] = useState(false);
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -121,10 +119,7 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="plugin" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <PluginDownloadCard onOpenGuide={() => setShowPluginGuide(true)} />
-              <PluginStatusMonitor userId={user.id} />
-            </div>
+            <PluginStatusMonitor userId={user.id} />
           </TabsContent>
         </Tabs>
       </main>
@@ -135,10 +130,6 @@ const Dashboard = () => {
         userId={user.id}
       />
 
-      <PluginInstallationGuide
-        open={showPluginGuide}
-        onOpenChange={setShowPluginGuide}
-      />
     </div>
   );
 };
