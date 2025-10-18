@@ -30,7 +30,11 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
   }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
 
+  // Debug: verificar se onPeriodChange está chegando
+  console.log('🔍 ConversionsTable - onPeriodChange existe?', !!onPeriodChange);
+
   const handlePeriodChange = (startDate: string, endDate: string) => {
+    console.log('📅 Período alterado:', { startDate, endDate });
     setConversionStartDate(new Date(startDate));
     setConversionEndDate(new Date(endDate));
     setCurrentPage(1);
@@ -261,10 +265,11 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
                 {hasActiveFilters ? ` (filtrado de ${conversions?.length || 0} total)` : ""}
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              {onPeriodChange && (
-                <PeriodSelector onPeriodChange={handlePeriodChange} defaultPeriod={30} />
-              )}
+            <div className="flex gap-2 items-center">
+              <PeriodSelector 
+                onPeriodChange={handlePeriodChange} 
+                defaultPeriod={30} 
+              />
               <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
                 <Download className="w-4 h-4" />
                 Exportar CSV
