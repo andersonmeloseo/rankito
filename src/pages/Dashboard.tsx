@@ -102,7 +102,7 @@ const Dashboard = () => {
               <Users className="w-4 h-4" />
               Clientes
             </TabsTrigger>
-            <TabsTrigger value="plugin">Plugin WordPress</TabsTrigger>
+            <TabsTrigger value="plugin">Conexões com Wordpress</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
