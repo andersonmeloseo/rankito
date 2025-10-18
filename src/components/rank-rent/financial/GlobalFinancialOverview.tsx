@@ -18,6 +18,8 @@ export const GlobalFinancialOverview = ({ summary }: GlobalFinancialOverviewProp
     ? (summary.profitableSites / summary.totalSitesWithMetrics) * 100 
     : 0;
 
+  const sitesAwaitingData = summary.totalSitesWithMetrics - summary.profitableSites - summary.unprofitableSites;
+
   const cards = [
     {
       title: "Receita Total Mensal",
@@ -51,7 +53,7 @@ export const GlobalFinancialOverview = ({ summary }: GlobalFinancialOverviewProp
       title: "Projetos Ativos",
       value: summary.totalSitesWithMetrics.toString(),
       icon: Globe,
-      description: `${summary.unprofitableSites} precisam atenção`,
+      description: sitesAwaitingData > 0 ? `${sitesAwaitingData} aguardando dados` : `${summary.unprofitableSites} precisam atenção`,
       color: "text-blue-600",
     },
     {

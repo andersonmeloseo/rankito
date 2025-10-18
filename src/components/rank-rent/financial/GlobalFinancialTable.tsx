@@ -45,7 +45,10 @@ export const GlobalFinancialTable = ({ sitesMetrics }: GlobalFinancialTableProps
     });
   }, [sitesMetrics, sortBy, sortOrder]);
 
-  const getStatusBadge = (profit: number, roi: number) => {
+  const getStatusBadge = (profit: number, roi: number, conversions: number) => {
+    if (conversions === 0) {
+      return <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400">Aguardando dados</Badge>;
+    }
     if (profit < 0 || roi < 0) {
       return <Badge variant="destructive">Prejuízo</Badge>;
     }
@@ -124,7 +127,7 @@ export const GlobalFinancialTable = ({ sitesMetrics }: GlobalFinancialTableProps
                   </TableCell>
                   <TableCell className="text-right">{site.profit_margin.toFixed(1)}%</TableCell>
                   <TableCell className="text-right">{site.total_pages}</TableCell>
-                  <TableCell>{getStatusBadge(site.monthly_profit, site.roi_percentage)}</TableCell>
+                  <TableCell>{getStatusBadge(site.monthly_profit, site.roi_percentage, site.total_conversions)}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"
@@ -154,7 +157,7 @@ export const GlobalFinancialTable = ({ sitesMetrics }: GlobalFinancialTableProps
                       <p className="font-semibold truncate" title={site.site_name}>{site.site_name}</p>
                       <p className="text-sm text-muted-foreground truncate">{site.client_name || "Sem cliente"}</p>
                     </div>
-                    {getStatusBadge(site.monthly_profit, site.roi_percentage)}
+                    {getStatusBadge(site.monthly_profit, site.roi_percentage, site.total_conversions)}
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>

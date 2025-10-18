@@ -34,53 +34,64 @@ export const useGlobalFinancialMetrics = (userId: string) => {
   const { data: sitesMetrics, isLoading } = useQuery({
     queryKey: ["global-financial-metrics", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Buscar todos os sites do usuário
+      const { data: sites, error: sitesError } = await supabase
+        .from("rank_rent_sites")
+        .select("*")
+        .eq("user_id", userId);
+
+      if (sitesError) throw sitesError;
+      if (!sites || sites.length === 0) return [];
+
+      // Buscar métricas financeiras
+      const { data: metrics, error: metricsError } = await supabase
         .from("rank_rent_financial_metrics")
         .select("*")
         .eq("user_id", userId);
 
-      if (error) throw error;
+      if (metricsError) throw metricsError;
 
-      // Agregar métricas por site_id
+      // Buscar configurações de custos
+      const { data: configs, error: configsError } = await supabase
+        .from("rank_rent_financial_config")
+        .select("*")
+        .in("site_id", sites.map(s => s.id));
+
+      if (configsError) throw configsError;
+
+      // Criar mapa de sites com suas métricas
       const siteMap = new Map<string, SiteFinancialSummary>();
       
-      data?.forEach(metric => {
-        if (!metric.site_id) return;
+      sites.forEach(site => {
+        const siteMetrics = metrics?.filter(m => m.site_id === site.id) || [];
+        const siteConfig = configs?.find(c => c.site_id === site.id);
         
-        if (!siteMap.has(metric.site_id)) {
-          siteMap.set(metric.site_id, {
-            site_id: metric.site_id,
-            site_name: "", // Will be set from first metric
-            site_url: metric.page_url || "",
-            client_name: metric.client_name,
-            client_id: metric.client_id,
-            is_rented: metric.is_rented || false,
-            monthly_revenue: 0,
-            monthly_costs: 0,
-            monthly_profit: 0,
-            roi_percentage: 0,
-            profit_margin: 0,
-            total_pages: 0,
-            total_conversions: 0,
-          });
-        }
-        
-        const site = siteMap.get(metric.site_id)!;
-        site.monthly_revenue += Number(metric.monthly_revenue || 0);
-        site.monthly_costs += Number(metric.proportional_fixed_cost || 0) + Number(metric.monthly_conversion_costs || 0);
-        site.monthly_profit += Number(metric.monthly_profit || 0);
-        site.total_pages += 1;
-        site.total_conversions += Number(metric.total_conversions || 0);
-        
-        // Set site name from first metric (all pages from same site have same name)
-        if (!site.site_name && metric.page_url) {
-          try {
-            const url = new URL(metric.page_url);
-            site.site_name = url.hostname;
-          } catch {
-            site.site_name = metric.page_url;
-          }
-        }
+        const monthly_revenue = siteMetrics.reduce((sum, m) => sum + Number(m.monthly_revenue || 0), 0);
+        const monthly_costs = siteMetrics.reduce((sum, m) => 
+          sum + Number(m.proportional_fixed_cost || 0) + Number(m.monthly_conversion_costs || 0), 0
+        );
+        const monthly_profit = siteMetrics.reduce((sum, m) => sum + Number(m.monthly_profit || 0), 0);
+        const total_conversions = siteMetrics.reduce((sum, m) => sum + Number(m.total_conversions || 0), 0);
+        const total_pages = siteMetrics.length;
+
+        // Se não tem métricas mas tem configuração, calcular custo fixo
+        const effectiveCosts = monthly_costs > 0 ? monthly_costs : Number(siteConfig?.monthly_fixed_costs || 0);
+
+        siteMap.set(site.id, {
+          site_id: site.id,
+          site_name: site.site_name,
+          site_url: site.site_url,
+          client_name: site.client_name,
+          client_id: site.client_id,
+          is_rented: site.is_rented || false,
+          monthly_revenue,
+          monthly_costs: effectiveCosts,
+          monthly_profit,
+          roi_percentage: 0,
+          profit_margin: 0,
+          total_pages,
+          total_conversions,
+        });
       });
 
       // Calcular ROI e margem para cada site
