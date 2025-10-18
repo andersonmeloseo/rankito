@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, FolderOpen } from "lucide-react";
+import { ExternalLink, FolderOpen, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { EditSiteDialog } from "./EditSiteDialog";
 
 interface SitesListProps {
   userId: string;
@@ -12,6 +14,13 @@ interface SitesListProps {
 
 export const SitesList = ({ userId }: SitesListProps) => {
   const navigate = useNavigate();
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedSite, setSelectedSite] = useState<any>(null);
+
+  const handleEdit = (site: any) => {
+    setSelectedSite(site);
+    setShowEditDialog(true);
+  };
 
   const { data: sites, isLoading } = useQuery({
     queryKey: ["rank-rent-sites", userId],
@@ -120,15 +129,25 @@ export const SitesList = ({ userId }: SitesListProps) => {
                       )}
                     </td>
                     <td className="p-3 text-center">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => navigate(`/dashboard/site/${site.site_id}`)}
-                        className="gap-1"
-                      >
-                        <FolderOpen className="w-4 h-4" />
-                        Abrir Projeto
-                      </Button>
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEdit(site)}
+                          className="gap-1"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => navigate(`/dashboard/site/${site.site_id}`)}
+                          className="gap-1"
+                        >
+                          <FolderOpen className="w-4 h-4" />
+                          Abrir
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -137,6 +156,13 @@ export const SitesList = ({ userId }: SitesListProps) => {
           </div>
         </CardContent>
       </Card>
+      {selectedSite && (
+        <EditSiteDialog
+          site={selectedSite}
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+        />
+      )}
     </>
   );
 };
