@@ -570,7 +570,7 @@ const SiteDetails = () => {
         <Tabs defaultValue="pages" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 max-w-4xl">
             <TabsTrigger value="pages">Páginas</TabsTrigger>
-            <TabsTrigger value="analytics">Análise</TabsTrigger>
+            <TabsTrigger value="analytics">Análise Financeira</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Analytics Avançado</TabsTrigger>
             <TabsTrigger value="plugin">Plugin WordPress</TabsTrigger>
           </TabsList>
