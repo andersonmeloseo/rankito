@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ExternalLink, FolderOpen, Pencil, MoreVertical, Play, RefreshCw, Search, Eye, Phone, FileText, TrendingUp } from "lucide-react";
+import { ExternalLink, FolderOpen, Pencil, MoreVertical, Play, RefreshCw, Search, Eye, Phone, FileText, TrendingUp, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EditSiteWithRentalDialog } from "./EditSiteWithRentalDialog";
 import { RentSiteDialog } from "./RentSiteDialog";
 import { RenewContractDialog } from "./RenewContractDialog";
+import { UnrentSiteDialog } from "./UnrentSiteDialog";
 import { ContractStatusBadge } from "./ContractStatusBadge";
 import { useContractStatus } from "@/hooks/useContractStatus";
 
@@ -24,6 +25,7 @@ export const SitesList = ({ userId }: SitesListProps) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRentDialog, setShowRentDialog] = useState(false);
   const [showRenewDialog, setShowRenewDialog] = useState(false);
+  const [showUnrentDialog, setShowUnrentDialog] = useState(false);
   const [selectedSite, setSelectedSite] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -42,6 +44,11 @@ export const SitesList = ({ userId }: SitesListProps) => {
   const handleRenew = (site: any) => {
     setSelectedSite(site);
     setShowRenewDialog(true);
+  };
+
+  const handleUnrent = (site: any) => {
+    setSelectedSite(site);
+    setShowUnrentDialog(true);
   };
 
   const { data: sites, isLoading } = useQuery({
@@ -205,10 +212,20 @@ export const SitesList = ({ userId }: SitesListProps) => {
                   Alugar Projeto
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem onClick={() => handleRenew(site)}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Renovar Contrato
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem onClick={() => handleRenew(site)}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Renovar Contrato
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => handleUnrent(site)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Desalugar Projeto
+                  </DropdownMenuItem>
+                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -318,6 +335,11 @@ export const SitesList = ({ userId }: SitesListProps) => {
             siteName={selectedSite.site_name}
             currentEndDate={selectedSite.contract_end_date}
             currentRent={selectedSite.monthly_rent_value}
+          />
+          <UnrentSiteDialog
+            open={showUnrentDialog}
+            onOpenChange={setShowUnrentDialog}
+            site={selectedSite}
           />
         </>
       )}
