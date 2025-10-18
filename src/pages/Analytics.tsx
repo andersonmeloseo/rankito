@@ -67,7 +67,11 @@ const Analytics = () => {
   });
 
   // Debug logs
-  console.log('🔍 Analytics Data Debug:', {
+  console.log('📊 Analytics Data Received:', {
+    conversionsCount: conversions?.length || 0,
+    pageViewsCount: pageViewsList?.length || 0,
+    conversionsTypes: conversions?.map(c => c.event_type) || [],
+    pageViewsTypes: pageViewsList?.map(p => p.event_type) || [],
     conversionsTimeline,
     topConversionPages,
     conversionTypeDistribution,

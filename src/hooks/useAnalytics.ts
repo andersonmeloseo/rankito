@@ -254,6 +254,13 @@ export const useAnalytics = ({
       const { data, error } = await query;
       if (error) throw error;
 
+      console.log('🔍 Conversions Query Result:', {
+        total: data?.length || 0,
+        types: data?.map(d => d.event_type),
+        hasPageViews: data?.some(d => d.event_type === 'page_view'),
+        sample: data?.[0]
+      });
+
       return data;
     },
     enabled: !!siteId,
@@ -279,6 +286,13 @@ export const useAnalytics = ({
 
       const { data, error } = await query;
       if (error) throw error;
+
+      console.log('📄 Page Views Query Result:', {
+        total: data?.length || 0,
+        types: data?.map(d => d.event_type),
+        allPageViews: data?.every(d => d.event_type === 'page_view'),
+        sample: data?.[0]
+      });
 
       return data;
     },
