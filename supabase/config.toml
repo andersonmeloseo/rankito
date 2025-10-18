@@ -2,3 +2,9 @@ project_id = "jhzmgexprjnpgadkxjup"
 
 [functions.track-rank-rent-conversion]
 verify_jwt = false
+
+[functions.import-sitemap]
+verify_jwt = true
+
+[functions.generate-client-report]
+verify_jwt = false

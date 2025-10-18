@@ -5,8 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { ImportSitemapDialog } from "./ImportSitemapDialog";
 
 interface SiteDetailModalProps {
   siteId: string | null;
@@ -15,6 +17,8 @@ interface SiteDetailModalProps {
 }
 
 export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalProps) => {
+  const [showImportDialog, setShowImportDialog] = useState(false);
+
   const { data: site } = useQuery({
     queryKey: ["site-detail", siteId],
     queryFn: async () => {
@@ -56,7 +60,15 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
   const TRACKING_ENDPOINT = '${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion';
   const SITE_NAME = '${site.site_name}';
 
-  function trackEvent(eventType, ctaText = null) {
+  // Detectar telefone na página
+  function detectPhoneNumber() {
+    const phoneRegex = /(\\(?\\d{2}\\)?\\s?9?\\d{4}[-\\s]?\\d{4}|\\d{11})/g;
+    const bodyText = document.body.innerText;
+    const matches = bodyText.match(phoneRegex);
+    return matches ? matches[0] : null;
+  }
+
+  function trackEvent(eventType, ctaText = null, extra = {}) {
     const data = {
       site_name: SITE_NAME,
       page_url: window.location.href,
@@ -65,7 +77,10 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
       metadata: {
         referrer: document.referrer,
         device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        page_title: document.title,
+        detected_phone: detectPhoneNumber(),
+        ...extra
       }
     };
 
@@ -82,31 +97,35 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
     }
   }
 
-  // Page View (automático)
+  // Page View automático com metadata
   trackEvent('page_view');
 
-  // Rastrear cliques em telefone
+  // Rastrear TODOS os cliques em elementos clicáveis
   document.addEventListener('click', function(e) {
-    const target = e.target.closest('a[href^="tel:"]');
-    if (target) trackEvent('phone_click', target.textContent.trim());
+    const target = e.target.closest('a, button, [role="button"]');
+    if (!target) return;
+    
+    const href = target.getAttribute('href') || '';
+    const text = target.textContent.trim();
+    
+    // Classificar tipo automaticamente
+    let eventType = 'button_click';
+    if (href.startsWith('tel:')) eventType = 'phone_click';
+    else if (href.startsWith('mailto:')) eventType = 'email_click';
+    else if (href.includes('wa.me') || href.includes('whatsapp')) eventType = 'whatsapp_click';
+    
+    trackEvent(eventType, text, {
+      href: href,
+      element_id: target.id || null,
+      element_class: target.className || null
+    });
   });
 
-  // Rastrear cliques em email
-  document.addEventListener('click', function(e) {
-    const target = e.target.closest('a[href^="mailto:"]');
-    if (target) trackEvent('email_click', target.textContent.trim());
-  });
-
-  // Rastrear cliques em WhatsApp
-  document.addEventListener('click', function(e) {
-    const target = e.target.closest('a[href*="wa.me"], a[href*="whatsapp.com"]');
-    if (target) trackEvent('whatsapp_click', target.textContent.trim());
-  });
-
-  // Rastrear botões com classe .track-cta
-  document.addEventListener('click', function(e) {
-    const target = e.target.closest('.track-cta, button[data-track]');
-    if (target) trackEvent('button_click', target.textContent.trim());
+  // Rastrear submit de formulários
+  document.addEventListener('submit', function(e) {
+    if (e.target.matches('form')) {
+      trackEvent('form_submit', 'Form Submission');
+    }
   });
 })();
 </script>`;
@@ -141,10 +160,11 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
         </DialogHeader>
 
         <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="info">Informações</TabsTrigger>
             <TabsTrigger value="pixel">Código Pixel</TabsTrigger>
-            <TabsTrigger value="conversions">Conversões Recentes</TabsTrigger>
+            <TabsTrigger value="pages">Páginas</TabsTrigger>
+            <TabsTrigger value="conversions">Conversões</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-4">
@@ -243,6 +263,28 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
             </Card>
           </TabsContent>
 
+          <TabsContent value="pages">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Gestão de Páginas</CardTitle>
+                    <CardDescription>Importe páginas do sitemap automaticamente</CardDescription>
+                  </div>
+                  <Button onClick={() => setShowImportDialog(true)} size="sm" className="gap-2">
+                    <Download className="w-4 h-4" />
+                    Importar Sitemap
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Use a aba "Páginas" no menu principal para ver todas as páginas deste site com métricas detalhadas.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="conversions">
             <Card>
               <CardHeader>
@@ -272,6 +314,14 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {siteId && (
+        <ImportSitemapDialog
+          siteId={siteId}
+          open={showImportDialog}
+          onOpenChange={setShowImportDialog}
+        />
+      )}
     </Dialog>
   );
 };

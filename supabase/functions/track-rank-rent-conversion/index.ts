@@ -60,11 +60,44 @@ serve(async (req) => {
     const user_agent = req.headers.get('user-agent') || 'unknown';
     const referrer = metadata?.referrer || null;
 
+    // Find or create page
+    let pageId = null;
+    const { data: existingPage } = await supabase
+      .from('rank_rent_pages')
+      .select('id')
+      .eq('page_url', page_url)
+      .maybeSingle();
+
+    if (existingPage) {
+      pageId = existingPage.id;
+    } else {
+      // Create page automatically
+      const { data: newPage, error: pageError } = await supabase
+        .from('rank_rent_pages')
+        .insert({
+          site_id: site.id,
+          page_url,
+          page_path,
+          page_title: metadata?.page_title || null,
+          phone_number: metadata?.detected_phone || null,
+          status: 'active'
+        })
+        .select('id')
+        .single();
+
+      if (pageError) {
+        console.error('Error creating page:', pageError);
+      } else if (newPage) {
+        pageId = newPage.id;
+      }
+    }
+
     // Insert conversion
     const { error: insertError } = await supabase
       .from('rank_rent_conversions')
       .insert({
         site_id: site.id,
+        page_id: pageId,
         page_url,
         page_path,
         event_type,
