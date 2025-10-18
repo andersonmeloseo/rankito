@@ -634,7 +634,7 @@ export const useAnalytics = ({
     return acc;
   }, {} as Record<string, number>) || {};
 
-  // Page Views Hourly Data (para mapa de calor de page views)
+  // Page View Hourly Data - agregação por dia da semana e hora
   const pageViewHourlyData = pageViewsList?.reduce((acc: Record<string, number>, pv: any) => {
     const date = new Date(pv.created_at);
     const hour = date.getHours();
