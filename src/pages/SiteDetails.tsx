@@ -24,7 +24,19 @@ import { TimelineChart } from "@/components/analytics/TimelineChart";
 import { TopPagesChart } from "@/components/analytics/TopPagesChart";
 import { EventsPieChart } from "@/components/analytics/EventsPieChart";
 import { ConversionsTable } from "@/components/analytics/ConversionsTable";
+import { ConversionRateChart } from "@/components/analytics/ConversionRateChart";
+import { ConversionFunnelChart } from "@/components/analytics/ConversionFunnelChart";
+import { HourlyHeatmap } from "@/components/analytics/HourlyHeatmap";
+import { PageViewsTimelineChart } from "@/components/analytics/PageViewsTimelineChart";
+import { TopReferrersChart } from "@/components/analytics/TopReferrersChart";
+import { PagePerformanceChart } from "@/components/analytics/PagePerformanceChart";
+import { PageViewsTable } from "@/components/analytics/PageViewsTable";
+import { ConversionsTimelineChart } from "@/components/analytics/ConversionsTimelineChart";
+import { TopConversionPagesChart } from "@/components/analytics/TopConversionPagesChart";
+import { ConversionTypeDistributionChart } from "@/components/analytics/ConversionTypeDistributionChart";
+import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { format, subDays } from "date-fns";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -61,6 +73,12 @@ const SiteDetails = () => {
   const [analyticsDevice, setAnalyticsDevice] = useState("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+  
+  // Page Views Period State (separate from main analytics)
+  const [pageViewsPeriod, setPageViewsPeriod] = useState({
+    startDate: format(subDays(new Date(), 30), "yyyy-MM-dd"),
+    endDate: format(new Date(), "yyyy-MM-dd"),
+  });
   
   // Debounce search term
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -193,6 +211,25 @@ const SiteDetails = () => {
     },
     enabled: !!siteId,
     refetchInterval: 30000,
+  });
+
+  // Fetch page views with separate period control
+  const { data: pageViewsData, isLoading: pageViewsLoading } = useQuery({
+    queryKey: ["page-views-detailed", siteId, pageViewsPeriod.startDate, pageViewsPeriod.endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_conversions")
+        .select("*")
+        .eq("site_id", siteId)
+        .eq("event_type", "page_view")
+        .gte("created_at", `${pageViewsPeriod.startDate}T00:00:00Z`)
+        .lte("created_at", `${pageViewsPeriod.endDate}T23:59:59Z`)
+        .order("created_at", { ascending: false });
+        
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!siteId,
   });
   
   // Analytics hook
@@ -1037,29 +1074,107 @@ const SiteDetails = () => {
             <MetricsCards 
               metrics={analyticsData.metrics} 
               isLoading={analyticsData.isLoading} 
+              sparklineData={analyticsData.sparklineData}
+              previousMetrics={analyticsData.previousMetrics}
             />
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <TimelineChart 
-                data={analyticsData.timeline} 
-                isLoading={analyticsData.isLoading} 
-              />
-              <EventsPieChart 
-                data={analyticsData.events} 
-                isLoading={analyticsData.isLoading} 
-              />
-            </div>
-            
-            <TopPagesChart 
-              data={analyticsData.topPages} 
-              isLoading={analyticsData.isLoading} 
-            />
-            
-            <ConversionsTable 
-              conversions={analyticsData.conversions || []} 
-              isLoading={analyticsData.isLoading}
-              siteId={siteId || ""}
-            />
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="conversions">Conversões</TabsTrigger>
+                <TabsTrigger value="pageviews">Page Views</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview" className="space-y-6 mt-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <TimelineChart 
+                    data={analyticsData.timeline} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                  <EventsPieChart 
+                    data={analyticsData.events} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <ConversionRateChart 
+                    data={analyticsData.conversionRateData || []} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                  <ConversionFunnelChart 
+                    data={analyticsData.funnelData || { pageViews: 0, interactions: 0, conversions: 0 }} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                </div>
+                
+                <TopPagesChart 
+                  data={analyticsData.topPages} 
+                  isLoading={analyticsData.isLoading} 
+                />
+                
+                <HourlyHeatmap 
+                  data={analyticsData.hourlyData || []} 
+                  isLoading={analyticsData.isLoading} 
+                />
+              </TabsContent>
+              
+              <TabsContent value="conversions" className="space-y-6 mt-6">
+                <ConversionsTimelineChart 
+                  data={analyticsData.conversionsTimeline || []} 
+                  isLoading={analyticsData.isLoading}
+                />
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <TopConversionPagesChart 
+                    data={analyticsData.topConversionPages || []} 
+                    isLoading={analyticsData.isLoading}
+                  />
+                  <ConversionTypeDistributionChart 
+                    data={analyticsData.conversionTypeDistribution || []} 
+                    isLoading={analyticsData.isLoading}
+                  />
+                </div>
+                
+                <ConversionHeatmapChart 
+                  data={analyticsData.conversionHourlyData || {}} 
+                  isLoading={analyticsData.isLoading}
+                />
+                
+                <ConversionsTable 
+                  conversions={analyticsData.conversions || []} 
+                  isLoading={analyticsData.isLoading}
+                  siteId={siteId || ""}
+                />
+              </TabsContent>
+              
+              <TabsContent value="pageviews" className="space-y-6 mt-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <PageViewsTimelineChart 
+                    data={analyticsData.pageViewsTimeline || []} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                  <TopReferrersChart 
+                    data={analyticsData.topReferrers || []} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                </div>
+                
+                <PagePerformanceChart 
+                  data={analyticsData.pagePerformance || []} 
+                  isLoading={analyticsData.isLoading} 
+                />
+                
+                <PageViewsTable 
+                  pageViews={pageViewsData || []} 
+                  isLoading={pageViewsLoading}
+                  siteId={siteId || ""}
+                  onPeriodChange={(startDate, endDate) => {
+                    setPageViewsPeriod({ startDate, endDate });
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Cliente Tab */}

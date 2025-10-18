@@ -1,40 +1,162 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Search } from "lucide-react";
+import { Download, Search, Smartphone, Monitor, Tablet, Chrome, Globe, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PeriodSelector } from "./PeriodSelector";
 
 interface PageViewsTableProps {
   pageViews: any[];
   isLoading: boolean;
   siteId: string;
+  onPeriodChange?: (startDate: string, endDate: string) => void;
 }
 
-export const PageViewsTable = ({ pageViews, isLoading, siteId }: PageViewsTableProps) => {
+export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }: PageViewsTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [deviceFilter, setDeviceFilter] = useState("all");
+  const [browserFilter, setBrowserFilter] = useState("all");
+  const [referrerFilter, setReferrerFilter] = useState("all");
+  const [sortConfig, setSortConfig] = useState<{
+    key: "created_at" | "page_path" | "device" | "browser" | "ip_address" | "referrer";
+    direction: "asc" | "desc";
+  }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
 
-  const filteredPageViews = pageViews?.filter(pv => {
-    const matchesSearch = searchTerm === "" || 
-      pv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pv.referrer?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Utility functions - must be defined before useMemo hooks
+  const getBrowserInfo = (userAgent: string | null) => {
+    if (!userAgent) return { name: "Desconhecido", icon: Globe };
     
-    const matchesDevice = deviceFilter === "all" || 
-      (pv.metadata?.device || "desktop") === deviceFilter;
+    if (userAgent.includes("Chrome")) return { name: "Chrome", icon: Chrome };
+    if (userAgent.includes("Firefox")) return { name: "Firefox", icon: Globe };
+    if (userAgent.includes("Safari")) return { name: "Safari", icon: Globe };
+    return { name: "Outro", icon: Globe };
+  };
+
+  const getDeviceInfo = (device: string) => {
+    switch(device) {
+      case "mobile": return { icon: Smartphone, color: "text-blue-600", bgColor: "bg-blue-100 dark:bg-blue-900/30" };
+      case "tablet": return { icon: Tablet, color: "text-purple-600", bgColor: "bg-purple-100 dark:bg-purple-900/30" };
+      default: return { icon: Monitor, color: "text-green-600", bgColor: "bg-green-100 dark:bg-green-900/30" };
+    }
+  };
+
+  // Get unique browsers from pageViews
+  const uniqueBrowsers = useMemo(() => {
+    const browsers = new Set(
+      pageViews?.map(pv => getBrowserInfo(pv.user_agent).name) || []
+    );
+    return Array.from(browsers).sort();
+  }, [pageViews]);
+
+  // Get unique referrers (top 10 by frequency)
+  const uniqueReferrers = useMemo(() => {
+    const referrers = pageViews
+      ?.filter(pv => pv.referrer)
+      .map(pv => {
+        try {
+          return new URL(pv.referrer).hostname;
+        } catch {
+          return pv.referrer;
+        }
+      }) || [];
     
-    return matchesSearch && matchesDevice;
-  }) || [];
+    const counts = referrers.reduce((acc, ref) => {
+      acc[ref] = (acc[ref] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return Object.entries(counts)
+      .sort((a, b) => (b[1] as number) - (a[1] as number))
+      .slice(0, 10)
+      .map(([ref]) => ref);
+  }, [pageViews]);
+
+  const filteredPageViews = useMemo(() => {
+    let filtered = pageViews?.filter(pv => {
+      const matchesSearch = searchTerm === "" || 
+        pv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pv.referrer?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesDevice = deviceFilter === "all" || 
+        (pv.metadata?.device || "desktop") === deviceFilter;
+
+      const matchesBrowser = browserFilter === "all" || 
+        getBrowserInfo(pv.user_agent).name === browserFilter;
+
+      const matchesReferrer = referrerFilter === "all" || 
+        (referrerFilter === "direct" && !pv.referrer) ||
+        (pv.referrer && (() => {
+          try {
+            return new URL(pv.referrer).hostname === referrerFilter;
+          } catch {
+            return pv.referrer === referrerFilter;
+          }
+        })());
+      
+      return matchesSearch && matchesDevice && matchesBrowser && matchesReferrer;
+    }) || [];
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortConfig.key) {
+        case "device":
+          aValue = a.metadata?.device || "desktop";
+          bValue = b.metadata?.device || "desktop";
+          break;
+        case "browser":
+          aValue = getBrowserInfo(a.user_agent).name;
+          bValue = getBrowserInfo(b.user_agent).name;
+          break;
+        case "referrer":
+          aValue = a.referrer || "";
+          bValue = b.referrer || "";
+          break;
+        default:
+          aValue = a[sortConfig.key] || "";
+          bValue = b[sortConfig.key] || "";
+      }
+
+      if (sortConfig.direction === "asc") {
+        return aValue > bValue ? 1 : -1;
+      }
+      return aValue < bValue ? 1 : -1;
+    });
+
+    return filtered;
+  }, [pageViews, searchTerm, deviceFilter, browserFilter, referrerFilter, sortConfig]);
+
+  const handleSort = (key: typeof sortConfig.key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc"
+    }));
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setDeviceFilter("all");
+    setBrowserFilter("all");
+    setReferrerFilter("all");
+    setSortConfig({ key: "created_at", direction: "desc" });
+  };
+
+  const hasActiveFilters = searchTerm || deviceFilter !== "all" || browserFilter !== "all" || referrerFilter !== "all";
 
   const totalPages = Math.ceil(filteredPageViews.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentPageViews = filteredPageViews.slice(startIndex, endIndex);
+
 
   const exportToCSV = () => {
     if (!filteredPageViews || filteredPageViews.length === 0) {
@@ -46,12 +168,13 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId }: PageViewsTableP
       return;
     }
 
-    const headers = ["Data", "Hora", "Página", "Dispositivo", "IP", "Referrer", "User Agent"];
+    const headers = ["Data", "Hora", "Página", "Dispositivo", "Browser", "IP", "Referrer", "User Agent"];
     const rows = filteredPageViews.map(pv => [
       new Date(pv.created_at).toLocaleDateString("pt-BR"),
       new Date(pv.created_at).toLocaleTimeString("pt-BR"),
       pv.page_path,
       pv.metadata?.device || "desktop",
+      getBrowserInfo(pv.user_agent).name,
       pv.ip_address || "-",
       pv.referrer || "-",
       pv.user_agent || "-",
@@ -112,89 +235,249 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId }: PageViewsTableP
             <CardTitle>Visualizações de Página</CardTitle>
             <CardDescription>
               Mostrando {startIndex + 1}-{Math.min(endIndex, filteredPageViews.length)} de {filteredPageViews.length} visualizações
-              {searchTerm || deviceFilter !== "all" ? ` (filtrado de ${pageViews.length} total)` : ""}
+              {hasActiveFilters ? ` (filtrado de ${pageViews.length} total)` : ""}
             </CardDescription>
           </div>
-          <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
-            <Download className="w-4 h-4" />
-            Exportar CSV
-          </Button>
+          <div className="flex gap-2">
+            {onPeriodChange && (
+              <PeriodSelector onPeriodChange={onPeriodChange} defaultPeriod={30} />
+            )}
+            <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
+              <Download className="w-4 h-4" />
+              Exportar CSV
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por URL ou referrer..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-9"
-            />
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por URL ou referrer..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-9"
+              />
+            </div>
+            
+            <Select value={deviceFilter} onValueChange={(value) => {
+              setDeviceFilter(value);
+              setCurrentPage(1);
+            }}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Dispositivo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos dispositivos</SelectItem>
+                <SelectItem value="mobile">Mobile</SelectItem>
+                <SelectItem value="desktop">Desktop</SelectItem>
+                <SelectItem value="tablet">Tablet</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={browserFilter} onValueChange={(value) => {
+              setBrowserFilter(value);
+              setCurrentPage(1);
+            }}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Browser" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos browsers</SelectItem>
+                {uniqueBrowsers.map(browser => (
+                  <SelectItem key={browser} value={browser}>{browser}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={referrerFilter} onValueChange={(value) => {
+              setReferrerFilter(value);
+              setCurrentPage(1);
+            }}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Fonte" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as fontes</SelectItem>
+                <SelectItem value="direct">Direto</SelectItem>
+                {uniqueReferrers.map(ref => (
+                  <SelectItem key={ref} value={ref}>{ref}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {hasActiveFilters && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={clearFilters}
+                className="gap-2"
+              >
+                <X className="w-4 h-4" />
+                Limpar Filtros
+              </Button>
+            )}
           </div>
-          <Select value={deviceFilter} onValueChange={(value) => {
-            setDeviceFilter(value);
-            setCurrentPage(1);
-          }}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Dispositivo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos dispositivos</SelectItem>
-              <SelectItem value="mobile">Mobile</SelectItem>
-              <SelectItem value="desktop">Desktop</SelectItem>
-              <SelectItem value="tablet">Tablet</SelectItem>
-            </SelectContent>
-          </Select>
+
+          {hasActiveFilters && (
+            <div className="text-sm text-muted-foreground">
+              {filteredPageViews.length} visualizações encontradas
+            </div>
+          )}
         </div>
 
         <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead>Página</TableHead>
-                <TableHead>Dispositivo</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead>Referrer</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentPageViews.map((pv) => (
-                <TableRow key={pv.id}>
-                  <TableCell className="whitespace-nowrap">
-                    <div className="text-sm">
-                      {new Date(pv.created_at).toLocaleDateString("pt-BR")}
+          <TooltipProvider>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleSort("created_at")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Data/Hora
+                      {sortConfig.key === "created_at" && (
+                        sortConfig.direction === "asc" ? 
+                          <ArrowUp className="w-4 h-4" /> : 
+                          <ArrowDown className="w-4 h-4" />
+                      )}
+                      {sortConfig.key !== "created_at" && <ArrowUpDown className="w-4 h-4 opacity-30" />}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(pv.created_at).toLocaleTimeString("pt-BR")}
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleSort("page_path")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Página
+                      {sortConfig.key === "page_path" && (
+                        sortConfig.direction === "asc" ? 
+                          <ArrowUp className="w-4 h-4" /> : 
+                          <ArrowDown className="w-4 h-4" />
+                      )}
+                      {sortConfig.key !== "page_path" && <ArrowUpDown className="w-4 h-4 opacity-30" />}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-xs truncate" title={pv.page_path}>
-                      {pv.page_path}
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleSort("device")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Dispositivo
+                      {sortConfig.key === "device" && (
+                        sortConfig.direction === "asc" ? 
+                          <ArrowUp className="w-4 h-4" /> : 
+                          <ArrowDown className="w-4 h-4" />
+                      )}
+                      {sortConfig.key !== "device" && <ArrowUpDown className="w-4 h-4 opacity-30" />}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {pv.metadata?.device || "desktop"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {pv.ip_address || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-xs truncate text-xs text-muted-foreground" title={pv.referrer || "-"}>
-                      {pv.referrer || "Direto"}
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleSort("browser")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Browser
+                      {sortConfig.key === "browser" && (
+                        sortConfig.direction === "asc" ? 
+                          <ArrowUp className="w-4 h-4" /> : 
+                          <ArrowDown className="w-4 h-4" />
+                      )}
+                      {sortConfig.key !== "browser" && <ArrowUpDown className="w-4 h-4 opacity-30" />}
                     </div>
-                  </TableCell>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleSort("ip_address")}
+                  >
+                    <div className="flex items-center gap-2">
+                      IP
+                      {sortConfig.key === "ip_address" && (
+                        sortConfig.direction === "asc" ? 
+                          <ArrowUp className="w-4 h-4" /> : 
+                          <ArrowDown className="w-4 h-4" />
+                      )}
+                      {sortConfig.key !== "ip_address" && <ArrowUpDown className="w-4 h-4 opacity-30" />}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleSort("referrer")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Referrer
+                      {sortConfig.key === "referrer" && (
+                        sortConfig.direction === "asc" ? 
+                          <ArrowUp className="w-4 h-4" /> : 
+                          <ArrowDown className="w-4 h-4" />
+                      )}
+                      {sortConfig.key !== "referrer" && <ArrowUpDown className="w-4 h-4 opacity-30" />}
+                    </div>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {currentPageViews.map((pv) => {
+                  const device = pv.metadata?.device || "desktop";
+                  const deviceInfo = getDeviceInfo(device);
+                  const browserInfo = getBrowserInfo(pv.user_agent);
+                  const DeviceIcon = deviceInfo.icon;
+                  const BrowserIcon = browserInfo.icon;
+
+                  return (
+                    <TableRow key={pv.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell className="whitespace-nowrap">
+                        <div className="text-sm">
+                          {new Date(pv.created_at).toLocaleDateString("pt-BR")}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(pv.created_at).toLocaleTimeString("pt-BR")}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate font-medium" title={pv.page_path}>
+                          {pv.page_path}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`${deviceInfo.bgColor} ${deviceInfo.color} border-0 gap-1.5`}>
+                          <DeviceIcon className="w-3.5 h-3.5" />
+                          {device}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Badge variant="secondary" className="gap-1.5 cursor-help">
+                              <BrowserIcon className="w-3.5 h-3.5" />
+                              {browserInfo.name}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-md">
+                            <p className="text-xs break-all">{pv.user_agent || "N/A"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {pv.ip_address || "-"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate text-xs text-muted-foreground" title={pv.referrer || "-"}>
+                          {pv.referrer || "Direto"}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TooltipProvider>
         </div>
 
         {totalPages > 1 && (
