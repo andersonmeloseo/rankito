@@ -67,7 +67,7 @@ export const useAnalytics = ({
       }
 
       if (device !== "all") {
-        query = query.ilike("metadata->>device", device);
+        query = query.filter('metadata->>device', 'eq', device);
       }
 
       const { data, count, error } = await query;
@@ -109,7 +109,7 @@ export const useAnalytics = ({
       }
 
       if (device !== "all") {
-        query = query.ilike("metadata->>device", device);
+        query = query.filter('metadata->>device', 'eq', device);
       }
 
       const { data, error } = await query;
@@ -149,7 +149,7 @@ export const useAnalytics = ({
         .lte("created_at", endDate);
 
       if (device !== "all") {
-        query = query.ilike("metadata->>device", device);
+        query = query.filter('metadata->>device', 'eq', device);
       }
 
       const { data, error } = await query;
@@ -184,7 +184,7 @@ export const useAnalytics = ({
       }
 
       if (device !== "all") {
-        query = query.ilike("metadata->>device", device);
+        query = query.filter('metadata->>device', 'eq', device);
       }
 
       const { data, error } = await query;
@@ -248,7 +248,7 @@ export const useAnalytics = ({
       }
 
       if (device !== "all") {
-        query = query.ilike("metadata->>device", device);
+        query = query.filter('metadata->>device', 'eq', device);
       }
 
       const { data, error } = await query;
@@ -274,7 +274,7 @@ export const useAnalytics = ({
         .limit(100);
 
       if (device !== "all") {
-        query = query.ilike("metadata->>device", device);
+        query = query.filter('metadata->>device', 'eq', device);
       }
 
       const { data, error } = await query;
@@ -439,8 +439,8 @@ export const useAnalytics = ({
         .lte("created_at", previousEnd);
 
       if (device !== "all") {
-        currentQuery = currentQuery.ilike("metadata->>device", device);
-        previousQuery = previousQuery.ilike("metadata->>device", device);
+        currentQuery = currentQuery.filter('metadata->>device', 'eq', device);
+        previousQuery = previousQuery.filter('metadata->>device', 'eq', device);
       }
 
       const [{ data: currentData }, { data: previousData }] = await Promise.all([
@@ -486,7 +486,7 @@ export const useAnalytics = ({
         .lte("created_at", endDate);
 
       if (device !== "all") {
-        query = query.ilike("metadata->>device", device);
+        query = query.filter('metadata->>device', 'eq', device);
       }
 
       const { data, error } = await query;
@@ -523,7 +523,7 @@ export const useAnalytics = ({
         .lte("created_at", endDate);
 
       if (device !== "all") {
-        query = query.ilike("metadata->>device", device);
+        query = query.filter('metadata->>device', 'eq', device);
       }
 
       const { data, error } = await query;

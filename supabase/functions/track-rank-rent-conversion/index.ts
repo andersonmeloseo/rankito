@@ -107,6 +107,34 @@ serve(async (req) => {
     const user_agent = req.headers.get('user-agent') || 'unknown';
     const referrer = metadata?.referrer || null;
 
+    // Detect device type from user agent
+    const detectDevice = (userAgent: string): string => {
+      const ua = userAgent.toLowerCase();
+      
+      // Mobile detection
+      if (ua.includes('mobile') || 
+          ua.includes('android') || 
+          ua.includes('iphone') || 
+          ua.includes('ipod') || 
+          ua.includes('blackberry') || 
+          ua.includes('windows phone')) {
+        return 'mobile';
+      }
+      
+      // Tablet detection
+      if (ua.includes('tablet') || 
+          ua.includes('ipad') || 
+          ua.includes('kindle') || 
+          ua.includes('playbook') || 
+          ua.includes('silk')) {
+        return 'tablet';
+      }
+      
+      return 'desktop';
+    };
+
+    const device = detectDevice(user_agent);
+
     // Find or create page
     let pageId = null;
     const { data: existingPage } = await supabase
@@ -149,7 +177,11 @@ serve(async (req) => {
         page_path,
         event_type,
         cta_text,
-        metadata: metadata || {},
+        metadata: { 
+          ...metadata, 
+          device,
+          detected_at: new Date().toISOString()
+        },
         ip_address,
         user_agent,
         referrer,

@@ -8,10 +8,10 @@ interface PagePerformanceChartProps {
 }
 
 const getColorByPerformance = (conversionRate: number) => {
-  if (conversionRate >= 5) return "hsl(var(--chart-1))"; // Verde - Excelente
-  if (conversionRate >= 2) return "hsl(var(--chart-2))"; // Azul - Bom
-  if (conversionRate >= 1) return "hsl(var(--chart-3))"; // Amarelo - Médio
-  return "hsl(var(--chart-4))"; // Vermelho - Baixo
+  if (conversionRate >= 5) return "#10B981"; // Verde - Excelente
+  if (conversionRate >= 2) return "#3B82F6"; // Azul - Bom
+  if (conversionRate >= 1) return "#F59E0B"; // Amarelo - Médio
+  return "#EF4444"; // Vermelho - Baixo
 };
 
 export const PagePerformanceChart = ({ data, isLoading }: PagePerformanceChartProps) => {
@@ -122,7 +122,7 @@ export const PagePerformanceChart = ({ data, isLoading }: PagePerformanceChartPr
             <Bar 
               dataKey="conversions" 
               name="Conversões"
-              fill="hsl(var(--primary))" 
+              fill="#8B5CF6" 
               radius={[8, 8, 0, 0]}
               animationDuration={1200}
             />

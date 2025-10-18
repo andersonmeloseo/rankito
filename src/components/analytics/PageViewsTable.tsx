@@ -48,9 +48,9 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId }: PageViewsTableP
 
   const getDeviceInfo = (device: string) => {
     switch(device) {
-      case "mobile": return { icon: Smartphone, color: "text-blue-500", bgColor: "bg-blue-500/10" };
-      case "tablet": return { icon: Tablet, color: "text-purple-500", bgColor: "bg-purple-500/10" };
-      default: return { icon: Monitor, color: "text-green-500", bgColor: "bg-green-500/10" };
+      case "mobile": return { icon: Smartphone, color: "text-blue-600", bgColor: "bg-blue-100 dark:bg-blue-900/30" };
+      case "tablet": return { icon: Tablet, color: "text-purple-600", bgColor: "bg-purple-100 dark:bg-purple-900/30" };
+      default: return { icon: Monitor, color: "text-green-600", bgColor: "bg-green-100 dark:bg-green-900/30" };
     }
   };
 

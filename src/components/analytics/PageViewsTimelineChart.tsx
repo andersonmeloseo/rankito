@@ -70,12 +70,12 @@ export const PageViewsTimelineChart = ({ data, isLoading }: PageViewsTimelineCha
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorCurrent" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#60A5FA" stopOpacity={0.1}/>
               </linearGradient>
               <linearGradient id="colorPrevious" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.4}/>
-                <stop offset="95%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.05}/>
+                <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.4}/>
+                <stop offset="95%" stopColor="#CBD5E1" stopOpacity={0.05}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
@@ -100,7 +100,7 @@ export const PageViewsTimelineChart = ({ data, isLoading }: PageViewsTimelineCha
             <Area 
               type="monotone" 
               dataKey="previous" 
-              stroke="hsl(var(--muted-foreground))" 
+              stroke="#94A3B8" 
               strokeWidth={2}
               fill="url(#colorPrevious)" 
               name="Período Anterior"
@@ -109,7 +109,7 @@ export const PageViewsTimelineChart = ({ data, isLoading }: PageViewsTimelineCha
             <Area 
               type="monotone" 
               dataKey="current" 
-              stroke="hsl(var(--primary))" 
+              stroke="#3B82F6" 
               strokeWidth={3}
               fill="url(#colorCurrent)" 
               name="Período Atual"

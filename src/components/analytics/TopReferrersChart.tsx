@@ -9,11 +9,14 @@ interface TopReferrersChartProps {
 }
 
 const COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
+  "#3B82F6", // Azul vibrante
+  "#10B981", // Verde esmeralda
+  "#F59E0B", // Laranja âmbar
+  "#8B5CF6", // Roxo vibrante
+  "#EF4444", // Vermelho coral
+  "#14B8A6", // Teal
+  "#F97316", // Laranja forte
+  "#6366F1", // Indigo
 ];
 
 export const TopReferrersChart = ({ data, isLoading }: TopReferrersChartProps) => {
