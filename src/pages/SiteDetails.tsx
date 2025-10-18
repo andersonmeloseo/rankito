@@ -36,6 +36,7 @@ import { TopConversionPagesChart } from "@/components/analytics/TopConversionPag
 import { ConversionTypeDistributionChart } from "@/components/analytics/ConversionTypeDistributionChart";
 import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
 import { TestPageViewButton } from "@/components/analytics/TestPageViewButton";
+import { ROIAnalysisCard } from "@/components/analytics/ROIAnalysisCard";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { format, subDays } from "date-fns";
 
@@ -1054,6 +1055,8 @@ const SiteDetails = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <ROIAnalysisCard siteId={siteId!} />
           </TabsContent>
 
           {/* Advanced Analytics Tab */}
