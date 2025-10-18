@@ -400,6 +400,7 @@ export type Database = {
           total_conversions: number | null
           total_page_views: number | null
           tracking_pixel_installed: boolean | null
+          tracking_token: string | null
           unique_pages_with_traffic: number | null
           updated_at: string | null
           user_id: string | null
