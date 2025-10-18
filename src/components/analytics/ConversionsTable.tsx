@@ -322,7 +322,6 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                       <SortIcon columnKey="event_type" />
                     </div>
                   </TableHead>
-                  <TableHead>CTA</TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort("page_path")}
@@ -332,6 +331,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                       <SortIcon columnKey="page_path" />
                     </div>
                   </TableHead>
+                  <TableHead>CTA</TableHead>
                   <TableHead
                     className="cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort("device")}
@@ -382,11 +382,6 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm max-w-[200px] truncate">
-                          {conv.cta_text || "-"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="max-w-xs truncate cursor-help">
@@ -397,6 +392,11 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                             <p className="max-w-sm">{conv.page_path}</p>
                           </TooltipContent>
                         </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm max-w-[200px] truncate">
+                          {conv.cta_text || "-"}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
