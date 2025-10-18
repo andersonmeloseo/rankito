@@ -331,6 +331,7 @@ export type Database = {
           contract_start_date: string | null
           created_at: string | null
           email: string | null
+          niche: string | null
           phone: string | null
           total_conversions: number | null
           total_monthly_value: number | null

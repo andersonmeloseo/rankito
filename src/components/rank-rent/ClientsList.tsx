@@ -13,12 +13,30 @@ interface ClientsListProps {
   userId: string;
 }
 
+interface ClientMetric {
+  client_id: string;
+  client_name: string;
+  email: string;
+  phone: string;
+  company: string;
+  niche?: string;
+  contract_start_date: string;
+  contract_end_date: string;
+  created_at: string;
+  updated_at: string;
+  access_token: string;
+  total_pages_rented: number;
+  total_monthly_value: number;
+  total_page_views: number;
+  total_conversions: number;
+}
+
 export const ClientsList = ({ userId }: ClientsListProps) => {
   const { toast } = useToast();
   const [showAddClient, setShowAddClient] = useState(false);
   const [nicheFilter, setNicheFilter] = useState<string>("all");
 
-  const { data: clients, isLoading } = useQuery({
+  const { data: clients, isLoading } = useQuery<ClientMetric[]>({
     queryKey: ["rank-rent-clients", userId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -27,7 +45,7 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
         .order("total_monthly_value", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as ClientMetric[];
     },
     refetchInterval: 30000,
   });
