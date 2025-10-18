@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ExternalLink, FolderOpen, Pencil, MoreVertical, Play, RefreshCw, Search } from "lucide-react";
+import { ExternalLink, FolderOpen, Pencil, MoreVertical, Play, RefreshCw, Search, Eye, Phone, FileText, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EditSiteWithRentalDialog } from "./EditSiteWithRentalDialog";
 import { RentSiteDialog } from "./RentSiteDialog";
@@ -45,10 +45,10 @@ export const SitesList = ({ userId }: SitesListProps) => {
   };
 
   const { data: sites, isLoading } = useQuery({
-    queryKey: ["rank-rent-sites", userId],
+    queryKey: ["rank-rent-site-metrics", userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("rank_rent_sites")
+        .from("rank_rent_site_metrics")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
@@ -156,6 +156,30 @@ export const SitesList = ({ userId }: SitesListProps) => {
         <td className="p-3">
           <ContractStatusBadge status={contractStatus} daysRemaining={daysRemaining} />
         </td>
+        <td className="p-3 text-center">
+          <div className="flex items-center justify-center gap-1">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <span className="text-foreground font-medium">{site.total_pages || 0}</span>
+          </div>
+        </td>
+        <td className="p-3 text-center">
+          <div className="flex items-center justify-center gap-1">
+            <Eye className="h-4 w-4 text-muted-foreground" />
+            <span className="text-foreground">{site.total_page_views?.toLocaleString("pt-BR") || 0}</span>
+          </div>
+        </td>
+        <td className="p-3 text-center">
+          <div className="flex items-center justify-center gap-1">
+            <Phone className="h-4 w-4 text-muted-foreground" />
+            <span className="text-foreground">{site.total_conversions?.toLocaleString("pt-BR") || 0}</span>
+          </div>
+        </td>
+        <td className="p-3 text-center">
+          <div className="flex items-center justify-center gap-1">
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <span className="text-foreground font-medium">{site.conversion_rate || 0}%</span>
+          </div>
+        </td>
         <td className="p-3 text-foreground">{site.niche}</td>
         <td className="p-3 text-foreground">{site.location}</td>
         <td className="p-3 text-center">
@@ -250,6 +274,10 @@ export const SitesList = ({ userId }: SitesListProps) => {
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Cliente</th>
                   <th className="text-right p-3 text-sm font-medium text-muted-foreground">Valor Mensal</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Status Contrato</th>
+                  <th className="text-center p-3 text-sm font-medium text-muted-foreground">Páginas</th>
+                  <th className="text-center p-3 text-sm font-medium text-muted-foreground">Page Views</th>
+                  <th className="text-center p-3 text-sm font-medium text-muted-foreground">Conversões</th>
+                  <th className="text-center p-3 text-sm font-medium text-muted-foreground">Taxa</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Nicho</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Localização</th>
                   <th className="text-center p-3 text-sm font-medium text-muted-foreground">Ações</th>

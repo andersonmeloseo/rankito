@@ -94,7 +94,7 @@ export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteW
       const { error } = await supabase
         .from("rank_rent_sites")
         .update(updateData)
-        .eq("id", site.site_id);
+        .eq("id", site.id);
 
       if (error) throw error;
 
@@ -103,7 +103,7 @@ export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteW
         description: "As alterações foram salvas com sucesso",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["rank-rent-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["rank-rent-site-metrics"] });
       queryClient.invalidateQueries({ queryKey: ["site-details"] });
       queryClient.invalidateQueries({ queryKey: ["overview-metrics"] });
       

@@ -164,6 +164,13 @@ export type Database = {
             foreignKeyName: "rank_rent_conversions_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_conversions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_sites"
             referencedColumns: ["id"]
           },
@@ -256,6 +263,13 @@ export type Database = {
             foreignKeyName: "rank_rent_financial_config_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: true
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_financial_config_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
             referencedRelation: "rank_rent_sites"
             referencedColumns: ["id"]
           },
@@ -338,6 +352,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rank_rent_metrics"
             referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "rank_rent_pages_site_id_fkey"
@@ -576,6 +597,13 @@ export type Database = {
             foreignKeyName: "rank_rent_pages_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_sites"
             referencedColumns: ["id"]
           },
@@ -636,6 +664,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rank_rent_metrics"
             referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "rank_rent_pages_site_id_fkey"
@@ -723,7 +758,62 @@ export type Database = {
             foreignKeyName: "rank_rent_pages_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rank_rent_site_metrics: {
+        Row: {
+          auto_renew: boolean | null
+          client_company: string | null
+          client_email: string | null
+          client_id: string | null
+          client_name: string | null
+          client_phone: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          contract_status: string | null
+          conversion_rate: number | null
+          created_at: string | null
+          id: string | null
+          is_rented: boolean | null
+          location: string | null
+          monthly_rent_value: number | null
+          next_payment_date: string | null
+          niche: string | null
+          notes: string | null
+          payment_status: string | null
+          site_name: string | null
+          site_url: string | null
+          total_conversions: number | null
+          total_page_views: number | null
+          total_pages: number | null
+          tracking_pixel_installed: boolean | null
+          tracking_token: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_sites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_client_metrics"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_sites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
           },
         ]
