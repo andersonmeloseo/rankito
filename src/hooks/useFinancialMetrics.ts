@@ -38,6 +38,8 @@ export interface FinancialMetric {
   roi_percentage: number;
   cost_revenue_ratio: number;
   profit_margin: number;
+  phone_number?: string | null;
+  status?: string | null;
 }
 
 export const useFinancialMetrics = (siteId: string) => {
