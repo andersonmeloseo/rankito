@@ -150,6 +150,13 @@ export type Database = {
             foreignKeyName: "rank_rent_conversions_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_conversions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_metrics"
             referencedColumns: ["site_id"]
           },
@@ -229,6 +236,13 @@ export type Database = {
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_financial_config_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "rank_rent_contract_status"
             referencedColumns: ["id"]
           },
           {
@@ -315,6 +329,13 @@ export type Database = {
             foreignKeyName: "rank_rent_pages_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_metrics"
             referencedColumns: ["site_id"]
           },
@@ -365,19 +386,23 @@ export type Database = {
       }
       rank_rent_sites: {
         Row: {
+          auto_renew: boolean | null
           client_email: string | null
           client_id: string | null
           client_name: string | null
           client_phone: string | null
           contract_end_date: string | null
           contract_start_date: string | null
+          contract_status: string | null
           created_at: string
           id: string
           is_rented: boolean | null
           location: string
           monthly_rent_value: number | null
+          next_payment_date: string | null
           niche: string
           notes: string | null
+          payment_status: string | null
           site_name: string
           site_url: string
           tracking_pixel_installed: boolean | null
@@ -386,19 +411,23 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_renew?: boolean | null
           client_email?: string | null
           client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
           contract_end_date?: string | null
           contract_start_date?: string | null
+          contract_status?: string | null
           created_at?: string
           id?: string
           is_rented?: boolean | null
           location: string
           monthly_rent_value?: number | null
+          next_payment_date?: string | null
           niche: string
           notes?: string | null
+          payment_status?: string | null
           site_name: string
           site_url: string
           tracking_pixel_installed?: boolean | null
@@ -407,19 +436,23 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_renew?: boolean | null
           client_email?: string | null
           client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
           contract_end_date?: string | null
           contract_start_date?: string | null
+          contract_status?: string | null
           created_at?: string
           id?: string
           is_rented?: boolean | null
           location?: string
           monthly_rent_value?: number | null
+          next_payment_date?: string | null
           niche?: string
           notes?: string | null
+          payment_status?: string | null
           site_name?: string
           site_url?: string
           tracking_pixel_installed?: boolean | null
@@ -466,6 +499,41 @@ export type Database = {
         }
         Relationships: []
       }
+      rank_rent_contract_status: {
+        Row: {
+          auto_renew: boolean | null
+          client_email: string | null
+          client_id: string | null
+          client_name: string | null
+          client_phone: string | null
+          computed_status: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          contract_status: string | null
+          days_remaining: number | null
+          id: string | null
+          monthly_rent_value: number | null
+          next_payment_date: string | null
+          payment_status: string | null
+          site_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_sites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_client_metrics"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_sites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rank_rent_daily_stats: {
         Row: {
           client_id: string | null
@@ -488,6 +556,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
             referencedColumns: ["id"]
           },
           {
@@ -546,6 +621,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
             referencedColumns: ["id"]
           },
           {
@@ -627,6 +709,13 @@ export type Database = {
             foreignKeyName: "rank_rent_pages_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_metrics"
             referencedColumns: ["site_id"]
           },
@@ -641,7 +730,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      update_contract_statuses: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       event_type:
