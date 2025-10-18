@@ -18,6 +18,7 @@ import { ConversionsTimelineChart } from "@/components/analytics/ConversionsTime
 import { TopConversionPagesChart } from "@/components/analytics/TopConversionPagesChart";
 import { ConversionTypeDistributionChart } from "@/components/analytics/ConversionTypeDistributionChart";
 import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
+import { PageViewsHeatmapChart } from "@/components/analytics/PageViewsHeatmapChart";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
@@ -52,7 +53,8 @@ const Analytics = () => {
     topConversionPages,
     conversionTypeDistribution,
     conversionHourlyData,
-    isLoading 
+    pageViewHourlyData,
+    isLoading
   } = useAnalytics({
     siteId: siteId!,
     period,
@@ -200,6 +202,11 @@ const Analytics = () => {
                 isLoading={isLoading}
               />
             </div>
+
+            <PageViewsHeatmapChart 
+              data={pageViewHourlyData || {}} 
+              isLoading={isLoading}
+            />
 
             <PageViewsTable 
               pageViews={pageViewsList || []} 

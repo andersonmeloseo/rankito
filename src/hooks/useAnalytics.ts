@@ -634,6 +634,17 @@ export const useAnalytics = ({
     return acc;
   }, {} as Record<string, number>) || {};
 
+  // Page Views Hourly Data (para mapa de calor de page views)
+  const pageViewHourlyData = pageViewsList?.reduce((acc: Record<string, number>, pv: any) => {
+    const date = new Date(pv.created_at);
+    const hour = date.getHours();
+    const day = date.getDay();
+    const key = `${day}-${hour}`;
+    
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) || {};
+
   const isLoading =
     metricsLoading || 
     timelineLoading || 
@@ -664,6 +675,7 @@ export const useAnalytics = ({
     topConversionPages,
     conversionTypeDistribution: conversionTypeDistributionArray,
     conversionHourlyData,
+    pageViewHourlyData,
     isLoading,
   };
 };
