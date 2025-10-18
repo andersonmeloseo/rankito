@@ -199,6 +199,7 @@ export const useAnalytics = ({
         .from("rank_rent_conversions")
         .select("*")
         .eq("site_id", siteId)
+        .neq("event_type", "page_view")
         .gte("created_at", startDate)
         .lte("created_at", endDate)
         .order("created_at", { ascending: false })

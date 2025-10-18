@@ -184,6 +184,7 @@ const SiteDetails = () => {
         .from("rank_rent_conversions")
         .select("*")
         .eq("site_id", siteId)
+        .neq("event_type", "page_view")
         .order("created_at", { ascending: false })
         .limit(50);
 
