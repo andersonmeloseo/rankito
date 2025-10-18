@@ -35,6 +35,9 @@ import { ConversionsTimelineChart } from "@/components/analytics/ConversionsTime
 import { TopConversionPagesChart } from "@/components/analytics/TopConversionPagesChart";
 import { ConversionTypeDistributionChart } from "@/components/analytics/ConversionTypeDistributionChart";
 import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
+import { TopPageViewsChart } from "@/components/analytics/TopPageViewsChart";
+import { PageViewsDistributionChart } from "@/components/analytics/PageViewsDistributionChart";
+import { PageViewsHeatmapChart } from "@/components/analytics/PageViewsHeatmapChart";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { format, subDays } from "date-fns";
 
@@ -1149,20 +1152,25 @@ const SiteDetails = () => {
               </TabsContent>
               
               <TabsContent value="pageviews" className="space-y-6 mt-6">
+                <PageViewsTimelineChart 
+                  data={analyticsData.pageViewsTimeline || []} 
+                  isLoading={analyticsData.isLoading} 
+                />
+                
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <PageViewsTimelineChart 
-                    data={analyticsData.pageViewsTimeline || []} 
-                    isLoading={analyticsData.isLoading} 
+                  <TopPageViewsChart 
+                    data={analyticsData.topPageViewPages || []} 
+                    isLoading={analyticsData.isLoading}
                   />
-                  <TopReferrersChart 
-                    data={analyticsData.topReferrers || []} 
-                    isLoading={analyticsData.isLoading} 
+                  <PageViewsDistributionChart 
+                    data={analyticsData.pageViewsDeviceDistribution || []} 
+                    isLoading={analyticsData.isLoading}
                   />
                 </div>
                 
-                <PagePerformanceChart 
-                  data={analyticsData.pagePerformance || []} 
-                  isLoading={analyticsData.isLoading} 
+                <PageViewsHeatmapChart 
+                  data={analyticsData.pageViewHourlyData || {}} 
+                  isLoading={analyticsData.isLoading}
                 />
                 
                 <PageViewsTable 
