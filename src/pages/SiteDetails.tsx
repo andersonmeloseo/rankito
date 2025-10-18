@@ -583,13 +583,12 @@ const SiteDetails = () => {
 
         {/* Tabs Section */}
         <Tabs defaultValue="pages" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 max-w-5xl">
+          <TabsList className="grid w-full grid-cols-5 max-w-5xl">
             <TabsTrigger value="pages">Páginas</TabsTrigger>
             <TabsTrigger value="analytics">Análise</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Análise Detalhada</TabsTrigger>
             <TabsTrigger value="client">Cliente</TabsTrigger>
             <TabsTrigger value="plugin">Conexão WordPress</TabsTrigger>
-            <TabsTrigger value="conversions">Conversões</TabsTrigger>
           </TabsList>
 
           {/* Páginas Tab */}
@@ -1244,66 +1243,6 @@ const SiteDetails = () => {
               trackingPixelInstalled={site.tracking_pixel_installed}
               siteName={site.site_name}
             />
-          </TabsContent>
-
-          {/* Conversões Tab */}
-          <TabsContent value="conversions">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Conversões Recentes</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">Últimas 50 conversões registradas</p>
-              </CardHeader>
-              <CardContent>
-                {conversionsLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-                  </div>
-                ) : conversions && conversions.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Data/Hora</TableHead>
-                          <TableHead>Página</TableHead>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead>CTA</TableHead>
-                          <TableHead>IP</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {conversions.map((conversion) => (
-                          <TableRow key={conversion.id}>
-                            <TableCell className="text-foreground">
-                              {new Date(conversion.created_at).toLocaleString("pt-BR")}
-                            </TableCell>
-                            <TableCell>
-                              <a
-                                href={conversion.page_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline flex items-center gap-1"
-                              >
-                                {conversion.page_path}
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{conversion.event_type}</Badge>
-                            </TableCell>
-                            <TableCell className="text-foreground">{conversion.cta_text || "-"}</TableCell>
-                            <TableCell className="text-muted-foreground text-xs">{conversion.ip_address || "-"}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">Nenhuma conversão registrada ainda.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
