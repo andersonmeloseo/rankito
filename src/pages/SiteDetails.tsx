@@ -32,6 +32,7 @@ import { TopReferrersChart } from "@/components/analytics/TopReferrersChart";
 import { PagePerformanceChart } from "@/components/analytics/PagePerformanceChart";
 import { PageViewsTable } from "@/components/analytics/PageViewsTable";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { format, subDays } from "date-fns";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -68,6 +69,12 @@ const SiteDetails = () => {
   const [analyticsDevice, setAnalyticsDevice] = useState("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+  
+  // Page Views Period State (separate from main analytics)
+  const [pageViewsPeriod, setPageViewsPeriod] = useState({
+    startDate: format(subDays(new Date(), 30), "yyyy-MM-dd"),
+    endDate: format(new Date(), "yyyy-MM-dd"),
+  });
   
   // Debounce search term
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -200,6 +207,25 @@ const SiteDetails = () => {
     },
     enabled: !!siteId,
     refetchInterval: 30000,
+  });
+
+  // Fetch page views with separate period control
+  const { data: pageViewsData, isLoading: pageViewsLoading } = useQuery({
+    queryKey: ["page-views-detailed", siteId, pageViewsPeriod.startDate, pageViewsPeriod.endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_conversions")
+        .select("*")
+        .eq("site_id", siteId)
+        .eq("event_type", "page_view")
+        .gte("created_at", pageViewsPeriod.startDate)
+        .lte("created_at", pageViewsPeriod.endDate)
+        .order("created_at", { ascending: false });
+        
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!siteId,
   });
   
   // Analytics hook
@@ -1115,9 +1141,12 @@ const SiteDetails = () => {
                 />
                 
                 <PageViewsTable 
-                  pageViews={analyticsData.pageViewsList || []} 
-                  isLoading={analyticsData.isLoading}
+                  pageViews={pageViewsData || []} 
+                  isLoading={pageViewsLoading}
                   siteId={siteId || ""}
+                  onPeriodChange={(startDate, endDate) => {
+                    setPageViewsPeriod({ startDate, endDate });
+                  }}
                 />
               </TabsContent>
             </Tabs>
