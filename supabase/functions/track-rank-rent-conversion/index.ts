@@ -47,8 +47,9 @@ serve(async (req) => {
       });
     } catch (parseError) {
       console.error('❌ Failed to parse request body:', parseError);
+      const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON body', details: parseError.message }),
+        JSON.stringify({ error: 'Invalid JSON body', details: errorMessage }),
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
