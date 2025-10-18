@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, BarChart3, Users, Globe, DollarSign } from "lucide-react";
+import { LogOut, BarChart3, Users, Globe, DollarSign, Eye, UserCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,10 +58,28 @@ const SuperAdminDashboard = () => {
             </h1>
             <p className="text-muted-foreground mt-1">{user?.email}</p>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate("/dashboard")}
+              className="gap-2"
+            >
+              <Globe className="h-4 w-4" />
+              Ver como Cliente
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate("/end-client-portal")}
+              className="gap-2"
+            >
+              <UserCircle className="h-4 w-4" />
+              Ver Portal End Client
+            </Button>
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}

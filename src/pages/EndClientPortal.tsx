@@ -7,16 +7,17 @@ import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery } from "@tanstack/react-query";
+import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
 
 const EndClientPortal = () => {
   const navigate = useNavigate();
-  const { isEndClient, isLoading, user } = useRole();
+  const { isEndClient, isSuperAdmin, isLoading, user } = useRole();
 
   useEffect(() => {
-    if (!isLoading && !isEndClient) {
+    if (!isLoading && !isEndClient && !isSuperAdmin) {
       navigate("/dashboard");
     }
-  }, [isEndClient, isLoading, navigate]);
+  }, [isEndClient, isSuperAdmin, isLoading, navigate]);
 
   const { data: profile } = useQuery({
     queryKey: ['end-client-profile', user?.id],
@@ -99,6 +100,9 @@ const EndClientPortal = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-accent/10">
+      {/* Super Admin Banner */}
+      {isSuperAdmin && <SuperAdminBanner currentView="end_client" />}
+      
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>

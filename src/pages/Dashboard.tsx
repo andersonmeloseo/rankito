@@ -18,6 +18,7 @@ import { PaymentAlerts } from "@/components/rank-rent/financial/PaymentAlerts";
 import { PaymentsList } from "@/components/rank-rent/financial/PaymentsList";
 import { useGlobalFinancialMetrics } from "@/hooks/useGlobalFinancialMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -29,19 +30,15 @@ const Dashboard = () => {
 
   const { sitesMetrics, summary, isLoading: financialLoading } = useGlobalFinancialMetrics(user?.id || "");
 
-  // Redirecionar baseado em role
+  // Redirecionar apenas End Clients (Super Admin pode acessar tudo)
   useEffect(() => {
     if (!roleLoading && role) {
-      if (isSuperAdmin) {
-        navigate("/super-admin");
-        return;
-      }
       if (isEndClient) {
         navigate("/end-client-portal");
         return;
       }
     }
-  }, [role, isSuperAdmin, isEndClient, roleLoading, navigate]);
+  }, [role, isEndClient, roleLoading, navigate]);
 
   useEffect(() => {
     // 1. Configurar listener PRIMEIRO
@@ -94,6 +91,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-muted/30">
+      {/* Super Admin Banner */}
+      {isSuperAdmin && <SuperAdminBanner currentView="client" />}
+      
       {/* Header */}
       <header className="bg-card border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
