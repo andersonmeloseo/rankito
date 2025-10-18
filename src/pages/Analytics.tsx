@@ -184,6 +184,10 @@ const Analytics = () => {
               conversions={conversions || []} 
               isLoading={isLoading}
               siteId={siteId}
+              onPeriodChange={(startDate, endDate) => {
+                // A filtragem é feita no lado do cliente dentro da ConversionsTable
+                console.log('Período de conversões alterado:', { startDate, endDate });
+              }}
             />
           </TabsContent>
           

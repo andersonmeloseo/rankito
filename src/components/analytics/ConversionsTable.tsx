@@ -8,23 +8,36 @@ import { Download, Search, ArrowUpDown, ArrowUp, ArrowDown, X, Smartphone, Monit
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PeriodSelector } from "./PeriodSelector";
 
 interface ConversionsTableProps {
   conversions: any[];
   isLoading: boolean;
   siteId: string;
+  onPeriodChange?: (startDate: string, endDate: string) => void;
 }
 
-export const ConversionsTable = ({ conversions, isLoading, siteId }: ConversionsTableProps) => {
+export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChange }: ConversionsTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const [deviceFilter, setDeviceFilter] = useState("all");
+  const [conversionStartDate, setConversionStartDate] = useState<Date | undefined>();
+  const [conversionEndDate, setConversionEndDate] = useState<Date | undefined>();
   const [sortConfig, setSortConfig] = useState<{
     key: "created_at" | "event_type" | "page_path" | "device" | "browser" | "city";
     direction: "asc" | "desc";
   }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
+
+  const handlePeriodChange = (startDate: string, endDate: string) => {
+    setConversionStartDate(new Date(startDate));
+    setConversionEndDate(new Date(endDate));
+    setCurrentPage(1);
+    if (onPeriodChange) {
+      onPeriodChange(startDate, endDate);
+    }
+  };
 
   const handleSort = (key: typeof sortConfig.key) => {
     setSortConfig(prev => ({
@@ -72,9 +85,9 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
 
   const filteredConversions = useMemo(() => {
     let filtered = conversions?.filter(conv => {
-    const matchesSearch = searchTerm === "" || 
-      conv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      conv.city?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = searchTerm === "" || 
+        conv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        conv.city?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesEventType = eventTypeFilter === "all" || conv.event_type === eventTypeFilter;
       
@@ -84,7 +97,13 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
         (deviceFilter === "tablet" && (convDevice.includes("tablet") || convDevice.includes("ipad"))) ||
         (deviceFilter === "desktop" && !convDevice.includes("mobile") && !convDevice.includes("tablet") && !convDevice.includes("android") && !convDevice.includes("iphone") && !convDevice.includes("ipad"));
       
-      return matchesSearch && matchesEventType && matchesDevice;
+      // Filtro de data (se definido)
+      const matchesDateRange = !conversionStartDate || !conversionEndDate || (() => {
+        const convDate = new Date(conv.created_at);
+        return convDate >= conversionStartDate && convDate <= conversionEndDate;
+      })();
+      
+      return matchesSearch && matchesEventType && matchesDevice && matchesDateRange;
     }) || [];
 
     // Apply sorting
@@ -127,7 +146,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
     });
 
     return filtered;
-  }, [conversions, searchTerm, eventTypeFilter, deviceFilter, sortConfig]);
+  }, [conversions, searchTerm, eventTypeFilter, deviceFilter, sortConfig, conversionStartDate, conversionEndDate]);
 
   const totalPages = Math.ceil(filteredConversions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -242,10 +261,15 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                 {hasActiveFilters ? ` (filtrado de ${conversions?.length || 0} total)` : ""}
               </CardDescription>
             </div>
-            <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
-              <Download className="w-4 h-4" />
-              Exportar CSV
-            </Button>
+            <div className="flex gap-2">
+              {onPeriodChange && (
+                <PeriodSelector onPeriodChange={handlePeriodChange} defaultPeriod={30} />
+              )}
+              <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
+                <Download className="w-4 h-4" />
+                Exportar CSV
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
