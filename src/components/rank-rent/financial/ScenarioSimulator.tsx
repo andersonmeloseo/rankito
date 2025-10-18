@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, DollarSign, Percent } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Percent, Activity } from "lucide-react";
 import { useScenarioSimulator } from "@/hooks/useScenarioSimulator";
 import { FinancialMetric, FinancialConfig } from "@/hooks/useFinancialMetrics";
 
@@ -29,6 +29,7 @@ export const ScenarioSimulator = ({ metrics, config }: ScenarioSimulatorProps) =
   const projectedRevenue = currentRevenue * Math.pow(1 + monthlyGrowth / 100, growthMonths);
   const projectedProfit = projectedRevenue - (config?.monthly_fixed_costs || 0);
   const totalGrowth = projectedRevenue - currentRevenue;
+  const totalGrowthPercent = currentRevenue > 0 ? (totalGrowth / currentRevenue) * 100 : 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -41,168 +42,142 @@ export const ScenarioSimulator = ({ metrics, config }: ScenarioSimulatorProps) =
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          🔮 Simulador de Cenários
+          <Activity className="h-5 w-5" />
+          Simulador de Cenários
         </CardTitle>
-        <CardDescription>Simule diferentes cenários financeiros antes de aplicar</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="price">
+        <Tabs defaultValue="price" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="price">Aumento de Preços</TabsTrigger>
-            <TabsTrigger value="cost">Aumento de Custos</TabsTrigger>
-            <TabsTrigger value="growth">Projeção de Crescimento</TabsTrigger>
+            <TabsTrigger value="price">Preços</TabsTrigger>
+            <TabsTrigger value="cost">Custos</TabsTrigger>
+            <TabsTrigger value="growth">Crescimento</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="price" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Aumentar todos os preços em: {priceIncrease}%</Label>
-              <Slider
-                value={[priceIncrease]}
-                onValueChange={(v) => setPriceIncrease(v[0])}
-                min={-50}
-                max={100}
-                step={5}
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="rounded-lg border p-4 space-y-2">
-                <p className="text-sm text-muted-foreground">Receita Atual</p>
-                <p className="text-2xl font-bold">{formatCurrency(priceScenario.currentRevenue)}</p>
-              </div>
-              <div className="rounded-lg border p-4 space-y-2">
-                <p className="text-sm text-muted-foreground">Nova Receita</p>
-                <p className="text-2xl font-bold text-primary">{formatCurrency(priceScenario.newRevenue)}</p>
-              </div>
-            </div>
-
-            <div className="rounded-lg bg-primary/10 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                {priceScenario.difference > 0 ? (
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                ) : (
-                  <TrendingDown className="h-5 w-5 text-destructive" />
-                )}
-                <div>
-                  <p className="text-sm font-medium">Impacto no Lucro</p>
-                  <p className="text-2xl font-bold">
-                    {priceScenario.difference > 0 ? "+" : ""}
-                    {formatCurrency(priceScenario.difference)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {priceScenario.percentageChange > 0 ? "+" : ""}
-                    {priceScenario.percentageChange.toFixed(1)}% de aumento
-                  </p>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="cost" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Se os custos aumentarem: {costIncrease}%</Label>
-              <Slider
-                value={[costIncrease]}
-                onValueChange={(v) => setCostIncrease(v[0])}
-                min={0}
-                max={200}
-                step={10}
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="rounded-lg border p-4 space-y-2">
-                <p className="text-sm text-muted-foreground">Custos Atuais</p>
-                <p className="text-2xl font-bold">{formatCurrency(costScenario.currentCosts)}</p>
-              </div>
-              <div className="rounded-lg border p-4 space-y-2">
-                <p className="text-sm text-muted-foreground">Novos Custos</p>
-                <p className="text-2xl font-bold text-destructive">{formatCurrency(costScenario.newCosts)}</p>
-              </div>
-            </div>
-
-            <div className="rounded-lg bg-destructive/10 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <TrendingDown className="h-5 w-5 text-destructive" />
-                <div>
-                  <p className="text-sm font-medium">Impacto no Lucro</p>
-                  <p className="text-2xl font-bold text-destructive">
-                    {formatCurrency(costScenario.difference)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {costScenario.percentageChange.toFixed(1)}% de redução
-                  </p>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="growth" className="space-y-4 mt-4">
+          {/* Price Increase Scenario */}
+          <TabsContent value="price" className="space-y-4">
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Crescimento mensal: {monthlyGrowth}%</Label>
+              <div>
+                <label className="text-sm font-medium">
+                  E se aumentar os preços em: {priceIncrease}%
+                </label>
                 <Slider
-                  value={[monthlyGrowth]}
-                  onValueChange={(v) => setMonthlyGrowth(v[0])}
+                  value={[priceIncrease]}
+                  onValueChange={(value) => setPriceIncrease(value[0])}
                   min={0}
-                  max={50}
+                  max={100}
                   step={5}
+                  className="mt-2"
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Receita Atual</p>
+                  <p className="text-lg font-semibold">{formatCurrency(currentRevenue)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Nova Receita</p>
+                  <p className="text-lg font-semibold text-green-600">
+                    {formatCurrency(priceScenario.newRevenue)}
+                  </p>
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <p className="text-sm text-muted-foreground">Lucro Adicional</p>
+                  <p className="text-xl font-bold text-green-600 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    +{formatCurrency(priceScenario.difference)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
 
-              <div className="space-y-2">
-                <Label>Projetar para: {growthMonths} meses</Label>
+          {/* Cost Increase Scenario */}
+          <TabsContent value="cost" className="space-y-4">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">
+                  E se os custos aumentarem: {costIncrease}%
+                </label>
+                <Slider
+                  value={[costIncrease]}
+                  onValueChange={(value) => setCostIncrease(value[0])}
+                  min={0}
+                  max={100}
+                  step={5}
+                  className="mt-2"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Lucro Atual</p>
+                  <p className="text-lg font-semibold">{formatCurrency(currentProfit)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Novo Lucro</p>
+                  <p className="text-lg font-semibold text-red-600">
+                    {formatCurrency(costScenario.newProfit)}
+                  </p>
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <p className="text-sm text-muted-foreground">Impacto no Lucro</p>
+                  <p className="text-xl font-bold text-red-600 flex items-center gap-2">
+                    <TrendingDown className="h-5 w-5" />
+                    {formatCurrency(costScenario.difference)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Growth Projection */}
+          <TabsContent value="growth" className="space-y-4">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">
+                  Crescimento mensal: {monthlyGrowth}%
+                </label>
+                <Slider
+                  value={[monthlyGrowth]}
+                  onValueChange={(value) => setMonthlyGrowth(value[0])}
+                  min={0}
+                  max={50}
+                  step={1}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">
+                  Período: {growthMonths} meses
+                </label>
                 <Slider
                   value={[growthMonths]}
-                  onValueChange={(v) => setGrowthMonths(v[0])}
+                  onValueChange={(value) => setGrowthMonths(value[0])}
                   min={1}
                   max={24}
                   step={1}
+                  className="mt-2"
                 />
               </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="rounded-lg border p-4 space-y-2">
-                <p className="text-sm text-muted-foreground">Receita Atual</p>
-                <p className="text-2xl font-bold">{formatCurrency(currentRevenue)}</p>
-              </div>
-              <div className="rounded-lg border p-4 space-y-2">
-                <p className="text-sm text-muted-foreground">Receita Projetada</p>
-                <p className="text-2xl font-bold text-primary">{formatCurrency(projectedRevenue)}</p>
-              </div>
-            </div>
-
-            <div className="rounded-lg bg-primary/10 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Projeção em {growthMonths} meses</p>
-                  <div className="grid grid-cols-2 gap-4 mt-2">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Crescimento Total</p>
-                      <p className="text-xl font-bold text-primary">
-                        +{formatCurrency(totalGrowth)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Lucro Projetado</p>
-                      <p className="text-xl font-bold">
-                        {formatCurrency(projectedProfit)}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Crescimento de {((projectedRevenue / currentRevenue - 1) * 100).toFixed(0)}% no período
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Receita Atual</p>
+                  <p className="text-lg font-semibold">{formatCurrency(currentRevenue)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Receita Projetada</p>
+                  <p className="text-lg font-semibold text-green-600">
+                    {formatCurrency(projectedRevenue)}
+                  </p>
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <p className="text-sm text-muted-foreground">Crescimento Total</p>
+                  <p className="text-xl font-bold text-green-600 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    +{formatCurrency(projectedRevenue - currentRevenue)} ({totalGrowthPercent.toFixed(1)}%)
                   </p>
                 </div>
               </div>
-
-              {projectedProfit < currentProfit && (
-                <p className="text-xs text-amber-600 font-medium">
-                  ⚠️ Considere ajustar custos fixos para manter margem saudável
-                </p>
-              )}
             </div>
           </TabsContent>
         </Tabs>
