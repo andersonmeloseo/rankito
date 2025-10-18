@@ -8,6 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRole } from "@/contexts/RoleContext";
 import { UserManagement } from "@/components/super-admin/UserManagement";
+import { SubscriptionMetricsCards } from "@/components/super-admin/SubscriptionMetricsCards";
+import { PlansManagementTable } from "@/components/super-admin/PlansManagementTable";
+import { SubscriptionsTable } from "@/components/super-admin/SubscriptionsTable";
+import { PaymentsHistoryTable } from "@/components/super-admin/PaymentsHistoryTable";
 import { useQuery } from "@tanstack/react-query";
 
 const SuperAdminDashboard = () => {
@@ -125,6 +129,10 @@ const SuperAdminDashboard = () => {
               <Users className="mr-2 h-4 w-4" />
               Usuários
             </TabsTrigger>
+            <TabsTrigger value="subscriptions">
+              <DollarSign className="mr-2 h-4 w-4" />
+              Assinaturas
+            </TabsTrigger>
             <TabsTrigger value="overview">
               <BarChart3 className="mr-2 h-4 w-4" />
               Visão Geral
@@ -133,6 +141,15 @@ const SuperAdminDashboard = () => {
 
           <TabsContent value="users">
             <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="subscriptions">
+            <div className="space-y-6">
+              <SubscriptionMetricsCards />
+              <PlansManagementTable />
+              <SubscriptionsTable />
+              <PaymentsHistoryTable />
+            </div>
           </TabsContent>
 
           <TabsContent value="overview">

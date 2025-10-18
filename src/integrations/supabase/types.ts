@@ -625,6 +625,110 @@ export type Database = {
           },
         ]
       }
+      subscription_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          due_date: string
+          id: string
+          invoice_url: string | null
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          reference_month: string
+          status: Database["public"]["Enums"]["payment_status"]
+          subscription_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          due_date: string
+          id?: string
+          invoice_url?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          reference_month: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          subscription_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          invoice_url?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          reference_month?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          subscription_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          billing_period: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          max_pages_per_site: number | null
+          max_sites: number | null
+          name: string
+          price: number
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          billing_period?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_pages_per_site?: number | null
+          max_sites?: number | null
+          name: string
+          price: number
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          billing_period?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_pages_per_site?: number | null
+          max_sites?: number | null
+          name?: string
+          price?: number
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -645,6 +749,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          canceled_at: string | null
+          created_at: string | null
+          current_period_end: string
+          current_period_start: string
+          id: string
+          plan_id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          trial_end_date: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end: string
+          current_period_start: string
+          id?: string
+          plan_id: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          trial_end_date?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          trial_end_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -966,6 +1117,20 @@ export type Database = {
           },
         ]
       }
+      subscription_metrics: {
+        Row: {
+          active_subscriptions: number | null
+          canceled_subscriptions: number | null
+          failed_count: number | null
+          month: string | null
+          paid_count: number | null
+          pending_count: number | null
+          pending_revenue: number | null
+          revenue: number | null
+          total_subscriptions: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_parent_user_id: {
@@ -997,6 +1162,13 @@ export type Database = {
         | "whatsapp_click"
         | "form_submit"
         | "button_click"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
+      subscription_status:
+        | "trial"
+        | "active"
+        | "past_due"
+        | "canceled"
+        | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1132,6 +1304,14 @@ export const Constants = {
         "whatsapp_click",
         "form_submit",
         "button_click",
+      ],
+      payment_status: ["pending", "paid", "failed", "refunded"],
+      subscription_status: [
+        "trial",
+        "active",
+        "past_due",
+        "canceled",
+        "expired",
       ],
     },
   },
