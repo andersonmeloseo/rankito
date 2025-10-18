@@ -128,8 +128,8 @@ serve(async (req) => {
       (existingPages || []).map(p => [p.page_url, p])
     );
 
-    // Preparar dados para inserção/atualização em batch (apenas URLs, sem scraping)
-    const pagesToUpsert = [];
+    // Usar Map para deduplicate URLs (evita erro "cannot affect row a second time")
+    const pagesMap = new Map();
 
     for (const pageUrl of limitedUrls) {
       try {
@@ -152,13 +152,18 @@ serve(async (req) => {
           pageData.id = existingPage.id;
         }
 
-        pagesToUpsert.push(pageData);
+        // Usa page_url como chave para evitar duplicatas
+        pagesMap.set(pageUrl, pageData);
 
       } catch (pageError) {
         console.error(`Error processing ${pageUrl}:`, pageError);
         errors++;
       }
     }
+
+    // Converter Map para array (apenas URLs únicas)
+    const pagesToUpsert = Array.from(pagesMap.values());
+    console.log(`Deduplicated: ${limitedUrls.length} URLs -> ${pagesToUpsert.length} unique URLs`);
 
     // Processar em batches
     console.log(`Upserting ${pagesToUpsert.length} pages in batches of ${batch_size}`);
