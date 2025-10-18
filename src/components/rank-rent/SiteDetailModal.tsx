@@ -91,7 +91,8 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
   const generatePixelCode = () => {
     if (!site) return "";
 
-    const trackingUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`;
+    // URL hardcoded - não usar variável de ambiente que não existe em sites externos
+    const trackingUrl = `https://jhzmgexprjnpgadkxjup.supabase.co/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`;
 
     return `<script>
 (function() {
@@ -122,20 +123,26 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
       }
     };
 
-    if (navigator.sendBeacon) {
-      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-      navigator.sendBeacon(TRACKING_ENDPOINT, blob);
-    } else {
-      fetch(TRACKING_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        keepalive: true
-      }).catch(e => console.error('Tracking error:', e));
-    }
+    console.log('🚀 Tracking:', eventType, 'para', TRACKING_ENDPOINT);
+
+    // Usar fetch com tratamento de erro robusto
+    fetch(TRACKING_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      mode: 'cors',
+      credentials: 'omit'
+    })
+    .then(response => {
+      console.log('✅ Response:', response.status);
+      return response.json();
+    })
+    .then(result => console.log('✅ Tracking OK:', result))
+    .catch(error => console.error('❌ Tracking error:', error));
   }
 
-  // Page View automático com metadata
+  // Page View automático
+  console.log('📊 Pixel inicializado:', SITE_NAME);
   trackEvent('page_view');
 
   // Rastrear TODOS os cliques em elementos clicáveis
@@ -150,8 +157,11 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
     let eventType = 'button_click';
     if (href.startsWith('tel:')) eventType = 'phone_click';
     else if (href.startsWith('mailto:')) eventType = 'email_click';
-    else if (href.includes('wa.me') || href.includes('whatsapp')) eventType = 'whatsapp_click';
+    else if (href.includes('wa.me') || href.includes('whatsapp') || href.includes('api.whatsapp')) {
+      eventType = 'whatsapp_click';
+    }
     
+    console.log('🖱️ Click:', eventType, text);
     trackEvent(eventType, text, {
       href: href,
       element_id: target.id || null,

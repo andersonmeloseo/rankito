@@ -52,8 +52,8 @@ export const TestPageViewButton = ({ siteId, onSuccess }: TestPageViewButtonProp
         }
       };
 
-      // Chamar edge function com tracking_token
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${siteData.tracking_token}`;
+      // Chamar edge function com tracking_token - URL hardcoded
+      const functionUrl = `https://jhzmgexprjnpgadkxjup.supabase.co/functions/v1/track-rank-rent-conversion?token=${siteData.tracking_token}`;
       
       const response = await fetch(functionUrl, {
         method: "POST",
