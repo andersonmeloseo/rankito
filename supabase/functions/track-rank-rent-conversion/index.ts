@@ -155,7 +155,13 @@ serve(async (req) => {
       });
 
     if (insertError) {
-      console.error('Insert error:', insertError);
+      console.error('Insert error details:', {
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint,
+        data: { site_id: site.id, page_id: pageId, event_type }
+      });
       return new Response(
         JSON.stringify({ error: 'Failed to save conversion', details: insertError.message }), 
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
