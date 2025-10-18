@@ -24,6 +24,13 @@ import { TimelineChart } from "@/components/analytics/TimelineChart";
 import { TopPagesChart } from "@/components/analytics/TopPagesChart";
 import { EventsPieChart } from "@/components/analytics/EventsPieChart";
 import { ConversionsTable } from "@/components/analytics/ConversionsTable";
+import { ConversionRateChart } from "@/components/analytics/ConversionRateChart";
+import { ConversionFunnelChart } from "@/components/analytics/ConversionFunnelChart";
+import { HourlyHeatmap } from "@/components/analytics/HourlyHeatmap";
+import { PageViewsTimelineChart } from "@/components/analytics/PageViewsTimelineChart";
+import { TopReferrersChart } from "@/components/analytics/TopReferrersChart";
+import { PagePerformanceChart } from "@/components/analytics/PagePerformanceChart";
+import { PageViewsTable } from "@/components/analytics/PageViewsTable";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
 const SiteDetails = () => {
@@ -1037,29 +1044,83 @@ const SiteDetails = () => {
             <MetricsCards 
               metrics={analyticsData.metrics} 
               isLoading={analyticsData.isLoading} 
+              sparklineData={analyticsData.sparklineData}
+              previousMetrics={analyticsData.previousMetrics}
             />
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <TimelineChart 
-                data={analyticsData.timeline} 
-                isLoading={analyticsData.isLoading} 
-              />
-              <EventsPieChart 
-                data={analyticsData.events} 
-                isLoading={analyticsData.isLoading} 
-              />
-            </div>
-            
-            <TopPagesChart 
-              data={analyticsData.topPages} 
-              isLoading={analyticsData.isLoading} 
-            />
-            
-            <ConversionsTable 
-              conversions={analyticsData.conversions || []} 
-              isLoading={analyticsData.isLoading}
-              siteId={siteId || ""}
-            />
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">📊 Visão Geral</TabsTrigger>
+                <TabsTrigger value="conversions">🎯 Conversões</TabsTrigger>
+                <TabsTrigger value="pageviews">👁️ Page Views</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview" className="space-y-6 mt-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <TimelineChart 
+                    data={analyticsData.timeline} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                  <EventsPieChart 
+                    data={analyticsData.events} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <ConversionRateChart 
+                    data={analyticsData.conversionRateData || []} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                  <ConversionFunnelChart 
+                    data={analyticsData.funnelData || { pageViews: 0, interactions: 0, conversions: 0 }} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                </div>
+                
+                <TopPagesChart 
+                  data={analyticsData.topPages} 
+                  isLoading={analyticsData.isLoading} 
+                />
+                
+                <HourlyHeatmap 
+                  data={analyticsData.hourlyData || []} 
+                  isLoading={analyticsData.isLoading} 
+                />
+              </TabsContent>
+              
+              <TabsContent value="conversions" className="space-y-6 mt-6">
+                <ConversionsTable 
+                  conversions={analyticsData.conversions || []} 
+                  isLoading={analyticsData.isLoading}
+                  siteId={siteId || ""}
+                />
+              </TabsContent>
+              
+              <TabsContent value="pageviews" className="space-y-6 mt-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <PageViewsTimelineChart 
+                    data={analyticsData.pageViewsTimeline || []} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                  <TopReferrersChart 
+                    data={analyticsData.topReferrers || []} 
+                    isLoading={analyticsData.isLoading} 
+                  />
+                </div>
+                
+                <PagePerformanceChart 
+                  data={analyticsData.pagePerformance || []} 
+                  isLoading={analyticsData.isLoading} 
+                />
+                
+                <PageViewsTable 
+                  pageViews={analyticsData.pageViewsList || []} 
+                  isLoading={analyticsData.isLoading}
+                  siteId={siteId || ""}
+                />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Cliente Tab */}
