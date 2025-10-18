@@ -53,7 +53,15 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       async (_event, session) => {
         if (session?.user) {
           setUser(session.user);
-          await fetchRole();
+          
+          // Buscar role diretamente sem chamar fetchRole()
+          const { data } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          
+          setRole(data?.role as AppRole || null);
         } else {
           setUser(null);
           setRole(null);
