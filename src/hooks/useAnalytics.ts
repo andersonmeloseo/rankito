@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { subDays, startOfDay, endOfDay } from "date-fns";
+import React from "react";
 
 interface UseAnalyticsParams {
   siteId: string;
@@ -669,6 +670,54 @@ export const useAnalytics = ({
     pageViewHourlyDataSize: Object.keys(pageViewHourlyData || {}).length
   });
 
+  // Process top page views pages
+  const topPageViewPages = React.useMemo(() => {
+    if (!pageViewsList || pageViewsList.length === 0) return [];
+    
+    const pageViewCounts: Record<string, number> = {};
+    
+    pageViewsList.forEach((pv: any) => {
+      const page = pv.page_path || '/';
+      pageViewCounts[page] = (pageViewCounts[page] || 0) + 1;
+    });
+    
+    return Object.entries(pageViewCounts)
+      .map(([page, views]) => ({ page, views }))
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 10);
+  }, [pageViewsList]);
+
+  // Process page views device distribution
+  const pageViewsDeviceDistribution = React.useMemo(() => {
+    if (!pageViewsList || pageViewsList.length === 0) return [];
+    
+    const deviceCounts: Record<string, number> = {
+      'Mobile': 0,
+      'Desktop': 0,
+      'Tablet': 0
+    };
+    
+    pageViewsList.forEach((pv: any) => {
+      const device = pv.device || 'Desktop';
+      if (deviceCounts[device] !== undefined) {
+        deviceCounts[device]++;
+      }
+    });
+    
+    const total = Object.values(deviceCounts).reduce((sum, count) => sum + count, 0);
+    
+    if (total === 0) return [];
+    
+    return Object.entries(deviceCounts)
+      .map(([name, value]) => ({
+        name,
+        value,
+        percentage: ((value / total) * 100).toFixed(0)
+      }))
+      .filter(item => item.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [pageViewsList]);
+
   const isLoading =
     metricsLoading || 
     timelineLoading || 
@@ -700,6 +749,8 @@ export const useAnalytics = ({
     conversionTypeDistribution: conversionTypeDistributionArray,
     conversionHourlyData,
     pageViewHourlyData,
+    topPageViewPages,
+    pageViewsDeviceDistribution,
     isLoading,
   };
 };

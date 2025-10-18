@@ -9,8 +9,8 @@ import { TopPagesChart } from "@/components/analytics/TopPagesChart";
 import { ConversionsTable } from "@/components/analytics/ConversionsTable";
 import { PageViewsTable } from "@/components/analytics/PageViewsTable";
 import { PageViewsTimelineChart } from "@/components/analytics/PageViewsTimelineChart";
-import { TopReferrersChart } from "@/components/analytics/TopReferrersChart";
-import { PagePerformanceChart } from "@/components/analytics/PagePerformanceChart";
+import { TopPageViewsChart } from "@/components/analytics/TopPageViewsChart";
+import { PageViewsDistributionChart } from "@/components/analytics/PageViewsDistributionChart";
 import { ConversionFunnelChart } from "@/components/analytics/ConversionFunnelChart";
 import { HourlyHeatmap } from "@/components/analytics/HourlyHeatmap";
 import { ConversionRateChart } from "@/components/analytics/ConversionRateChart";
@@ -54,6 +54,8 @@ const Analytics = () => {
     conversionTypeDistribution,
     conversionHourlyData,
     pageViewHourlyData,
+    topPageViewPages,
+    pageViewsDeviceDistribution,
     isLoading
   } = useAnalytics({
     siteId: siteId!,
@@ -191,34 +193,34 @@ const Analytics = () => {
             />
           </TabsContent>
           
-          <TabsContent value="pageviews" className="mt-6 space-y-6">
-            <PageViewsTimelineChart 
-              data={pageViewsTimeline || []} 
+        <TabsContent value="pageviews" className="mt-6 space-y-6">
+          <PageViewsTimelineChart 
+            data={pageViewsTimeline || []} 
+            isLoading={isLoading}
+          />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TopPageViewsChart 
+              data={topPageViewPages || []} 
               isLoading={isLoading}
             />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <TopReferrersChart 
-                data={topReferrers || []} 
-                isLoading={isLoading}
-              />
-              <PagePerformanceChart 
-                data={pagePerformance || []} 
-                isLoading={isLoading}
-              />
-            </div>
+            <PageViewsDistributionChart 
+              data={pageViewsDeviceDistribution || []} 
+              isLoading={isLoading}
+            />
+          </div>
 
-            <PageViewsHeatmapChart 
-              data={pageViewHourlyData || {}} 
-              isLoading={isLoading}
-            />
+          <PageViewsHeatmapChart 
+            data={pageViewHourlyData || {}} 
+            isLoading={isLoading}
+          />
 
-            <PageViewsTable 
-              pageViews={pageViewsList || []} 
-              isLoading={isLoading}
-              siteId={siteId}
-            />
-          </TabsContent>
+          <PageViewsTable 
+            pageViews={pageViewsList || []} 
+            isLoading={isLoading}
+            siteId={siteId}
+          />
+        </TabsContent>
         </Tabs>
       </div>
     </div>
