@@ -24,7 +24,7 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
   const [browserFilter, setBrowserFilter] = useState("all");
   const [referrerFilter, setReferrerFilter] = useState("all");
   const [sortConfig, setSortConfig] = useState<{
-    key: "created_at" | "page_path" | "device" | "browser" | "ip_address" | "referrer";
+    key: "created_at" | "page_path" | "device" | "browser" | "city" | "referrer";
     direction: "asc" | "desc";
   }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
@@ -82,6 +82,7 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
     let filtered = pageViews?.filter(pv => {
       const matchesSearch = searchTerm === "" || 
         pv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pv.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pv.referrer?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesDevice = deviceFilter === "all" || 
@@ -116,6 +117,10 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
         case "browser":
           aValue = getBrowserInfo(a.user_agent).name;
           bValue = getBrowserInfo(b.user_agent).name;
+          break;
+        case "city":
+          aValue = a.city || "Desconhecido";
+          bValue = b.city || "Desconhecido";
           break;
         case "referrer":
           aValue = a.referrer || "";
@@ -168,14 +173,16 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
       return;
     }
 
-    const headers = ["Data", "Hora", "Página", "Dispositivo", "Browser", "IP", "Referrer", "User Agent"];
+    const headers = ["Data", "Hora", "Página", "Dispositivo", "Browser", "Cidade", "Estado", "País", "Referrer", "User Agent"];
     const rows = filteredPageViews.map(pv => [
       new Date(pv.created_at).toLocaleDateString("pt-BR"),
       new Date(pv.created_at).toLocaleTimeString("pt-BR"),
       pv.page_path,
       pv.metadata?.device || "desktop",
       getBrowserInfo(pv.user_agent).name,
-      pv.ip_address || "-",
+      pv.city || "-",
+      pv.region || "-",
+      pv.country || "-",
       pv.referrer || "-",
       pv.user_agent || "-",
     ]);
@@ -255,7 +262,7 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por URL ou referrer..."
+                placeholder="Buscar por URL, cidade ou referrer..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -394,16 +401,16 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
                   </TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => handleSort("ip_address")}
+                    onClick={() => handleSort("city")}
                   >
                     <div className="flex items-center gap-2">
-                      IP
-                      {sortConfig.key === "ip_address" && (
+                      Localização
+                      {sortConfig.key === "city" && (
                         sortConfig.direction === "asc" ? 
                           <ArrowUp className="w-4 h-4" /> : 
                           <ArrowDown className="w-4 h-4" />
                       )}
-                      {sortConfig.key !== "ip_address" && <ArrowUpDown className="w-4 h-4 opacity-30" />}
+                      {sortConfig.key !== "city" && <ArrowUpDown className="w-4 h-4 opacity-30" />}
                     </div>
                   </TableHead>
                   <TableHead 
@@ -464,8 +471,12 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
                           </TooltipContent>
                         </Tooltip>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {pv.ip_address || "-"}
+                      <TableCell>
+                        <div className="text-sm">
+                          {pv.city && pv.region 
+                            ? `${pv.city}, ${pv.region}`
+                            : pv.city || pv.region || "-"}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="max-w-xs truncate text-xs text-muted-foreground" title={pv.referrer || "-"}>
