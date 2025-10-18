@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, TrendingUp, Eye, MousePointerClick } from "lucide-react";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 
 export default function ClientReport() {
   const { token } = useParams();
@@ -70,8 +72,10 @@ export default function ClientReport() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-muted">
+      <Header showSubtitle={false} />
+      <div className="flex-1 p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-card rounded-lg p-6 border shadow-sm">
           <div className="flex justify-between items-start">
@@ -194,12 +198,14 @@ export default function ClientReport() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
+        {/* Report Footer */}
         <div className="text-center text-sm text-muted-foreground py-4">
           <p>Relatório gerado em {new Date().toLocaleString('pt-BR')}</p>
           <p className="mt-1">Este relatório é confidencial e destinado exclusivamente para {report.client.name}</p>
         </div>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }

@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useRole } from "@/contexts/RoleContext";
 import { UserManagement } from "@/components/super-admin/UserManagement";
 import { OverviewDashboard } from "@/components/super-admin/OverviewDashboard";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { UsersManagementTable } from "@/components/super-admin/UsersManagementTable";
 import { SubscriptionMetricsCards } from "@/components/super-admin/SubscriptionMetricsCards";
 import { PlansManagementTable } from "@/components/super-admin/PlansManagementTable";
@@ -48,16 +50,18 @@ const SuperAdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 to-accent/10">
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <BarChart3 className="h-8 w-8 text-primary" />
-              Super Admin Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-1">{user?.email}</p>
-          </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/10 to-accent/10">
+      <Header showSubtitle={false} />
+      <div className="flex-1">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <BarChart3 className="h-6 w-6 text-primary" />
+                Super Admin Dashboard
+              </h1>
+              <p className="text-muted-foreground mt-1">{user?.email}</p>
+            </div>
           <div className="flex gap-2">
             <Button 
               variant="outline" 
@@ -126,7 +130,9 @@ const SuperAdminDashboard = () => {
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };

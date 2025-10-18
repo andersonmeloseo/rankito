@@ -19,6 +19,9 @@ import { PaymentsList } from "@/components/rank-rent/financial/PaymentsList";
 import { useGlobalFinancialMetrics } from "@/hooks/useGlobalFinancialMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { BarChart3 } from "lucide-react";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -90,17 +93,18 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Super Admin Banner */}
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/10 to-accent/10">
       {isSuperAdmin && <SuperAdminBanner currentView="client" />}
-      
-      {/* Header */}
-      <header className="bg-card border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      <Header showSubtitle={false} />
+      <div className="flex-1">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Rank & Rent Manager</h1>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <BarChart3 className="h-6 w-6 text-primary" />
+                Dashboard do Cliente
+              </h1>
+              <p className="text-muted-foreground mt-1">{user?.email}</p>
             </div>
             <div className="flex gap-2">
               <Button onClick={() => setShowAddSite(true)} className="gap-2">
@@ -113,11 +117,6 @@ const Dashboard = () => {
               </Button>
             </div>
           </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 max-w-3xl">
             <TabsTrigger value="overview" className="gap-2">
@@ -189,13 +188,15 @@ const Dashboard = () => {
             <ClientsList userId={user.id} />
           </TabsContent>
         </Tabs>
-      </main>
+        </div>
+      </div>
 
       <AddSiteDialog
         open={showAddSite}
         onOpenChange={setShowAddSite}
         userId={user.id}
       />
+      <Footer />
     </div>
   );
 };

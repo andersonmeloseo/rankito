@@ -40,6 +40,8 @@ import { PageViewsHeatmapChart } from "@/components/analytics/PageViewsHeatmapCh
 import { ConversionsTable } from "@/components/analytics/ConversionsTable";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { format, subDays } from "date-fns";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -434,8 +436,9 @@ const SiteDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Header */}
+    <div className="min-h-screen flex flex-col bg-muted/30">
+      <Header showSubtitle={false} />
+      {/* Site Header */}
       <header className="bg-card border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -1123,6 +1126,8 @@ const SiteDetails = () => {
       )}
       <ImportSitemapDialog siteId={siteId || ""} open={showImportDialog} onOpenChange={setShowImportDialog} />
       <PluginInstallationGuide open={showPluginGuide} onOpenChange={setShowPluginGuide} />
+      
+      <Footer />
     </div>
   );
 };

@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery } from "@tanstack/react-query";
 import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 
 const EndClientPortal = () => {
   const navigate = useNavigate();
@@ -99,26 +101,26 @@ const EndClientPortal = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 to-accent/10">
-      {/* Super Admin Banner */}
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/10 to-accent/10">
       {isSuperAdmin && <SuperAdminBanner currentView="end_client" />}
-      
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Globe className="h-8 w-8 text-primary" />
-              Portal do Cliente
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {profile?.full_name || user?.email}
-            </p>
+      <Header showSubtitle={false} />
+      <div className="flex-1">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Globe className="h-6 w-6 text-primary" />
+                Portal do Cliente
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {profile?.full_name || user?.email}
+              </p>
+            </div>
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </Button>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
-        </div>
 
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -223,7 +225,9 @@ const EndClientPortal = () => {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };
