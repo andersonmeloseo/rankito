@@ -568,11 +568,10 @@ const SiteDetails = () => {
 
         {/* Tabs Section */}
         <Tabs defaultValue="pages" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-5xl">
+          <TabsList className="grid w-full grid-cols-4 max-w-4xl">
             <TabsTrigger value="pages">Páginas</TabsTrigger>
             <TabsTrigger value="analytics">Análise</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Analytics Avançado</TabsTrigger>
-            <TabsTrigger value="client">Cliente</TabsTrigger>
             <TabsTrigger value="plugin">Plugin WordPress</TabsTrigger>
           </TabsList>
 
@@ -1110,47 +1109,6 @@ const SiteDetails = () => {
             </Tabs>
           </TabsContent>
 
-          {/* Cliente Tab */}
-          <TabsContent value="client">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Informações do Cliente</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {site.client_name ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Nome do Cliente</label>
-                      <p className="text-foreground mt-1">{site.client_name}</p>
-                    </div>
-                    <Separator />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Status do Contrato</label>
-                        <div className="mt-1">
-                          {site.is_rented ? (
-                            <Badge className="bg-success text-success-foreground">Ativo</Badge>
-                          ) : (
-                            <Badge variant="outline">Inativo</Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Valor Mensal</label>
-                        <p className="text-foreground mt-1 font-semibold">
-                          R$ {Number(site.monthly_rent_value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Nenhum cliente vinculado a este site.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* Plugin WordPress Tab */}
           <TabsContent value="plugin">
