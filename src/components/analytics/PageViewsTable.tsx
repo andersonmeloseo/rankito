@@ -89,7 +89,15 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
   }, [pageViews]);
 
   const filteredPageViews = useMemo(() => {
-    let filtered = pageViews?.filter(pv => {
+    console.log('🔄 useMemo executando com pageViews:', pageViews?.length);
+    
+    // Garantir que sempre retorne um array
+    if (!pageViews || !Array.isArray(pageViews)) {
+      console.log('⚠️ pageViews inválido, retornando []');
+      return [];
+    }
+    
+    let filtered = pageViews.filter(pv => {
       const matchesSearch = searchTerm === "" || 
         pv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pv.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -112,7 +120,7 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
         })());
       
       return matchesSearch && matchesDevice && matchesBrowser && matchesReferrer;
-    }) || [];
+    });
 
     // Apply sorting
     filtered.sort((a, b) => {
@@ -147,6 +155,7 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
       return aValue < bValue ? 1 : -1;
     });
 
+    console.log('✅ useMemo retornando filtered:', filtered.length);
     return filtered;
   }, [pageViews, searchTerm, deviceFilter, browserFilter, referrerFilter, sortConfig]);
 
@@ -167,10 +176,10 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
 
   const hasActiveFilters = searchTerm || deviceFilter !== "all" || browserFilter !== "all" || referrerFilter !== "all";
 
-  const totalPages = Math.ceil(filteredPageViews.length / itemsPerPage);
+  const totalPages = Math.ceil((filteredPageViews?.length || 0) / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentPageViews = filteredPageViews.slice(startIndex, endIndex);
+  const currentPageViews = (filteredPageViews || []).slice(startIndex, endIndex);
 
 
   const exportToCSV = () => {
@@ -210,7 +219,7 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
 
     toast({
       title: "✅ Exportado com sucesso!",
-      description: `${filteredPageViews.length} visualizações foram exportadas para CSV`,
+      description: `${filteredPageViews?.length || 0} visualizações foram exportadas para CSV`,
     });
   };
 
@@ -253,8 +262,8 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
           <div>
             <CardTitle>Visualizações de Página</CardTitle>
             <CardDescription>
-              Mostrando {startIndex + 1}-{Math.min(endIndex, filteredPageViews.length)} de {filteredPageViews.length} visualizações
-              {hasActiveFilters ? ` (filtrado de ${pageViews.length} total)` : ""}
+              Mostrando {startIndex + 1}-{Math.min(endIndex, filteredPageViews?.length || 0)} de {filteredPageViews?.length || 0} visualizações
+              {hasActiveFilters ? ` (filtrado de ${pageViews?.length || 0} total)` : ""}
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -345,7 +354,7 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
 
           {hasActiveFilters && (
             <div className="text-sm text-muted-foreground">
-              {filteredPageViews.length} visualizações encontradas
+              {filteredPageViews?.length || 0} visualizações encontradas
             </div>
           )}
         </div>

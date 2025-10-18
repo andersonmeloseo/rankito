@@ -95,7 +95,15 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
   };
 
   const filteredConversions = useMemo(() => {
-    let filtered = conversions?.filter(conv => {
+    console.log('🔄 useMemo executando com conversions:', conversions?.length);
+    
+    // Garantir que sempre retorne um array
+    if (!conversions || !Array.isArray(conversions)) {
+      console.log('⚠️ conversions inválido, retornando []');
+      return [];
+    }
+    
+    let filtered = conversions.filter(conv => {
       const matchesSearch = searchTerm === "" || 
         conv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         conv.city?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -135,7 +143,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
       })();
       
       return matchesSearch && matchesEventType && matchesDevice && matchesDateRange;
-    }) || [];
+    });
 
     // Apply sorting
     filtered.sort((a, b) => {
@@ -176,13 +184,14 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
       return 0;
     });
 
+    console.log('✅ useMemo retornando filtered:', filtered.length);
     return filtered;
   }, [conversions, searchTerm, eventTypeFilter, deviceFilter, sortConfig, conversionStartDate, conversionEndDate]);
 
-  const totalPages = Math.ceil(filteredConversions.length / itemsPerPage);
+  const totalPages = Math.ceil((filteredConversions?.length || 0) / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentConversions = filteredConversions.slice(startIndex, endIndex);
+  const currentConversions = (filteredConversions || []).slice(startIndex, endIndex);
 
   const exportToCSV = () => {
     if (!filteredConversions || filteredConversions.length === 0) {
@@ -220,7 +229,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
 
     toast({
       title: "✅ Exportado com sucesso!",
-      description: `${filteredConversions.length} conversões foram exportadas para CSV`,
+      description: `${filteredConversions?.length || 0} conversões foram exportadas para CSV`,
     });
   };
 
@@ -290,7 +299,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
             <div>
               <CardTitle>Conversões Detalhadas</CardTitle>
               <CardDescription>
-                Mostrando {startIndex + 1}-{Math.min(endIndex, filteredConversions.length)} de {filteredConversions.length} conversões
+                Mostrando {startIndex + 1}-{Math.min(endIndex, filteredConversions?.length || 0)} de {filteredConversions?.length || 0} conversões
                 {hasActiveFilters ? ` (filtrado de ${conversions?.length || 0} total)` : ""}
               </CardDescription>
             </div>
