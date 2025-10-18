@@ -8,10 +8,15 @@ interface PagePerformanceChartProps {
 }
 
 const getColorByPerformance = (conversionRate: number) => {
-  if (conversionRate >= 5) return "#10B981"; // Verde - Excelente
-  if (conversionRate >= 2) return "#3B82F6"; // Azul - Bom
-  if (conversionRate >= 1) return "#F59E0B"; // Amarelo - Médio
-  return "#EF4444"; // Vermelho - Baixo
+  if (conversionRate >= 5) return "hsl(var(--chart-1))"; // Verde - Excelente
+  if (conversionRate >= 2) return "hsl(var(--chart-2))"; // Azul - Bom
+  if (conversionRate >= 1) return "hsl(var(--chart-3))"; // Amarelo - Médio
+  return "hsl(var(--chart-4))"; // Vermelho - Baixo
+};
+
+const truncatePath = (path: string, maxLength: number = 30) => {
+  if (path.length <= maxLength) return path;
+  return path.substring(0, maxLength - 3) + "...";
 };
 
 export const PagePerformanceChart = ({ data, isLoading }: PagePerformanceChartProps) => {
@@ -45,8 +50,11 @@ export const PagePerformanceChart = ({ data, isLoading }: PagePerformanceChartPr
     );
   }
 
-  // Top 10 páginas por visualizações
-  const topPages = data.slice(0, 10);
+  // Top 9 páginas por visualizações (melhor visualização)
+  const topPages = data.slice(0, 9).map(item => ({
+    ...item,
+    pageShort: truncatePath(item.page, 25),
+  }));
 
   return (
     <Card className="shadow-lg border-border/50 backdrop-blur-sm animate-fade-in">
@@ -78,41 +86,54 @@ export const PagePerformanceChart = ({ data, isLoading }: PagePerformanceChartPr
             <span>&lt;1% - Baixo</span>
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={topPages}>
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={topPages} margin={{ bottom: 80, left: 10, right: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
             <XAxis 
-              dataKey="page" 
+              dataKey="pageShort" 
               stroke="hsl(var(--muted-foreground))"
-              angle={-45}
+              angle={-35}
               textAnchor="end"
-              height={100}
-              tick={{ fontSize: 10 }}
+              height={80}
+              interval={0}
+              tick={{ fontSize: 11 }}
             />
             <YAxis 
               stroke="hsl(var(--muted-foreground))"
-              tick={{ fontSize: 12 }}
-              label={{ value: 'Visualizações', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+              tick={{ fontSize: 11 }}
+              label={{ value: 'Visualizações', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }}
             />
             <Tooltip 
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
+                backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                padding: "12px"
               }}
-              formatter={(value: any, name: string, props: any) => {
+              formatter={(value: any, name: string) => {
                 if (name === "views") return [value, "Visualizações"];
                 if (name === "conversions") return [value, "Conversões"];
                 return [value, name];
               }}
-              labelFormatter={(label) => `Página: ${label}`}
+              labelFormatter={(label, payload) => {
+                const fullPath = payload?.[0]?.payload?.page || label;
+                return (
+                  <div className="font-medium text-xs">
+                    <div className="text-muted-foreground mb-1">Página:</div>
+                    <div className="text-foreground break-all">{fullPath}</div>
+                  </div>
+                );
+              }}
             />
-            <Legend />
+            <Legend 
+              wrapperStyle={{ paddingTop: "10px" }}
+              iconType="circle"
+            />
             <Bar 
               dataKey="views" 
               name="Visualizações"
-              radius={[8, 8, 0, 0]}
+              radius={[6, 6, 0, 0]}
               animationDuration={1000}
             >
               {topPages.map((entry, index) => (
@@ -122,8 +143,8 @@ export const PagePerformanceChart = ({ data, isLoading }: PagePerformanceChartPr
             <Bar 
               dataKey="conversions" 
               name="Conversões"
-              fill="#8B5CF6" 
-              radius={[8, 8, 0, 0]}
+              fill="hsl(var(--chart-5))" 
+              radius={[6, 6, 0, 0]}
               animationDuration={1200}
             />
           </BarChart>
