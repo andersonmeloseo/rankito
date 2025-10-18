@@ -3,14 +3,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3 } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Activity, Settings } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -432,6 +432,11 @@ const SiteDetails = () => {
                   ) : (
                     <Badge variant="outline">Disponível</Badge>
                   )}
+                  {site.tracking_pixel_installed && (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      ✅ Plugin Conectado
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <a
@@ -464,7 +469,49 @@ const SiteDetails = () => {
 
       {/* KPI Cards */}
       <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 mb-6">
+          {/* Connection Status Card */}
+          <Card className={site.tracking_pixel_installed ? "shadow-card border-green-200 bg-green-50/50" : "shadow-card border-orange-200 bg-orange-50/50"}>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status Plugin</p>
+                    {site.tracking_pixel_installed ? (
+                      <Badge className="mt-1 bg-green-600">✅ Conectado</Badge>
+                    ) : (
+                      <Badge variant="outline" className="mt-1 border-orange-600 text-orange-600">
+                        ⚠️ Não Conectado
+                      </Badge>
+                    )}
+                  </div>
+                  <Activity className={`w-8 h-8 ${site.tracking_pixel_installed ? 'text-green-600' : 'text-orange-600'}`} />
+                </div>
+                
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-2">URL Rastreamento:</p>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`}
+                      readOnly
+                      className="text-xs font-mono h-8"
+                    />
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`);
+                        toast({ title: "✅ URL copiada!", description: "Cole no WordPress" });
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="shadow-card">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -1063,6 +1110,77 @@ const SiteDetails = () => {
 
           {/* Pixel Tab */}
           <TabsContent value="settings">
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Setup Rápido - WordPress Plugin
+                </CardTitle>
+                <CardDescription>
+                  Configure o plugin em 3 passos simples
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Passo 1 */}
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">1</div>
+                  <div className="flex-1">
+                    <p className="font-medium">Copie sua URL única de rastreamento</p>
+                    <div className="mt-2 flex gap-2">
+                      <Input 
+                        value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`}
+                        readOnly
+                        className="font-mono text-sm"
+                      />
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`);
+                          toast({ title: "✅ Copiado!", description: "Cole no WordPress" });
+                        }}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Passo 2 */}
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">2</div>
+                  <div className="flex-1">
+                    <p className="font-medium">Cole no WordPress</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Settings → Rank & Rent → Cole a URL no campo "Tracking URL"
+                    </p>
+                  </div>
+                </div>
+
+                {/* Passo 3 */}
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">3</div>
+                  <div className="flex-1">
+                    <p className="font-medium">Teste a conexão</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Clique em "Test Connection" no WordPress
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="mt-4 p-3 rounded-lg bg-muted">
+                  <p className="text-sm font-medium mb-1">Status Atual:</p>
+                  {site.tracking_pixel_installed ? (
+                    <Badge className="bg-green-600">✅ Plugin Conectado e Funcionando</Badge>
+                  ) : (
+                    <Badge variant="outline" className="border-orange-600 text-orange-600">
+                      ⚠️ Aguardando Conexão
+                    </Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle>Código de Tracking (Pixel)</CardTitle>
