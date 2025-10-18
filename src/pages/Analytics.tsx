@@ -65,11 +65,14 @@ const Analytics = () => {
   });
 
   // Debug logs
-  console.log('🔍 Analytics Data Debug:', {
-    conversionsTimeline,
-    topConversionPages,
-    conversionTypeDistribution,
-    conversionHourlyData,
+  console.log('🔍 Analytics Page Data Debug:', {
+    pageName: 'Analytics',
+    siteId,
+    conversionsTimeline: conversionsTimeline?.length,
+    topConversionPages: topConversionPages?.length,
+    conversionTypeDistribution: conversionTypeDistribution?.length,
+    conversionHourlyDataSize: Object.keys(conversionHourlyData || {}).length,
+    pageViewHourlyDataSize: Object.keys(pageViewHourlyData || {}).length,
     pageViewHourlyData,
     pageViewsListLength: pageViewsList?.length || 0,
     isLoading

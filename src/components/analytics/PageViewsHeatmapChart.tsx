@@ -11,11 +11,13 @@ const DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const HOURS = Array.from({ length: 24 }, (_, i) => `${i}h`);
 
 export const PageViewsHeatmapChart = ({ data, isLoading }: PageViewsHeatmapChartProps) => {
-  console.log('🗺️ Heatmap Render Debug:', {
+  console.log('🗺️ PageViewsHeatmapChart RENDERED!', {
+    componentName: 'PageViewsHeatmapChart',
     dataReceived: data,
     dataKeys: Object.keys(data || {}),
     dataSize: Object.keys(data || {}).length,
     isLoading,
+    isDataEmpty: !data || Object.keys(data).length === 0,
     maxValue: Math.max(...Object.values(data || {}), 1)
   });
 
