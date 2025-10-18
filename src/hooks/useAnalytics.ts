@@ -91,6 +91,7 @@ export const useAnalytics = ({
       };
     },
     enabled: !!siteId,
+    refetchInterval: 30000, // Auto-refresh a cada 30 segundos
   });
 
   // Timeline (últimos N dias)
@@ -230,7 +231,7 @@ export const useAnalytics = ({
   });
 
   // Lista completa de conversões (últimas 100)
-  const { data: conversions, isLoading: conversionsLoading } = useQuery({
+  const { data: conversions, isLoading: conversionsLoading, dataUpdatedAt: conversionsUpdatedAt } = useQuery({
     queryKey: ["analytics-conversions", siteId, startDate, endDate, eventType, device],
     queryFn: async () => {
       let query = supabase
@@ -267,10 +268,11 @@ export const useAnalytics = ({
       return data;
     },
     enabled: !!siteId,
+    refetchInterval: 30000, // Auto-refresh a cada 30 segundos
   });
 
   // Lista de page views separada
-  const { data: pageViewsList, isLoading: pageViewsLoading } = useQuery({
+  const { data: pageViewsList, isLoading: pageViewsLoading, dataUpdatedAt: pageViewsUpdatedAt } = useQuery({
     queryKey: ["analytics-page-views", siteId, startDate, endDate, device],
     queryFn: async () => {
       let query = supabase
@@ -303,6 +305,7 @@ export const useAnalytics = ({
       return data;
     },
     enabled: !!siteId,
+    refetchInterval: 30000, // Auto-refresh a cada 30 segundos
   });
 
   // Dados para funil de conversão
@@ -684,6 +687,8 @@ export const useAnalytics = ({
     topConversionPages,
     conversionTypeDistribution: conversionTypeDistributionArray,
     conversionHourlyData,
+    conversionsUpdatedAt,
+    pageViewsUpdatedAt,
     isLoading,
   };
 };

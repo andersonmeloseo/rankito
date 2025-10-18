@@ -56,6 +56,8 @@ const Analytics = () => {
     topConversionPages,
     conversionTypeDistribution,
     conversionHourlyData,
+    conversionsUpdatedAt,
+    pageViewsUpdatedAt,
     isLoading 
   } = useAnalytics({
     siteId: siteId!,
@@ -205,6 +207,7 @@ const Analytics = () => {
               conversions={conversions || []}
               isLoading={isLoading}
               siteId={siteId}
+              lastUpdatedAt={conversionsUpdatedAt}
               onPeriodChange={(startDate, endDate) => {
                 console.log('Período de conversões alterado:', { startDate, endDate });
               }}
@@ -244,6 +247,7 @@ const Analytics = () => {
               pageViews={pageViewsList || []}
               isLoading={isLoading}
               siteId={siteId}
+              lastUpdatedAt={pageViewsUpdatedAt}
               onPeriodChange={(startDate, endDate) => {
                 console.log('Período de page views alterado:', { startDate, endDate });
               }}

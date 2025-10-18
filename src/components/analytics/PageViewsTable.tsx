@@ -4,20 +4,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Search, Smartphone, Monitor, Tablet, Chrome, Globe, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react";
+import { Download, Search, Smartphone, Monitor, Tablet, Chrome, Globe, ArrowUpDown, ArrowUp, ArrowDown, X, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PeriodSelector } from "./PeriodSelector";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PageViewsTableProps {
   pageViews: any[];
   isLoading: boolean;
   siteId: string;
   onPeriodChange?: (startDate: string, endDate: string) => void;
+  lastUpdatedAt?: number;
 }
 
-export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }: PageViewsTableProps) => {
+export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange, lastUpdatedAt }: PageViewsTableProps) => {
+  const queryClient = useQueryClient();
   console.log('🔍 PageViewsTable recebeu:', {
     pageViewsCount: pageViews?.length,
     isLoading,
@@ -174,6 +177,21 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
     setSortConfig({ key: "created_at", direction: "desc" });
   };
 
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["analytics-page-views", siteId] });
+    toast({ title: "Dados atualizados!" });
+  };
+
+  const getTimeSinceUpdate = () => {
+    if (!lastUpdatedAt) return "";
+    const seconds = Math.floor((Date.now() - lastUpdatedAt) / 1000);
+    if (seconds < 60) return `${seconds}s atrás`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m atrás`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h atrás`;
+  };
+
   const hasActiveFilters = searchTerm || deviceFilter !== "all" || browserFilter !== "all" || referrerFilter !== "all";
 
   const totalPages = Math.ceil((filteredPageViews?.length || 0) / itemsPerPage);
@@ -258,24 +276,39 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
     return (
     <Card className="shadow-card">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Visualizações de Página</CardTitle>
-            <CardDescription>
-              Mostrando {startIndex + 1}-{Math.min(endIndex, filteredPageViews?.length || 0)} de {filteredPageViews?.length || 0} visualizações
-              {hasActiveFilters ? ` (filtrado de ${pageViews?.length || 0} total)` : ""}
-            </CardDescription>
-          </div>
-          <div className="flex gap-2">
-            {onPeriodChange && (
-              <PeriodSelector onPeriodChange={onPeriodChange} defaultPeriod={30} />
-            )}
-            <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
-              <Download className="w-4 h-4" />
-              Exportar CSV
-            </Button>
-          </div>
-        </div>
+         <div className="flex items-center justify-between">
+           <div>
+             <CardTitle>Visualizações de Página</CardTitle>
+             <CardDescription>
+               Mostrando {startIndex + 1}-{Math.min(endIndex, filteredPageViews?.length || 0)} de {filteredPageViews?.length || 0} visualizações
+               {hasActiveFilters ? ` (filtrado de ${pageViews?.length || 0} total)` : ""}
+               {lastUpdatedAt && (
+                 <span className="ml-2 text-xs text-muted-foreground">
+                   • Atualizado {getTimeSinceUpdate()}
+                 </span>
+               )}
+             </CardDescription>
+           </div>
+           <div className="flex gap-2">
+             {onPeriodChange && (
+               <PeriodSelector onPeriodChange={onPeriodChange} defaultPeriod={30} />
+             )}
+             <Button 
+               onClick={handleRefresh}
+               variant="outline"
+               size="sm"
+               className="gap-2"
+               disabled={isLoading}
+             >
+               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+               Atualizar
+             </Button>
+             <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
+               <Download className="w-4 h-4" />
+               Exportar CSV
+             </Button>
+           </div>
+         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-3">
@@ -460,14 +493,16 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
 
                   return (
                     <TableRow key={pv.id} className="hover:bg-muted/50 transition-colors">
-                      <TableCell className="whitespace-nowrap">
-                        <div className="text-sm">
-                          {new Date(pv.created_at).toLocaleDateString("pt-BR")}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(pv.created_at).toLocaleTimeString("pt-BR")}
-                        </div>
-                      </TableCell>
+                       <TableCell className="whitespace-nowrap">
+                         <div className="text-sm">
+                           {new Date(pv.created_at).toLocaleDateString("pt-BR")}
+                         </div>
+                         <div className="text-xs text-muted-foreground">
+                           {new Date(pv.created_at).toLocaleTimeString("pt-BR", {
+                             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                           })}
+                         </div>
+                       </TableCell>
                       <TableCell>
                         <Tooltip>
                           <TooltipTrigger asChild>

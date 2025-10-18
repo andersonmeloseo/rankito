@@ -4,20 +4,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Search, ArrowUpDown, ArrowUp, ArrowDown, X, Smartphone, Monitor, Tablet, Chrome, Globe } from "lucide-react";
+import { Download, Search, ArrowUpDown, ArrowUp, ArrowDown, X, Smartphone, Monitor, Tablet, Chrome, Globe, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PeriodSelector } from "./PeriodSelector";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ConversionsTableProps {
   conversions: any[];
   isLoading: boolean;
   siteId: string;
   onPeriodChange?: (startDate: string, endDate: string) => void;
+  lastUpdatedAt?: number;
 }
 
-export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChange }: ConversionsTableProps) => {
+export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChange, lastUpdatedAt }: ConversionsTableProps) => {
+  const queryClient = useQueryClient();
   console.log('🔍 ConversionsTable recebeu:', {
     conversionsCount: conversions?.length,
     isLoading,
@@ -62,6 +65,21 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
     setEventTypeFilter("all");
     setDeviceFilter("all");
     setCurrentPage(1);
+  };
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["analytics-conversions", siteId] });
+    toast({ title: "Dados atualizados!" });
+  };
+
+  const getTimeSinceUpdate = () => {
+    if (!lastUpdatedAt) return "";
+    const seconds = Math.floor((Date.now() - lastUpdatedAt) / 1000);
+    if (seconds < 60) return `${seconds}s atrás`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m atrás`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h atrás`;
   };
 
   const getDeviceInfo = (device: string) => {
@@ -301,6 +319,11 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
               <CardDescription>
                 Mostrando {startIndex + 1}-{Math.min(endIndex, filteredConversions?.length || 0)} de {filteredConversions?.length || 0} conversões
                 {hasActiveFilters ? ` (filtrado de ${conversions?.length || 0} total)` : ""}
+                {lastUpdatedAt && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    • Atualizado {getTimeSinceUpdate()}
+                  </span>
+                )}
               </CardDescription>
             </div>
             <div className="flex gap-2 items-center">
@@ -308,6 +331,16 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
                 onPeriodChange={handlePeriodChange} 
                 defaultPeriod={30} 
               />
+              <Button 
+                onClick={handleRefresh}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
               <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
                 <Download className="w-4 h-4" />
                 Exportar CSV
@@ -433,11 +466,15 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
                   return (
                     <TableRow key={conv.id} className="hover:bg-muted/50 transition-colors">
                       <TableCell className="whitespace-nowrap">
-                        <div className="text-sm">
-                          {new Date(conv.created_at).toLocaleDateString("pt-BR")}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(conv.created_at).toLocaleTimeString("pt-BR")}
+                        <div className="flex flex-col">
+                          <div className="font-medium">
+                            {new Date(conv.created_at).toLocaleDateString("pt-BR")}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(conv.created_at).toLocaleTimeString("pt-BR", {
+                              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                            })}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>

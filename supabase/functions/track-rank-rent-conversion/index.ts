@@ -20,12 +20,39 @@ serve(async (req) => {
     // Extract token from URL
     const url = new URL(req.url);
     const token = url.searchParams.get('token');
+    
+    console.log('📊 Tracking request received:', {
+      token,
+      method: req.method,
+      url: req.url,
+      timestamp: new Date().toISOString()
+    });
 
     if (!token) {
-      console.error('Missing tracking token');
+      console.error('❌ Missing tracking token');
       return new Response(
         JSON.stringify({ error: 'Missing tracking token' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Parse request body with error handling
+    let body;
+    try {
+      body = await req.json();
+      console.log('✅ Body parsed successfully:', {
+        hasPageUrl: !!body?.page_url,
+        eventType: body?.event_type,
+        siteName: body?.site_name
+      });
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON body', details: parseError.message }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     }
 
@@ -35,15 +62,20 @@ serve(async (req) => {
       event_type, 
       cta_text,
       metadata 
-    } = await req.json();
-
-    console.log('Tracking event:', { token, site_name, page_url, event_type });
+    } = body;
 
     // Validate required fields
     if (!page_url || !event_type) {
-      console.error('Missing required fields:', { page_url, event_type });
+      console.error('❌ Missing required fields:', { 
+        hasPageUrl: !!page_url, 
+        hasEventType: !!event_type,
+        receivedBody: body 
+      });
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: page_url, event_type' }), 
+        JSON.stringify({ 
+          error: 'Missing required fields: page_url and event_type',
+          received: { page_url: !!page_url, event_type: !!event_type }
+        }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -90,12 +122,22 @@ serve(async (req) => {
       .single();
 
     if (siteError || !site) {
-      console.error('Invalid tracking token:', token);
+      console.error('❌ Site not found:', { 
+        token, 
+        error: siteError?.message,
+        code: siteError?.code 
+      });
       return new Response(
-        JSON.stringify({ error: 'Invalid tracking token' }), 
+        JSON.stringify({ 
+          error: 'Invalid tracking token',
+          token,
+          details: siteError?.message 
+        }), 
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('✅ Site found:', { siteId: site.id, siteName: site.site_name });
 
     // Extract page_path from URL
     const pageUrl = new URL(page_url);
@@ -222,6 +264,15 @@ serve(async (req) => {
     }
 
     // Insert conversion
+    console.log('💾 Inserting conversion:', {
+      siteId: site.id,
+      pageId,
+      pagePath: page_path,
+      eventType: event_type,
+      device,
+      timestamp: new Date().toISOString()
+    });
+
     const { error: insertError } = await supabase
       .from('rank_rent_conversions')
       .insert({
@@ -246,7 +297,7 @@ serve(async (req) => {
       });
 
     if (insertError) {
-      console.error('Insert error details:', {
+      console.error('❌ Error inserting conversion:', {
         message: insertError.message,
         code: insertError.code,
         details: insertError.details,
@@ -259,7 +310,10 @@ serve(async (req) => {
       );
     }
 
-    console.log('Conversion saved successfully for site:', site_name);
+    console.log('✅ Conversion saved successfully:', {
+      siteName: site_name,
+      eventType: event_type
+    });
 
     return new Response(
       JSON.stringify({ success: true, message: 'Conversion tracked successfully' }), 
