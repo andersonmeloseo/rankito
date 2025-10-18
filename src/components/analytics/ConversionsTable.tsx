@@ -74,7 +74,8 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
     let filtered = conversions?.filter(conv => {
     const matchesSearch = searchTerm === "" || 
       conv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      conv.city?.toLowerCase().includes(searchTerm.toLowerCase());
+      conv.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conv.cta_text?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesEventType = eventTypeFilter === "all" || conv.event_type === eventTypeFilter;
       
@@ -144,11 +145,12 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
       return;
     }
 
-    const headers = ["Data", "Hora", "Tipo", "Página", "Dispositivo", "Browser", "Cidade", "Estado", "País"];
+    const headers = ["Data", "Hora", "Tipo", "CTA", "Página", "Dispositivo", "Browser", "Cidade", "Estado", "País"];
     const rows = filteredConversions.map(conv => [
       new Date(conv.created_at).toLocaleDateString("pt-BR"),
       new Date(conv.created_at).toLocaleTimeString("pt-BR"),
       conv.event_type,
+      conv.cta_text || "-",
       conv.page_path,
       conv.metadata?.device || "-",
       getBrowserInfo(conv.user_agent).name,
@@ -253,7 +255,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por página ou cidade..."
+                placeholder="Buscar por página, cidade ou CTA..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -329,7 +331,8 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                       <SortIcon columnKey="page_path" />
                     </div>
                   </TableHead>
-                  <TableHead 
+                  <TableHead>CTA</TableHead>
+                  <TableHead
                     className="cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort("device")}
                   >
@@ -377,6 +380,11 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                         <Badge variant={getEventBadgeVariant(conv.event_type)}>
                           {conv.event_type.replace("_", " ")}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm max-w-[200px] truncate">
+                          {conv.cta_text || "-"}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Tooltip>
