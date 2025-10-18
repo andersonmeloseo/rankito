@@ -322,6 +322,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                       <SortIcon columnKey="event_type" />
                     </div>
                   </TableHead>
+                  <TableHead>CTA</TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort("page_path")}
@@ -331,7 +332,6 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                       <SortIcon columnKey="page_path" />
                     </div>
                   </TableHead>
-                  <TableHead>CTA</TableHead>
                   <TableHead
                     className="cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort("device")}
