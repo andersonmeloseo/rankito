@@ -586,9 +586,9 @@ const SiteDetails = () => {
           <TabsList className="grid w-full grid-cols-6 max-w-5xl">
             <TabsTrigger value="pages">Páginas</TabsTrigger>
             <TabsTrigger value="analytics">Análise</TabsTrigger>
-            <TabsTrigger value="advanced-analytics">Analytics Avançado</TabsTrigger>
+            <TabsTrigger value="advanced-analytics">Análise Detalhada</TabsTrigger>
             <TabsTrigger value="client">Cliente</TabsTrigger>
-            <TabsTrigger value="plugin">Plugin WordPress</TabsTrigger>
+            <TabsTrigger value="plugin">Conexão WordPress</TabsTrigger>
             <TabsTrigger value="conversions">Conversões</TabsTrigger>
           </TabsList>
 

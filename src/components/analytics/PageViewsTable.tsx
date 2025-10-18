@@ -448,9 +448,16 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs truncate font-medium" title={pv.page_path}>
-                          {pv.page_path}
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="max-w-xs truncate font-medium cursor-help">
+                              {pv.page_path}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-md">
+                            <p className="text-xs break-all">{pv.page_path}</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`${deviceInfo.bgColor} ${deviceInfo.color} border-0 gap-1.5`}>
