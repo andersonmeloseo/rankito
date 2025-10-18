@@ -21,16 +21,6 @@ interface ConversionsTableProps {
 
 export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChange, lastUpdatedAt }: ConversionsTableProps) => {
   const queryClient = useQueryClient();
-  console.log('🔍 ConversionsTable recebeu:', {
-    conversionsCount: conversions?.length,
-    isLoading,
-    hasOnPeriodChange: !!onPeriodChange,
-    firstConversion: conversions?.[0],
-    isArray: Array.isArray(conversions),
-    isUndefined: conversions === undefined,
-    isNull: conversions === null
-  });
-
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
@@ -44,7 +34,6 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
   const itemsPerPage = 20;
 
   const handlePeriodChange = (startDate: string, endDate: string) => {
-    console.log('📅 Período alterado:', { startDate, endDate });
     setConversionStartDate(new Date(startDate));
     setConversionEndDate(new Date(endDate));
     setCurrentPage(1);
@@ -113,11 +102,8 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
   };
 
   const filteredConversions = useMemo(() => {
-    console.log('🔄 useMemo executando com conversions:', conversions?.length);
-    
     // Garantir que sempre retorne um array
     if (!conversions || !Array.isArray(conversions)) {
-      console.log('⚠️ conversions inválido, retornando []');
       return [];
     }
     
@@ -202,7 +188,6 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
       return 0;
     });
 
-    console.log('✅ useMemo retornando filtered:', filtered.length);
     return filtered;
   }, [conversions, searchTerm, eventTypeFilter, deviceFilter, sortConfig, conversionStartDate, conversionEndDate]);
 
@@ -292,24 +277,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
     );
   }
 
-  // REMOVIDO: Early return estava bloqueando renderização mesmo com dados
-  console.log('🚨 Verificando condições antes do early return:', {
-    conversionsExists: !!conversions,
-    conversionsLength: conversions?.length,
-    shouldShowEmptyState: !conversions || conversions.length === 0
-  });
-
-  console.log('📊 Dados filtrados antes do render:', {
-    filteredCount: filteredConversions?.length,
-    currentPageCount: currentConversions?.length,
-    currentPage,
-    totalPages
-  });
-
-  console.log('✅ Iniciando renderização da tabela de conversões');
-
-  try {
-    return (
+  return (
     <TooltipProvider>
       <Card className="shadow-card">
         <CardHeader>
@@ -554,19 +522,4 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
       </Card>
     </TooltipProvider>
   );
-  } catch (error) {
-    console.error('❌ Erro ao renderizar ConversionsTable:', error);
-    return (
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle>Conversões Detalhadas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[400px] flex items-center justify-center text-destructive">
-            Erro ao renderizar tabela: {error instanceof Error ? error.message : 'Erro desconhecido'}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 };
