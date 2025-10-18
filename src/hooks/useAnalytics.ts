@@ -29,27 +29,10 @@ export const useAnalytics = ({
     }
     
     const days = parseInt(period);
-    const now = new Date();
+    const endDate = endOfDay(new Date()).toISOString();
+    const startDate = startOfDay(subDays(new Date(), days)).toISOString();
     
-    // Criar datas diretamente em UTC
-    const endDateUTC = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      23, 59, 59, 999
-    ));
-    
-    const startDateUTC = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate() - days,
-      0, 0, 0, 0
-    ));
-    
-    return {
-      startDate: startDateUTC.toISOString(),
-      endDate: endDateUTC.toISOString(),
-    };
+    return { startDate, endDate };
   };
 
   const { startDate, endDate } = getDatesFromPeriod();
@@ -60,25 +43,10 @@ export const useAnalytics = ({
     const currentEnd = new Date(endDate);
     const diffDays = Math.ceil((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24));
     
-    // Calcular diretamente em UTC
-    const previousEndUTC = new Date(Date.UTC(
-      currentStart.getUTCFullYear(),
-      currentStart.getUTCMonth(),
-      currentStart.getUTCDate() - 1,
-      23, 59, 59, 999
-    ));
+    const previousEnd = startOfDay(subDays(currentStart, 1)).toISOString();
+    const previousStart = startOfDay(subDays(currentStart, diffDays)).toISOString();
     
-    const previousStartUTC = new Date(Date.UTC(
-      currentStart.getUTCFullYear(),
-      currentStart.getUTCMonth(),
-      currentStart.getUTCDate() - diffDays,
-      0, 0, 0, 0
-    ));
-    
-    return {
-      previousEnd: previousEndUTC.toISOString(),
-      previousStart: previousStartUTC.toISOString()
-    };
+    return { previousStart, previousEnd };
   };
 
   const { previousStart, previousEnd } = getPreviousPeriodDates();
@@ -99,7 +67,7 @@ export const useAnalytics = ({
       }
 
       if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
+        query = query.ilike("metadata->>device", device);
       }
 
       const { data, count, error } = await query;
@@ -141,7 +109,7 @@ export const useAnalytics = ({
       }
 
       if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
+        query = query.ilike("metadata->>device", device);
       }
 
       const { data, error } = await query;
@@ -181,7 +149,7 @@ export const useAnalytics = ({
         .lte("created_at", endDate);
 
       if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
+        query = query.ilike("metadata->>device", device);
       }
 
       const { data, error } = await query;
@@ -216,7 +184,7 @@ export const useAnalytics = ({
       }
 
       if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
+        query = query.ilike("metadata->>device", device);
       }
 
       const { data, error } = await query;
@@ -262,7 +230,7 @@ export const useAnalytics = ({
   });
 
   // Lista completa de conversões (últimas 100)
-  const { data: conversions, isLoading: conversionsLoading, dataUpdatedAt: conversionsUpdatedAt } = useQuery({
+  const { data: conversions, isLoading: conversionsLoading } = useQuery({
     queryKey: ["analytics-conversions", siteId, startDate, endDate, eventType, device],
     queryFn: async () => {
       let query = supabase
@@ -280,7 +248,7 @@ export const useAnalytics = ({
       }
 
       if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
+        query = query.ilike("metadata->>device", device);
       }
 
       const { data, error } = await query;
@@ -292,7 +260,7 @@ export const useAnalytics = ({
   });
 
   // Lista de page views separada
-  const { data: pageViewsList, isLoading: pageViewsLoading, dataUpdatedAt: pageViewsUpdatedAt } = useQuery({
+  const { data: pageViewsList, isLoading: pageViewsLoading } = useQuery({
     queryKey: ["analytics-page-views", siteId, startDate, endDate, device],
     queryFn: async () => {
       let query = supabase
@@ -306,7 +274,7 @@ export const useAnalytics = ({
         .limit(100);
 
       if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
+        query = query.ilike("metadata->>device", device);
       }
 
       const { data, error } = await query;
@@ -411,271 +379,13 @@ export const useAnalytics = ({
     enabled: !!siteId,
   });
 
-  // Conversion rate over time
-  const { data: conversionRateData } = useQuery({
-    queryKey: ["analytics-conversion-rate", siteId, startDate, endDate],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rank_rent_conversions")
-        .select("created_at, event_type")
-        .eq("site_id", siteId)
-        .gte("created_at", startDate)
-        .lte("created_at", endDate);
-
-      if (error) throw error;
-
-      const dailyStats: Record<string, { pageViews: number; conversions: number }> = {};
-      
-      data?.forEach(conv => {
-        const dateStr = new Date(conv.created_at).toISOString().split('T')[0];
-        
-        if (!dailyStats[dateStr]) {
-          dailyStats[dateStr] = { pageViews: 0, conversions: 0 };
-        }
-
-        if (conv.event_type === "page_view") {
-          dailyStats[dateStr].pageViews++;
-        } else {
-          dailyStats[dateStr].conversions++;
-        }
-      });
-
-      return Object.entries(dailyStats)
-        .map(([date, stats]) => ({
-          date,
-          rate: stats.pageViews > 0 ? (stats.conversions / stats.pageViews) * 100 : 0,
-        }))
-        .sort((a, b) => a.date.localeCompare(b.date));
-    },
-    enabled: !!siteId,
-  });
-
-  // Timeline comparativa de Page Views
-  const { data: pageViewsTimeline, isLoading: pageViewsTimelineLoading } = useQuery({
-    queryKey: ["analytics-pageviews-timeline", siteId, startDate, endDate, device],
-    queryFn: async () => {
-      let currentQuery = supabase
-        .from("rank_rent_conversions")
-        .select("created_at")
-        .eq("site_id", siteId)
-        .eq("event_type", "page_view")
-        .gte("created_at", startDate)
-        .lte("created_at", endDate);
-
-      let previousQuery = supabase
-        .from("rank_rent_conversions")
-        .select("created_at")
-        .eq("site_id", siteId)
-        .eq("event_type", "page_view")
-        .gte("created_at", previousStart)
-        .lte("created_at", previousEnd);
-
-      if (device !== "all") {
-        currentQuery = currentQuery.filter('metadata->>device', 'eq', device);
-        previousQuery = previousQuery.filter('metadata->>device', 'eq', device);
-      }
-
-      const [{ data: currentData }, { data: previousData }] = await Promise.all([
-        currentQuery,
-        previousQuery,
-      ]);
-
-      const currentStats: Record<string, number> = {};
-      const previousStats: Record<string, number> = {};
-
-      currentData?.forEach(pv => {
-        const dateStr = new Date(pv.created_at).toISOString().split('T')[0];
-        currentStats[dateStr] = (currentStats[dateStr] || 0) + 1;
-      });
-
-      previousData?.forEach(pv => {
-        const dateStr = new Date(pv.created_at).toISOString().split('T')[0];
-        previousStats[dateStr] = (previousStats[dateStr] || 0) + 1;
-      });
-
-      const allDates = new Set([...Object.keys(currentStats), ...Object.keys(previousStats)]);
-      return Array.from(allDates)
-        .map(date => ({
-          date,
-          current: currentStats[date] || 0,
-          previous: previousStats[date] || 0,
-        }))
-        .sort((a, b) => a.date.localeCompare(b.date));
-    },
-    enabled: !!siteId,
-  });
-
-  // Top Referrers
-  const { data: topReferrers, isLoading: topReferrersLoading } = useQuery({
-    queryKey: ["analytics-top-referrers", siteId, startDate, endDate, device],
-    queryFn: async () => {
-      let query = supabase
-        .from("rank_rent_conversions")
-        .select("referrer")
-        .eq("site_id", siteId)
-        .eq("event_type", "page_view")
-        .gte("created_at", startDate)
-        .lte("created_at", endDate);
-
-      if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const referrerCounts: Record<string, number> = {};
-      data?.forEach(pv => {
-        const ref = pv.referrer || "Direto";
-        referrerCounts[ref] = (referrerCounts[ref] || 0) + 1;
-      });
-
-      const total = Object.values(referrerCounts).reduce((sum, count) => sum + count, 0);
-
-      return Object.entries(referrerCounts)
-        .map(([referrer, count]) => ({
-          referrer: referrer.length > 40 ? referrer.substring(0, 40) + "..." : referrer,
-          count,
-          percentage: (count / total) * 100,
-        }))
-        .sort((a, b) => b.count - a.count);
-    },
-    enabled: !!siteId,
-  });
-
-  // Page Performance (views + conversions por página)
-  const { data: pagePerformance, isLoading: pagePerformanceLoading } = useQuery({
-    queryKey: ["analytics-page-performance", siteId, startDate, endDate, device],
-    queryFn: async () => {
-      let query = supabase
-        .from("rank_rent_conversions")
-        .select("page_path, event_type")
-        .eq("site_id", siteId)
-        .gte("created_at", startDate)
-        .lte("created_at", endDate);
-
-      if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const pageStats: Record<string, { views: number; conversions: number }> = {};
-      
-      data?.forEach(conv => {
-        if (!pageStats[conv.page_path]) {
-          pageStats[conv.page_path] = { views: 0, conversions: 0 };
-        }
-        if (conv.event_type === "page_view") {
-          pageStats[conv.page_path].views++;
-        } else {
-          pageStats[conv.page_path].conversions++;
-        }
-      });
-
-      return Object.entries(pageStats)
-        .map(([page, stats]) => ({
-          page: page.length > 30 ? page.substring(0, 30) + "..." : page,
-          views: stats.views,
-          conversions: stats.conversions,
-          conversionRate: stats.views > 0 ? (stats.conversions / stats.views) * 100 : 0,
-        }))
-        .sort((a, b) => b.views - a.views);
-    },
-    enabled: !!siteId,
-  });
-
-  // Conversions timeline (agrupado por data + tipo)
-  const conversionsTimeline = conversions?.reduce((acc: any[], conv: any) => {
-    const dateObj = new Date(conv.created_at);
-    const dateStr = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
-    
-    let existing = acc.find(item => item.date === dateStr);
-    
-    if (!existing) {
-      existing = {
-        date: dateStr,
-        whatsapp_click: 0,
-        phone_click: 0,
-        email_click: 0,
-        form_submit: 0,
-        total: 0,
-      };
-      acc.push(existing);
-    }
-    
-    if (conv.event_type === 'whatsapp_click') existing.whatsapp_click++;
-    else if (conv.event_type === 'phone_click') existing.phone_click++;
-    else if (conv.event_type === 'email_click') existing.email_click++;
-    else if (conv.event_type === 'form_submit') existing.form_submit++;
-    
-    existing.total++;
-    
-    return acc;
-  }, []) || [];
-
-  // Top Conversion Pages
-  const topConversionPages = conversions?.reduce((acc: any[], conv: any) => {
-    const page = conv.page_path || '/';
-    const existing = acc.find(item => item.page === page);
-    
-    if (existing) {
-      existing.conversions += 1;
-    } else {
-      acc.push({ page, conversions: 1 });
-    }
-    
-    return acc;
-  }, [])
-    .sort((a: any, b: any) => b.conversions - a.conversions)
-    .slice(0, 10) || [];
-
-  // Conversion Type Distribution
-  const conversionTypeDistribution = conversions?.reduce((acc: Record<string, number>, conv: any) => {
-    const type = conv.event_type;
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const conversionTypeDistributionArray = conversionTypeDistribution 
-    ? Object.entries(conversionTypeDistribution).map(([type, count]) => {
-        const total = conversions?.length || 1;
-        const typeLabel = type === 'whatsapp_click' ? 'WhatsApp' 
-          : type === 'phone_click' ? 'Telefone'
-          : type === 'email_click' ? 'Email'
-          : type === 'form_submit' ? 'Formulário'
-          : type;
-        
-        return {
-          name: typeLabel,
-          value: count,
-          percentage: ((count / total) * 100).toFixed(1)
-        };
-      })
-    : [];
-
-  // Conversion Hourly Data (usa o hourlyData existente mas adaptado)
-  const conversionHourlyData = conversions?.reduce((acc: Record<string, number>, conv: any) => {
-    const date = new Date(conv.created_at);
-    const hour = date.getHours();
-    const day = date.getDay();
-    const key = `${day}-${hour}`;
-    
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>) || {};
-
-  const isLoading =
+  const isLoading = 
     metricsLoading || 
     timelineLoading || 
     eventsLoading || 
     topPagesLoading || 
     conversionsLoading ||
-    pageViewsLoading ||
-    pageViewsTimelineLoading ||
-    topReferrersLoading ||
-    pagePerformanceLoading;
+    pageViewsLoading;
 
   return {
     metrics,
@@ -688,16 +398,6 @@ export const useAnalytics = ({
     funnelData,
     hourlyData,
     sparklineData,
-    conversionRateData,
-    pageViewsTimeline,
-    topReferrers,
-    pagePerformance,
-    conversionsTimeline,
-    topConversionPages,
-    conversionTypeDistribution: conversionTypeDistributionArray,
-    conversionHourlyData,
-    conversionsUpdatedAt,
-    pageViewsUpdatedAt,
     isLoading,
   };
 };

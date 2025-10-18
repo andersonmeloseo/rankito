@@ -8,28 +8,16 @@ import { EventsPieChart } from "@/components/analytics/EventsPieChart";
 import { TopPagesChart } from "@/components/analytics/TopPagesChart";
 import { ConversionsTable } from "@/components/analytics/ConversionsTable";
 import { PageViewsTable } from "@/components/analytics/PageViewsTable";
-import { PageViewsTimelineChart } from "@/components/analytics/PageViewsTimelineChart";
-import { TopReferrersChart } from "@/components/analytics/TopReferrersChart";
-import { PagePerformanceChart } from "@/components/analytics/PagePerformanceChart";
 import { ConversionFunnelChart } from "@/components/analytics/ConversionFunnelChart";
 import { HourlyHeatmap } from "@/components/analytics/HourlyHeatmap";
-import { ConversionRateChart } from "@/components/analytics/ConversionRateChart";
-import { ConversionsTimelineChart } from "@/components/analytics/ConversionsTimelineChart";
-import { TopConversionPagesChart } from "@/components/analytics/TopConversionPagesChart";
-import { ConversionTypeDistributionChart } from "@/components/analytics/ConversionTypeDistributionChart";
-import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
-import { TestPageViewButton } from "@/components/analytics/TestPageViewButton";
-import { ROIAnalysisCard } from "@/components/analytics/ROIAnalysisCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { useQueryClient } from "@tanstack/react-query";
 
 const Analytics = () => {
   const { siteId } = useParams<{ siteId: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   
   const [period, setPeriod] = useState("30");
   const [eventType, setEventType] = useState("all");
@@ -48,16 +36,6 @@ const Analytics = () => {
     funnelData,
     hourlyData,
     sparklineData,
-    conversionRateData,
-    pageViewsTimeline,
-    topReferrers,
-    pagePerformance,
-    conversionsTimeline,
-    topConversionPages,
-    conversionTypeDistribution,
-    conversionHourlyData,
-    conversionsUpdatedAt,
-    pageViewsUpdatedAt,
     isLoading 
   } = useAnalytics({
     siteId: siteId!,
@@ -66,33 +44,6 @@ const Analytics = () => {
     device,
     customStartDate,
     customEndDate,
-  });
-
-  // Debug logs
-  console.log('📊 Analytics Data Received:', {
-    conversionsCount: conversions?.length || 0,
-    pageViewsCount: pageViewsList?.length || 0,
-    conversionsTypes: conversions?.map(c => c.event_type) || [],
-    pageViewsTypes: pageViewsList?.map(p => p.event_type) || [],
-    conversionsTimeline,
-    topConversionPages,
-    conversionTypeDistribution,
-  });
-
-  console.log('🚨 Props sendo passadas para ConversionsTable:', {
-    conversions: conversions,
-    conversionsLength: conversions?.length,
-    conversionsIsArray: Array.isArray(conversions),
-    conversionsIsUndefined: conversions === undefined,
-    firstConversion: conversions?.[0]
-  });
-
-  console.log('🚨 Props sendo passadas para PageViewsTable:', {
-    pageViews: pageViewsList,
-    pageViewsLength: pageViewsList?.length,
-    pageViewsIsArray: Array.isArray(pageViewsList),
-    pageViewsIsUndefined: pageViewsList === undefined,
-    firstPageView: pageViewsList?.[0]
   });
 
   if (!siteId) {
@@ -106,8 +57,8 @@ const Analytics = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-muted/30 via-background to-muted/20">
-      <header className="bg-card/80 backdrop-blur-sm border-b shadow-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-muted/30">
+      <header className="bg-card border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -115,20 +66,18 @@ const Analytics = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate(`/dashboard/site/${siteId}`)}
-                className="gap-2 hover:bg-primary/10"
+                className="gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Voltar
               </Button>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Analytics Avançado
-              </h1>
+              <h1 className="text-2xl font-bold">Analytics</h1>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 space-y-6 animate-fade-in">
+      <div className="container mx-auto px-4 py-6 space-y-6">
         <AnalyticsFilters
           period={period}
           eventType={eventType}
@@ -149,17 +98,10 @@ const Analytics = () => {
           isLoading={isLoading} 
         />
 
-        <ROIAnalysisCard siteId={siteId!} />
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TimelineChart data={timeline} isLoading={isLoading} />
           <EventsPieChart data={events} isLoading={isLoading} />
         </div>
-
-        <ConversionRateChart 
-          data={conversionRateData || []} 
-          isLoading={isLoading} 
-        />
 
         <ConversionFunnelChart 
           data={funnelData || { pageViews: 0, interactions: 0, conversions: 0 }} 
@@ -172,85 +114,24 @@ const Analytics = () => {
         </div>
 
         <Tabs defaultValue="conversions" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2 bg-card shadow-sm">
-            <TabsTrigger value="conversions" className="gap-2">
-              📊 Conversões
-            </TabsTrigger>
-            <TabsTrigger value="pageviews" className="gap-2">
-              👁️ Page Views
-            </TabsTrigger>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="conversions">📊 Conversões</TabsTrigger>
+            <TabsTrigger value="pageviews">👁️ Page Views</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="conversions" className="mt-6 space-y-6">
-            <ConversionsTimelineChart 
-              data={conversionsTimeline || []} 
-              isLoading={isLoading}
-            />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <TopConversionPagesChart 
-                data={topConversionPages || []} 
-                isLoading={isLoading}
-              />
-              <ConversionTypeDistributionChart 
-                data={conversionTypeDistribution || []} 
-                isLoading={isLoading}
-              />
-            </div>
-            
-            <ConversionHeatmapChart 
-              data={conversionHourlyData || {}} 
-              isLoading={isLoading}
-            />
-            
+          <TabsContent value="conversions" className="mt-6">
             <ConversionsTable 
-              conversions={conversions || []}
+              conversions={conversions || []} 
               isLoading={isLoading}
               siteId={siteId}
-              lastUpdatedAt={conversionsUpdatedAt}
-              onPeriodChange={(startDate, endDate) => {
-                console.log('Período de conversões alterado:', { startDate, endDate });
-              }}
             />
           </TabsContent>
           
-          <TabsContent value="pageviews" className="mt-6 space-y-6">
-            <div className="flex justify-end mb-4">
-              <TestPageViewButton 
-                siteId={siteId}
-                onSuccess={() => {
-                  // Recarregar dados do analytics
-                  queryClient.invalidateQueries({ queryKey: ["analytics-page-views"] });
-                  queryClient.invalidateQueries({ queryKey: ["analytics-metrics"] });
-                  queryClient.invalidateQueries({ queryKey: ["analytics-pageviews-timeline"] });
-                }}
-              />
-            </div>
-            
-            <PageViewsTimelineChart 
-              data={pageViewsTimeline || []} 
-              isLoading={isLoading}
-            />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <TopReferrersChart 
-                data={topReferrers || []} 
-                isLoading={isLoading}
-              />
-              <PagePerformanceChart 
-                data={pagePerformance || []} 
-                isLoading={isLoading}
-              />
-            </div>
-
+          <TabsContent value="pageviews" className="mt-6">
             <PageViewsTable 
-              pageViews={pageViewsList || []}
+              pageViews={pageViewsList || []} 
               isLoading={isLoading}
               siteId={siteId}
-              lastUpdatedAt={pageViewsUpdatedAt}
-              onPeriodChange={(startDate, endDate) => {
-                console.log('Período de page views alterado:', { startDate, endDate });
-              }}
             />
           </TabsContent>
         </Tabs>

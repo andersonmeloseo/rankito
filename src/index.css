@@ -77,13 +77,6 @@ All colors MUST be HSL.
     /* Shadows */
     --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     --shadow-card-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-    
-    /* Chart colors */
-    --chart-1: 142 71% 45%;  /* Verde - Excelente */
-    --chart-2: 217 91% 60%;  /* Azul - Bom */
-    --chart-3: 38 92% 50%;   /* Amarelo/Laranja - Médio */
-    --chart-4: 0 84% 60%;    /* Vermelho - Baixo */
-    --chart-5: 271 81% 56%;  /* Roxo - Conversões */
   }
 
   .dark {
@@ -137,13 +130,6 @@ All colors MUST be HSL.
     
     --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
     --shadow-card-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
-    
-    /* Chart colors (ajustados para dark mode) */
-    --chart-1: 142 71% 50%;  /* Verde mais claro no dark */
-    --chart-2: 217 91% 65%;  /* Azul mais claro no dark */
-    --chart-3: 38 92% 55%;   /* Amarelo mais claro no dark */
-    --chart-4: 0 84% 65%;    /* Vermelho mais claro no dark */
-    --chart-5: 271 81% 61%;  /* Roxo mais claro no dark */
   }
 }
 

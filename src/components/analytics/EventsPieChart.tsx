@@ -9,27 +9,25 @@ interface EventsPieChartProps {
 
 const COLORS = [
   'hsl(var(--primary))',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
+  'hsl(var(--success))',
+  'hsl(var(--warning))',
+  'hsl(var(--destructive))',
+  'hsl(var(--accent))',
 ];
 
 export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
   const totalEvents = useMemo(() => {
-    return data?.reduce((sum, item) => sum + item.value, 0) || 0;
+    return data?.reduce((sum, entry) => sum + (entry.value as number), 0) || 0;
   }, [data]);
 
   if (isLoading) {
     return (
-      <Card className="shadow-lg border-border/50 animate-fade-in">
+      <Card className="shadow-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            🎯 Distribuição de Eventos
-          </CardTitle>
+          <CardTitle>Distribuição de Eventos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] flex items-center justify-center">
+          <div className="h-[300px] flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         </CardContent>
@@ -39,14 +37,12 @@ export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="shadow-lg border-border/50 animate-fade-in">
+      <Card className="shadow-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            🎯 Distribuição de Eventos
-          </CardTitle>
+          <CardTitle>Distribuição de Eventos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
             Nenhum evento registrado no período selecionado
           </div>
         </CardContent>
@@ -55,34 +51,27 @@ export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
   }
 
   return (
-    <Card className="shadow-lg border-border/50 animate-fade-in hover:shadow-xl transition-all">
+    <Card className="shadow-card">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          🎯 Distribuição de Eventos
-        </CardTitle>
+        <CardTitle>Distribuição de Eventos</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
               labelLine={false}
-              innerRadius={80}
-              outerRadius={130}
+              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              innerRadius={60}
+              outerRadius={100}
               fill="#8884d8"
               dataKey="value"
-              label={({ name, percent }) => `${(percent * 100).toFixed(1)}%`}
-              animationDuration={1200}
-              animationEasing="ease-out"
+              paddingAngle={2}
             >
               {data.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={COLORS[index % COLORS.length]}
-                  className="hover:opacity-80 transition-opacity cursor-pointer"
-                />
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
             <Tooltip 
@@ -90,33 +79,26 @@ export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               }}
             />
-            <Legend 
-              wrapperStyle={{
-                paddingTop: '20px',
-              }}
-            />
+            <Legend />
             <text
               x="50%"
-              y="48%"
+              y="50%"
               textAnchor="middle"
               dominantBaseline="middle"
-              className="text-3xl font-bold"
-              fill="hsl(var(--foreground))"
+              className="text-2xl font-bold fill-foreground"
             >
-              {totalEvents.toLocaleString()}
+              {totalEvents}
             </text>
             <text
               x="50%"
-              y="56%"
+              y="57%"
               textAnchor="middle"
               dominantBaseline="middle"
-              className="text-sm"
-              fill="hsl(var(--muted-foreground))"
+              className="text-xs fill-muted-foreground"
             >
-              Total de Eventos
+              Total
             </text>
           </PieChart>
         </ResponsiveContainer>
