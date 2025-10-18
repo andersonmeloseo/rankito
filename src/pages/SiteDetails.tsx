@@ -23,7 +23,6 @@ import { MetricsCards } from "@/components/analytics/MetricsCards";
 import { TimelineChart } from "@/components/analytics/TimelineChart";
 import { TopPagesChart } from "@/components/analytics/TopPagesChart";
 import { EventsPieChart } from "@/components/analytics/EventsPieChart";
-import { FinancialHub } from "@/components/rank-rent/financial/FinancialHub";
 import { ConversionRateChart } from "@/components/analytics/ConversionRateChart";
 import { ConversionFunnelChart } from "@/components/analytics/ConversionFunnelChart";
 import { HourlyHeatmap } from "@/components/analytics/HourlyHeatmap";
@@ -568,9 +567,8 @@ const SiteDetails = () => {
 
         {/* Tabs Section */}
         <Tabs defaultValue="pages" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-4xl">
+          <TabsList className="grid w-full grid-cols-3 max-w-3xl">
             <TabsTrigger value="pages">Páginas</TabsTrigger>
-            <TabsTrigger value="analytics">Análise Financeira</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Analytics Avançado</TabsTrigger>
             <TabsTrigger value="plugin">Conexão com WordPress</TabsTrigger>
           </TabsList>
@@ -976,11 +974,6 @@ const SiteDetails = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Análise Tab - Financial Hub */}
-          <TabsContent value="analytics" className="space-y-6">
-            <FinancialHub siteId={siteId!} />
           </TabsContent>
 
           {/* Advanced Analytics Tab */}
