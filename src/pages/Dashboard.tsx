@@ -10,15 +10,11 @@ import { OverviewCards } from "@/components/rank-rent/OverviewCards";
 import { SitesList } from "@/components/rank-rent/SitesList";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
 import { ClientsList } from "@/components/rank-rent/ClientsList";
-import { PluginDownloadCard } from "@/components/rank-rent/PluginDownloadCard";
-import { PluginInstallationGuide } from "@/components/rank-rent/PluginInstallationGuide";
-import { PluginStatusMonitor } from "@/components/rank-rent/PluginStatusMonitor";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddSite, setShowAddSite] = useState(false);
-  const [showPluginGuide, setShowPluginGuide] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -97,14 +93,13 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-3 max-w-2xl">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="sites">Sites</TabsTrigger>
             <TabsTrigger value="clients" className="gap-2">
               <Users className="w-4 h-4" />
               Clientes
             </TabsTrigger>
-            <TabsTrigger value="plugin">Plugin WordPress</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -119,13 +114,6 @@ const Dashboard = () => {
           <TabsContent value="clients">
             <ClientsList userId={user.id} />
           </TabsContent>
-
-          <TabsContent value="plugin" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <PluginDownloadCard onOpenGuide={() => setShowPluginGuide(true)} />
-              <PluginStatusMonitor userId={user.id} />
-            </div>
-          </TabsContent>
         </Tabs>
       </main>
 
@@ -133,11 +121,6 @@ const Dashboard = () => {
         open={showAddSite}
         onOpenChange={setShowAddSite}
         userId={user.id}
-      />
-
-      <PluginInstallationGuide
-        open={showPluginGuide}
-        onOpenChange={setShowPluginGuide}
       />
     </div>
   );
