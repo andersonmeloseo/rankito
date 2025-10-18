@@ -15,13 +15,20 @@ interface ScenarioSimulatorProps {
 export const ScenarioSimulator = ({ metrics, config }: ScenarioSimulatorProps) => {
   const [priceIncrease, setPriceIncrease] = useState(20);
   const [costIncrease, setCostIncrease] = useState(50);
-  const [targetMargin, setTargetMargin] = useState(70);
+  const [growthMonths, setGrowthMonths] = useState(6);
+  const [monthlyGrowth, setMonthlyGrowth] = useState(10);
 
-  const { simulatePriceIncrease, simulateCostIncrease, simulateTargetMargin } = useScenarioSimulator(metrics, config);
+  const { simulatePriceIncrease, simulateCostIncrease } = useScenarioSimulator(metrics, config);
 
   const priceScenario = simulatePriceIncrease(priceIncrease);
   const costScenario = simulateCostIncrease(costIncrease);
-  const marginSimulation = simulateTargetMargin(targetMargin);
+  
+  // Projeção de crescimento
+  const currentRevenue = metrics.reduce((sum, m) => sum + Number(m.monthly_revenue), 0);
+  const currentProfit = metrics.reduce((sum, m) => sum + Number(m.monthly_profit), 0);
+  const projectedRevenue = currentRevenue * Math.pow(1 + monthlyGrowth / 100, growthMonths);
+  const projectedProfit = projectedRevenue - (config?.monthly_fixed_costs || 0);
+  const totalGrowth = projectedRevenue - currentRevenue;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -41,9 +48,9 @@ export const ScenarioSimulator = ({ metrics, config }: ScenarioSimulatorProps) =
       <CardContent>
         <Tabs defaultValue="price">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="price">Aumentar Preços</TabsTrigger>
-            <TabsTrigger value="cost">Aumentar Custos</TabsTrigger>
-            <TabsTrigger value="margin">Margem Alvo</TabsTrigger>
+            <TabsTrigger value="price">Aumento de Preços</TabsTrigger>
+            <TabsTrigger value="cost">Aumento de Custos</TabsTrigger>
+            <TabsTrigger value="growth">Projeção de Crescimento</TabsTrigger>
           </TabsList>
 
           <TabsContent value="price" className="space-y-4 mt-4">
@@ -130,32 +137,72 @@ export const ScenarioSimulator = ({ metrics, config }: ScenarioSimulatorProps) =
             </div>
           </TabsContent>
 
-          <TabsContent value="margin" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Margem alvo: {targetMargin}%</Label>
-              <Slider
-                value={[targetMargin]}
-                onValueChange={(v) => setTargetMargin(v[0])}
-                min={10}
-                max={95}
-                step={5}
-              />
+          <TabsContent value="growth" className="space-y-4 mt-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Crescimento mensal: {monthlyGrowth}%</Label>
+                <Slider
+                  value={[monthlyGrowth]}
+                  onValueChange={(v) => setMonthlyGrowth(v[0])}
+                  min={0}
+                  max={50}
+                  step={5}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Projetar para: {growthMonths} meses</Label>
+                <Slider
+                  value={[growthMonths]}
+                  onValueChange={(v) => setGrowthMonths(v[0])}
+                  min={1}
+                  max={24}
+                  step={1}
+                />
+              </div>
             </div>
 
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {marginSimulation.slice(0, 5).map((sim) => (
-                <div key={sim.pageId} className="rounded-lg border p-3 space-y-1">
-                  <p className="font-medium text-sm">{sim.pageTitle || sim.pageId}</p>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Atual: {formatCurrency(sim.currentPrice)}</span>
-                    <span className="font-medium text-primary">→ {formatCurrency(sim.suggestedPrice)}</span>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="rounded-lg border p-4 space-y-2">
+                <p className="text-sm text-muted-foreground">Receita Atual</p>
+                <p className="text-2xl font-bold">{formatCurrency(currentRevenue)}</p>
+              </div>
+              <div className="rounded-lg border p-4 space-y-2">
+                <p className="text-sm text-muted-foreground">Receita Projetada</p>
+                <p className="text-2xl font-bold text-primary">{formatCurrency(projectedRevenue)}</p>
+              </div>
+            </div>
+
+            <div className="rounded-lg bg-primary/10 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Projeção em {growthMonths} meses</p>
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Crescimento Total</p>
+                      <p className="text-xl font-bold text-primary">
+                        +{formatCurrency(totalGrowth)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Lucro Projetado</p>
+                      <p className="text-xl font-bold">
+                        {formatCurrency(projectedProfit)}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {sim.percentageIncrease > 0 ? "+" : ""}
-                    {sim.percentageIncrease.toFixed(1)}% de aumento
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Crescimento de {((projectedRevenue / currentRevenue - 1) * 100).toFixed(0)}% no período
                   </p>
                 </div>
-              ))}
+              </div>
+
+              {projectedProfit < currentProfit && (
+                <p className="text-xs text-amber-600 font-medium">
+                  ⚠️ Considere ajustar custos fixos para manter margem saudável
+                </p>
+              )}
             </div>
           </TabsContent>
         </Tabs>

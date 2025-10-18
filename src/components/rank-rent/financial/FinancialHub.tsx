@@ -92,6 +92,7 @@ export const FinancialHub = ({ siteId }: FinancialHubProps) => {
         onSave={(newConfig) => saveConfig.mutate(newConfig)}
         isSaving={saveConfig.isPending}
         totalPages={summary.totalPages}
+        totalRevenue={summary.totalRevenue}
       />
 
       {/* Scenario Simulator & Intelligent Pricing */}
