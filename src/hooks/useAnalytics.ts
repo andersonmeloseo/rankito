@@ -91,7 +91,6 @@ export const useAnalytics = ({
       };
     },
     enabled: !!siteId,
-    refetchInterval: 30000, // Auto-refresh a cada 30 segundos
   });
 
   // Timeline (últimos N dias)
@@ -268,7 +267,6 @@ export const useAnalytics = ({
       return data;
     },
     enabled: !!siteId,
-    refetchInterval: 30000, // Auto-refresh a cada 30 segundos
   });
 
   // Lista de page views separada
@@ -305,7 +303,6 @@ export const useAnalytics = ({
       return data;
     },
     enabled: !!siteId,
-    refetchInterval: 30000, // Auto-refresh a cada 30 segundos
   });
 
   // Dados para funil de conversão

@@ -183,7 +183,7 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange, l
   };
 
   const getTimeSinceUpdate = () => {
-    if (!lastUpdatedAt) return "";
+    if (!lastUpdatedAt) return "agora mesmo";
     const seconds = Math.floor((Date.now() - lastUpdatedAt) / 1000);
     if (seconds < 60) return `${seconds}s atrás`;
     const minutes = Math.floor(seconds / 60);
@@ -282,11 +282,9 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange, l
              <CardDescription>
                Mostrando {startIndex + 1}-{Math.min(endIndex, filteredPageViews?.length || 0)} de {filteredPageViews?.length || 0} visualizações
                {hasActiveFilters ? ` (filtrado de ${pageViews?.length || 0} total)` : ""}
-               {lastUpdatedAt && (
-                 <span className="ml-2 text-xs text-muted-foreground">
-                   • Atualizado {getTimeSinceUpdate()}
-                 </span>
-               )}
+                <span className="ml-2 text-xs text-muted-foreground">
+                  • Atualizado {getTimeSinceUpdate()}
+                </span>
              </CardDescription>
            </div>
            <div className="flex gap-2">

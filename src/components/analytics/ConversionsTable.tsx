@@ -73,7 +73,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
   };
 
   const getTimeSinceUpdate = () => {
-    if (!lastUpdatedAt) return "";
+    if (!lastUpdatedAt) return "agora mesmo";
     const seconds = Math.floor((Date.now() - lastUpdatedAt) / 1000);
     if (seconds < 60) return `${seconds}s atrás`;
     const minutes = Math.floor(seconds / 60);
@@ -319,11 +319,9 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
               <CardDescription>
                 Mostrando {startIndex + 1}-{Math.min(endIndex, filteredConversions?.length || 0)} de {filteredConversions?.length || 0} conversões
                 {hasActiveFilters ? ` (filtrado de ${conversions?.length || 0} total)` : ""}
-                {lastUpdatedAt && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    • Atualizado {getTimeSinceUpdate()}
-                  </span>
-                )}
+                <span className="ml-2 text-xs text-muted-foreground">
+                  • Atualizado {getTimeSinceUpdate()}
+                </span>
               </CardDescription>
             </div>
             <div className="flex gap-2 items-center">
