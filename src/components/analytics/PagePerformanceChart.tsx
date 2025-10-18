@@ -108,7 +108,7 @@ export const PagePerformanceChart = ({ data, isLoading }: PagePerformanceChartPr
                 backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                boxShadow: "var(--shadow-card-hover)",
                 padding: "12px"
               }}
               formatter={(value: any, name: string) => {
