@@ -69,7 +69,7 @@ export const ConversionHeatmapChart = ({ data, isLoading }: ConversionHeatmapCha
       <CardContent>
         <div className="overflow-x-auto">
           <div className="min-w-[800px]">
-            <div className="grid grid-cols-25 gap-1 mb-2">
+            <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: 'auto repeat(24, minmax(0, 1fr))' }}>
               <div className="text-xs text-muted-foreground"></div>
               {HOURS.map((hour) => (
                 <div key={hour} className="text-xs text-muted-foreground text-center">
@@ -78,7 +78,7 @@ export const ConversionHeatmapChart = ({ data, isLoading }: ConversionHeatmapCha
               ))}
             </div>
             {DAYS.map((day, dayIndex) => (
-              <div key={day} className="grid grid-cols-25 gap-1 mb-1">
+              <div key={day} className="grid gap-1 mb-1" style={{ gridTemplateColumns: 'auto repeat(24, minmax(0, 1fr))' }}>
                 <div className="text-xs text-muted-foreground flex items-center">
                   {day}
                 </div>
