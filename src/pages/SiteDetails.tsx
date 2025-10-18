@@ -16,6 +16,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { EditPageDialog } from "@/components/rank-rent/EditPageDialog";
 import { ImportSitemapDialog } from "@/components/rank-rent/ImportSitemapDialog";
+import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
+import { MetricsCards } from "@/components/analytics/MetricsCards";
+import { TimelineChart } from "@/components/analytics/TimelineChart";
+import { TopPagesChart } from "@/components/analytics/TopPagesChart";
+import { EventsPieChart } from "@/components/analytics/EventsPieChart";
+import { ConversionsTable } from "@/components/analytics/ConversionsTable";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -45,6 +52,13 @@ const SiteDetails = () => {
   const [selectAll, setSelectAll] = useState(false);
   const [fetchingTitles, setFetchingTitles] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  
+  // Analytics States
+  const [analyticsPeriod, setAnalyticsPeriod] = useState("7");
+  const [analyticsEventType, setAnalyticsEventType] = useState("all");
+  const [analyticsDevice, setAnalyticsDevice] = useState("all");
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
   
   // Debounce search term
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -176,6 +190,16 @@ const SiteDetails = () => {
     },
     enabled: !!siteId,
     refetchInterval: 30000,
+  });
+  
+  // Analytics hook
+  const analyticsData = useAnalytics({
+    siteId: siteId || "",
+    period: analyticsPeriod,
+    eventType: analyticsEventType,
+    device: analyticsDevice,
+    customStartDate,
+    customEndDate,
   });
 
   const handleEditPage = (page: any) => {
@@ -512,14 +536,6 @@ const SiteDetails = () => {
                 </div>
               </div>
             </div>
-            <Button 
-              onClick={() => navigate(`/dashboard/analytics/${siteId}`)} 
-              variant="default"
-              className="gap-2"
-            >
-              <BarChart3 className="w-4 h-4" />
-              Analytics Avançado
-            </Button>
           </div>
         </div>
       </header>
@@ -608,9 +624,10 @@ const SiteDetails = () => {
 
         {/* Tabs Section */}
         <Tabs defaultValue="pages" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-4xl">
+          <TabsList className="grid w-full grid-cols-6 max-w-5xl">
             <TabsTrigger value="pages">Páginas</TabsTrigger>
             <TabsTrigger value="analytics">Análise</TabsTrigger>
+            <TabsTrigger value="advanced-analytics">Analytics Avançado</TabsTrigger>
             <TabsTrigger value="client">Cliente</TabsTrigger>
             <TabsTrigger value="settings">Pixel</TabsTrigger>
             <TabsTrigger value="conversions">Conversões</TabsTrigger>
@@ -1079,6 +1096,49 @@ const SiteDetails = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Advanced Analytics Tab */}
+          <TabsContent value="advanced-analytics" className="space-y-6">
+            <AnalyticsFilters
+              period={analyticsPeriod}
+              onPeriodChange={setAnalyticsPeriod}
+              eventType={analyticsEventType}
+              onEventTypeChange={setAnalyticsEventType}
+              device={analyticsDevice}
+              onDeviceChange={setAnalyticsDevice}
+              customStartDate={customStartDate}
+              onCustomStartDateChange={setCustomStartDate}
+              customEndDate={customEndDate}
+              onCustomEndDateChange={setCustomEndDate}
+            />
+            
+            <MetricsCards 
+              metrics={analyticsData.metrics} 
+              isLoading={analyticsData.isLoading} 
+            />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <TimelineChart 
+                data={analyticsData.timeline} 
+                isLoading={analyticsData.isLoading} 
+              />
+              <EventsPieChart 
+                data={analyticsData.events} 
+                isLoading={analyticsData.isLoading} 
+              />
+            </div>
+            
+            <TopPagesChart 
+              data={analyticsData.topPages} 
+              isLoading={analyticsData.isLoading} 
+            />
+            
+            <ConversionsTable 
+              conversions={analyticsData.conversions || []} 
+              isLoading={analyticsData.isLoading}
+              siteId={siteId || ""}
+            />
           </TabsContent>
 
           {/* Cliente Tab */}
