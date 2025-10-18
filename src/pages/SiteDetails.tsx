@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3 } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Users, TrendingDown, Percent } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -39,6 +39,7 @@ import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmap
 import { TestPageViewButton } from "@/components/analytics/TestPageViewButton";
 import { ROIAnalysisCard } from "@/components/analytics/ROIAnalysisCard";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useROIAnalysis } from "@/hooks/useROIAnalysis";
 import { format, subDays } from "date-fns";
 
 const SiteDetails = () => {
@@ -244,6 +245,79 @@ const SiteDetails = () => {
     customStartDate,
     customEndDate,
   });
+
+  // Fetch rentability data - breakdown por cliente
+  const { data: rentabilityData, isLoading: rentabilityLoading } = useQuery({
+    queryKey: ["site-rentability", siteId],
+    queryFn: async () => {
+      const { data: pagesWithClients, error } = await supabase
+        .from("rank_rent_page_metrics")
+        .select("*")
+        .eq("site_id", siteId)
+        .eq("is_rented", true)
+        .not("client_id", "is", null);
+
+      if (error) throw error;
+
+      // Agrupar por cliente
+      const clientsMap = new Map<string, {
+        clientId: string;
+        clientName: string;
+        pages: any[];
+        totalRevenue: number;
+        totalConversions: number;
+        pageCount: number;
+      }>();
+
+      pagesWithClients?.forEach(page => {
+        const clientId = page.client_id || "sem_cliente";
+        const existing = clientsMap.get(clientId);
+        
+        if (existing) {
+          existing.pages.push(page);
+          existing.totalRevenue += Number(page.monthly_rent_value || 0);
+          existing.totalConversions += Number(page.total_conversions || 0);
+          existing.pageCount += 1;
+        } else {
+          clientsMap.set(clientId, {
+            clientId,
+            clientName: page.client_name || "Sem Cliente",
+            pages: [page],
+            totalRevenue: Number(page.monthly_rent_value || 0),
+            totalConversions: Number(page.total_conversions || 0),
+            pageCount: 1,
+          });
+        }
+      });
+
+      return Array.from(clientsMap.values()).sort((a, b) => b.totalRevenue - a.totalRevenue);
+    },
+    enabled: !!siteId,
+    refetchInterval: 30000,
+  });
+
+  // Hook de ROI Analysis
+  const { calculatedROI, costPerConversion, setCostPerConversion } = useROIAnalysis({
+    siteId: siteId || "",
+    periodDays: 30,
+  });
+
+  // Calcular totais gerais
+  const rentabilitySummary = useMemo(() => {
+    if (!rentabilityData) return null;
+    
+    const totalRevenue = rentabilityData.reduce((sum, client) => sum + client.totalRevenue, 0);
+    const totalPages = rentabilityData.reduce((sum, client) => sum + client.pageCount, 0);
+    const totalClients = rentabilityData.length;
+    const avgTicket = totalPages > 0 ? totalRevenue / totalPages : 0;
+    
+    return {
+      totalRevenue,
+      totalPages,
+      totalClients,
+      avgTicket,
+    };
+  }, [rentabilityData]);
 
   const handleEditPage = (page: any) => {
     setSelectedPage(page);
@@ -587,9 +661,9 @@ const SiteDetails = () => {
         <Tabs defaultValue="pages" className="space-y-6">
           <TabsList className="grid w-full grid-cols-5 max-w-5xl">
             <TabsTrigger value="pages">Páginas</TabsTrigger>
+            <TabsTrigger value="rentabilidade">💰 Rentabilidade</TabsTrigger>
             <TabsTrigger value="analytics">Análise</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Análise Detalhada</TabsTrigger>
-            <TabsTrigger value="client">Cliente</TabsTrigger>
             <TabsTrigger value="plugin">Conexão WordPress</TabsTrigger>
           </TabsList>
 
@@ -1196,43 +1270,207 @@ const SiteDetails = () => {
             </Tabs>
           </TabsContent>
 
-          {/* Cliente Tab */}
-          <TabsContent value="client">
-            <Card className="shadow-card">
+          {/* Rentabilidade Tab */}
+          <TabsContent value="rentabilidade" className="space-y-6">
+            {/* KPI Cards */}
+            <div className="grid gap-4 md:grid-cols-4">
+              {/* Receita Mensal Total */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Receita Mensal</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    R$ {(rentabilitySummary?.totalRevenue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    de {rentabilitySummary?.totalPages || 0} páginas alugadas
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Clientes Ativos */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{rentabilitySummary?.totalClients || 0}</div>
+                  <p className="text-xs text-muted-foreground mt-1">alugando páginas</p>
+                </CardContent>
+              </Card>
+
+              {/* ROI do Período */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">ROI (30 dias)</CardTitle>
+                  {calculatedROI?.isProfit ? (
+                    <TrendingUp className="h-4 w-4 text-success" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-destructive" />
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-bold ${calculatedROI?.isProfit ? "text-success" : "text-destructive"}`}>
+                    {calculatedROI?.isProfit ? "+" : ""}{calculatedROI?.profitPercentage.toFixed(1)}%
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {calculatedROI?.isProfit ? "lucro líquido" : "prejuízo"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Ticket Médio por Página */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
+                  <Percent className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    R$ {(rentabilitySummary?.avgTicket || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">por página/mês</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* ROI Analysis Card */}
+            <ROIAnalysisCard siteId={siteId!} />
+
+            {/* Breakdown por Cliente */}
+            <Card>
               <CardHeader>
-                <CardTitle>Informações do Cliente</CardTitle>
+                <CardTitle>Receita por Cliente</CardTitle>
+                <CardDescription>
+                  Breakdown detalhado de cada cliente neste site
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {site.client_name ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Nome do Cliente</label>
-                      <p className="text-foreground mt-1">{site.client_name}</p>
-                    </div>
-                    <Separator />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Status do Contrato</label>
-                        <div className="mt-1">
-                          {site.is_rented ? (
-                            <Badge className="bg-success text-success-foreground">Ativo</Badge>
-                          ) : (
-                            <Badge variant="outline">Inativo</Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Valor Mensal</label>
-                        <p className="text-foreground mt-1 font-semibold">
-                          R$ {Number(site.monthly_rent_value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                    </div>
+                {rentabilityLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : !rentabilityData || rentabilityData.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      Nenhuma página alugada neste site ainda.
+                    </p>
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Nenhum cliente vinculado a este site.</p>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Páginas</TableHead>
+                        <TableHead>Receita Mensal</TableHead>
+                        <TableHead>% do Total</TableHead>
+                        <TableHead>Conversões (30d)</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rentabilityData.map((client) => {
+                        const percentage = rentabilitySummary?.totalRevenue 
+                          ? (client.totalRevenue / rentabilitySummary.totalRevenue * 100).toFixed(1)
+                          : "0";
+                        
+                        return (
+                          <TableRow key={client.clientId}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{client.clientName}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{client.pageCount} página{client.pageCount > 1 ? "s" : ""}</Badge>
+                            </TableCell>
+                            <TableCell className="font-semibold">
+                              R$ {client.totalRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span>{percentage}%</span>
+                                <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-primary rounded-full" 
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {client.totalConversions} conversão{client.totalConversions !== 1 ? "ões" : ""}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Top 5 Páginas Mais Rentáveis */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Páginas Mais Rentáveis</CardTitle>
+                <CardDescription>
+                  Top 5 páginas por valor de aluguel
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {rentabilityLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
+                ) : !rentabilityData || rentabilityData.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      Nenhuma página alugada para exibir.
+                    </p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Página</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Valor Mensal</TableHead>
+                        <TableHead>Conversões</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rentabilityData
+                        .flatMap(client => client.pages)
+                        .sort((a, b) => Number(b.monthly_rent_value || 0) - Number(a.monthly_rent_value || 0))
+                        .slice(0, 5)
+                        .map((page) => (
+                          <TableRow key={page.page_id}>
+                            <TableCell>
+                              <div className="max-w-xs">
+                                <p className="font-medium truncate">{page.page_title || "Sem título"}</p>
+                                <p className="text-xs text-muted-foreground truncate">{page.page_path}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{page.client_name}</Badge>
+                            </TableCell>
+                            <TableCell className="font-semibold">
+                              R$ {Number(page.monthly_rent_value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {page.total_conversions || 0} conversão{page.total_conversions !== 1 ? "ões" : ""}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
                 )}
               </CardContent>
             </Card>
