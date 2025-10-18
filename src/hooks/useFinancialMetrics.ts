@@ -87,7 +87,10 @@ export const useFinancialMetrics = (siteId: string) => {
 
       const { data, error } = await supabase
         .from("rank_rent_financial_config")
-        .upsert(configData, { onConflict: "site_id" })
+        .upsert(configData, { 
+          onConflict: "site_id",
+          ignoreDuplicates: false 
+        })
         .select()
         .single();
 

@@ -234,14 +234,14 @@ export type Database = {
           {
             foreignKeyName: "rank_rent_financial_config_site_id_fkey"
             columns: ["site_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "rank_rent_metrics"
             referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "rank_rent_financial_config_site_id_fkey"
             columns: ["site_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "rank_rent_sites"
             referencedColumns: ["id"]
           },
