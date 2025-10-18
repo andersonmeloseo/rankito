@@ -29,6 +29,24 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
   }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
 
+  // Utility functions - must be defined before useMemo hooks
+  const getBrowserInfo = (userAgent: string | null) => {
+    if (!userAgent) return { name: "Desconhecido", icon: Globe };
+    
+    if (userAgent.includes("Chrome")) return { name: "Chrome", icon: Chrome };
+    if (userAgent.includes("Firefox")) return { name: "Firefox", icon: Globe };
+    if (userAgent.includes("Safari")) return { name: "Safari", icon: Globe };
+    return { name: "Outro", icon: Globe };
+  };
+
+  const getDeviceInfo = (device: string) => {
+    switch(device) {
+      case "mobile": return { icon: Smartphone, color: "text-blue-600", bgColor: "bg-blue-100 dark:bg-blue-900/30" };
+      case "tablet": return { icon: Tablet, color: "text-purple-600", bgColor: "bg-purple-100 dark:bg-purple-900/30" };
+      default: return { icon: Monitor, color: "text-green-600", bgColor: "bg-green-100 dark:bg-green-900/30" };
+    }
+  };
+
   // Get unique browsers from pageViews
   const uniqueBrowsers = useMemo(() => {
     const browsers = new Set(
@@ -59,23 +77,6 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
       .slice(0, 10)
       .map(([ref]) => ref);
   }, [pageViews]);
-
-  const getBrowserInfo = (userAgent: string | null) => {
-    if (!userAgent) return { name: "Desconhecido", icon: Globe };
-    
-    if (userAgent.includes("Chrome")) return { name: "Chrome", icon: Chrome };
-    if (userAgent.includes("Firefox")) return { name: "Firefox", icon: Globe };
-    if (userAgent.includes("Safari")) return { name: "Safari", icon: Globe };
-    return { name: "Outro", icon: Globe };
-  };
-
-  const getDeviceInfo = (device: string) => {
-    switch(device) {
-      case "mobile": return { icon: Smartphone, color: "text-blue-600", bgColor: "bg-blue-100 dark:bg-blue-900/30" };
-      case "tablet": return { icon: Tablet, color: "text-purple-600", bgColor: "bg-purple-100 dark:bg-purple-900/30" };
-      default: return { icon: Monitor, color: "text-green-600", bgColor: "bg-green-100 dark:bg-green-900/30" };
-    }
-  };
 
   const filteredPageViews = useMemo(() => {
     let filtered = pageViews?.filter(pv => {
