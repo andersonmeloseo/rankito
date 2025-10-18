@@ -69,19 +69,19 @@ export const ConversionHeatmapChart = ({ data, isLoading }: ConversionHeatmapCha
       <CardContent>
         <div className="overflow-x-auto">
           <div className="min-w-[800px]">
-            <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: 'auto repeat(24, minmax(0, 1fr))' }}>
-              <div className="text-xs text-muted-foreground"></div>
+          <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: '48px repeat(24, minmax(0, 1fr))' }}>
+            <div className="text-xs text-muted-foreground w-12"></div>
               {HOURS.map((hour) => (
                 <div key={hour} className="text-xs text-muted-foreground text-center">
                   {hour}
                 </div>
               ))}
             </div>
-            {DAYS.map((day, dayIndex) => (
-              <div key={day} className="grid gap-1 mb-1" style={{ gridTemplateColumns: 'auto repeat(24, minmax(0, 1fr))' }}>
-                <div className="text-xs text-muted-foreground flex items-center">
-                  {day}
-                </div>
+          {DAYS.map((day, dayIndex) => (
+            <div key={day} className="grid gap-1 mb-1" style={{ gridTemplateColumns: '48px repeat(24, minmax(0, 1fr))' }}>
+              <div className="text-xs text-muted-foreground flex items-center w-12">
+                {day}
+              </div>
                 {Array.from({ length: 24 }).map((_, hourIndex) => {
                   const key = `${dayIndex}-${hourIndex}`;
                   const value = data[key] || 0;

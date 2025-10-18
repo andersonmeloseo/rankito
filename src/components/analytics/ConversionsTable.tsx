@@ -21,7 +21,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const [deviceFilter, setDeviceFilter] = useState("all");
   const [sortConfig, setSortConfig] = useState<{
-    key: "created_at" | "event_type" | "page_path" | "cta_text" | "device" | "ip_address";
+    key: "created_at" | "event_type" | "page_path" | "cta_text" | "device" | "browser" | "ip_address";
     direction: "asc" | "desc";
   }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
@@ -49,6 +49,25 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
       return { icon: Tablet, color: "text-purple-500", label: "Tablet" };
     }
     return { icon: Monitor, color: "text-green-500", label: "Desktop" };
+  };
+
+  const getBrowserInfo = (userAgent: string) => {
+    if (!userAgent) return { name: "Desconhecido", icon: Monitor, color: "text-muted-foreground" };
+    
+    const ua = userAgent.toLowerCase();
+    if (ua.includes("chrome") && !ua.includes("edg")) {
+      return { name: "Chrome", icon: Monitor, color: "text-yellow-500" };
+    }
+    if (ua.includes("safari") && !ua.includes("chrome")) {
+      return { name: "Safari", icon: Monitor, color: "text-blue-500" };
+    }
+    if (ua.includes("firefox")) {
+      return { name: "Firefox", icon: Monitor, color: "text-orange-500" };
+    }
+    if (ua.includes("edg")) {
+      return { name: "Edge", icon: Monitor, color: "text-blue-600" };
+    }
+    return { name: "Outro", icon: Monitor, color: "text-muted-foreground" };
   };
 
   const filteredConversions = useMemo(() => {
@@ -95,6 +114,10 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
           aValue = a.metadata?.device || "desktop";
           bValue = b.metadata?.device || "desktop";
           break;
+        case "browser":
+          aValue = a.metadata?.userAgent || "";
+          bValue = b.metadata?.userAgent || "";
+          break;
         case "ip_address":
           aValue = a.ip_address || "";
           bValue = b.ip_address || "";
@@ -126,7 +149,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
       return;
     }
 
-    const headers = ["Data", "Hora", "Tipo", "Página", "CTA", "Dispositivo", "IP"];
+    const headers = ["Data", "Hora", "Tipo", "Página", "CTA", "Dispositivo", "Browser", "IP"];
     const rows = filteredConversions.map(conv => [
       new Date(conv.created_at).toLocaleDateString("pt-BR"),
       new Date(conv.created_at).toLocaleTimeString("pt-BR"),
@@ -134,6 +157,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
       conv.page_path,
       conv.cta_text || "-",
       conv.metadata?.device || "-",
+      getBrowserInfo(conv.metadata?.userAgent).name,
       conv.ip_address || "-",
     ]);
 
@@ -329,6 +353,15 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                   </TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort("browser")}
+                  >
+                    <div className="flex items-center">
+                      Browser
+                      <SortIcon columnKey="browser" />
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort("ip_address")}
                   >
                     <div className="flex items-center">
@@ -387,6 +420,18 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                           <DeviceIcon className={`w-4 h-4 ${deviceInfo.color}`} />
                           <span className="text-sm">{deviceInfo.label}</span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const browserInfo = getBrowserInfo(conv.metadata?.userAgent);
+                          const BrowserIcon = browserInfo.icon;
+                          return (
+                            <div className="flex items-center gap-2">
+                              <BrowserIcon className={`w-4 h-4 ${browserInfo.color}`} />
+                              <span className="text-sm">{browserInfo.name}</span>
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground font-mono">
                         {conv.ip_address || "-"}
