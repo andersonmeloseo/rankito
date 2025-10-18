@@ -244,6 +244,9 @@ const Analytics = () => {
               pageViews={pageViewsList || []}
               isLoading={isLoading}
               siteId={siteId}
+              onPeriodChange={(startDate, endDate) => {
+                console.log('Período de page views alterado:', { startDate, endDate });
+              }}
             />
           </TabsContent>
         </Tabs>

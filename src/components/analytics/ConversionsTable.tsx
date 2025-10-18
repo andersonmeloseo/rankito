@@ -18,6 +18,16 @@ interface ConversionsTableProps {
 }
 
 export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChange }: ConversionsTableProps) => {
+  console.log('🔍 ConversionsTable recebeu:', {
+    conversionsCount: conversions?.length,
+    isLoading,
+    hasOnPeriodChange: !!onPeriodChange,
+    firstConversion: conversions?.[0],
+    isArray: Array.isArray(conversions),
+    isUndefined: conversions === undefined,
+    isNull: conversions === null
+  });
+
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
@@ -29,9 +39,6 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
     direction: "asc" | "desc";
   }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
-
-  // Debug: verificar se onPeriodChange está chegando
-  console.log('🔍 ConversionsTable - onPeriodChange existe?', !!onPeriodChange);
 
   const handlePeriodChange = (startDate: string, endDate: string) => {
     console.log('📅 Período alterado:', { startDate, endDate });
@@ -258,20 +265,12 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
     );
   }
 
-  if (!conversions || conversions.length === 0) {
-    return (
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle>Conversões Detalhadas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-            Nenhuma conversão registrada no período selecionado
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // REMOVIDO: Early return estava bloqueando renderização mesmo com dados
+  console.log('🚨 Verificando condições antes do early return:', {
+    conversionsExists: !!conversions,
+    conversionsLength: conversions?.length,
+    shouldShowEmptyState: !conversions || conversions.length === 0
+  });
 
   return (
     <TooltipProvider>

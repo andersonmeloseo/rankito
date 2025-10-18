@@ -18,6 +18,16 @@ interface PageViewsTableProps {
 }
 
 export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }: PageViewsTableProps) => {
+  console.log('🔍 PageViewsTable recebeu:', {
+    pageViewsCount: pageViews?.length,
+    isLoading,
+    hasOnPeriodChange: !!onPeriodChange,
+    firstPageView: pageViews?.[0],
+    isArray: Array.isArray(pageViews),
+    isUndefined: pageViews === undefined,
+    isNull: pageViews === null
+  });
+
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [deviceFilter, setDeviceFilter] = useState("all");
@@ -219,20 +229,12 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
     );
   }
 
-  if (!pageViews || pageViews.length === 0) {
-    return (
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle>Visualizações de Página</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-            Nenhuma visualização registrada no período selecionado
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // REMOVIDO: Early return estava bloqueando renderização mesmo com dados
+  console.log('🚨 Verificando condições antes do early return:', {
+    pageViewsExists: !!pageViews,
+    pageViewsLength: pageViews?.length,
+    shouldShowEmptyState: !pageViews || pageViews.length === 0
+  });
 
   return (
     <Card className="shadow-card">
