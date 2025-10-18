@@ -1,0 +1,390 @@
+=== PLUGIN WORDPRESS: RANK & RENT TRACKER ===
+
+Para criar o plugin, crie uma pasta "rank-rent-tracker" no diretório wp-content/plugins/ 
+e adicione os seguintes arquivos:
+
+=== 1. rank-rent-tracker.php (arquivo principal) ===
+<?php
+/**
+ * Plugin Name: Rank & Rent Tracker
+ * Description: Rastreamento automático de conversões para sites Rank & Rent
+ * Version: 1.0.0
+ * Author: Seu Nome
+ */
+
+if (!defined('ABSPATH')) exit;
+
+class RankRentTracker {
+    private $option_name = 'rank_rent_settings';
+    
+    public function __construct() {
+        add_action('admin_menu', array($this, 'add_admin_menu'));
+        add_action('admin_init', array($this, 'register_settings'));
+        add_action('wp_footer', array($this, 'inject_tracking_pixel'), 999);
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+        add_action('wp_ajax_test_connection', array($this, 'test_connection'));
+    }
+    
+    public function add_admin_menu() {
+        add_options_page(
+            'Rank & Rent Tracker',
+            'Rank & Rent',
+            'manage_options',
+            'rank-rent-tracker',
+            array($this, 'settings_page')
+        );
+    }
+    
+    public function register_settings() {
+        register_setting($this->option_name, 'rank_rent_site_name');
+        register_setting($this->option_name, 'rank_rent_tracking_url');
+    }
+    
+    public function enqueue_admin_assets($hook) {
+        if ($hook !== 'settings_page_rank-rent-tracker') return;
+        
+        wp_enqueue_style('rank-rent-admin', plugins_url('assets/admin.css', __FILE__));
+    }
+    
+    public function inject_tracking_pixel() {
+        $site_name = get_option('rank_rent_site_name');
+        $tracking_url = get_option('rank_rent_tracking_url');
+        
+        if (empty($site_name) || empty($tracking_url)) return;
+        
+        ?>
+<script>
+(function() {
+  const TRACKING_ENDPOINT = '<?php echo esc_js($tracking_url); ?>';
+  const SITE_NAME = '<?php echo esc_js($site_name); ?>';
+
+  function detectPhoneNumber() {
+    const phoneRegex = /(\(?\d{2}\)?\s?9?\d{4}[-\s]?\d{4}|\d{11})/g;
+    const bodyText = document.body.innerText;
+    const matches = bodyText.match(phoneRegex);
+    return matches ? matches[0] : null;
+  }
+
+  function trackEvent(eventType, ctaText = null, extra = {}) {
+    const data = {
+      site_name: SITE_NAME,
+      page_url: window.location.href,
+      event_type: eventType,
+      cta_text: ctaText,
+      metadata: {
+        referrer: document.referrer,
+        device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+        timestamp: new Date().toISOString(),
+        page_title: document.title,
+        detected_phone: detectPhoneNumber(),
+        ...extra
+      }
+    };
+
+    if (navigator.sendBeacon) {
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      navigator.sendBeacon(TRACKING_ENDPOINT, blob);
+    } else {
+      fetch(TRACKING_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        keepalive: true
+      }).catch(e => console.error('Tracking error:', e));
+    }
+  }
+
+  trackEvent('page_view');
+
+  document.addEventListener('click', function(e) {
+    const target = e.target.closest('a, button, [role="button"]');
+    if (!target) return;
+    
+    const href = target.getAttribute('href') || '';
+    const text = target.textContent.trim();
+    
+    let eventType = 'button_click';
+    if (href.startsWith('tel:')) eventType = 'phone_click';
+    else if (href.startsWith('mailto:')) eventType = 'email_click';
+    else if (href.includes('wa.me') || href.includes('whatsapp')) eventType = 'whatsapp_click';
+    
+    trackEvent(eventType, text, {
+      href: href,
+      element_id: target.id || null,
+      element_class: target.className || null
+    });
+  });
+
+  document.addEventListener('submit', function(e) {
+    if (e.target.matches('form')) {
+      trackEvent('form_submit', 'Form Submission');
+    }
+  });
+})();
+</script>
+        <?php
+    }
+    
+    public function test_connection() {
+        check_ajax_referer('rank_rent_test', 'nonce');
+        
+        $site_name = sanitize_text_field($_POST['site_name']);
+        $tracking_url = esc_url_raw($_POST['tracking_url']);
+        
+        $response = wp_remote_post($tracking_url, array(
+            'body' => json_encode(array(
+                'site_name' => $site_name,
+                'page_url' => home_url('/'),
+                'event_type' => 'test_connection',
+                'metadata' => array('test' => true)
+            )),
+            'headers' => array('Content-Type' => 'application/json'),
+            'timeout' => 10
+        ));
+        
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+        
+        $code = wp_remote_retrieve_response_code($response);
+        if ($code === 200) {
+            wp_send_json_success(array('message' => 'Conexão estabelecida com sucesso!'));
+        } else {
+            wp_send_json_error(array('message' => 'Erro na conexão (código ' . $code . ')'));
+        }
+    }
+    
+    public function settings_page() {
+        ?>
+        <div class="wrap rank-rent-settings">
+            <h1>🎯 Rank & Rent Tracker</h1>
+            <p class="description">Configure o rastreamento automático de conversões do seu site.</p>
+            
+            <form method="post" action="options.php">
+                <?php 
+                settings_fields($this->option_name);
+                $site_name = get_option('rank_rent_site_name');
+                $tracking_url = get_option('rank_rent_tracking_url');
+                $is_configured = !empty($site_name) && !empty($tracking_url);
+                ?>
+                
+                <div class="rank-rent-card">
+                    <h2>⚙️ Configuração</h2>
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th><label for="rank_rent_site_name">Nome do Site</label></th>
+                            <td>
+                                <input 
+                                    type="text" 
+                                    id="rank_rent_site_name" 
+                                    name="rank_rent_site_name" 
+                                    value="<?php echo esc_attr($site_name); ?>" 
+                                    class="regular-text" 
+                                    required
+                                />
+                                <p class="description">Identificador único do seu site (ex: meusite.com.br)</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label for="rank_rent_tracking_url">URL de Rastreamento</label></th>
+                            <td>
+                                <input 
+                                    type="url" 
+                                    id="rank_rent_tracking_url" 
+                                    name="rank_rent_tracking_url" 
+                                    value="<?php echo esc_attr($tracking_url); ?>" 
+                                    class="regular-text" 
+                                    required
+                                />
+                                <p class="description">URL fornecida pelo sistema de analytics</p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <?php submit_button('Salvar Configurações'); ?>
+                </div>
+            </form>
+            
+            <div class="rank-rent-card">
+                <h2>🔌 Status da Conexão</h2>
+                <?php if ($is_configured): ?>
+                    <div class="rank-rent-status-box">
+                        <span class="status-indicator status-active"></span>
+                        <div>
+                            <strong>Plugin Ativo</strong>
+                            <p>O rastreamento está funcionando em todas as páginas do site.</p>
+                        </div>
+                    </div>
+                    
+                    <button type="button" id="test-connection-btn" class="button button-secondary">
+                        Testar Conexão
+                    </button>
+                    
+                    <div id="connection-result" style="margin-top: 15px;"></div>
+                <?php else: ?>
+                    <div class="rank-rent-status-box">
+                        <span class="status-indicator status-inactive"></span>
+                        <div>
+                            <strong>Configuração Incompleta</strong>
+                            <p>Preencha os campos acima para ativar o rastreamento.</p>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+            
+            <div class="rank-rent-card">
+                <h2>📊 O que é rastreado?</h2>
+                <ul class="rank-rent-tracking-list">
+                    <li>✅ <strong>Page Views:</strong> Toda visualização de página</li>
+                    <li>✅ <strong>Cliques em Telefone:</strong> Links tel: e botões de chamada</li>
+                    <li>✅ <strong>Cliques em Email:</strong> Links mailto:</li>
+                    <li>✅ <strong>Cliques em WhatsApp:</strong> Links para WhatsApp</li>
+                    <li>✅ <strong>Cliques em Botões:</strong> Todos os botões e CTAs</li>
+                    <li>✅ <strong>Envio de Formulários:</strong> Submissions de forms</li>
+                </ul>
+            </div>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            $('#test-connection-btn').on('click', function() {
+                const btn = $(this);
+                const resultDiv = $('#connection-result');
+                
+                btn.prop('disabled', true).text('Testando...');
+                resultDiv.html('');
+                
+                $.post(ajaxurl, {
+                    action: 'test_connection',
+                    nonce: '<?php echo wp_create_nonce('rank_rent_test'); ?>',
+                    site_name: $('#rank_rent_site_name').val(),
+                    tracking_url: $('#rank_rent_tracking_url').val()
+                }, function(response) {
+                    if (response.success) {
+                        resultDiv.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                    } else {
+                        resultDiv.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                    }
+                }).always(function() {
+                    btn.prop('disabled', false).text('Testar Conexão');
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+}
+
+new RankRentTracker();
+
+=== 2. assets/admin.css ===
+.rank-rent-settings {
+    max-width: 900px;
+}
+
+.rank-rent-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.rank-rent-card h2 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #1d2327;
+}
+
+.rank-rent-status-box {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f6f7f7;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-active {
+    background: #00a32a;
+    box-shadow: 0 0 8px rgba(0, 163, 42, 0.4);
+}
+
+.status-inactive {
+    background: #dba617;
+}
+
+.rank-rent-tracking-list {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 0 0;
+}
+
+.rank-rent-tracking-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.rank-rent-tracking-list li:last-child {
+    border-bottom: none;
+}
+
+#connection-result .notice {
+    margin: 0;
+}
+
+=== 3. readme.txt ===
+=== Rank & Rent Tracker ===
+Contributors: seunome
+Tags: analytics, tracking, rank and rent
+Requires at least: 5.0
+Tested up to: 6.4
+Stable tag: 1.0.0
+License: GPLv2 or later
+
+Rastreamento automático de conversões para sites Rank & Rent.
+
+== Description ==
+
+Plugin simples e leve que rastreia automaticamente:
+- Visualizações de página
+- Cliques em botões de telefone
+- Cliques em email
+- Cliques em WhatsApp
+- Envio de formulários
+
+== Installation ==
+
+1. Faça upload da pasta 'rank-rent-tracker' para '/wp-content/plugins/'
+2. Ative o plugin no menu 'Plugins' do WordPress
+3. Configure em Configurações > Rank & Rent
+
+== Changelog ==
+
+= 1.0.0 =
+* Versão inicial
+
+=== INSTRUÇÕES DE INSTALAÇÃO ===
+
+1. Crie uma pasta chamada "rank-rent-tracker" no seu computador
+2. Dentro dela, crie:
+   - O arquivo "rank-rent-tracker.php" com o código acima
+   - Uma pasta "assets" com o arquivo "admin.css" dentro
+   - O arquivo "readme.txt"
+3. Comprima a pasta "rank-rent-tracker" em um arquivo .zip
+4. No WordPress, vá em Plugins > Adicionar Novo > Enviar Plugin
+5. Faça upload do arquivo .zip e ative o plugin
+6. Configure em Configurações > Rank & Rent
+
+URL de rastreamento padrão (trocar pela definitiva depois):
+<?php echo esc_url(get_option('rank_rent_tracking_url')); ?>
