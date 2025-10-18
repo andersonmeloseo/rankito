@@ -21,7 +21,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const [deviceFilter, setDeviceFilter] = useState("all");
   const [sortConfig, setSortConfig] = useState<{
-    key: "created_at" | "event_type" | "page_path" | "cta_text" | "device" | "browser" | "ip_address";
+    key: "created_at" | "event_type" | "page_path" | "device" | "browser" | "ip_address";
     direction: "asc" | "desc";
   }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
@@ -74,7 +74,6 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
     let filtered = conversions?.filter(conv => {
       const matchesSearch = searchTerm === "" || 
         conv.page_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        conv.cta_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         conv.ip_address?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesEventType = eventTypeFilter === "all" || conv.event_type === eventTypeFilter;
@@ -106,17 +105,13 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
           aValue = a.page_path || "";
           bValue = b.page_path || "";
           break;
-        case "cta_text":
-          aValue = a.cta_text || "";
-          bValue = b.cta_text || "";
-          break;
         case "device":
           aValue = a.metadata?.device || "desktop";
           bValue = b.metadata?.device || "desktop";
           break;
         case "browser":
-          aValue = a.metadata?.userAgent || "";
-          bValue = b.metadata?.userAgent || "";
+          aValue = a.user_agent || "";
+          bValue = b.user_agent || "";
           break;
         case "ip_address":
           aValue = a.ip_address || "";
@@ -149,15 +144,14 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
       return;
     }
 
-    const headers = ["Data", "Hora", "Tipo", "Página", "CTA", "Dispositivo", "Browser", "IP"];
+    const headers = ["Data", "Hora", "Tipo", "Página", "Dispositivo", "Browser", "IP"];
     const rows = filteredConversions.map(conv => [
       new Date(conv.created_at).toLocaleDateString("pt-BR"),
       new Date(conv.created_at).toLocaleTimeString("pt-BR"),
       conv.event_type,
       conv.page_path,
-      conv.cta_text || "-",
       conv.metadata?.device || "-",
-      getBrowserInfo(conv.metadata?.userAgent).name,
+      getBrowserInfo(conv.user_agent).name,
       conv.ip_address || "-",
     ]);
 
@@ -257,7 +251,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por página, CTA ou IP..."
+                placeholder="Buscar por página ou IP..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -335,15 +329,6 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                   </TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort("cta_text")}
-                  >
-                    <div className="flex items-center">
-                      CTA
-                      <SortIcon columnKey="cta_text" />
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort("device")}
                   >
                     <div className="flex items-center">
@@ -404,18 +389,6 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                         </Tooltip>
                       </TableCell>
                       <TableCell>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="max-w-xs truncate cursor-help">
-                              {conv.cta_text || "-"}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="max-w-sm">{conv.cta_text || "Sem texto"}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell>
                         <div className="flex items-center gap-2">
                           <DeviceIcon className={`w-4 h-4 ${deviceInfo.color}`} />
                           <span className="text-sm">{deviceInfo.label}</span>
@@ -423,7 +396,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                       </TableCell>
                       <TableCell>
                         {(() => {
-                          const browserInfo = getBrowserInfo(conv.metadata?.userAgent);
+                          const browserInfo = getBrowserInfo(conv.user_agent);
                           const BrowserIcon = browserInfo.icon;
                           return (
                             <div className="flex items-center gap-2">
