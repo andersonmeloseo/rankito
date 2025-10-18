@@ -96,18 +96,35 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
 
     return `<script>
 (function() {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🎯 PIXEL INICIANDO - VERSÃO DEBUG DETALHADO');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
   const TRACKING_ENDPOINT = '${trackingUrl}';
   const SITE_NAME = '${site.site_name}';
 
-  // Detectar telefone na página
+  console.log('📍 Configuração do Pixel:');
+  console.log('   Endpoint:', TRACKING_ENDPOINT);
+  console.log('   Site:', SITE_NAME);
+  console.log('   URL Atual:', window.location.href);
+  console.log('   Timestamp:', new Date().toISOString());
+
   function detectPhoneNumber() {
     const phoneRegex = /(\\(?\\d{2}\\)?\\s?9?\\d{4}[-\\s]?\\d{4}|\\d{11})/g;
     const bodyText = document.body.innerText;
     const matches = bodyText.match(phoneRegex);
-    return matches ? matches[0] : null;
+    const phone = matches ? matches[0] : null;
+    console.log('📞 Telefone detectado na página:', phone);
+    return phone;
   }
 
   function trackEvent(eventType, ctaText = null, extra = {}) {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🚀 INICIANDO TRACKING');
+    console.log('   Tipo de Evento:', eventType);
+    console.log('   Texto CTA:', ctaText);
+    console.log('   Dados Extra:', extra);
+    
     const data = {
       site_name: SITE_NAME,
       page_url: window.location.href,
@@ -123,58 +140,151 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
       }
     };
 
-    console.log('🚀 Tracking:', eventType, 'para', TRACKING_ENDPOINT);
+    console.log('📦 Payload Completo:');
+    console.log(JSON.stringify(data, null, 2));
+    console.log('🌐 Enviando POST para:', TRACKING_ENDPOINT);
+    console.log('⏰ Horário do envio:', new Date().toLocaleString());
 
-    // Usar fetch com tratamento de erro robusto
     fetch(TRACKING_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
       body: JSON.stringify(data),
       mode: 'cors',
       credentials: 'omit'
     })
     .then(response => {
-      console.log('✅ Response:', response.status);
-      return response.json();
+      console.log('✅ RESPOSTA RECEBIDA DO SERVIDOR');
+      console.log('   Status HTTP:', response.status);
+      console.log('   Status Text:', response.statusText);
+      console.log('   OK?:', response.ok);
+      console.log('   Headers:');
+      response.headers.forEach((value, key) => {
+        console.log('      ' + key + ':', value);
+      });
+      
+      if (!response.ok) {
+        console.error('❌ Resposta não OK! Status:', response.status);
+      }
+      
+      return response.text();
     })
-    .then(result => console.log('✅ Tracking OK:', result))
-    .catch(error => console.error('❌ Tracking error:', error));
+    .then(text => {
+      console.log('📄 Body da Resposta (raw):');
+      console.log(text);
+      
+      try {
+        const json = JSON.parse(text);
+        console.log('✅ JSON Parseado com Sucesso:');
+        console.log(JSON.stringify(json, null, 2));
+      } catch (e) {
+        console.log('⚠️ Resposta não é JSON válido:', text);
+      }
+      
+      console.log('✅ TRACKING CONCLUÍDO COM SUCESSO');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    })
+    .catch(error => {
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error('❌ ERRO CRÍTICO NO TRACKING');
+      console.error('   Tipo de Erro:', error.name);
+      console.error('   Mensagem:', error.message);
+      console.error('   Stack Trace:');
+      console.error(error.stack);
+      console.error('   Possíveis causas:');
+      console.error('   - Bloqueio CORS');
+      console.error('   - Servidor offline');
+      console.error('   - Problema de rede');
+      console.error('   - Firewall/Segurança bloqueando');
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    });
   }
 
   // Page View automático
-  console.log('📊 Pixel inicializado:', SITE_NAME);
+  console.log('📊 Registrando PAGE VIEW automático...');
   trackEvent('page_view');
 
-  // Rastrear TODOS os cliques em elementos clicáveis
+  // Rastrear cliques
+  console.log('👂 Instalando listener de CLIQUES...');
   document.addEventListener('click', function(e) {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🖱️ CLICK DETECTADO!');
+    console.log('   Elemento clicado:', e.target);
+    console.log('   Tag:', e.target.tagName);
+    console.log('   Classes:', e.target.className);
+    console.log('   ID:', e.target.id);
+    
     const target = e.target.closest('a, button, [role="button"]');
-    if (!target) return;
+    
+    if (!target) {
+      console.log('   ⚠️ Não é um elemento rastreável (a, button, [role="button"])');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      return;
+    }
+    
+    console.log('   ✅ Elemento rastreável encontrado!');
+    console.log('   Target:', target);
+    console.log('   Tag do target:', target.tagName);
     
     const href = target.getAttribute('href') || '';
     const text = target.textContent.trim();
     
-    // Classificar tipo automaticamente
+    console.log('   📍 href:', href);
+    console.log('   📍 Texto:', text);
+    console.log('   📍 ID:', target.id);
+    console.log('   📍 Classes:', target.className);
+    
     let eventType = 'button_click';
-    if (href.startsWith('tel:')) eventType = 'phone_click';
-    else if (href.startsWith('mailto:')) eventType = 'email_click';
-    else if (href.includes('wa.me') || href.includes('whatsapp') || href.includes('api.whatsapp')) {
+    
+    if (href.startsWith('tel:')) {
+      eventType = 'phone_click';
+      console.log('   📞 IDENTIFICADO: Clique em TELEFONE');
+    } else if (href.startsWith('mailto:')) {
+      eventType = 'email_click';
+      console.log('   ✉️ IDENTIFICADO: Clique em EMAIL');
+    } else if (href.includes('wa.me') || href.includes('whatsapp') || href.includes('api.whatsapp')) {
       eventType = 'whatsapp_click';
+      console.log('   💬 IDENTIFICADO: Clique em WHATSAPP');
+      console.log('   💬 URL do WhatsApp:', href);
+    } else {
+      console.log('   🔘 IDENTIFICADO: Clique em BOTÃO genérico');
     }
     
-    console.log('🖱️ Click:', eventType, text);
+    console.log('   🎯 Tipo de evento final:', eventType);
+    
     trackEvent(eventType, text, {
       href: href,
       element_id: target.id || null,
-      element_class: target.className || null
+      element_class: target.className || null,
+      target_tag: target.tagName
     });
   });
 
-  // Rastrear submit de formulários
+  // Rastrear formulários
+  console.log('👂 Instalando listener de FORMULÁRIOS...');
   document.addEventListener('submit', function(e) {
     if (e.target.matches('form')) {
-      trackEvent('form_submit', 'Form Submission');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📝 FORMULÁRIO SUBMETIDO!');
+      console.log('   Form:', e.target);
+      console.log('   Action:', e.target.action);
+      console.log('   Method:', e.target.method);
+      trackEvent('form_submit', 'Form Submission', {
+        form_action: e.target.action || null,
+        form_method: e.target.method || null
+      });
     }
   });
+
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('✅ PIXEL TOTALMENTE CARREGADO E PRONTO!');
+  console.log('   - Page views serão rastreados automaticamente');
+  console.log('   - Cliques em links, botões serão rastreados');
+  console.log('   - Cliques em WhatsApp serão identificados');
+  console.log('   - Submissões de formulários serão rastreadas');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 })();
 </script>`;
   };
