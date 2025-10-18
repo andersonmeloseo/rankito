@@ -102,9 +102,29 @@ export const ConversionsTable = ({ conversions, isLoading, siteId, onPeriodChang
         (deviceFilter === "desktop" && !convDevice.includes("mobile") && !convDevice.includes("tablet") && !convDevice.includes("android") && !convDevice.includes("iphone") && !convDevice.includes("ipad"));
       
       // Filtro de data (se definido)
-      const matchesDateRange = !conversionStartDate || !conversionEndDate || (() => {
-        const convDate = new Date(conv.created_at);
-        return convDate >= conversionStartDate && convDate <= conversionEndDate;
+      const matchesDateRange = (() => {
+        // Se não houver filtro de data definido, mostrar todos
+        if (!conversionStartDate && !conversionEndDate) {
+          return true;
+        }
+        
+        // Se houver filtro de data, aplicar comparação ajustada
+        if (conversionStartDate && conversionEndDate) {
+          const convDate = new Date(conv.created_at);
+          
+          // Ajustar startDate para início do dia (00:00:00)
+          const startOfDay = new Date(conversionStartDate);
+          startOfDay.setHours(0, 0, 0, 0);
+          
+          // Ajustar endDate para fim do dia (23:59:59)
+          const endOfDay = new Date(conversionEndDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          
+          return convDate >= startOfDay && convDate <= endOfDay;
+        }
+        
+        // Se apenas uma data foi definida (não deveria acontecer), mostrar todos
+        return true;
       })();
       
       return matchesSearch && matchesEventType && matchesDevice && matchesDateRange;
