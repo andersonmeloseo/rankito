@@ -3,14 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Users, FileText } from "lucide-react";
+import { LogOut, Plus, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewCards } from "@/components/rank-rent/OverviewCards";
 import { SitesList } from "@/components/rank-rent/SitesList";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
 import { ClientsList } from "@/components/rank-rent/ClientsList";
-import { PagesList } from "@/components/rank-rent/PagesList";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -94,13 +93,9 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+          <TabsList className="grid w-full grid-cols-3 max-w-2xl">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="sites">Sites</TabsTrigger>
-            <TabsTrigger value="pages" className="gap-2">
-              <FileText className="w-4 h-4" />
-              Páginas
-            </TabsTrigger>
             <TabsTrigger value="clients" className="gap-2">
               <Users className="w-4 h-4" />
               Clientes
@@ -114,10 +109,6 @@ const Dashboard = () => {
 
           <TabsContent value="sites">
             <SitesList userId={user.id} />
-          </TabsContent>
-
-          <TabsContent value="pages">
-            <PagesList userId={user.id} />
           </TabsContent>
 
           <TabsContent value="clients">

@@ -5,10 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, ExternalLink, Download } from "lucide-react";
+import { Copy, ExternalLink, Download, Edit, Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { ImportSitemapDialog } from "./ImportSitemapDialog";
+import { EditPageDialog } from "./EditPageDialog";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface SiteDetailModalProps {
   siteId: string | null;
@@ -18,6 +21,9 @@ interface SiteDetailModalProps {
 
 export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalProps) => {
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPage, setSelectedPage] = useState<any>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const { data: site } = useQuery({
     queryKey: ["site-detail", siteId],
@@ -51,6 +57,36 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
     },
     enabled: !!siteId && open,
   });
+
+  const { data: pages, isLoading: loadingPages } = useQuery({
+    queryKey: ["site-pages", siteId],
+    queryFn: async () => {
+      if (!siteId) return [];
+      const { data, error } = await supabase
+        .from("rank_rent_page_metrics")
+        .select("*")
+        .eq("site_id", siteId)
+        .order("total_page_views", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!siteId && open,
+    refetchInterval: 30000,
+  });
+
+  const filteredPages = pages?.filter((page) => {
+    const search = searchTerm.toLowerCase();
+    return (
+      page.page_url?.toLowerCase().includes(search) ||
+      page.page_title?.toLowerCase().includes(search)
+    );
+  }) || [];
+
+  const handleEditPage = (page: any) => {
+    setSelectedPage(page);
+    setShowEditDialog(true);
+  };
 
   const generatePixelCode = () => {
     if (!site) return "";
@@ -268,8 +304,8 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Gestão de Páginas</CardTitle>
-                    <CardDescription>Importe páginas do sitemap automaticamente</CardDescription>
+                    <CardTitle>Páginas do Site</CardTitle>
+                    <CardDescription>Gerencie todas as páginas e suas métricas</CardDescription>
                   </div>
                   <Button onClick={() => setShowImportDialog(true)} size="sm" className="gap-2">
                     <Download className="w-4 h-4" />
@@ -277,10 +313,99 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Use a aba "Páginas" no menu principal para ver todas as páginas deste site com métricas detalhadas.
-                </p>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      placeholder="Buscar por URL ou título..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground whitespace-nowrap">
+                    {filteredPages.length} página(s)
+                  </p>
+                </div>
+
+                {loadingPages ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+                  </div>
+                ) : filteredPages.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    {searchTerm ? "Nenhuma página encontrada" : "Nenhuma página importada ainda. Use o botão 'Importar Sitemap' acima."}
+                  </p>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Página</TableHead>
+                          <TableHead className="text-right">Visualizações</TableHead>
+                          <TableHead className="text-right">Conversões</TableHead>
+                          <TableHead className="text-right">Taxa Conv.</TableHead>
+                          <TableHead className="text-right">Valor Mensal</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Cliente</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredPages.map((page) => (
+                          <TableRow key={page.page_id}>
+                            <TableCell>
+                              <div className="max-w-xs">
+                                <a
+                                  href={page.page_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-medium hover:underline truncate block"
+                                  title={page.page_url}
+                                >
+                                  {page.page_title || page.page_path}
+                                </a>
+                                <p className="text-xs text-muted-foreground truncate" title={page.page_path}>
+                                  {page.page_path}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">{page.total_page_views || 0}</TableCell>
+                            <TableCell className="text-right">{page.total_conversions || 0}</TableCell>
+                            <TableCell className="text-right">
+                              {page.conversion_rate ? `${Number(page.conversion_rate).toFixed(1)}%` : "0%"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              R$ {Number(page.monthly_rent_value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={page.is_rented ? "default" : "outline"}>
+                                {page.is_rented ? "Alugado" : "Disponível"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {page.client_name ? (
+                                <Badge variant="secondary">{page.client_name}</Badge>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditPage(page)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -316,11 +441,20 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
       </DialogContent>
 
       {siteId && (
-        <ImportSitemapDialog
-          siteId={siteId}
-          open={showImportDialog}
-          onOpenChange={setShowImportDialog}
-        />
+        <>
+          <ImportSitemapDialog
+            siteId={siteId}
+            open={showImportDialog}
+            onOpenChange={setShowImportDialog}
+          />
+          {selectedPage && (
+            <EditPageDialog
+              page={selectedPage}
+              open={showEditDialog}
+              onOpenChange={setShowEditDialog}
+            />
+          )}
+        </>
       )}
     </Dialog>
   );
