@@ -28,6 +28,7 @@ export const AddClientDialog = ({ open, onOpenChange }: AddClientDialogProps) =>
     email: "",
     phone: "",
     company: "",
+    niche: "",
     contract_start_date: "",
     contract_end_date: "",
     notes: "",
@@ -60,6 +61,7 @@ export const AddClientDialog = ({ open, onOpenChange }: AddClientDialogProps) =>
         email: "",
         phone: "",
         company: "",
+        niche: "",
         contract_start_date: "",
         contract_end_date: "",
         notes: "",
@@ -123,6 +125,31 @@ export const AddClientDialog = ({ open, onOpenChange }: AddClientDialogProps) =>
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
             />
+          </div>
+
+          <div>
+            <Label htmlFor="niche">Nicho</Label>
+            <Input
+              id="niche"
+              list="niche-suggestions"
+              value={formData.niche}
+              onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
+              placeholder="Ex: Advogados, Dentistas..."
+            />
+            <datalist id="niche-suggestions">
+              <option value="Advogados" />
+              <option value="Dentistas" />
+              <option value="Encanadores" />
+              <option value="Eletricistas" />
+              <option value="Construtoras" />
+              <option value="Imobiliárias" />
+              <option value="Clínicas Médicas" />
+              <option value="Pet Shops" />
+              <option value="Academias" />
+              <option value="Restaurantes" />
+              <option value="Contadores" />
+              <option value="Mecânicos" />
+            </datalist>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

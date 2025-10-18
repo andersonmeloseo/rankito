@@ -7,6 +7,7 @@ import { Plus, ExternalLink, Copy } from "lucide-react";
 import { useState } from "react";
 import { AddClientDialog } from "./AddClientDialog";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ClientsListProps {
   userId: string;
@@ -15,6 +16,7 @@ interface ClientsListProps {
 export const ClientsList = ({ userId }: ClientsListProps) => {
   const { toast } = useToast();
   const [showAddClient, setShowAddClient] = useState(false);
+  const [nicheFilter, setNicheFilter] = useState<string>("all");
 
   const { data: clients, isLoading } = useQuery({
     queryKey: ["rank-rent-clients", userId],
@@ -68,6 +70,11 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
     );
   }
 
+  const uniqueNiches = Array.from(new Set(clients?.map(c => c.niche).filter(Boolean)));
+  const filteredClients = nicheFilter === "all" 
+    ? clients 
+    : clients?.filter(c => c.niche === nicheFilter);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -78,15 +85,41 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
         </Button>
       </div>
 
+      {uniqueNiches.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Filtrar por nicho:</span>
+          <Select value={nicheFilter} onValueChange={setNicheFilter}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Todos os nichos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os nichos</SelectItem>
+              {uniqueNiches.map((niche) => (
+                <SelectItem key={niche} value={niche}>
+                  {niche}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div className="grid gap-4">
-        {clients.map((client) => (
+        {filteredClients?.map((client) => (
           <div
             key={client.client_id}
             className="p-6 rounded-lg border bg-card hover:shadow-md transition-shadow"
           >
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-lg font-semibold">{client.client_name}</h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-semibold">{client.client_name}</h3>
+                  {client.niche && (
+                    <Badge variant="secondary" className="text-xs">
+                      {client.niche}
+                    </Badge>
+                  )}
+                </div>
                 {client.company && (
                   <p className="text-sm text-muted-foreground">{client.company}</p>
                 )}
