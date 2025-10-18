@@ -5,9 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Eye, Lock, Unlock, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Eye, Lock, Unlock, Trash2, Edit, DollarSign, X } from "lucide-react";
 import { UserDetailsDialog } from "./UserDetailsDialog";
 import { BlockUserDialog } from "./BlockUserDialog";
+import { EditUserDialog } from "./EditUserDialog";
+import { DeleteUserDialog } from "./DeleteUserDialog";
+import { BulkAssignPlanDialog } from "./BulkAssignPlanDialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -16,11 +20,25 @@ export const UsersManagementTable = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [planFilter, setPlanFilter] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [userToBlock, setUserToBlock] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bulkPlanDialogOpen, setBulkPlanDialogOpen] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
-  const { users, isLoading, blockUser, unblockUser } = useSaasUsers({
+  const { 
+    users, 
+    isLoading, 
+    blockUser, 
+    unblockUser,
+    deleteUser,
+    deleteUsers,
+    assignPlan,
+    bulkAssignPlan,
+    updateUser,
+    updateUserEmail
+  } = useSaasUsers({
     search,
     status: statusFilter === "all" ? undefined : statusFilter,
     plan: planFilter === "all" ? undefined : planFilter,
@@ -57,6 +75,58 @@ export const UsersManagementTable = () => {
     const sub = user.user_subscriptions?.[0];
     return sub?.subscription_plans?.name || '-';
   };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds(users?.map((u: any) => u.id) || []);
+    } else {
+      setSelectedUserIds([]);
+    }
+  };
+
+  const handleSelectUser = (userId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds([...selectedUserIds, userId]);
+    } else {
+      setSelectedUserIds(selectedUserIds.filter(id => id !== userId));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Tem certeza que deseja excluir ${selectedUserIds.length} usuários?`)) {
+      return;
+    }
+    deleteUsers(selectedUserIds);
+    setSelectedUserIds([]);
+  };
+
+  const handleEdit = async (updates: any) => {
+    if (!selectedUser) return;
+
+    // Update profile
+    const profileUpdates: any = {
+      full_name: updates.full_name,
+      whatsapp: updates.whatsapp,
+      company: updates.company,
+      website: updates.website,
+      country_code: updates.country_code,
+      is_active: updates.is_active,
+    };
+
+    updateUser({ userId: selectedUser.id, updates: profileUpdates });
+
+    // Update email if changed
+    if (updates.email && updates.email !== selectedUser.email) {
+      updateUserEmail({ userId: selectedUser.id, newEmail: updates.email });
+    }
+
+    // Update plan if changed
+    if (updates.planId && updates.planId !== selectedUser.user_subscriptions?.[0]?.plan_id) {
+      assignPlan({ userId: selectedUser.id, planId: updates.planId });
+    }
+  };
+
+  const selectedUsers = users?.filter((u: any) => selectedUserIds.includes(u.id)) || [];
 
   if (isLoading) {
     return <div>Carregando usuários...</div>;
@@ -102,11 +172,40 @@ export const UsersManagementTable = () => {
         </Select>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedUserIds.length > 0 && (
+        <div className="bg-primary/10 p-4 rounded-lg flex items-center justify-between">
+          <span className="font-medium">
+            {selectedUserIds.length} usuário{selectedUserIds.length !== 1 ? 's' : ''} selecionado{selectedUserIds.length !== 1 ? 's' : ''}
+          </span>
+          <div className="flex gap-2">
+            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir
+            </Button>
+            <Button size="sm" onClick={() => setBulkPlanDialogOpen(true)}>
+              <DollarSign className="h-4 w-4 mr-2" />
+              Atribuir Plano
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setSelectedUserIds([])}>
+              <X className="h-4 w-4 mr-2" />
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={users && users.length > 0 && selectedUserIds.length === users.length}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>WhatsApp</TableHead>
@@ -122,6 +221,12 @@ export const UsersManagementTable = () => {
             {users && users.length > 0 ? (
               users.map((user: any) => (
                 <TableRow key={user.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedUserIds.includes(user.id)}
+                      onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{user.full_name || '-'}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.whatsapp || '-'}</TableCell>
@@ -139,7 +244,7 @@ export const UsersManagementTable = () => {
                     {user.created_at ? format(new Date(user.created_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -150,13 +255,22 @@ export const UsersManagementTable = () => {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setEditDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
                       {user.is_active ? (
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            setUserToBlock(user);
+                            setSelectedUser(user);
                             setBlockDialogOpen(true);
                           }}
                         >
@@ -171,13 +285,23 @@ export const UsersManagementTable = () => {
                           <Unlock className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground">
+                <TableCell colSpan={10} className="text-center text-muted-foreground">
                   Nenhum usuário encontrado
                 </TableCell>
               </TableRow>
@@ -193,15 +317,45 @@ export const UsersManagementTable = () => {
         onOpenChange={setDetailsOpen}
       />
 
+      <EditUserDialog
+        user={selectedUser}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSave={handleEdit}
+      />
+
       <BlockUserDialog
-        user={userToBlock}
+        user={selectedUser}
         open={blockDialogOpen}
         onOpenChange={setBlockDialogOpen}
         onConfirm={(reason) => {
-          if (userToBlock) {
-            blockUser({ userId: userToBlock.id, reason });
+          if (selectedUser) {
+            blockUser({ userId: selectedUser.id, reason });
             setBlockDialogOpen(false);
           }
+        }}
+      />
+
+      <DeleteUserDialog
+        user={selectedUser}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={(reason) => {
+          if (selectedUser) {
+            deleteUser(selectedUser.id);
+            setDeleteDialogOpen(false);
+          }
+        }}
+      />
+
+      <BulkAssignPlanDialog
+        users={selectedUsers}
+        open={bulkPlanDialogOpen}
+        onOpenChange={setBulkPlanDialogOpen}
+        onConfirm={(planId) => {
+          bulkAssignPlan({ userIds: selectedUserIds, planId });
+          setBulkPlanDialogOpen(false);
+          setSelectedUserIds([]);
         }}
       />
     </div>

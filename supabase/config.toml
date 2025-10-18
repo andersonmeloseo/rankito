@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.check-plugin-status]
 verify_jwt = false
+
+[functions.update-user-email]
+verify_jwt = true
+
+[functions.fetch-page-titles]
+verify_jwt = true
