@@ -8,17 +8,15 @@ import { Download, Search, Smartphone, Monitor, Tablet, Chrome, Globe, ArrowUpDo
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PeriodSelector } from "./PeriodSelector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PageViewsTableProps {
   pageViews: any[];
   isLoading: boolean;
   siteId: string;
-  onPeriodChange?: (startDate: string, endDate: string) => void;
 }
 
-export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }: PageViewsTableProps) => {
+export const PageViewsTable = ({ pageViews, isLoading, siteId }: PageViewsTableProps) => {
   console.log('📊 PageViewsTable recebeu:', { 
     pageViews, 
     count: pageViews?.length,
@@ -52,11 +50,6 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Visualizações de Página</CardTitle>
-            </div>
-            <div className="flex gap-2">
-              {onPeriodChange && (
-                <PeriodSelector onPeriodChange={onPeriodChange} defaultPeriod={7} />
-              )}
             </div>
           </div>
         </CardHeader>
@@ -294,9 +287,6 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            {onPeriodChange && (
-              <PeriodSelector onPeriodChange={onPeriodChange} defaultPeriod={30} />
-            )}
             <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
               <Download className="w-4 h-4" />
               Exportar CSV

@@ -1177,7 +1177,6 @@ const SiteDetails = () => {
                     pageViews={pageViewsData || []} 
                     isLoading={pageViewsLoading}
                     siteId={siteId || ""}
-                    onPeriodChange={handlePageViewsPeriodChange}
                   />
                 </div>
               </TabsContent>
