@@ -28,7 +28,7 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
   const [progress, setProgress] = useState(0);
   const [sitemapUrl, setSitemapUrl] = useState("");
   const [result, setResult] = useState<any>(null);
-  const [sitemapsPerBatch, setSitemapsPerBatch] = useState(10);
+  const [sitemapsPerBatch, setSitemapsPerBatch] = useState(6);
   const [currentOffset, setCurrentOffset] = useState(0);
   const [totalSitemapsFound, setTotalSitemapsFound] = useState(0);
 
@@ -218,11 +218,11 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
               value={sitemapsPerBatch}
               onChange={(e) => setSitemapsPerBatch(Number(e.target.value))}
               min={5}
-              max={15}
+              max={8}
               disabled={loading}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Recomendado: 8-12 sitemaps por vez para evitar timeout
+              Recomendado: 4-6 sitemaps por vez para evitar timeout
             </p>
           </div>
 

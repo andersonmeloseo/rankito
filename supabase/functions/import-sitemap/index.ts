@@ -125,7 +125,16 @@ serve(async (req) => {
 
     // Aplicar limite de URLs
     const limitedUrls = urls.slice(0, max_urls);
-    console.log(`Processing ${limitedUrls.length} URLs (limit: ${max_urls})`);
+    
+    // Safety limit to prevent CPU timeout during database operations
+    const SAFE_URL_LIMIT = 5000;
+    const safeUrls = limitedUrls.slice(0, SAFE_URL_LIMIT);
+    
+    if (limitedUrls.length > SAFE_URL_LIMIT) {
+      console.log(`Safety limit applied: ${limitedUrls.length} URLs → ${SAFE_URL_LIMIT} URLs`);
+    }
+    
+    console.log(`Processing ${safeUrls.length} URLs (limit: ${max_urls}, safety: ${SAFE_URL_LIMIT})`);
 
     let newPages = 0;
     let updatedPages = 0;
@@ -144,7 +153,7 @@ serve(async (req) => {
     // Usar Map para deduplicate URLs (evita erro "cannot affect row a second time")
     const pagesMap = new Map();
 
-    for (const pageUrl of limitedUrls) {
+    for (const pageUrl of safeUrls) {
       try {
         if (!pageUrl) continue;
 
@@ -176,7 +185,7 @@ serve(async (req) => {
 
     // Converter Map para array (apenas URLs únicas)
     const pagesToUpsert = Array.from(pagesMap.values());
-    console.log(`Deduplicated: ${limitedUrls.length} URLs -> ${pagesToUpsert.length} unique URLs`);
+    console.log(`Deduplicated: ${safeUrls.length} URLs -> ${pagesToUpsert.length} unique URLs`);
 
     // Processar em batches
     console.log(`Upserting ${pagesToUpsert.length} pages in batches of ${batch_size}`);
@@ -207,7 +216,7 @@ serve(async (req) => {
     // Only mark pages as inactive on final batch to avoid premature deactivation
     let deactivatedCount = 0;
     if (is_final_batch) {
-      const sitemapUrlsSet = new Set(limitedUrls);
+      const sitemapUrlsSet = new Set(safeUrls);
       const pagesToDeactivate = (existingPages || [])
         .filter(p => !sitemapUrlsSet.has(p.page_url))
         .map(p => p.id);
@@ -229,11 +238,11 @@ serve(async (req) => {
         totalSitemapsFound,
         sitemapsProcessed,
         totalUrlsFound: urls.length,
-        urlsImported: limitedUrls.length,
+        urlsImported: safeUrls.length,
         newPages,
         updatedPages,
         deactivatedPages: deactivatedCount,
-        limited: urls.length > max_urls,
+        limited: urls.length > max_urls || safeUrls.length < limitedUrls.length,
         errors
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
