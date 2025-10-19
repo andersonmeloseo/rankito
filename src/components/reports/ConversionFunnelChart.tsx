@@ -65,19 +65,17 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
 
             return (
               <div key={stage.name} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{stage.name}</span>
-                    {index > 0 && (
-                      <ArrowDown className="h-4 w-4 text-muted-foreground animate-bounce" />
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-lg">{stage.value.toLocaleString()}</div>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-medium">{stage.name}</span>
+                  {index > 0 && (
+                    <ArrowDown className="h-4 w-4 text-muted-foreground animate-bounce" />
+                  )}
+                  <div className="text-right ml-2">
+                    <span className="font-bold text-lg">{stage.value.toLocaleString()}</span>
                     {stage.rate !== undefined && (
-                      <div className="text-xs text-muted-foreground">
-                        {stage.rate.toFixed(1)}% do anterior
-                      </div>
+                      <span className="text-xs text-muted-foreground ml-2">
+                        ({stage.rate.toFixed(1)}%)
+                      </span>
                     )}
                   </div>
                 </div>
