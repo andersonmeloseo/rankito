@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2, Phone, Mail } from "lucide-react";
+import { MoreVertical, Trash2, Phone, Mail, ExternalLink } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Deal } from "@/hooks/useDeals";
 import { format } from "date-fns";
@@ -55,6 +55,13 @@ export const DealCard = ({ deal, onDelete }: DealCardProps) => {
 
         {deal.description && (
           <p className="text-sm text-muted-foreground line-clamp-2">{deal.description}</p>
+        )}
+
+        {deal.rank_rent_sites && (
+          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs font-medium">{deal.rank_rent_sites.site_name}</span>
+          </div>
         )}
 
         <div className="flex flex-wrap gap-2">

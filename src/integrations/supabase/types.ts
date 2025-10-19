@@ -102,6 +102,7 @@ export type Database = {
           id: string
           lost_reason: string | null
           probability: number | null
+          site_id: string | null
           source: string | null
           stage: string
           target_location: string | null
@@ -123,6 +124,7 @@ export type Database = {
           id?: string
           lost_reason?: string | null
           probability?: number | null
+          site_id?: string | null
           source?: string | null
           stage?: string
           target_location?: string | null
@@ -144,6 +146,7 @@ export type Database = {
           id?: string
           lost_reason?: string | null
           probability?: number | null
+          site_id?: string | null
           source?: string | null
           stage?: string
           target_location?: string | null
@@ -166,6 +169,34 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "crm_deals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
             referencedColumns: ["id"]
           },
           {
@@ -276,6 +307,53 @@ export type Database = {
           },
           {
             foreignKeyName: "crm_notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pipeline_stages: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          display_order: number
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          label: string
+          stage_key: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          label: string
+          stage_key: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          label?: string
+          stage_key?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_pipeline_stages_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"

@@ -6,6 +6,7 @@ export interface Deal {
   id: string;
   user_id: string;
   client_id: string | null;
+  site_id: string | null;
   title: string;
   description: string | null;
   value: number;
@@ -26,6 +27,12 @@ export interface Deal {
     name: string;
     email: string;
     phone: string;
+  };
+  rank_rent_sites?: {
+    site_name: string;
+    niche: string;
+    location: string;
+    site_url: string;
   };
 }
 
@@ -48,6 +55,12 @@ export const useDeals = (userId: string, filters?: DealFilters) => {
             name,
             email,
             phone
+          ),
+          rank_rent_sites (
+            site_name,
+            niche,
+            location,
+            site_url
           )
         `)
         .eq('user_id', userId)

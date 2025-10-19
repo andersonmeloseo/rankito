@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,8 +14,11 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useDeals } from "@/hooks/useDeals";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const dealSchema = z.object({
+  site_id: z.string().optional(),
   title: z.string().min(1, "Título é obrigatório"),
   description: z.string().optional(),
   value: z.coerce.number().min(0),
@@ -44,9 +47,25 @@ export const CreateDealDialog = ({ open, onOpenChange, userId, initialStage = "l
   const { createDeal } = useDeals(userId);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { data: sites } = useQuery({
+    queryKey: ["sites", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_sites")
+        .select("id, site_name, niche, location")
+        .eq("owner_user_id", userId)
+        .order("site_name");
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+
   const form = useForm<DealFormData>({
     resolver: zodResolver(dealSchema),
     defaultValues: {
+      site_id: "",
       title: "",
       description: "",
       value: 0,
@@ -62,12 +81,24 @@ export const CreateDealDialog = ({ open, onOpenChange, userId, initialStage = "l
   });
 
   const selectedStage = form.watch("stage");
+  const selectedSiteId = form.watch("site_id");
+
+  useEffect(() => {
+    if (selectedSiteId && selectedSiteId !== "none") {
+      const selectedSite = sites?.find((s) => s.id === selectedSiteId);
+      if (selectedSite) {
+        form.setValue("target_niche", selectedSite.niche);
+        form.setValue("target_location", selectedSite.location);
+      }
+    }
+  }, [selectedSiteId, sites, form]);
 
   const onSubmit = async (data: DealFormData) => {
     setIsSubmitting(true);
     try {
       await createDeal({
         user_id: userId,
+        site_id: data.site_id && data.site_id !== "none" ? data.site_id : null,
         title: data.title,
         description: data.description || null,
         value: data.value,
@@ -98,6 +129,32 @@ export const CreateDealDialog = ({ open, onOpenChange, userId, initialStage = "l
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="site_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Site Relacionado</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Nenhum (prospect genérico)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum (prospect genérico)</SelectItem>
+                      {sites?.map((site) => (
+                        <SelectItem key={site.id} value={site.id}>
+                          {site.site_name} - {site.niche} ({site.location})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="title"

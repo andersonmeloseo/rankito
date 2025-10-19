@@ -1,7 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, TrendingUp, CheckSquare } from "lucide-react";
+import { LayoutDashboard, TrendingUp, CheckSquare, Settings } from "lucide-react";
 import { SalesPipeline } from "./SalesPipeline";
 import { TasksList } from "./TasksList";
+import { CRMSettings } from "./CRMSettings";
 
 interface CRMHubProps {
   userId: string;
@@ -10,7 +11,7 @@ interface CRMHubProps {
 export const CRMHub = ({ userId }: CRMHubProps) => {
   return (
     <Tabs defaultValue="pipeline" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+      <TabsList className="grid w-full grid-cols-4 max-w-3xl">
         <TabsTrigger value="pipeline" className="gap-2">
           <TrendingUp className="w-4 h-4" />
           Pipeline
@@ -22,6 +23,10 @@ export const CRMHub = ({ userId }: CRMHubProps) => {
         <TabsTrigger value="dashboard" className="gap-2">
           <LayoutDashboard className="w-4 h-4" />
           Dashboard
+        </TabsTrigger>
+        <TabsTrigger value="settings" className="gap-2">
+          <Settings className="w-4 h-4" />
+          Configurações
         </TabsTrigger>
       </TabsList>
 
@@ -37,6 +42,10 @@ export const CRMHub = ({ userId }: CRMHubProps) => {
         <div className="text-center py-12">
           <p className="text-muted-foreground">Dashboard CRM em desenvolvimento...</p>
         </div>
+      </TabsContent>
+
+      <TabsContent value="settings">
+        <CRMSettings userId={userId} />
       </TabsContent>
     </Tabs>
   );
