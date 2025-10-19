@@ -79,12 +79,6 @@ const SiteDetails = () => {
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
   
-  // Page Views Period State (separate from main analytics)
-  const [pageViewsPeriod, setPageViewsPeriod] = useState({
-    startDate: format(subDays(new Date(), 7), "yyyy-MM-dd"),
-    endDate: format(new Date(), "yyyy-MM-dd"),
-  });
-  
   // Debounce search term
   const [debouncedSearch, setDebouncedSearch] = useState("");
   
@@ -200,19 +194,40 @@ const SiteDetails = () => {
   });
 
 
-  // Fetch page views with separate period control
+  // Calcular datas do período de analytics para page views
+  const getPageViewsDates = () => {
+    if (analyticsPeriod === "0") {
+      return { isAllPeriod: true, startDate: null, endDate: null };
+    }
+    if (analyticsPeriod === "custom" && customStartDate && customEndDate) {
+      return {
+        isAllPeriod: false,
+        startDate: format(customStartDate, "yyyy-MM-dd"),
+        endDate: format(customEndDate, "yyyy-MM-dd")
+      };
+    }
+    const days = parseInt(analyticsPeriod);
+    return {
+      isAllPeriod: false,
+      startDate: format(subDays(new Date(), days), "yyyy-MM-dd"),
+      endDate: format(new Date(), "yyyy-MM-dd")
+    };
+  };
+
+  // Fetch page views using the same period as analytics
   const { data: pageViewsData, isLoading: pageViewsLoading, refetch: refetchPageViews } = useQuery({
-    queryKey: ["page-views-detailed", siteId, pageViewsPeriod.startDate, pageViewsPeriod.endDate],
+    queryKey: ["page-views-detailed", siteId, analyticsPeriod, customStartDate, customEndDate],
     queryFn: async () => {
-      const isAllPeriod = pageViewsPeriod.startDate === "all";
+      const { isAllPeriod, startDate, endDate } = getPageViewsDates();
       
       console.log('🔍 Fetching page views:', {
         siteId,
-        startDate: pageViewsPeriod.startDate,
-        endDate: pageViewsPeriod.endDate,
+        analyticsPeriod,
         isAllPeriod,
-        startDateTime: isAllPeriod ? 'N/A' : `${pageViewsPeriod.startDate}T00:00:00`,
-        endDateTime: isAllPeriod ? 'N/A' : `${pageViewsPeriod.endDate}T23:59:59`
+        startDate,
+        endDate,
+        startDateTime: isAllPeriod ? 'N/A' : `${startDate}T00:00:00`,
+        endDateTime: isAllPeriod ? 'N/A' : `${endDate}T23:59:59`
       });
       
       // Verificar autenticação
@@ -229,10 +244,10 @@ const SiteDetails = () => {
         .eq("event_type", "page_view");
       
       // Aplicar filtros de data APENAS se não for "todo período"
-      if (!isAllPeriod) {
+      if (!isAllPeriod && startDate && endDate) {
         query = query
-          .gte("created_at", `${pageViewsPeriod.startDate}T00:00:00`)
-          .lte("created_at", `${pageViewsPeriod.endDate}T23:59:59`);
+          .gte("created_at", `${startDate}T00:00:00`)
+          .lte("created_at", `${endDate}T23:59:59`);
       }
       
       query = query
@@ -259,18 +274,6 @@ const SiteDetails = () => {
     enabled: !!siteId,
     staleTime: 30000, // Cache de 30 segundos
   });
-  
-  // Handler para mudança de período com invalidação de cache
-  const handlePageViewsPeriodChange = (startDate: string, endDate: string) => {
-    console.log('🔄 Mudando período:', { startDate, endDate, isAllPeriod: startDate === "all" });
-    
-    // Limpar cache antes de mudar período
-    queryClient.invalidateQueries({ 
-      queryKey: ["page-views-detailed", siteId] 
-    });
-    
-    setPageViewsPeriod({ startDate, endDate });
-  };
   
   // Analytics hook
   const analyticsData = useAnalytics({
@@ -1154,7 +1157,7 @@ const SiteDetails = () => {
                       
                       // Invalidar com queryKey completo
                       queryClient.invalidateQueries({ 
-                        queryKey: ["page-views-detailed", siteId, pageViewsPeriod.startDate, pageViewsPeriod.endDate] 
+                        queryKey: ["page-views-detailed", siteId, analyticsPeriod, customStartDate, customEndDate] 
                       });
                       
                       // Forçar refetch
@@ -1165,7 +1168,7 @@ const SiteDetails = () => {
                         description: "Os dados de visualizações foram atualizados com sucesso."
                       });
                     }}
-                    variant="outline"
+                    variant="outline" 
                     size="sm"
                   >
                     <RefreshCw className="mr-2 h-4 w-4" />
