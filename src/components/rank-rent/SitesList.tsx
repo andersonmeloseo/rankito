@@ -141,7 +141,12 @@ export const SitesList = ({ userId }: SitesListProps) => {
       <tr className="border-b hover:bg-muted/50 transition-colors">
         <td className="p-3">
           <div>
-            <div className="font-semibold text-foreground">{site.site_name}</div>
+            <button
+              onClick={() => navigate(`/dashboard/site/${site.id}`)}
+              className="font-semibold text-foreground hover:text-primary transition-colors text-left cursor-pointer"
+            >
+              {site.site_name}
+            </button>
             <a
               href={site.site_url}
               target="_blank"
