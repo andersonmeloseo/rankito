@@ -280,7 +280,7 @@ export const useAnalytics = ({
         .gte("created_at", startDate)
         .lte("created_at", endDate)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(1000);
 
       if (device !== "all") {
         query = query.filter('metadata->>device', 'eq', device);
@@ -291,7 +291,8 @@ export const useAnalytics = ({
       console.log('🔍 PageViewsList Query Result:', {
         dataCount: data?.length || 0,
         error: error?.message,
-        firstRecord: data?.[0]
+        firstRecord: data?.[0],
+        limitReached: data?.length === 1000
       });
 
       if (error) throw error;
