@@ -204,12 +204,15 @@ const SiteDetails = () => {
   const { data: pageViewsData, isLoading: pageViewsLoading, refetch: refetchPageViews } = useQuery({
     queryKey: ["page-views-detailed", siteId, pageViewsPeriod.startDate, pageViewsPeriod.endDate],
     queryFn: async () => {
+      const isAllPeriod = pageViewsPeriod.startDate === "all";
+      
       console.log('🔍 Fetching page views:', {
         siteId,
         startDate: pageViewsPeriod.startDate,
         endDate: pageViewsPeriod.endDate,
-        startDateTime: `${pageViewsPeriod.startDate}T00:00:00`,
-        endDateTime: `${pageViewsPeriod.endDate}T23:59:59`
+        isAllPeriod,
+        startDateTime: isAllPeriod ? 'N/A' : `${pageViewsPeriod.startDate}T00:00:00`,
+        endDateTime: isAllPeriod ? 'N/A' : `${pageViewsPeriod.endDate}T23:59:59`
       });
       
       // Verificar autenticação
@@ -219,20 +222,31 @@ const SiteDetails = () => {
         throw new Error('Usuário não autenticado');
       }
       
-      const { data, error } = await supabase
+      let query = supabase
         .from("rank_rent_conversions")
         .select("*")
         .eq("site_id", siteId)
-        .eq("event_type", "page_view")
-        .gte("created_at", `${pageViewsPeriod.startDate}T00:00:00`)
-        .lte("created_at", `${pageViewsPeriod.endDate}T23:59:59`)
-        .order("created_at", { ascending: false });
+        .eq("event_type", "page_view");
+      
+      // Aplicar filtros de data APENAS se não for "todo período"
+      if (!isAllPeriod) {
+        query = query
+          .gte("created_at", `${pageViewsPeriod.startDate}T00:00:00`)
+          .lte("created_at", `${pageViewsPeriod.endDate}T23:59:59`);
+      }
+      
+      query = query
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      
+      const { data, error } = await query;
       
       console.log('📊 Page views result:', { 
         data, 
         error, 
         count: data?.length,
         sampleData: data?.[0],
+        isAllPeriod,
       });
       
       if (error) {
@@ -248,7 +262,7 @@ const SiteDetails = () => {
   
   // Handler para mudança de período com invalidação de cache
   const handlePageViewsPeriodChange = (startDate: string, endDate: string) => {
-    console.log('🔄 Mudando período:', { startDate, endDate });
+    console.log('🔄 Mudando período:', { startDate, endDate, isAllPeriod: startDate === "all" });
     
     // Limpar cache antes de mudar período
     queryClient.invalidateQueries({ 

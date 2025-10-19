@@ -41,7 +41,7 @@ export const PeriodSelector = ({ onPeriodChange, defaultPeriod = 30 }: PeriodSel
 
     if (value === "all") {
       setShowCustomRange(false);
-      onPeriodChange("2020-01-01", format(new Date(), "yyyy-MM-dd"));
+      onPeriodChange("all", "all"); // Valor especial para "sem filtro de data"
       return;
     }
 
