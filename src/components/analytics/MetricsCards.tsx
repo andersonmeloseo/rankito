@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Eye, MousePointerClick, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
+import { Users, Eye, MousePointerClick, TrendingUp, ArrowUp, ArrowDown, FileText } from "lucide-react";
 import { Sparkline } from "./Sparkline";
 
 interface MetricsCardsProps {
@@ -31,8 +31,8 @@ export const MetricsCards = ({ metrics, previousMetrics, sparklineData, isLoadin
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {[1, 2, 3, 4, 5].map((i) => (
           <Card key={i} className="shadow-card">
             <CardContent className="pt-6">
               <div className="animate-pulse space-y-2">
@@ -47,7 +47,7 @@ export const MetricsCards = ({ metrics, previousMetrics, sparklineData, isLoadin
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       <Card className="shadow-card overflow-hidden">
         <CardContent className="pt-6">
           <div className="flex items-start justify-between mb-2">
@@ -63,6 +63,26 @@ export const MetricsCards = ({ metrics, previousMetrics, sparklineData, isLoadin
           {sparklineData && (
             <div className="h-8 mt-2 opacity-50">
               <Sparkline data={sparklineData.pageViews} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-card overflow-hidden">
+        <CardContent className="pt-6">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex-1">
+              <p className="text-sm text-muted-foreground">Páginas Únicas</p>
+              <p className="text-2xl font-bold text-foreground">
+                {metrics?.uniquePages?.toLocaleString() || 0}
+              </p>
+              {previousMetrics && getChangeIndicator(metrics?.uniquePages || 0, previousMetrics?.uniquePages || 0)}
+            </div>
+            <FileText className="w-8 h-8 text-primary opacity-60" />
+          </div>
+          {sparklineData && (
+            <div className="h-8 mt-2 opacity-50">
+              <Sparkline data={sparklineData.pageViews} color="hsl(var(--primary))" />
             </div>
           )}
         </CardContent>

@@ -88,10 +88,15 @@ export const useAnalytics = ({
       const uniqueIps = new Set(data?.map(d => d.ip_address));
       const uniqueVisitors = uniqueIps.size;
       
+      // Unique pages (páginas únicas com tráfego)
+      const uniquePagePaths = new Set(data?.map(d => d.page_path));
+      const uniquePages = uniquePagePaths.size;
+      
       const conversionRate = pageViews > 0 ? (conversions / pageViews * 100).toFixed(2) : "0.00";
 
       return {
         uniqueVisitors,
+        uniquePages,
         pageViews,
         conversions,
         conversionRate,
@@ -230,9 +235,11 @@ export const useAnalytics = ({
       const conversions = data?.filter(d => d.event_type !== "page_view").length || 0;
       const uniqueIps = new Set(data?.map(d => d.ip_address));
       const uniqueVisitors = uniqueIps.size;
+      const uniquePagePaths = new Set(data?.map(d => d.page_path));
+      const uniquePages = uniquePagePaths.size;
       const conversionRate = pageViews > 0 ? (conversions / pageViews * 100).toFixed(2) : "0.00";
 
-      return { uniqueVisitors, pageViews, conversions, conversionRate };
+      return { uniqueVisitors, uniquePages, pageViews, conversions, conversionRate };
     },
     enabled: !!siteId,
   });
