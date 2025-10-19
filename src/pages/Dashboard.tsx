@@ -5,8 +5,9 @@ import { User, Session } from "@supabase/supabase-js";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign } from "lucide-react";
+import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { CRMHub } from "@/components/crm/CRMHub";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewCards } from "@/components/rank-rent/OverviewCards";
 import { SitesList } from "@/components/rank-rent/SitesList";
@@ -147,7 +148,7 @@ const Dashboard = () => {
             </div>
           </div>
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-5 max-w-4xl">
             <TabsTrigger value="overview" className="gap-2">
               <LayoutDashboard className="w-4 h-4" />
               Overview
@@ -155,6 +156,10 @@ const Dashboard = () => {
             <TabsTrigger value="sites" className="gap-2">
               <Globe className="w-4 h-4" />
               Sites
+            </TabsTrigger>
+            <TabsTrigger value="crm" className="gap-2">
+              <Briefcase className="w-4 h-4" />
+              CRM
             </TabsTrigger>
             <TabsTrigger value="financial" className="gap-2">
               <DollarSign className="w-4 h-4" />
@@ -173,6 +178,10 @@ const Dashboard = () => {
 
           <TabsContent value="sites">
             <SitesList userId={user.id} />
+          </TabsContent>
+
+          <TabsContent value="crm">
+            <CRMHub userId={user.id} />
           </TabsContent>
 
           <TabsContent value="financial" className="space-y-6">
