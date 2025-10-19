@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { useRole } from "@/contexts/RoleContext";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -21,7 +22,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { BarChart3 } from "lucide-react";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -32,6 +32,34 @@ const Dashboard = () => {
   const { role, isSuperAdmin, isEndClient, isLoading: roleLoading } = useRole();
 
   const { sitesMetrics, summary, isLoading: financialLoading } = useGlobalFinancialMetrics(user?.id || "");
+
+  // Buscar nome do usuário
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const userName = profile?.full_name || user?.email?.split("@")[0] || "Usuário";
+
+  // Detectar se é visita recorrente
+  const [isReturningUser, setIsReturningUser] = useState(false);
+
+  useEffect(() => {
+    if (user?.id) {
+      const lastVisit = localStorage.getItem(`lastVisit_${user.id}`);
+      setIsReturningUser(!!lastVisit);
+      localStorage.setItem(`lastVisit_${user.id}`, new Date().toISOString());
+    }
+  }, [user?.id]);
 
   // Redirecionar apenas End Clients (Super Admin pode acessar tudo)
   useEffect(() => {
@@ -100,11 +128,12 @@ const Dashboard = () => {
         <div className="container mx-auto p-6 pb-64 space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <BarChart3 className="h-6 w-6 text-primary" />
-                Dashboard do Cliente
+              <h1 className="text-2xl font-bold">
+                Dashboard de Gestão de Rank & Rent
               </h1>
-              <p className="text-muted-foreground mt-1">{user?.email}</p>
+              <p className="text-muted-foreground mt-1">
+                {isReturningUser ? "Seja bem-vindo de volta" : "Seja bem-vindo"} {userName} ({user?.email})
+              </p>
             </div>
             <div className="flex gap-2">
               <Button onClick={() => setShowAddSite(true)} className="gap-2">
