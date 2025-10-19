@@ -1134,17 +1134,29 @@ const SiteDetails = () => {
                 
                 <div className="space-y-4">
                   <div className="flex justify-end">
-                    <Button 
-                      onClick={() => {
-                        queryClient.invalidateQueries({ queryKey: ["page-views-detailed"] });
-                        refetchPageViews();
-                      }}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Atualizar
-                    </Button>
+                  <Button 
+                    onClick={() => {
+                      console.log('🔄 Botão Atualizar clicado');
+                      
+                      // Invalidar com queryKey completo
+                      queryClient.invalidateQueries({ 
+                        queryKey: ["page-views-detailed", siteId, pageViewsPeriod.startDate, pageViewsPeriod.endDate] 
+                      });
+                      
+                      // Forçar refetch
+                      refetchPageViews();
+                      
+                      toast({
+                        title: "Dados atualizados",
+                        description: "Os dados de visualizações foram atualizados com sucesso."
+                      });
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Atualizar
+                  </Button>
                   </div>
                   
                   <PageViewsTable 
