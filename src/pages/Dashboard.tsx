@@ -48,7 +48,7 @@ const Dashboard = () => {
     enabled: !!user?.id,
   });
 
-  const userName = profile?.full_name || user?.email?.split("@")[0] || "Usuário";
+  const userName = profile?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Usuário";
 
   // Detectar se é visita recorrente
   const [isReturningUser, setIsReturningUser] = useState(false);
