@@ -1,17 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileSpreadsheet, FileText, Globe, Eye } from "lucide-react";
+import { FileSpreadsheet, FileText, Globe, Eye, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useReportData } from "@/hooks/useReportData";
 import { ReportStyleConfigurator, ReportStyle } from "./ReportStyleConfigurator";
 import { ReportPreview } from "./ReportPreview";
-import { ReportFinancialConfig } from "./ReportFinancialConfig";
 import { Currency, ReportLocale } from "@/i18n/reportTranslations";
 
 interface ReportsTabProps {
@@ -32,12 +31,9 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   const [enableComparison, setEnableComparison] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [showFinancialConfig, setShowFinancialConfig] = useState(false);
-  const [financialConfig, setFinancialConfig] = useState<{
-    costPerConversion: number;
-    currency: Currency;
-    locale: ReportLocale;
-  } | undefined>(undefined);
+  const [costPerConversion, setCostPerConversion] = useState<string>('');
+  const [currency, setCurrency] = useState<Currency>('BRL');
+  const [locale, setLocale] = useState<ReportLocale>('pt-BR');
   const [style, setStyle] = useState<ReportStyle>({
     theme: 'modern',
     customColors: {
@@ -47,18 +43,52 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
     }
   });
 
-  const handleGeneratePreview = () => {
-    setShowFinancialConfig(true);
-  };
+  // Carregar configuração financeira do localStorage
+  useEffect(() => {
+    const savedConfig = localStorage.getItem(`financial-config-${siteId}`);
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig);
+        setCostPerConversion(parsed.costPerConversion?.toString() || '');
+        setCurrency(parsed.currency || 'BRL');
+        setLocale(parsed.locale || 'pt-BR');
+      } catch (e) {
+        console.error('Erro ao carregar configuração financeira:', e);
+      }
+    }
+  }, [siteId]);
 
-  const handleFinancialConfigSave = async (config: {
-    costPerConversion: number;
-    currency: Currency;
-    locale: ReportLocale;
-  }) => {
-    setFinancialConfig(config);
+  // Salvar configuração financeira no localStorage
+  useEffect(() => {
+    if (costPerConversion) {
+      const config = {
+        costPerConversion: parseFloat(costPerConversion),
+        currency,
+        locale
+      };
+      localStorage.setItem(`financial-config-${siteId}`, JSON.stringify(config));
+    }
+  }, [costPerConversion, currency, locale, siteId]);
+
+  const handleGeneratePreview = async () => {
+    // Validar custo por conversão
+    if (!costPerConversion || parseFloat(costPerConversion) <= 0) {
+      toast({
+        title: "⚠️ Configuração incompleta",
+        description: "Por favor, informe o custo por conversão antes de gerar o preview.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const financialConfig = {
+      costPerConversion: parseFloat(costPerConversion),
+      currency,
+      locale
+    };
+
     const periodDays = period === 'all' ? -1 : parseInt(period);
-    await fetchReportData(siteId, periodDays, enableComparison, config);
+    await fetchReportData(siteId, periodDays, enableComparison, financialConfig);
     setShowPreview(true);
   };
 
@@ -76,7 +106,11 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           includeTopPages,
           includeReferrers,
           style,
-          financialConfig
+          financialConfig: costPerConversion ? {
+            costPerConversion: parseFloat(costPerConversion),
+            currency,
+            locale
+          } : undefined
         }
       });
 
@@ -124,7 +158,11 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           includeTopPages,
           includeReferrers,
           style,
-          financialConfig
+          financialConfig: costPerConversion ? {
+            costPerConversion: parseFloat(costPerConversion),
+            currency,
+            locale
+          } : undefined
         }
       });
 
@@ -165,7 +203,11 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           includeTopPages,
           includeReferrers,
           style,
-          financialConfig
+          financialConfig: costPerConversion ? {
+            costPerConversion: parseFloat(costPerConversion),
+            currency,
+            locale
+          } : undefined
         }
       });
 
@@ -275,13 +317,80 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            💰 Configuração Financeira
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="cost-per-conversion" className="mb-2 block">
+              Custo por Conversão *
+            </Label>
+            <Input
+              id="cost-per-conversion"
+              type="number"
+              step="0.01"
+              min="0"
+              value={costPerConversion}
+              onChange={(e) => setCostPerConversion(e.target.value)}
+              placeholder="Ex: 50.00"
+              className={!costPerConversion ? 'border-destructive' : ''}
+            />
+            {!costPerConversion && (
+              <p className="text-xs text-destructive mt-1">
+                Este campo é obrigatório para calcular o valor gerado
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="currency" className="mb-2 block">
+                Moeda
+              </Label>
+              <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+                <SelectTrigger id="currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BRL">R$ (Real Brasileiro)</SelectItem>
+                  <SelectItem value="USD">$ (Dólar Americano)</SelectItem>
+                  <SelectItem value="EUR">€ (Euro)</SelectItem>
+                  <SelectItem value="GBP">£ (Libra Esterlina)</SelectItem>
+                  <SelectItem value="MXN">$ (Peso Mexicano)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="locale" className="mb-2 block">
+                Idioma do Relatório
+              </Label>
+              <Select value={locale} onValueChange={(v) => setLocale(v as ReportLocale)}>
+                <SelectTrigger id="locale">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pt-BR">🇧🇷 Português</SelectItem>
+                  <SelectItem value="en-US">🇺🇸 English</SelectItem>
+                  <SelectItem value="es-ES">🇪🇸 Español</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <ReportStyleConfigurator style={style} onStyleChange={setStyle} />
 
       <Card>
         <CardContent className="pt-6">
           <Button 
             onClick={handleGeneratePreview} 
-            disabled={loading} 
+            disabled={loading || !costPerConversion} 
             className="w-full"
             size="lg"
           >
@@ -290,12 +399,6 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           </Button>
         </CardContent>
       </Card>
-
-      <ReportFinancialConfig
-        open={showFinancialConfig}
-        onOpenChange={setShowFinancialConfig}
-        onSave={handleFinancialConfigSave}
-      />
 
       {showPreview && reportData && (
         <>
@@ -307,7 +410,11 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
             includePageViews={includePageViews}
             includeTopPages={includeTopPages}
             includeReferrers={includeReferrers}
-            financialConfig={financialConfig}
+            financialConfig={costPerConversion ? {
+              costPerConversion: parseFloat(costPerConversion),
+              currency,
+              locale
+            } : undefined}
           />
 
           <Card>
