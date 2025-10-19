@@ -2,6 +2,16 @@ import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { subDays, format } from 'date-fns';
+import { Currency, ReportLocale } from '@/i18n/reportTranslations';
+
+export interface FinancialData {
+  costPerConversion: number;
+  currency: Currency;
+  locale: ReportLocale;
+  totalValue: number;
+  previousTotalValue?: number;
+  valueChange?: number;
+}
 
 export interface ReportData {
   period: {
@@ -30,6 +40,7 @@ export interface ReportData {
     conversionRateChange: number;
     roiChange: number;
   };
+  financial?: FinancialData;
   conversionsTimeline: Array<{
     date: string;
     count: number;
@@ -59,7 +70,12 @@ export const useReportData = () => {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
 
-  const fetchReportData = async (siteId: string, periodDays: number, enableComparison: boolean = false) => {
+  const fetchReportData = async (
+    siteId: string, 
+    periodDays: number, 
+    enableComparison: boolean = false,
+    financialConfig?: { costPerConversion: number; currency: Currency; locale: ReportLocale }
+  ) => {
     setLoading(true);
     try {
       const endDate = new Date();
@@ -155,6 +171,17 @@ export const useReportData = () => {
         referrers: referrers.sort((a, b) => b.count - a.count).slice(0, 10)
       };
 
+      // Add financial data if config provided
+      if (financialConfig) {
+        const totalValue = financialConfig.costPerConversion * totalConversions;
+        data.financial = {
+          costPerConversion: financialConfig.costPerConversion,
+          currency: financialConfig.currency,
+          locale: financialConfig.locale,
+          totalValue
+        };
+      }
+
       // Fetch comparison data if enabled
       if (enableComparison && periodDays !== -1) {
         const previousEndDate = subDays(startDate, 1);
@@ -219,6 +246,17 @@ export const useReportData = () => {
           roiChange: 0
         };
         data.previousConversionsTimeline = previousConversionsTimeline;
+
+        // Update financial data with comparison if config provided
+        if (financialConfig && data.financial) {
+          const previousTotalValue = financialConfig.costPerConversion * prevTotalConversions;
+          const valueChange = previousTotalValue > 0
+            ? ((data.financial.totalValue - previousTotalValue) / previousTotalValue) * 100
+            : data.financial.totalValue > 0 ? 100 : 0;
+
+          data.financial.previousTotalValue = previousTotalValue;
+          data.financial.valueChange = valueChange;
+        }
       }
 
       setReportData(data);

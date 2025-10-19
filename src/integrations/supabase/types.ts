@@ -643,6 +643,195 @@ export type Database = {
           },
         ]
       }
+      report_shares: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          report_data: Json
+          share_token: string
+          site_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          report_data: Json
+          share_token?: string
+          site_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          report_data?: Json
+          share_token?: string
+          site_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_shares_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_shares_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "report_shares_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_shares_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_reports: {
+        Row: {
+          created_at: string | null
+          financial_config: Json
+          id: string
+          report_data: Json
+          report_name: string
+          site_id: string
+          style: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          financial_config: Json
+          id?: string
+          report_data: Json
+          report_name: string
+          site_id: string
+          style: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          financial_config?: Json
+          id?: string
+          report_data?: Json
+          report_name?: string
+          site_id?: string
+          style?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "saved_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_reports: {
+        Row: {
+          created_at: string | null
+          email_to: string
+          frequency: string
+          id: string
+          is_active: boolean | null
+          last_sent_at: string | null
+          report_config: Json
+          site_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_to: string
+          frequency: string
+          id?: string
+          is_active?: boolean | null
+          last_sent_at?: string | null
+          report_config: Json
+          site_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_to?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          last_sent_at?: string | null
+          report_config?: Json
+          site_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "scheduled_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_payments: {
         Row: {
           amount: number

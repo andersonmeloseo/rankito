@@ -1,35 +1,76 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ReportData } from "@/hooks/useReportData";
-import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertCircle, DollarSign } from "lucide-react";
+import { formatCurrency, useReportTranslation } from "@/i18n/reportTranslations";
 
 interface ComparisonInsightsProps {
   reportData: ReportData;
 }
 
 export const ComparisonInsights = ({ reportData }: ComparisonInsightsProps) => {
-  if (!reportData.comparison) return null;
+  if (!reportData.comparison && !reportData.financial) return null;
+
+  const locale = reportData.financial?.locale || 'pt-BR';
+  const { t } = useReportTranslation(locale);
 
   const insights: Array<{ type: 'success' | 'warning' | 'info'; message: string; icon: React.ReactNode }> = [];
+
+  // Financial insights (always show if available)
+  if (reportData.financial) {
+    const { costPerConversion, currency, totalValue } = reportData.financial;
+    const formattedValue = formatCurrency(totalValue, currency);
+    const formattedCost = formatCurrency(costPerConversion, currency);
+
+    insights.push({
+      type: 'success',
+      message: t('savingsMessage', {
+        conversions: reportData.summary.totalConversions,
+        costPer: formattedCost,
+        value: formattedValue
+      }),
+      icon: <DollarSign className="h-4 w-4" />
+    });
+  }
+
+  if (!reportData.comparison) {
+    return insights.length > 0 ? (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            💡 {t('comparisonInsight')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {insights.map((insight, i) => (
+            <Alert 
+              key={i} 
+              variant="default"
+              className="border-green-500 bg-green-50 dark:bg-green-950"
+            >
+              <div className="flex items-start gap-2">
+                {insight.icon}
+                <AlertDescription className="flex-1">{insight.message}</AlertDescription>
+              </div>
+            </Alert>
+          ))}
+        </CardContent>
+      </Card>
+    ) : null;
+  }
 
   // Conversions insights
   if (reportData.comparison.conversionsChange > 10) {
     insights.push({
       type: 'success',
-      message: `Excelente! As conversões cresceram ${reportData.comparison.conversionsChange.toFixed(1)}% em relação ao período anterior.`,
+      message: t('excellentGrowth', { change: reportData.comparison.conversionsChange.toFixed(1) }),
       icon: <TrendingUp className="h-4 w-4" />
     });
   } else if (reportData.comparison.conversionsChange < -10) {
     insights.push({
       type: 'warning',
-      message: `Atenção: Queda de ${Math.abs(reportData.comparison.conversionsChange).toFixed(1)}% nas conversões. Revise suas estratégias.`,
+      message: t('attentionDrop', { change: Math.abs(reportData.comparison.conversionsChange).toFixed(1) }),
       icon: <TrendingDown className="h-4 w-4" />
-    });
-  } else if (Math.abs(reportData.comparison.conversionsChange) <= 10) {
-    insights.push({
-      type: 'info',
-      message: `Conversões estáveis com variação de ${reportData.comparison.conversionsChange.toFixed(1)}%.`,
-      icon: <AlertCircle className="h-4 w-4" />
     });
   }
 
@@ -37,14 +78,8 @@ export const ComparisonInsights = ({ reportData }: ComparisonInsightsProps) => {
   if (reportData.comparison.pageViewsChange > 20) {
     insights.push({
       type: 'success',
-      message: `Tráfego cresceu ${reportData.comparison.pageViewsChange.toFixed(1)}%! Suas ações de marketing estão funcionando.`,
+      message: t('trafficGrowth', { change: reportData.comparison.pageViewsChange.toFixed(1) }),
       icon: <TrendingUp className="h-4 w-4" />
-    });
-  } else if (reportData.comparison.pageViewsChange < -20) {
-    insights.push({
-      type: 'warning',
-      message: `Tráfego caiu ${Math.abs(reportData.comparison.pageViewsChange).toFixed(1)}%. Considere novas estratégias de aquisição.`,
-      icon: <TrendingDown className="h-4 w-4" />
     });
   }
 
@@ -52,13 +87,13 @@ export const ComparisonInsights = ({ reportData }: ComparisonInsightsProps) => {
   if (reportData.comparison.conversionRateChange > 1) {
     insights.push({
       type: 'success',
-      message: `Taxa de conversão melhorou em ${reportData.comparison.conversionRateChange.toFixed(2)} pontos percentuais.`,
+      message: t('conversionRateImproved', { change: reportData.comparison.conversionRateChange.toFixed(2) }),
       icon: <TrendingUp className="h-4 w-4" />
     });
   } else if (reportData.comparison.conversionRateChange < -1) {
     insights.push({
       type: 'warning',
-      message: `Taxa de conversão caiu ${Math.abs(reportData.comparison.conversionRateChange).toFixed(2)} pontos. Otimize suas páginas.`,
+      message: t('conversionRateDropped', { change: Math.abs(reportData.comparison.conversionRateChange).toFixed(2) }),
       icon: <TrendingDown className="h-4 w-4" />
     });
   }
@@ -71,7 +106,7 @@ export const ComparisonInsights = ({ reportData }: ComparisonInsightsProps) => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          💡 Insights da Comparação
+          💡 {t('comparisonInsight')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
