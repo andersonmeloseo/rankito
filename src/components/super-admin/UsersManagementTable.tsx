@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSaasUsers } from "@/hooks/useSaasUsers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,8 @@ export const UsersManagementTable = () => {
 
   const { 
     users, 
-    isLoading, 
+    isLoading,
+    refetch,
     blockUser, 
     unblockUser,
     deleteUser,
@@ -43,6 +44,10 @@ export const UsersManagementTable = () => {
     status: statusFilter === "all" ? undefined : statusFilter,
     plan: planFilter === "all" ? undefined : planFilter,
   });
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const getStatusBadge = (user: any) => {
     const sub = user.user_subscriptions?.[0];

@@ -14,7 +14,7 @@ interface UserFilters {
 export const useSaasUsers = (filters?: UserFilters) => {
   const queryClient = useQueryClient();
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, refetch } = useQuery({
     queryKey: ['saas-users', filters],
     queryFn: async () => {
       let query = supabase
@@ -277,6 +277,7 @@ export const useSaasUsers = (filters?: UserFilters) => {
   return {
     users,
     isLoading,
+    refetch,
     blockUser: blockUser.mutate,
     unblockUser: unblockUser.mutate,
     updateUser: updateUser.mutate,
