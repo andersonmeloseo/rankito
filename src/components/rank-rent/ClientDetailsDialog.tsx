@@ -148,74 +148,77 @@ export const ClientDetailsDialog = ({ open, onOpenChange, clientId, clientName }
               )}
             </div>
 
-            <Separator />
+          {/* Só mostra separador e seção se houver páginas ou estiver carregando */}
+          {(pagesLoading || (clientPages && clientPages.length > 0)) && (
+            <>
+              <Separator />
 
-            {/* Client Pages */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold">Páginas Alugadas</h3>
-              
-              {pagesLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ) : clientPages && clientPages.length > 0 ? (
-                <div className="space-y-2">
-                  {clientPages.map((page) => (
-                    <div
-                      key={page.id}
-                      className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium truncate">
-                              {page.page_title || page.page_path}
+              {/* Client Pages */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Páginas Alugadas</h3>
+                
+                {pagesLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {clientPages?.map((page) => (
+                      <div key={page.id} className="border rounded-lg p-3 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium">{page.page_title || "Sem título"}</h4>
+                              <Badge variant={page.status === "active" ? "default" : "secondary"}>
+                                {page.status === "active" ? "Ativa" : "Inativa"}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground break-all">
+                              {page.page_url}
                             </p>
-                            <Badge variant={page.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                              {page.status === 'active' ? 'Ativo' : 'Inativo'}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {page.sites?.site_name || 'Site'}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {page.page_url}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <p className="text-sm text-muted-foreground">Valor</p>
-                            <p className="font-semibold text-success">
-                              R$ {Number(page.monthly_rent_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            <p className="text-sm">
+                              <span className="text-muted-foreground">Site:</span>{" "}
+                              <span className="font-medium">{page.sites.site_name}</span>
                             </p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(page.page_url, '_blank')}
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </Button>
+                          <div className="flex flex-col items-end gap-2">
+                            <p className="font-semibold text-primary">
+                              {new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL'
+                              }).format(Number(page.monthly_rent_value) || 0)}
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open(page.page_url, '_blank')}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Visitar
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Total Mensal:</span>
-                      <span className="text-lg font-bold text-success">
-                        R$ {clientPages.reduce((sum, p) => sum + Number(p.monthly_rent_value || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
+                    ))}
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Total Mensal:</span>
+                        <span className="text-lg font-bold text-primary">
+                          {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                          }).format(
+                            clientPages?.reduce((sum, page) => sum + (Number(page.monthly_rent_value) || 0), 0) || 0
+                          )}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhuma página alugada por este cliente
-                </p>
-              )}
-            </div>
+                )}
+              </div>
+            </>
+          )}
           </div>
         ) : null}
       </DialogContent>
