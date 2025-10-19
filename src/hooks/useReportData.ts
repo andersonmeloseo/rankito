@@ -109,6 +109,7 @@ export const useReportData = () => {
         .from('rank_rent_conversions')
         .select('*')
         .eq('site_id', siteId)
+        .neq('event_type', 'page_view')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
