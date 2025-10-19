@@ -42,6 +42,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { format, subDays } from "date-fns";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { ReportsTab } from "@/components/reports/ReportsTab";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -626,10 +627,11 @@ const SiteDetails = () => {
 
         {/* Tabs Section */}
         <Tabs defaultValue="pages" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-4 max-w-4xl">
             <TabsTrigger value="pages">Páginas</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Analytics Avançado</TabsTrigger>
-            <TabsTrigger value="plugin">Conexão com WordPress</TabsTrigger>
+            <TabsTrigger value="reports">📊 Relatórios</TabsTrigger>
+            <TabsTrigger value="plugin">Plugin WordPress</TabsTrigger>
           </TabsList>
 
           {/* Páginas Tab */}
@@ -1186,6 +1188,10 @@ const SiteDetails = () => {
             </Tabs>
           </TabsContent>
 
+          {/* Relatórios Tab */}
+          <TabsContent value="reports">
+            <ReportsTab siteId={siteId || ""} siteName={site.site_name} />
+          </TabsContent>
 
           {/* Plugin WordPress Tab */}
           <TabsContent value="plugin">
