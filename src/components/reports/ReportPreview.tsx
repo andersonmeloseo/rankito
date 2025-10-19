@@ -73,37 +73,9 @@ export const ReportPreview = ({
           </Alert>
         )}
 
-        {/* Gauge Charts - Dashboard Executivo */}
-        <div>
-          <h3 className="text-lg font-semibold mb-4">📊 Dashboard Executivo</h3>
-          <div className="grid gap-4 md:grid-cols-3">
-            <GaugeChart
-              value={reportData.summary.conversionRate}
-              max={20}
-              title="Taxa de Conversão"
-              subtitle="Meta: 10-20%"
-              unit="%"
-            />
-            <GaugeChart
-              value={Math.min((reportData.summary.totalConversions / 100) * 100, 100)}
-              max={100}
-              title="Volume de Conversões"
-              subtitle={`${reportData.summary.totalConversions} conversões`}
-              unit="%"
-            />
-            <GaugeChart
-              value={reportData.summary.averageROI > 0 ? Math.min(reportData.summary.averageROI, 100) : 0}
-              max={100}
-              title="ROI Médio"
-              subtitle="Retorno sobre investimento"
-              unit="%"
-            />
-          </div>
-        </div>
-
         {/* Cards de Métricas */}
         {reportData.comparison ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {includeConversions && (
               <ComparisonMetricCard
                 title="Total de Conversões"
@@ -154,7 +126,7 @@ export const ReportPreview = ({
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {includeConversions && (
               <MetricCard
                 title="Total de Conversões"
