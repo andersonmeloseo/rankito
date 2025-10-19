@@ -50,13 +50,17 @@ export const EditUserDialog = ({ user, open, onOpenChange, onSave }: EditUserDia
       setWebsite(user.website || "");
       setCountryCode(user.country_code || "BR");
       setIsActive(user.is_active ?? true);
-      setSelectedPlanId(user.user_subscriptions?.[0]?.subscription_plans?.id || "");
+      const planId = user.user_subscriptions?.[0]?.subscription_plans?.id || "";
+      setSelectedPlanId(planId || "none");
     }
   }, [user]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      const currentPlanId = user.user_subscriptions?.[0]?.plan_id || "";
+      const newPlanId = selectedPlanId === "none" ? "" : selectedPlanId;
+      
       const updates = {
         full_name: fullName,
         email: email !== user.email ? email : undefined,
@@ -65,7 +69,7 @@ export const EditUserDialog = ({ user, open, onOpenChange, onSave }: EditUserDia
         website,
         country_code: countryCode,
         is_active: isActive,
-        planId: selectedPlanId !== (user.user_subscriptions?.[0]?.plan_id || "") ? selectedPlanId : undefined,
+        planId: newPlanId !== currentPlanId ? newPlanId : undefined,
       };
       
       await onSave(updates);
@@ -179,7 +183,7 @@ export const EditUserDialog = ({ user, open, onOpenChange, onSave }: EditUserDia
                   <SelectValue placeholder="Selecione um plano" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum plano</SelectItem>
+                  <SelectItem value="none">Nenhum plano</SelectItem>
                   {plans?.map((plan) => (
                     <SelectItem key={plan.id} value={plan.id}>
                       {plan.name} - R$ {plan.price}
