@@ -9,6 +9,7 @@ import { ConversionFunnelChart } from "./ConversionFunnelChart";
 import { BubbleChart } from "./BubbleChart";
 import { GaugeChart } from "./GaugeChart";
 import { RadarChart } from "./RadarChart";
+import { TopPagesTable } from "./TopPagesTable";
 import { TrendingUp, Eye, Target, DollarSign, Lightbulb } from "lucide-react";
 import { ReportData } from "@/hooks/useReportData";
 import { ReportStyle } from "./ReportStyleConfigurator";
@@ -322,58 +323,12 @@ export const ReportPreview = ({
           </div>
         )}
 
-        {/* Tabela de TODAS as Páginas */}
+        {/* Tabela de Top Páginas */}
         {includeTopPages && reportData.topPages.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">
-              🏆 Todas as Páginas ({reportData.topPages.length})
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Ranking completo ordenado por conversões
-            </p>
-            <div className="border rounded-lg overflow-hidden">
-              <div className="max-h-[600px] overflow-y-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
-                    <TableRow>
-                      <TableHead className="w-12">#</TableHead>
-                      <TableHead>Página</TableHead>
-                      <TableHead className="text-right">Conversões</TableHead>
-                      <TableHead className="text-right">Page Views</TableHead>
-                      <TableHead className="text-right">Taxa</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reportData.topPages.map((page, i) => (
-                      <TableRow key={i} className={i < 3 ? 'bg-primary/5' : ''}>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
-                          {i + 1}
-                        </TableCell>
-                        <TableCell className="font-medium max-w-[400px] truncate" title={page.page}>
-                          {page.page}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {page.conversions}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {page.pageViews.toLocaleString('pt-BR')}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className={
-                            page.conversionRate > 10 ? 'font-bold text-green-600' :
-                            page.conversionRate > 5 ? 'font-semibold text-yellow-600' :
-                            'text-red-600'
-                          }>
-                            {page.conversionRate.toFixed(2)}%
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </div>
+          <TopPagesTable 
+            pages={reportData.topPages}
+            style={style}
+          />
         )}
 
         {/* Gráfico de Pizza - Distribuição de Tipos de Conversão */}

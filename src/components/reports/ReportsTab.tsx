@@ -5,13 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileSpreadsheet, FileText, Globe, Eye, DollarSign } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileSpreadsheet, FileText, Globe, Eye, DollarSign, Save, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useReportData } from "@/hooks/useReportData";
 import { ReportStyleConfigurator, ReportStyle } from "./ReportStyleConfigurator";
 import { ReportPreview } from "./ReportPreview";
 import { Currency, ReportLocale } from "@/i18n/reportTranslations";
+import { SavedReportsList } from "./SavedReportsList";
+import { SaveReportDialog } from "./SaveReportDialog";
 
 interface ReportsTabProps {
   siteId: string;
@@ -42,6 +45,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
       accent: '#06b6d4'
     }
   });
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
   // Carregar configuração financeira do localStorage
   useEffect(() => {
@@ -257,8 +261,37 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
     }
   };
 
+  const handleLoadReport = (reportData: any) => {
+    setReportName(reportData.reportName);
+    setCostPerConversion(reportData.financialConfig.costPerConversion.toString());
+    setCurrency(reportData.financialConfig.currency);
+    setLocale(reportData.financialConfig.locale);
+    setStyle(reportData.style);
+    setShowPreview(true);
+  };
+
   return (
     <div className="space-y-6">
+      <Tabs defaultValue="new" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="new" className="flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            Gerar Novo Relatório
+          </TabsTrigger>
+          <TabsTrigger value="saved" className="flex items-center gap-2">
+            <FolderOpen className="h-4 w-4" />
+            📁 Meus Relatórios
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="saved" className="mt-6">
+          <SavedReportsList 
+            siteId={siteId} 
+            onLoadReport={handleLoadReport}
+          />
+        </TabsContent>
+
+        <TabsContent value="new" className="mt-6 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>⚙️ Configuração do Relatório</CardTitle>
@@ -437,26 +470,56 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
 
           <Card>
             <CardHeader>
-              <CardTitle>📥 Exportar Relatório</CardTitle>
+              <CardTitle>📥 Ações</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Button onClick={handleExportExcel} disabled={isExporting} className="w-full">
-                  <FileSpreadsheet className="mr-2 h-4 w-4" />
-                  {isExporting ? 'Gerando...' : 'Exportar XLSX'}
+              <div className="space-y-3">
+                <Button 
+                  onClick={() => setShowSaveDialog(true)}
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                >
+                  <Save className="mr-2 h-5 w-5" />
+                  💾 Salvar Relatório
                 </Button>
-                <Button onClick={handleExportPDF} disabled={isExporting} className="w-full">
-                  <FileText className="mr-2 h-4 w-4" />
-                  Exportar PDF
-                </Button>
-                <Button onClick={handleExportHTML} disabled={isExporting} className="w-full">
-                  <Globe className="mr-2 h-4 w-4" />
-                  Gerar HTML
-                </Button>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Button onClick={handleExportExcel} disabled={isExporting} className="w-full">
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    {isExporting ? 'Gerando...' : 'Exportar XLSX'}
+                  </Button>
+                  <Button onClick={handleExportPDF} disabled={isExporting} className="w-full">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Exportar PDF
+                  </Button>
+                  <Button onClick={handleExportHTML} disabled={isExporting} className="w-full">
+                    <Globe className="mr-2 h-4 w-4" />
+                    Gerar HTML
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
         </>
+      )}
+        </TabsContent>
+      </Tabs>
+
+      {showSaveDialog && reportData && (
+        <SaveReportDialog
+          open={showSaveDialog}
+          onOpenChange={setShowSaveDialog}
+          siteId={siteId}
+          reportData={reportData}
+          style={style}
+          financialConfig={{
+            costPerConversion: parseFloat(costPerConversion),
+            currency,
+            locale
+          }}
+          defaultName={reportName}
+        />
       )}
     </div>
   );
