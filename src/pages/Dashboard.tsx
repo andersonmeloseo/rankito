@@ -97,7 +97,7 @@ const Dashboard = () => {
       {isSuperAdmin && <SuperAdminBanner currentView="client" />}
       <Header showSubtitle={false} />
       <div className="flex-1">
-        <div className="container mx-auto p-6 pb-20 space-y-6">
+        <div className="container mx-auto p-6 pb-32 space-y-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
