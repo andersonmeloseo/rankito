@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useReportData } from "@/hooks/useReportData";
 import { ReportStyleConfigurator, ReportStyle } from "./ReportStyleConfigurator";
 import { ReportPreview } from "./ReportPreview";
+import { ReportFinancialConfig } from "./ReportFinancialConfig";
+import { Currency, ReportLocale } from "@/i18n/reportTranslations";
 
 interface ReportsTabProps {
   siteId: string;
@@ -30,6 +32,12 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   const [enableComparison, setEnableComparison] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showFinancialConfig, setShowFinancialConfig] = useState(false);
+  const [financialConfig, setFinancialConfig] = useState<{
+    costPerConversion: number;
+    currency: Currency;
+    locale: ReportLocale;
+  } | undefined>(undefined);
   const [style, setStyle] = useState<ReportStyle>({
     theme: 'modern',
     customColors: {
@@ -39,9 +47,18 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
     }
   });
 
-  const handleGeneratePreview = async () => {
+  const handleGeneratePreview = () => {
+    setShowFinancialConfig(true);
+  };
+
+  const handleFinancialConfigSave = async (config: {
+    costPerConversion: number;
+    currency: Currency;
+    locale: ReportLocale;
+  }) => {
+    setFinancialConfig(config);
     const periodDays = period === 'all' ? -1 : parseInt(period);
-    await fetchReportData(siteId, periodDays, enableComparison);
+    await fetchReportData(siteId, periodDays, enableComparison, config);
     setShowPreview(true);
   };
 
@@ -58,7 +75,8 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           includeROI,
           includeTopPages,
           includeReferrers,
-          style
+          style,
+          financialConfig
         }
       });
 
@@ -105,7 +123,8 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           includeROI,
           includeTopPages,
           includeReferrers,
-          style
+          style,
+          financialConfig
         }
       });
 
@@ -145,7 +164,8 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           includeROI,
           includeTopPages,
           includeReferrers,
-          style
+          style,
+          financialConfig
         }
       });
 
@@ -270,6 +290,12 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           </Button>
         </CardContent>
       </Card>
+
+      <ReportFinancialConfig
+        open={showFinancialConfig}
+        onOpenChange={setShowFinancialConfig}
+        onSave={handleFinancialConfigSave}
+      />
 
       {showPreview && reportData && (
         <>
