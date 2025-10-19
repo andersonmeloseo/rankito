@@ -145,43 +145,66 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   };
 
   const handleExportPDF = async () => {
+    if (!reportData || !siteId) return;
+    
     setIsExporting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-pdf-report', {
-        body: {
-          siteId,
-          reportName,
-          period,
-          includeConversions,
-          includePageViews,
-          includeROI,
-          includeTopPages,
-          includeReferrers,
-          style,
-          financialConfig: costPerConversion ? {
-            costPerConversion: parseFloat(costPerConversion),
-            currency,
-            locale
-          } : undefined
-        }
-      });
+      // Importar bibliotecas dinamicamente
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).default;
 
-      if (error) throw error;
-
-      const blob = new Blob([data], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const reportElement = document.getElementById('report-preview');
+      if (!reportElement) {
+        throw new Error('Elemento de preview não encontrado');
+      }
 
       toast({
-        title: "✅ Visualização PDF aberta!",
-        description: "Use Ctrl+P (Cmd+P no Mac) para salvar como PDF",
+        title: "Gerando PDF...",
+        description: "Capturando imagens do relatório, aguarde...",
+      });
+
+      // Capturar o elemento como imagem
+      const canvas = await html2canvas(reportElement, {
+        scale: 2, // Melhor qualidade
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+
+      // Adicionar primeira página
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Adicionar páginas adicionais se necessário
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Download automático
+      const fileName = `${reportName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+
+      toast({
+        title: "✅ PDF baixado com sucesso!",
+        description: "O download iniciou automaticamente.",
       });
     } catch (error: any) {
-      console.error('Error exporting PDF:', error);
+      console.error('Error generating PDF:', error);
       toast({
-        title: "❌ Erro ao gerar relatório",
-        description: error.message || "Tente novamente",
+        title: "❌ Erro ao gerar PDF",
+        description: error.message,
         variant: "destructive"
       });
     } finally {

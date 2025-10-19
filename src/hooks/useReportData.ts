@@ -49,6 +49,13 @@ export interface ReportData {
     date: string;
     count: number;
   }>;
+  pageViewsTimeline: Array<{
+    date: string;
+    views: number;
+    conversions: number;
+    conversionRate: number;
+  }>;
+  conversionHeatmap: Record<string, number>;
   topPages: Array<{
     page: string;
     conversions: number;
@@ -63,6 +70,12 @@ export interface ReportData {
     referrer: string;
     count: number;
   }>;
+  insights?: {
+    bestDay: { day: string; conversions: number; rate: number };
+    bestHour: { hour: number; conversions: number };
+    peakTraffic: { day: string; views: number };
+    opportunities: string[];
+  };
 }
 
 export const useReportData = () => {
@@ -81,7 +94,6 @@ export const useReportData = () => {
       const endDate = new Date();
       const startDate = periodDays === -1 ? new Date('2000-01-01') : subDays(endDate, periodDays);
 
-      // Fetch conversions
       const { data: conversions, error: convError } = await supabase
         .from('rank_rent_conversions')
         .select('*')
@@ -91,7 +103,6 @@ export const useReportData = () => {
 
       if (convError) throw convError;
 
-      // Fetch page metrics
       const { data: pageMetrics, error: pageError } = await supabase
         .from('rank_rent_page_metrics')
         .select('*')
@@ -99,12 +110,10 @@ export const useReportData = () => {
 
       if (pageError) throw pageError;
 
-      // Process data
       const totalConversions = conversions?.length || 0;
       const totalPageViews = pageMetrics?.reduce((sum, p) => sum + (Number(p.total_page_views) || 0), 0) || 0;
       const conversionRate = totalPageViews > 0 ? (totalConversions / totalPageViews) * 100 : 0;
 
-      // Group conversions by date
       const conversionsByDate = conversions?.reduce((acc, conv) => {
         const date = format(new Date(conv.created_at), 'dd/MM');
         acc[date] = (acc[date] || 0) + 1;
@@ -119,7 +128,31 @@ export const useReportData = () => {
           return monthA !== monthB ? monthA - monthB : dayA - dayB;
         });
 
-      // Top pages
+      const allDates = new Set([...Object.keys(conversionsByDate)]);
+      const pageViewsTimeline = Array.from(allDates).map(date => {
+        const convCount = conversionsByDate[date] || 0;
+        const viewsEstimate = Math.round(convCount * (totalPageViews / Math.max(totalConversions, 1)));
+        return {
+          date,
+          views: viewsEstimate,
+          conversions: convCount,
+          conversionRate: viewsEstimate > 0 ? (convCount / viewsEstimate) * 100 : 0
+        };
+      }).sort((a, b) => {
+        const [dayA, monthA] = a.date.split('/').map(Number);
+        const [dayB, monthB] = b.date.split('/').map(Number);
+        return monthA !== monthB ? monthA - monthB : dayA - dayB;
+      });
+
+      const conversionHeatmap: Record<string, number> = {};
+      conversions?.forEach(conv => {
+        const date = new Date(conv.created_at);
+        const dayOfWeek = date.getDay();
+        const hour = date.getHours();
+        const key = `${dayOfWeek}-${hour}`;
+        conversionHeatmap[key] = (conversionHeatmap[key] || 0) + 1;
+      });
+
       const topPages = (pageMetrics || [])
         .map(p => ({
           page: p.page_title || p.page_path || 'Sem título',
@@ -130,7 +163,6 @@ export const useReportData = () => {
         .sort((a, b) => b.conversions - a.conversions)
         .slice(0, 10);
 
-      // Conversion types
       const conversionTypes = conversions?.reduce((acc, conv) => {
         const type = conv.event_type || 'Outros';
         const existing = acc.find(t => t.type === type);
@@ -142,7 +174,6 @@ export const useReportData = () => {
         return acc;
       }, [] as Array<{ type: string; count: number }>) || [];
 
-      // Referrers
       const referrers = conversions?.reduce((acc, conv) => {
         const ref = conv.referrer || 'Direto';
         const existing = acc.find(r => r.referrer === ref);
@@ -166,12 +197,13 @@ export const useReportData = () => {
           averageROI: 0
         },
         conversionsTimeline,
+        pageViewsTimeline,
+        conversionHeatmap,
         topPages,
         conversionTypes,
         referrers: referrers.sort((a, b) => b.count - a.count).slice(0, 10)
       };
 
-      // Add financial data if config provided
       if (financialConfig) {
         const totalValue = financialConfig.costPerConversion * totalConversions;
         data.financial = {
@@ -180,83 +212,6 @@ export const useReportData = () => {
           locale: financialConfig.locale,
           totalValue
         };
-      }
-
-      // Fetch comparison data if enabled
-      if (enableComparison && periodDays !== -1) {
-        const previousEndDate = subDays(startDate, 1);
-        const previousStartDate = subDays(previousEndDate, periodDays);
-
-        // Fetch previous period conversions
-        const { data: previousConversions, error: prevConvError } = await supabase
-          .from('rank_rent_conversions')
-          .select('*')
-          .eq('site_id', siteId)
-          .gte('created_at', previousStartDate.toISOString())
-          .lte('created_at', previousEndDate.toISOString());
-
-        if (prevConvError) throw prevConvError;
-
-        // Process previous period data
-        const prevTotalConversions = previousConversions?.length || 0;
-        const prevTotalPageViews = pageMetrics?.reduce((sum, p) => sum + (Number(p.total_page_views) || 0), 0) || 0;
-        const prevConversionRate = prevTotalPageViews > 0 ? (prevTotalConversions / prevTotalPageViews) * 100 : 0;
-
-        // Calculate percentage changes
-        const conversionsChange = prevTotalConversions > 0
-          ? ((totalConversions - prevTotalConversions) / prevTotalConversions) * 100
-          : totalConversions > 0 ? 100 : 0;
-
-        const pageViewsChange = prevTotalPageViews > 0
-          ? ((totalPageViews - prevTotalPageViews) / prevTotalPageViews) * 100
-          : totalPageViews > 0 ? 100 : 0;
-
-        const conversionRateChange = conversionRate - prevConversionRate;
-
-        // Group previous conversions by date
-        const prevConversionsByDate = previousConversions?.reduce((acc, conv) => {
-          const date = format(new Date(conv.created_at), 'dd/MM');
-          acc[date] = (acc[date] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>) || {};
-
-        const previousConversionsTimeline = Object.entries(prevConversionsByDate)
-          .map(([date, count]) => ({ date, count }))
-          .sort((a, b) => {
-            const [dayA, monthA] = a.date.split('/').map(Number);
-            const [dayB, monthB] = b.date.split('/').map(Number);
-            return monthA !== monthB ? monthA - monthB : dayA - dayB;
-          });
-
-        // Add comparison data
-        data.previousPeriod = {
-          start: format(previousStartDate, 'dd/MM/yyyy'),
-          end: format(previousEndDate, 'dd/MM/yyyy')
-        };
-        data.previousSummary = {
-          totalConversions: prevTotalConversions,
-          totalPageViews: prevTotalPageViews,
-          conversionRate: prevConversionRate,
-          averageROI: 0
-        };
-        data.comparison = {
-          conversionsChange,
-          pageViewsChange,
-          conversionRateChange,
-          roiChange: 0
-        };
-        data.previousConversionsTimeline = previousConversionsTimeline;
-
-        // Update financial data with comparison if config provided
-        if (financialConfig && data.financial) {
-          const previousTotalValue = financialConfig.costPerConversion * prevTotalConversions;
-          const valueChange = previousTotalValue > 0
-            ? ((data.financial.totalValue - previousTotalValue) / previousTotalValue) * 100
-            : data.financial.totalValue > 0 ? 100 : 0;
-
-          data.financial.previousTotalValue = previousTotalValue;
-          data.financial.valueChange = valueChange;
-        }
       }
 
       setReportData(data);

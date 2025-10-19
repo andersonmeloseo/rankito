@@ -4,6 +4,9 @@ import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tool
 import { MetricCard } from "./MetricCard";
 import { ComparisonMetricCard } from "./ComparisonMetricCard";
 import { ComparisonInsights } from "./ComparisonInsights";
+import { ConversionsVsPageViewsChart } from "./ConversionsVsPageViewsChart";
+import { ReportInsightsCard } from "./ReportInsightsCard";
+import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
 import { TrendingUp, Eye, Target, DollarSign } from "lucide-react";
 import { ReportData } from "@/hooks/useReportData";
 import { ReportStyle } from "./ReportStyleConfigurator";
@@ -47,6 +50,9 @@ export const ReportPreview = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-8">
+        {/* Insights Automáticos */}
+        {reportData.insights && <ReportInsightsCard insights={reportData.insights} />}
+        
         {/* Insights de Comparação */}
         {reportData.comparison && <ComparisonInsights reportData={reportData} />}
 
@@ -165,73 +171,62 @@ export const ReportPreview = ({
           </Alert>
         )}
 
-        {/* Gráfico de Linha - Conversões ao Longo do Tempo */}
-        {includeConversions && reportData.conversionsTimeline.length > 0 && (
-          reportData.comparison && reportData.previousConversionsTimeline ? (
-            <div>
-              <h3 className="text-lg font-semibold mb-4">📊 Comparação: Período Atual vs Anterior</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="date" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px'
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    data={reportData.conversionsTimeline}
-                    dataKey="count"
-                    stroke={style.customColors.primary}
-                    strokeWidth={3}
-                    dot={{ fill: style.customColors.primary, r: 4 }}
-                    name="Período Atual"
-                  />
-                  <Line
-                    type="monotone"
-                    data={reportData.previousConversionsTimeline}
-                    dataKey="count"
-                    stroke={style.customColors.secondary}
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    dot={{ fill: style.customColors.secondary, r: 3 }}
-                    name="Período Anterior"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div>
-              <h3 className="text-lg font-semibold mb-4">📈 Conversões ao Longo do Tempo</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={reportData.conversionsTimeline}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="date" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px'
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="count"
-                    stroke={style.customColors.primary}
-                    strokeWidth={3}
-                    dot={{ fill: style.customColors.primary, r: 4 }}
-                    name="Conversões"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )
+        {/* Gráfico Combo - Conversões vs Page Views */}
+        {includeConversions && includePageViews && reportData.pageViewsTimeline.length > 0 && (
+          <ConversionsVsPageViewsChart
+            data={reportData.pageViewsTimeline}
+            primaryColor={style.customColors.primary}
+            secondaryColor={style.customColors.secondary}
+          />
+        )}
+
+        {/* Mapa de Calor de Conversões */}
+        {includeConversions && reportData.conversionHeatmap && Object.keys(reportData.conversionHeatmap).length > 0 && (
+          <ConversionHeatmapChart
+            data={reportData.conversionHeatmap}
+            isLoading={false}
+          />
+        )}
+
+        {/* Gráfico de Comparação de Períodos (se ativado) */}
+        {reportData.comparison && reportData.previousConversionsTimeline && includeConversions && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4">📊 Comparação: Período Atual vs Anterior</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="date" className="text-xs" />
+                <YAxis className="text-xs" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px'
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  data={reportData.conversionsTimeline}
+                  dataKey="count"
+                  stroke={style.customColors.primary}
+                  strokeWidth={3}
+                  dot={{ fill: style.customColors.primary, r: 4 }}
+                  name="Período Atual"
+                />
+                <Line
+                  type="monotone"
+                  data={reportData.previousConversionsTimeline}
+                  dataKey="count"
+                  stroke={style.customColors.secondary}
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={{ fill: style.customColors.secondary, r: 3 }}
+                  name="Período Anterior"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         )}
 
         {/* Tabela de Top Páginas */}
