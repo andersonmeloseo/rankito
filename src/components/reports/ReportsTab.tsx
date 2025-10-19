@@ -214,23 +214,41 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   const handleExportHTML = async () => {
     setIsExporting(true);
     try {
+      // Capturar HTML renderizado (mesma técnica do PDF)
+      const element = document.getElementById('report-preview');
+      if (!element) {
+        toast({
+          title: "❌ Erro",
+          description: "Elemento de preview não encontrado",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Obter HTML completo
+      const htmlContent = element.outerHTML;
+
+      // Obter estilos CSS da página
+      const styles = Array.from(document.styleSheets)
+        .map(sheet => {
+          try {
+            return Array.from(sheet.cssRules)
+              .map(rule => rule.cssText)
+              .join('\n');
+          } catch (e) {
+            return '';
+          }
+        })
+        .join('\n');
+
+      // Enviar para edge function
       const { data, error } = await supabase.functions.invoke('generate-html-report', {
         body: {
-          siteId,
-          reportName,
-          period,
-          includeConversions,
-          includePageViews,
-          includeROI,
-          includeTopPages,
-          includeReferrers,
-          enableComparison,
-          style,
-          financialConfig: costPerConversion ? {
-            costPerConversion: parseFloat(costPerConversion),
-            currency,
-            locale
-          } : undefined
+          htmlContent,
+          styles,
+          reportName: reportName || 'Relatório',
+          siteName: siteName,
+          period: reportData?.period ? `${reportData.period.start} - ${reportData.period.end}` : `${period} dias`
         }
       });
 
