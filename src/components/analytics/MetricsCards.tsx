@@ -57,6 +57,7 @@ export const MetricsCards = ({ metrics, previousMetrics, sparklineData, isLoadin
                 {metrics?.uniqueVisitors?.toLocaleString() || 0}
               </p>
               {previousMetrics && getChangeIndicator(metrics?.uniqueVisitors || 0, previousMetrics?.uniqueVisitors || 0)}
+              <p className="text-xs text-muted-foreground mt-2">Tamanho total da sua audiência</p>
             </div>
             <Users className="w-8 h-8 text-primary opacity-60" />
           </div>
@@ -77,6 +78,7 @@ export const MetricsCards = ({ metrics, previousMetrics, sparklineData, isLoadin
                 {metrics?.uniquePages?.toLocaleString() || 0}
               </p>
               {previousMetrics && getChangeIndicator(metrics?.uniquePages || 0, previousMetrics?.uniquePages || 0)}
+              <p className="text-xs text-muted-foreground mt-2">Cobertura do conteúdo do site</p>
             </div>
             <FileText className="w-8 h-8 text-primary opacity-60" />
           </div>
@@ -97,6 +99,7 @@ export const MetricsCards = ({ metrics, previousMetrics, sparklineData, isLoadin
                 {metrics?.pageViews?.toLocaleString() || 0}
               </p>
               {previousMetrics && getChangeIndicator(metrics?.pageViews || 0, previousMetrics?.pageViews || 0)}
+              <p className="text-xs text-muted-foreground mt-2">Total de páginas visualizadas</p>
             </div>
             <Eye className="w-8 h-8 text-primary opacity-60" />
           </div>
@@ -117,6 +120,7 @@ export const MetricsCards = ({ metrics, previousMetrics, sparklineData, isLoadin
                 {metrics?.conversions?.toLocaleString() || 0}
               </p>
               {previousMetrics && getChangeIndicator(metrics?.conversions || 0, previousMetrics?.conversions || 0)}
+              <p className="text-xs text-muted-foreground mt-2">Ações realizadas pelos visitantes</p>
             </div>
             <MousePointerClick className="w-8 h-8 text-success opacity-60" />
           </div>
@@ -140,6 +144,7 @@ export const MetricsCards = ({ metrics, previousMetrics, sparklineData, isLoadin
                 parseFloat(metrics?.conversionRate || "0"), 
                 parseFloat(previousMetrics?.conversionRate || "0")
               )}
+              <p className="text-xs text-muted-foreground mt-2">Eficiência em converter visitas</p>
             </div>
             <TrendingUp className="w-8 h-8 text-success opacity-60" />
           </div>
