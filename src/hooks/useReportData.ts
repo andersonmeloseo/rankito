@@ -70,12 +70,6 @@ export interface ReportData {
     referrer: string;
     count: number;
   }>;
-  insights?: {
-    bestDay: { day: string; conversions: number; rate: number };
-    bestHour: { hour: number; conversions: number };
-    peakTraffic: { day: string; views: number };
-    opportunities: string[];
-  };
 }
 
 export const useReportData = () => {

@@ -1,11 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Area } from "recharts";
 import { MetricCard } from "./MetricCard";
 import { ComparisonMetricCard } from "./ComparisonMetricCard";
 import { ComparisonInsights } from "./ComparisonInsights";
-import { ConversionsVsPageViewsChart } from "./ConversionsVsPageViewsChart";
-import { ReportInsightsCard } from "./ReportInsightsCard";
 import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
 import { TrendingUp, Eye, Target, DollarSign } from "lucide-react";
 import { ReportData } from "@/hooks/useReportData";
@@ -50,9 +48,6 @@ export const ReportPreview = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-8">
-        {/* Insights Automáticos */}
-        {reportData.insights && <ReportInsightsCard insights={reportData.insights} />}
-        
         {/* Insights de Comparação */}
         {reportData.comparison && <ComparisonInsights reportData={reportData} />}
 
@@ -173,11 +168,72 @@ export const ReportPreview = ({
 
         {/* Gráfico Combo - Conversões vs Page Views */}
         {includeConversions && includePageViews && reportData.pageViewsTimeline.length > 0 && (
-          <ConversionsVsPageViewsChart
-            data={reportData.pageViewsTimeline}
-            primaryColor={style.customColors.primary}
-            secondaryColor={style.customColors.secondary}
-          />
+          <Card className="shadow-lg border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                📊 Conversões vs Page Views
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Análise de assertividade: correlação entre tráfego e conversões
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={350}>
+                <ComposedChart data={reportData.pageViewsTimeline}>
+                  <defs>
+                    <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={style.customColors.secondary} stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor={style.customColors.secondary} stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis 
+                    yAxisId="left"
+                    className="text-xs"
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    label={{ value: 'Conversões', angle: -90, position: 'insideLeft' }}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    className="text-xs"
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    label={{ value: 'Page Views', angle: 90, position: 'insideRight' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="line" />
+                  <Area
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="views"
+                    fill="url(#viewsGradient)"
+                    stroke={style.customColors.secondary}
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    name="Page Views"
+                  />
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="conversions"
+                    stroke={style.customColors.primary}
+                    strokeWidth={3}
+                    dot={{ fill: style.customColors.primary, r: 5, strokeWidth: 2, stroke: '#fff' }}
+                    name="Conversões"
+                    activeDot={{ r: 8, strokeWidth: 2 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
         )}
 
         {/* Mapa de Calor de Conversões */}

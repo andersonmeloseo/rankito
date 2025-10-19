@@ -149,7 +149,6 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
     
     setIsExporting(true);
     try {
-      // Importar bibliotecas dinamicamente
       const html2canvas = (await import('html2canvas')).default;
       const jsPDF = (await import('jspdf')).default;
 
@@ -163,16 +162,15 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
         description: "Capturando imagens do relatório, aguarde...",
       });
 
-      // Capturar o elemento como imagem
       const canvas = await html2canvas(reportElement, {
-        scale: 2, // Melhor qualidade
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff'
       });
 
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
+      const imgWidth = 210;
+      const pageHeight = 297;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
@@ -180,11 +178,9 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgData = canvas.toDataURL('image/png');
 
-      // Adicionar primeira página
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Adicionar páginas adicionais se necessário
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
@@ -192,7 +188,6 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
         heightLeft -= pageHeight;
       }
 
-      // Download automático
       const fileName = `${reportName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
 
