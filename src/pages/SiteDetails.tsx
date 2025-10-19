@@ -81,7 +81,7 @@ const SiteDetails = () => {
   
   // Page Views Period State (separate from main analytics)
   const [pageViewsPeriod, setPageViewsPeriod] = useState({
-    startDate: format(subDays(new Date(), 30), "yyyy-MM-dd"),
+    startDate: format(subDays(new Date(), 7), "yyyy-MM-dd"),
     endDate: format(new Date(), "yyyy-MM-dd"),
   });
   
@@ -201,9 +201,17 @@ const SiteDetails = () => {
 
 
   // Fetch page views with separate period control
-  const { data: pageViewsData, isLoading: pageViewsLoading } = useQuery({
+  const { data: pageViewsData, isLoading: pageViewsLoading, refetch: refetchPageViews } = useQuery({
     queryKey: ["page-views-detailed", siteId, pageViewsPeriod.startDate, pageViewsPeriod.endDate],
     queryFn: async () => {
+      console.log('🔍 Fetching page views:', {
+        siteId,
+        startDate: pageViewsPeriod.startDate,
+        endDate: pageViewsPeriod.endDate,
+        startDateTime: `${pageViewsPeriod.startDate}T00:00:00Z`,
+        endDateTime: `${pageViewsPeriod.endDate}T23:59:59Z`
+      });
+      
       const { data, error } = await supabase
         .from("rank_rent_conversions")
         .select("*")
@@ -212,6 +220,14 @@ const SiteDetails = () => {
         .gte("created_at", `${pageViewsPeriod.startDate}T00:00:00Z`)
         .lte("created_at", `${pageViewsPeriod.endDate}T23:59:59Z`)
         .order("created_at", { ascending: false });
+      
+      console.log('📊 Page views result:', { 
+        data, 
+        error, 
+        count: data?.length,
+        firstRecord: data?.[0]?.created_at,
+        lastRecord: data?.[data.length - 1]?.created_at
+      });
         
       if (error) throw error;
       return data || [];

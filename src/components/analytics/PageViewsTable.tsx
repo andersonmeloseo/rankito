@@ -18,6 +18,14 @@ interface PageViewsTableProps {
 }
 
 export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }: PageViewsTableProps) => {
+  console.log('📊 PageViewsTable recebeu:', { 
+    pageViews, 
+    count: pageViews?.length,
+    isLoading,
+    siteId,
+    firstRecord: pageViews?.[0],
+  });
+
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [deviceFilter, setDeviceFilter] = useState("all");
@@ -240,11 +248,28 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
     return (
       <Card className="shadow-card">
         <CardHeader>
-          <CardTitle>Visualizações de Página</CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Visualizações de Página</CardTitle>
+            </div>
+            <div className="flex gap-2">
+              {onPeriodChange && (
+                <PeriodSelector onPeriodChange={onPeriodChange} defaultPeriod={7} />
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-            Nenhuma visualização registrada no período selecionado
+          <div className="h-[400px] flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <p className="text-lg text-muted-foreground">Nenhuma visualização registrada</p>
+              <p className="text-sm text-muted-foreground/70">
+                Total recebido da query: {pageViews?.length || 0}
+              </p>
+              <p className="text-xs text-muted-foreground/50">
+                Verifique os logs do console para mais detalhes
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
