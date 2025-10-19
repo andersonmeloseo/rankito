@@ -22,6 +22,13 @@ export const useAnalytics = ({
 }: UseAnalyticsParams) => {
   
   const getDatesFromPeriod = () => {
+    if (period === "all") {
+      return {
+        startDate: new Date("2020-01-01").toISOString(),
+        endDate: endOfDay(new Date()).toISOString(),
+      };
+    }
+    
     if (period === "custom" && customStartDate && customEndDate) {
       return {
         startDate: startOfDay(customStartDate).toISOString(),
