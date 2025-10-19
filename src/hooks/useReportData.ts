@@ -70,6 +70,23 @@ export interface ReportData {
     referrer: string;
     count: number;
   }>;
+  funnelData: {
+    pageViews: number;
+    interactions: number;
+    conversions: number;
+  };
+  bubbleData: Array<{
+    name: string;
+    pageViews: number;
+    conversions: number;
+    conversionRate: number;
+  }>;
+  radarData: Array<{
+    metric: string;
+    value: number;
+    fullMark: number;
+  }>;
+  insights: string[];
 }
 
 export const useReportData = () => {
@@ -147,6 +164,7 @@ export const useReportData = () => {
         conversionHeatmap[key] = (conversionHeatmap[key] || 0) + 1;
       });
 
+      // Todas as páginas (sem limite)
       const topPages = (pageMetrics || [])
         .map(p => ({
           page: p.page_title || p.page_path || 'Sem título',
@@ -154,8 +172,7 @@ export const useReportData = () => {
           pageViews: Number(p.total_page_views) || 0,
           conversionRate: Number(p.conversion_rate) || 0
         }))
-        .sort((a, b) => b.conversions - a.conversions)
-        .slice(0, 10);
+        .sort((a, b) => b.conversions - a.conversions);
 
       const conversionTypes = conversions?.reduce((acc, conv) => {
         const type = conv.event_type || 'Outros';
@@ -179,6 +196,81 @@ export const useReportData = () => {
         return acc;
       }, [] as Array<{ referrer: string; count: number }>) || [];
 
+      // Dados do funil
+      const funnelData = {
+        pageViews: totalPageViews,
+        interactions: Math.round(totalConversions * 1.5), // Estimativa
+        conversions: totalConversions
+      };
+
+      // Dados para bubble chart (top 20 páginas)
+      const bubbleData = topPages.slice(0, 20).map(p => ({
+        name: p.page.length > 30 ? p.page.substring(0, 30) + '...' : p.page,
+        pageViews: p.pageViews,
+        conversions: p.conversions,
+        conversionRate: p.conversionRate
+      }));
+
+      // Dados para radar chart
+      const avgConversionRate = topPages.reduce((sum, p) => sum + p.conversionRate, 0) / Math.max(topPages.length, 1);
+      const maxPageViews = Math.max(...topPages.map(p => p.pageViews), 1);
+      const maxConversions = Math.max(...topPages.map(p => p.conversions), 1);
+      
+      const radarData = [
+        { 
+          metric: 'Volume de Tráfego', 
+          value: Math.min((totalPageViews / (maxPageViews * 0.1)) * 100, 100),
+          fullMark: 100 
+        },
+        { 
+          metric: 'Taxa de Conversão', 
+          value: Math.min(conversionRate * 10, 100),
+          fullMark: 100 
+        },
+        { 
+          metric: 'Engajamento', 
+          value: Math.min((totalConversions / (maxConversions * 0.1)) * 100, 100),
+          fullMark: 100 
+        },
+        { 
+          metric: 'Diversidade de Páginas', 
+          value: Math.min((topPages.length / 50) * 100, 100),
+          fullMark: 100 
+        },
+        { 
+          metric: 'Consistência', 
+          value: Math.min((avgConversionRate / conversionRate) * 100, 100),
+          fullMark: 100 
+        }
+      ];
+
+      // Gera insights automáticos
+      const insights: string[] = [];
+      
+      if (conversionRate > 5) {
+        insights.push(`✨ Taxa de conversão acima da média (${conversionRate.toFixed(2)}%)`);
+      } else if (conversionRate < 2) {
+        insights.push(`⚠️ Taxa de conversão baixa (${conversionRate.toFixed(2)}%) - Considere otimizar CTAs`);
+      }
+
+      if (totalConversions > 100) {
+        insights.push(`🎯 Volume saudável de conversões (${totalConversions})`);
+      }
+
+      const topPerformer = topPages[0];
+      if (topPerformer && topPerformer.conversionRate > avgConversionRate * 1.5) {
+        insights.push(`🏆 Página destaque: "${topPerformer.page}" com ${topPerformer.conversionRate.toFixed(1)}% de conversão`);
+      }
+
+      const lowPerformers = topPages.filter(p => p.conversionRate < avgConversionRate * 0.5).length;
+      if (lowPerformers > topPages.length * 0.3) {
+        insights.push(`📉 ${lowPerformers} páginas com performance abaixo da média - Oportunidade de melhoria`);
+      }
+
+      if (topPages.length > 20) {
+        insights.push(`📚 Portfólio diversificado com ${topPages.length} páginas ativas`);
+      }
+
       const data: ReportData = {
         period: {
           start: format(startDate, 'dd/MM/yyyy'),
@@ -195,7 +287,11 @@ export const useReportData = () => {
         conversionHeatmap,
         topPages,
         conversionTypes,
-        referrers: referrers.sort((a, b) => b.count - a.count).slice(0, 10)
+        referrers: referrers.sort((a, b) => b.count - a.count).slice(0, 10),
+        funnelData,
+        bubbleData,
+        radarData,
+        insights
       };
 
       if (financialConfig) {

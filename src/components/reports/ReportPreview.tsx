@@ -5,7 +5,11 @@ import { MetricCard } from "./MetricCard";
 import { ComparisonMetricCard } from "./ComparisonMetricCard";
 import { ComparisonInsights } from "./ComparisonInsights";
 import { ConversionHeatmapChart } from "@/components/analytics/ConversionHeatmapChart";
-import { TrendingUp, Eye, Target, DollarSign } from "lucide-react";
+import { ConversionFunnelChart } from "./ConversionFunnelChart";
+import { BubbleChart } from "./BubbleChart";
+import { GaugeChart } from "./GaugeChart";
+import { RadarChart } from "./RadarChart";
+import { TrendingUp, Eye, Target, DollarSign, Lightbulb } from "lucide-react";
 import { ReportData } from "@/hooks/useReportData";
 import { ReportStyle } from "./ReportStyleConfigurator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -50,6 +54,52 @@ export const ReportPreview = ({
       <CardContent className="space-y-8">
         {/* Insights de Comparação */}
         {reportData.comparison && <ComparisonInsights reportData={reportData} />}
+
+        {/* Insights Automáticos */}
+        {reportData.insights && reportData.insights.length > 0 && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <Lightbulb className="h-5 w-5" />
+            <AlertDescription>
+              <div className="font-semibold mb-2">💡 Insights Automáticos</div>
+              <ul className="space-y-1">
+                {reportData.insights.map((insight, idx) => (
+                  <li key={idx} className="text-sm flex items-start gap-2">
+                    <span className="text-primary shrink-0">•</span>
+                    <span>{insight}</span>
+                  </li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Gauge Charts - Dashboard Executivo */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">📊 Dashboard Executivo</h3>
+          <div className="grid gap-4 md:grid-cols-3">
+            <GaugeChart
+              value={reportData.summary.conversionRate}
+              max={20}
+              title="Taxa de Conversão"
+              subtitle="Meta: 10-20%"
+              unit="%"
+            />
+            <GaugeChart
+              value={Math.min((reportData.summary.totalConversions / 100) * 100, 100)}
+              max={100}
+              title="Volume de Conversões"
+              subtitle={`${reportData.summary.totalConversions} conversões`}
+              unit="%"
+            />
+            <GaugeChart
+              value={reportData.summary.averageROI > 0 ? Math.min(reportData.summary.averageROI, 100) : 0}
+              max={100}
+              title="ROI Médio"
+              subtitle="Retorno sobre investimento"
+              unit="%"
+            />
+          </div>
+        </div>
 
         {/* Cards de Métricas */}
         {reportData.comparison ? (
@@ -166,6 +216,11 @@ export const ReportPreview = ({
           </Alert>
         )}
 
+        {/* Funil de Conversão */}
+        {includeConversions && reportData.funnelData && (
+          <ConversionFunnelChart data={reportData.funnelData} />
+        )}
+
         {/* Gráfico Combo - Conversões vs Page Views */}
         {includeConversions && includePageViews && reportData.pageViewsTimeline.length > 0 && (
           <Card className="shadow-lg border-border/50">
@@ -244,6 +299,16 @@ export const ReportPreview = ({
           />
         )}
 
+        {/* Análise de Bolhas */}
+        {includeConversions && includePageViews && reportData.bubbleData && reportData.bubbleData.length > 0 && (
+          <BubbleChart data={reportData.bubbleData} />
+        )}
+
+        {/* Radar Chart */}
+        {includeConversions && reportData.radarData && reportData.radarData.length > 0 && (
+          <RadarChart data={reportData.radarData} />
+        )}
+
         {/* Gráfico de Comparação de Períodos (se ativado) */}
         {reportData.comparison && reportData.previousConversionsTimeline && includeConversions && (
           <div>
@@ -285,41 +350,56 @@ export const ReportPreview = ({
           </div>
         )}
 
-        {/* Tabela de Top Páginas */}
+        {/* Tabela de TODAS as Páginas */}
         {includeTopPages && reportData.topPages.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold mb-4">🏆 Top 10 Páginas que Mais Convertem</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              🏆 Todas as Páginas ({reportData.topPages.length})
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Ranking completo ordenado por conversões
+            </p>
             <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Página</TableHead>
-                    <TableHead className="text-right">Conversões</TableHead>
-                    <TableHead className="text-right">Page Views</TableHead>
-                    <TableHead className="text-right">Taxa</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reportData.topPages.map((page, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium max-w-[300px] truncate">
-                        {page.page}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {page.conversions}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {page.pageViews.toLocaleString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className="font-semibold" style={{ color: style.customColors.primary }}>
-                          {page.conversionRate.toFixed(2)}%
-                        </span>
-                      </TableCell>
+              <div className="max-h-[600px] overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead>Página</TableHead>
+                      <TableHead className="text-right">Conversões</TableHead>
+                      <TableHead className="text-right">Page Views</TableHead>
+                      <TableHead className="text-right">Taxa</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {reportData.topPages.map((page, i) => (
+                      <TableRow key={i} className={i < 3 ? 'bg-primary/5' : ''}>
+                        <TableCell className="font-mono text-xs text-muted-foreground">
+                          {i + 1}
+                        </TableCell>
+                        <TableCell className="font-medium max-w-[400px] truncate" title={page.page}>
+                          {page.page}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {page.conversions}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {page.pageViews.toLocaleString('pt-BR')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className={
+                            page.conversionRate > 10 ? 'font-bold text-green-600' :
+                            page.conversionRate > 5 ? 'font-semibold text-yellow-600' :
+                            'text-red-600'
+                          }>
+                            {page.conversionRate.toFixed(2)}%
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </div>
         )}
