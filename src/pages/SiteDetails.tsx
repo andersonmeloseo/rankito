@@ -208,32 +208,55 @@ const SiteDetails = () => {
         siteId,
         startDate: pageViewsPeriod.startDate,
         endDate: pageViewsPeriod.endDate,
-        startDateTime: `${pageViewsPeriod.startDate}T00:00:00Z`,
-        endDateTime: `${pageViewsPeriod.endDate}T23:59:59Z`
+        startDateTime: `${pageViewsPeriod.startDate}T00:00:00`,
+        endDateTime: `${pageViewsPeriod.endDate}T23:59:59`
       });
+      
+      // Verificar autenticação
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('❌ Usuário não autenticado');
+        throw new Error('Usuário não autenticado');
+      }
       
       const { data, error } = await supabase
         .from("rank_rent_conversions")
         .select("*")
         .eq("site_id", siteId)
         .eq("event_type", "page_view")
-        .gte("created_at", `${pageViewsPeriod.startDate}T00:00:00Z`)
-        .lte("created_at", `${pageViewsPeriod.endDate}T23:59:59Z`)
+        .gte("created_at", `${pageViewsPeriod.startDate}T00:00:00`)
+        .lte("created_at", `${pageViewsPeriod.endDate}T23:59:59`)
         .order("created_at", { ascending: false });
       
       console.log('📊 Page views result:', { 
         data, 
         error, 
         count: data?.length,
-        firstRecord: data?.[0]?.created_at,
-        lastRecord: data?.[data.length - 1]?.created_at
+        sampleData: data?.[0],
       });
-        
-      if (error) throw error;
+      
+      if (error) {
+        console.error('❌ Error fetching page views:', error);
+        throw error;
+      }
+      
       return data || [];
     },
     enabled: !!siteId,
+    staleTime: 30000, // Cache de 30 segundos
   });
+  
+  // Handler para mudança de período com invalidação de cache
+  const handlePageViewsPeriodChange = (startDate: string, endDate: string) => {
+    console.log('🔄 Mudando período:', { startDate, endDate });
+    
+    // Limpar cache antes de mudar período
+    queryClient.invalidateQueries({ 
+      queryKey: ["page-views-detailed", siteId] 
+    });
+    
+    setPageViewsPeriod({ startDate, endDate });
+  };
   
   // Analytics hook
   const analyticsData = useAnalytics({
@@ -1109,14 +1132,28 @@ const SiteDetails = () => {
                   isLoading={analyticsData.isLoading}
                 />
                 
-                <PageViewsTable 
-                  pageViews={pageViewsData || []} 
-                  isLoading={pageViewsLoading}
-                  siteId={siteId || ""}
-                  onPeriodChange={(startDate, endDate) => {
-                    setPageViewsPeriod({ startDate, endDate });
-                  }}
-                />
+                <div className="space-y-4">
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={() => {
+                        queryClient.invalidateQueries({ queryKey: ["page-views-detailed"] });
+                        refetchPageViews();
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Atualizar
+                    </Button>
+                  </div>
+                  
+                  <PageViewsTable 
+                    pageViews={pageViewsData || []} 
+                    isLoading={pageViewsLoading}
+                    siteId={siteId || ""}
+                    onPeriodChange={handlePageViewsPeriodChange}
+                  />
+                </div>
               </TabsContent>
             </Tabs>
           </TabsContent>

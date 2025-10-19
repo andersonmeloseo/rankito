@@ -4,11 +4,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Search, Smartphone, Monitor, Tablet, Chrome, Globe, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react";
+import { Download, Search, Smartphone, Monitor, Tablet, Chrome, Globe, ArrowUpDown, ArrowUp, ArrowDown, X, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PeriodSelector } from "./PeriodSelector";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PageViewsTableProps {
   pageViews: any[];
@@ -25,6 +26,58 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
     siteId,
     firstRecord: pageViews?.[0],
   });
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle>Visualizações de Página</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mr-3" />
+            <span className="text-muted-foreground">Carregando visualizações...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Empty state with alert
+  if (!pageViews || pageViews.length === 0) {
+    return (
+      <Card className="shadow-card">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Visualizações de Página</CardTitle>
+            </div>
+            <div className="flex gap-2">
+              {onPeriodChange && (
+                <PeriodSelector onPeriodChange={onPeriodChange} defaultPeriod={7} />
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Nenhum dado encontrado</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>Não há visualizações registradas para este período.</p>
+              <p className="text-xs text-muted-foreground">
+                Total recebido da query: {pageViews?.length || 0}
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                Verifique se o plugin está instalado e configurado corretamente, ou tente outro período.
+              </p>
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -228,53 +281,6 @@ export const PageViewsTable = ({ pageViews, isLoading, siteId, onPeriodChange }:
       description: `${filteredPageViews.length} visualizações foram exportadas para CSV`,
     });
   };
-
-  if (isLoading) {
-    return (
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle>Visualizações de Página</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[400px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!pageViews || pageViews.length === 0) {
-    return (
-      <Card className="shadow-card">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Visualizações de Página</CardTitle>
-            </div>
-            <div className="flex gap-2">
-              {onPeriodChange && (
-                <PeriodSelector onPeriodChange={onPeriodChange} defaultPeriod={7} />
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[400px] flex items-center justify-center">
-            <div className="text-center space-y-2">
-              <p className="text-lg text-muted-foreground">Nenhuma visualização registrada</p>
-              <p className="text-sm text-muted-foreground/70">
-                Total recebido da query: {pageViews?.length || 0}
-              </p>
-              <p className="text-xs text-muted-foreground/50">
-                Verifique os logs do console para mais detalhes
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card className="shadow-card">
