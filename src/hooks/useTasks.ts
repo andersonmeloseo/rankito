@@ -24,6 +24,7 @@ interface TaskFilters {
   status?: string;
   priority?: string;
   type?: string;
+  dealId?: string;
 }
 
 export const useTasks = (userId: string, filters?: TaskFilters) => {
@@ -48,6 +49,10 @@ export const useTasks = (userId: string, filters?: TaskFilters) => {
 
       if (filters?.type) {
         query = query.eq('type', filters.type);
+      }
+
+      if (filters?.dealId) {
+        query = query.eq('deal_id', filters.dealId);
       }
 
       const { data, error } = await query;

@@ -10,6 +10,7 @@ import { ptBR } from "date-fns/locale";
 interface DealCardProps {
   deal: Deal;
   onDelete: (id: string) => void;
+  onOpenDetails: (deal: Deal) => void;
 }
 
 const sourceLabels: Record<string, string> = {
@@ -27,9 +28,12 @@ const probabilityColor = (prob: number) => {
   return "text-red-600";
 };
 
-export const DealCard = ({ deal, onDelete }: DealCardProps) => {
+export const DealCard = ({ deal, onDelete, onOpenDetails }: DealCardProps) => {
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing">
+    <Card 
+      className="hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => onOpenDetails(deal)}
+    >
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-between items-start">
           <div className="flex-1">
@@ -40,12 +44,23 @@ export const DealCard = ({ deal, onDelete }: DealCardProps) => {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onDelete(deal.id)} className="text-destructive">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(deal.id);
+                }}
+                className="text-destructive"
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Deletar
               </DropdownMenuItem>

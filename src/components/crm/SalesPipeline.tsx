@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDeals } from "@/hooks/useDeals";
+import { useDeals, Deal } from "@/hooks/useDeals";
 import { usePipelineStages } from "@/hooks/usePipelineStages";
 import { DndContext, DragEndEvent, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -10,14 +10,22 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { DealCard } from "./cards/DealCard";
 import { CreateDealDialog } from "./dialogs/CreateDealDialog";
-import { Deal } from "@/hooks/useDeals";
+import { DealDetailsDialog } from "./dialogs/DealDetailsDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SalesPipelineProps {
   userId: string;
 }
 
-const SortableDealCard = ({ deal, onDelete }: { deal: Deal; onDelete: (id: string) => void }) => {
+const SortableDealCard = ({ 
+  deal, 
+  onDelete, 
+  onOpenDetails 
+}: { 
+  deal: Deal; 
+  onDelete: (id: string) => void;
+  onOpenDetails: (deal: Deal) => void;
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: deal.id,
   });
@@ -30,7 +38,7 @@ const SortableDealCard = ({ deal, onDelete }: { deal: Deal; onDelete: (id: strin
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <DealCard deal={deal} onDelete={onDelete} />
+      <DealCard deal={deal} onDelete={onDelete} onOpenDetails={onOpenDetails} />
     </div>
   );
 };
@@ -41,6 +49,8 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedStage, setSelectedStage] = useState<"lead" | "contact" | "proposal" | "negotiation" | "won" | "lost">("lead");
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -123,7 +133,15 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
                     <ScrollArea className="h-[600px] pr-2">
                       <div className="space-y-2">
                         {stageDeals.map((deal) => (
-                          <SortableDealCard key={deal.id} deal={deal} onDelete={deleteDeal} />
+                          <SortableDealCard 
+                            key={deal.id} 
+                            deal={deal} 
+                            onDelete={deleteDeal}
+                            onOpenDetails={(deal) => {
+                              setSelectedDeal(deal);
+                              setDetailsDialogOpen(true);
+                            }}
+                          />
                         ))}
                         {stageDeals.length === 0 && (
                           <div className="text-center py-8 text-sm text-muted-foreground">Nenhum deal</div>
@@ -137,10 +155,17 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
           })}
         </div>
 
-        <DragOverlay>{activeDeal ? <DealCard deal={activeDeal} onDelete={() => {}} /> : null}</DragOverlay>
+        <DragOverlay>{activeDeal ? <DealCard deal={activeDeal} onDelete={() => {}} onOpenDetails={() => {}} /> : null}</DragOverlay>
       </DndContext>
 
       <CreateDealDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} userId={userId} initialStage={selectedStage} />
+      
+      <DealDetailsDialog
+        deal={selectedDeal}
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        userId={userId}
+      />
     </div>
   );
 };

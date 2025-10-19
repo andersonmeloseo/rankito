@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useDeals } from "@/hooks/useDeals";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +23,7 @@ const taskSchema = z.object({
   priority: z.enum(["low", "medium", "high", "urgent"]),
   due_date: z.date(),
   due_time: z.string().optional(),
+  deal_id: z.string().optional(),
 });
 
 type TaskFormData = z.infer<typeof taskSchema>;
@@ -30,10 +32,12 @@ interface CreateTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userId: string;
+  initialDealId?: string;
 }
 
-export const CreateTaskDialog = ({ open, onOpenChange, userId }: CreateTaskDialogProps) => {
+export const CreateTaskDialog = ({ open, onOpenChange, userId, initialDealId }: CreateTaskDialogProps) => {
   const { createTask } = useTasks(userId);
+  const { deals } = useDeals(userId);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<TaskFormData>({
@@ -44,6 +48,7 @@ export const CreateTaskDialog = ({ open, onOpenChange, userId }: CreateTaskDialo
       type: "call",
       priority: "medium",
       due_time: "09:00",
+      deal_id: initialDealId || "",
     },
   });
 
@@ -64,7 +69,7 @@ export const CreateTaskDialog = ({ open, onOpenChange, userId }: CreateTaskDialo
         priority: data.priority,
         due_date: dueDateTime.toISOString(),
         status: "pending",
-        deal_id: null,
+        deal_id: data.deal_id || null,
         client_id: null,
         outcome: null,
         notes: null,
@@ -215,6 +220,32 @@ export const CreateTaskDialog = ({ open, onOpenChange, userId }: CreateTaskDialo
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="deal_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Deal Relacionado (opcional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um deal" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Nenhum</SelectItem>
+                      {deals?.map((deal) => (
+                        <SelectItem key={deal.id} value={deal.id}>
+                          {deal.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
