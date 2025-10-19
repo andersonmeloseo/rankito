@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePipelineStages } from "@/hooks/usePipelineStages";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, GripVertical, Trash2, Palette } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
@@ -12,6 +14,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { PipelineStage } from "@/hooks/usePipelineStages";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface PipelineSettingsProps {
   userId: string;
@@ -102,6 +107,7 @@ const SortableStageItem = ({ stage, onUpdate, onDelete }: { stage: PipelineStage
 };
 
 export const PipelineSettings = ({ userId }: PipelineSettingsProps) => {
+  const queryClient = useQueryClient();
   const { stages, isLoading, createStage, updateStage, deleteStage, reorderStages } = usePipelineStages(userId);
   const [newStageKey, setNewStageKey] = useState("");
   const [newStageLabel, setNewStageLabel] = useState("");
@@ -109,6 +115,44 @@ export const PipelineSettings = ({ userId }: PipelineSettingsProps) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+
+  // Criar estágios padrão se não existirem
+  useEffect(() => {
+    if (!isLoading && stages && stages.length === 0 && userId) {
+      const createDefaultStages = async () => {
+        try {
+          const defaultStages = [
+            { stage_key: 'lead', label: 'Lead', color: 'bg-slate-100', display_order: 1, is_system: true },
+            { stage_key: 'contact', label: 'Contato', color: 'bg-blue-100', display_order: 2, is_system: true },
+            { stage_key: 'proposal', label: 'Proposta', color: 'bg-purple-100', display_order: 3, is_system: true },
+            { stage_key: 'negotiation', label: 'Negociação', color: 'bg-yellow-100', display_order: 4, is_system: true },
+            { stage_key: 'won', label: 'Ganho', color: 'bg-green-100', display_order: 5, is_system: true },
+            { stage_key: 'lost', label: 'Perdido', color: 'bg-red-100', display_order: 6, is_system: true },
+          ];
+
+          const stagesToInsert = defaultStages.map(stage => ({
+            ...stage,
+            user_id: userId,
+            is_active: true,
+          }));
+
+          const { error } = await supabase
+            .from('crm_pipeline_stages')
+            .insert(stagesToInsert);
+          
+          if (error) throw error;
+          
+          queryClient.invalidateQueries({ queryKey: ["pipelineStages", userId] });
+          toast.success("Estágios padrão criados com sucesso!");
+        } catch (error: any) {
+          console.error("Erro ao criar estágios padrão:", error);
+          toast.error("Erro ao criar estágios padrão: " + error.message);
+        }
+      };
+
+      createDefaultStages();
+    }
+  }, [isLoading, stages, userId, queryClient]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -150,8 +194,37 @@ export const PipelineSettings = ({ userId }: PipelineSettingsProps) => {
     );
   };
 
+  if (!userId) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Erro</CardTitle>
+          <CardDescription>Usuário não identificado. Faça login novamente.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   if (isLoading) {
-    return <div className="text-center py-12">Carregando configurações...</div>;
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Estágios do Pipeline</CardTitle>
+              <CardDescription>Carregando configurações...</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -159,8 +232,11 @@ export const PipelineSettings = ({ userId }: PipelineSettingsProps) => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Estágios do Pipeline</CardTitle>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <CardTitle>Estágios do Pipeline</CardTitle>
+                <Badge variant="secondary">{stages?.length || 0} estágios</Badge>
+              </div>
               <CardDescription>Configure os estágios do seu funil de vendas. Arraste para reordenar.</CardDescription>
             </div>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -216,15 +292,21 @@ export const PipelineSettings = ({ userId }: PipelineSettingsProps) => {
           </div>
         </CardHeader>
         <CardContent>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={stages?.map((s) => s.id) || []} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
-                {stages?.map((stage) => (
-                  <SortableStageItem key={stage.id} stage={stage} onUpdate={updateStage} onDelete={deleteStage} />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+          {!stages || stages.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Nenhum estágio encontrado. Criando estágios padrão...</p>
+            </div>
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={stages?.map((s) => s.id) || []} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {stages?.map((stage) => (
+                    <SortableStageItem key={stage.id} stage={stage} onUpdate={updateStage} onDelete={deleteStage} />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
 
           <div className="mt-6 p-4 bg-muted rounded-lg">
             <p className="text-sm text-muted-foreground">
