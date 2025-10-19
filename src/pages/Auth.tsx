@@ -181,14 +181,14 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-primary/10">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/10 to-accent/10">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-primary/10">
       <div className="flex-1 flex items-center justify-center px-4 py-12 md:py-16">
         <Card className="w-full max-w-md shadow-xl my-8">
           <CardHeader className="space-y-4">

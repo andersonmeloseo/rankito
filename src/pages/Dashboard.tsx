@@ -121,7 +121,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/10 to-accent/10">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-primary/10">
       {isSuperAdmin && <SuperAdminBanner currentView="client" />}
       <Header showSubtitle={false} />
       <div className="flex-1">

@@ -94,14 +94,14 @@ const EndClientPortal = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-primary/10">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/10 to-accent/10">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-primary/10">
       {isSuperAdmin && <SuperAdminBanner currentView="end_client" />}
       <Header showSubtitle={false} />
       <div className="flex-1">
