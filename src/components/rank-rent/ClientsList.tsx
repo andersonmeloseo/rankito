@@ -14,6 +14,7 @@ import { ClientsTable } from "./ClientsTable";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface ClientsListProps {
   userId: string;
@@ -278,26 +279,32 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
         </div>
       )}
 
-      {/* Clients Table */}
-      {filteredClients && filteredClients.length > 0 ? (
-        <ClientsTable
-          clients={filteredClients}
-          onEdit={(client) => {
-            setSelectedClient(client);
-            setShowEditClient(true);
-          }}
-          onDelete={(client) => {
-            setSelectedClient(client);
-            setShowDeleteClient(true);
-          }}
-          onViewDetails={(client) => {
-            setSelectedClient(client);
-            setShowClientDetails(true);
-          }}
-          onViewReport={(token) => window.open(`/report/${token}`, '_blank')}
-          onCopyLink={copyReportLink}
-        />
-      ) : (
+        {/* Clients Table */}
+        {filteredClients && filteredClients.length > 0 ? (
+          <Card className="shadow-card">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <ClientsTable
+                  clients={filteredClients}
+                  onEdit={(client) => {
+                    setSelectedClient(client);
+                    setShowEditClient(true);
+                  }}
+                  onDelete={(client) => {
+                    setSelectedClient(client);
+                    setShowDeleteClient(true);
+                  }}
+                  onViewDetails={(client) => {
+                    setSelectedClient(client);
+                    setShowClientDetails(true);
+                  }}
+                  onViewReport={(token) => window.open(`/report/${token}`, '_blank')}
+                  onCopyLink={copyReportLink}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
         <div className="text-center py-12 border rounded-lg">
           <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-semibold mb-2">Nenhum cliente encontrado</h3>
