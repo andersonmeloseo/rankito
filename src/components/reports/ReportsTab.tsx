@@ -27,6 +27,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   const [includeROI, setIncludeROI] = useState(true);
   const [includeTopPages, setIncludeTopPages] = useState(true);
   const [includeReferrers, setIncludeReferrers] = useState(false);
+  const [enableComparison, setEnableComparison] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [style, setStyle] = useState<ReportStyle>({
@@ -40,7 +41,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
 
   const handleGeneratePreview = async () => {
     const periodDays = period === 'all' ? -1 : parseInt(period);
-    await fetchReportData(siteId, periodDays);
+    await fetchReportData(siteId, periodDays, enableComparison);
     setShowPreview(true);
   };
 
@@ -233,6 +234,22 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
                 <Checkbox checked={includeReferrers} onCheckedChange={(c) => setIncludeReferrers(!!c)} />
                 <span className="text-sm">Performance por Referrer</span>
               </label>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border">
+            <Checkbox 
+              id="enable-comparison"
+              checked={enableComparison}
+              onCheckedChange={(c) => setEnableComparison(!!c)}
+            />
+            <div className="flex-1">
+              <label htmlFor="enable-comparison" className="font-medium cursor-pointer text-sm">
+                Comparar com período anterior
+              </label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Mostra a variação em relação ao período anterior de mesma duração
+              </p>
             </div>
           </div>
         </CardContent>

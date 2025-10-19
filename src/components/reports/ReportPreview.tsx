@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { MetricCard } from "./MetricCard";
+import { ComparisonMetricCard } from "./ComparisonMetricCard";
+import { ComparisonInsights } from "./ComparisonInsights";
 import { TrendingUp, Eye, Target } from "lucide-react";
 import { ReportData } from "@/hooks/useReportData";
 import { ReportStyle } from "./ReportStyleConfigurator";
@@ -36,59 +38,135 @@ export const ReportPreview = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-8">
+        {/* Insights de Comparação */}
+        {reportData.comparison && <ComparisonInsights reportData={reportData} />}
+
         {/* Cards de Métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {includeConversions && (
-            <MetricCard
-              title="Total de Conversões"
-              value={reportData.summary.totalConversions}
-              icon={Target}
-              color={style.customColors.primary}
+        {reportData.comparison ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {includeConversions && (
+              <ComparisonMetricCard
+                title="Total de Conversões"
+                currentValue={reportData.summary.totalConversions}
+                previousValue={reportData.previousSummary?.totalConversions}
+                changePercentage={reportData.comparison.conversionsChange}
+                icon={Target}
+                color={style.customColors.primary}
+              />
+            )}
+            {includePageViews && (
+              <ComparisonMetricCard
+                title="Total de Page Views"
+                currentValue={reportData.summary.totalPageViews.toLocaleString('pt-BR')}
+                previousValue={reportData.previousSummary?.totalPageViews.toLocaleString('pt-BR')}
+                changePercentage={reportData.comparison.pageViewsChange}
+                icon={Eye}
+                color={style.customColors.secondary}
+              />
+            )}
+            <ComparisonMetricCard
+              title="Taxa de Conversão"
+              currentValue={`${reportData.summary.conversionRate.toFixed(2)}%`}
+              previousValue={reportData.previousSummary ? `${reportData.previousSummary.conversionRate.toFixed(2)}%` : undefined}
+              changePercentage={reportData.comparison.conversionRateChange}
+              icon={TrendingUp}
+              color={style.customColors.accent}
             />
-          )}
-          {includePageViews && (
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {includeConversions && (
+              <MetricCard
+                title="Total de Conversões"
+                value={reportData.summary.totalConversions}
+                icon={Target}
+                color={style.customColors.primary}
+              />
+            )}
+            {includePageViews && (
+              <MetricCard
+                title="Total de Page Views"
+                value={reportData.summary.totalPageViews.toLocaleString('pt-BR')}
+                icon={Eye}
+                color={style.customColors.secondary}
+              />
+            )}
             <MetricCard
-              title="Total de Page Views"
-              value={reportData.summary.totalPageViews.toLocaleString('pt-BR')}
-              icon={Eye}
-              color={style.customColors.secondary}
+              title="Taxa de Conversão"
+              value={`${reportData.summary.conversionRate.toFixed(2)}%`}
+              icon={TrendingUp}
+              color={style.customColors.accent}
             />
-          )}
-          <MetricCard
-            title="Taxa de Conversão"
-            value={`${reportData.summary.conversionRate.toFixed(2)}%`}
-            icon={TrendingUp}
-            color={style.customColors.accent}
-          />
-        </div>
+          </div>
+        )}
 
         {/* Gráfico de Linha - Conversões ao Longo do Tempo */}
         {includeConversions && reportData.conversionsTimeline.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">📈 Conversões ao Longo do Tempo</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={reportData.conversionsTimeline}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="date" className="text-xs" />
-                <YAxis className="text-xs" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  stroke={style.customColors.primary}
-                  strokeWidth={3}
-                  dot={{ fill: style.customColors.primary, r: 4 }}
-                  name="Conversões"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          reportData.comparison && reportData.previousConversionsTimeline ? (
+            <div>
+              <h3 className="text-lg font-semibold mb-4">📊 Comparação: Período Atual vs Anterior</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    data={reportData.conversionsTimeline}
+                    dataKey="count"
+                    stroke={style.customColors.primary}
+                    strokeWidth={3}
+                    dot={{ fill: style.customColors.primary, r: 4 }}
+                    name="Período Atual"
+                  />
+                  <Line
+                    type="monotone"
+                    data={reportData.previousConversionsTimeline}
+                    dataKey="count"
+                    stroke={style.customColors.secondary}
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ fill: style.customColors.secondary, r: 3 }}
+                    name="Período Anterior"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div>
+              <h3 className="text-lg font-semibold mb-4">📈 Conversões ao Longo do Tempo</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={reportData.conversionsTimeline}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke={style.customColors.primary}
+                    strokeWidth={3}
+                    dot={{ fill: style.customColors.primary, r: 4 }}
+                    name="Conversões"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )
         )}
 
         {/* Tabela de Top Páginas */}

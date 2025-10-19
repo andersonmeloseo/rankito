@@ -8,13 +8,33 @@ export interface ReportData {
     start: string;
     end: string;
   };
+  previousPeriod?: {
+    start: string;
+    end: string;
+  };
   summary: {
     totalConversions: number;
     totalPageViews: number;
     conversionRate: number;
     averageROI: number;
   };
+  previousSummary?: {
+    totalConversions: number;
+    totalPageViews: number;
+    conversionRate: number;
+    averageROI: number;
+  };
+  comparison?: {
+    conversionsChange: number;
+    pageViewsChange: number;
+    conversionRateChange: number;
+    roiChange: number;
+  };
   conversionsTimeline: Array<{
+    date: string;
+    count: number;
+  }>;
+  previousConversionsTimeline?: Array<{
     date: string;
     count: number;
   }>;
@@ -39,7 +59,7 @@ export const useReportData = () => {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
 
-  const fetchReportData = async (siteId: string, periodDays: number) => {
+  const fetchReportData = async (siteId: string, periodDays: number, enableComparison: boolean = false) => {
     setLoading(true);
     try {
       const endDate = new Date();
@@ -134,6 +154,72 @@ export const useReportData = () => {
         conversionTypes,
         referrers: referrers.sort((a, b) => b.count - a.count).slice(0, 10)
       };
+
+      // Fetch comparison data if enabled
+      if (enableComparison && periodDays !== -1) {
+        const previousEndDate = subDays(startDate, 1);
+        const previousStartDate = subDays(previousEndDate, periodDays);
+
+        // Fetch previous period conversions
+        const { data: previousConversions, error: prevConvError } = await supabase
+          .from('rank_rent_conversions')
+          .select('*')
+          .eq('site_id', siteId)
+          .gte('created_at', previousStartDate.toISOString())
+          .lte('created_at', previousEndDate.toISOString());
+
+        if (prevConvError) throw prevConvError;
+
+        // Process previous period data
+        const prevTotalConversions = previousConversions?.length || 0;
+        const prevTotalPageViews = pageMetrics?.reduce((sum, p) => sum + (Number(p.total_page_views) || 0), 0) || 0;
+        const prevConversionRate = prevTotalPageViews > 0 ? (prevTotalConversions / prevTotalPageViews) * 100 : 0;
+
+        // Calculate percentage changes
+        const conversionsChange = prevTotalConversions > 0
+          ? ((totalConversions - prevTotalConversions) / prevTotalConversions) * 100
+          : totalConversions > 0 ? 100 : 0;
+
+        const pageViewsChange = prevTotalPageViews > 0
+          ? ((totalPageViews - prevTotalPageViews) / prevTotalPageViews) * 100
+          : totalPageViews > 0 ? 100 : 0;
+
+        const conversionRateChange = conversionRate - prevConversionRate;
+
+        // Group previous conversions by date
+        const prevConversionsByDate = previousConversions?.reduce((acc, conv) => {
+          const date = format(new Date(conv.created_at), 'dd/MM');
+          acc[date] = (acc[date] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>) || {};
+
+        const previousConversionsTimeline = Object.entries(prevConversionsByDate)
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => {
+            const [dayA, monthA] = a.date.split('/').map(Number);
+            const [dayB, monthB] = b.date.split('/').map(Number);
+            return monthA !== monthB ? monthA - monthB : dayA - dayB;
+          });
+
+        // Add comparison data
+        data.previousPeriod = {
+          start: format(previousStartDate, 'dd/MM/yyyy'),
+          end: format(previousEndDate, 'dd/MM/yyyy')
+        };
+        data.previousSummary = {
+          totalConversions: prevTotalConversions,
+          totalPageViews: prevTotalPageViews,
+          conversionRate: prevConversionRate,
+          averageROI: 0
+        };
+        data.comparison = {
+          conversionsChange,
+          pageViewsChange,
+          conversionRateChange,
+          roiChange: 0
+        };
+        data.previousConversionsTimeline = previousConversionsTimeline;
+      }
 
       setReportData(data);
       
