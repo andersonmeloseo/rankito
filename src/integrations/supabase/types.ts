@@ -1196,6 +1196,7 @@ export type Database = {
       }
       rank_rent_metrics: {
         Row: {
+          client_id: string | null
           client_name: string | null
           conversion_rate: number | null
           created_at: string | null
@@ -1215,7 +1216,22 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_sites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_client_metrics"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_sites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rank_rent_page_metrics: {
         Row: {
