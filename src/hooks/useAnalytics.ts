@@ -269,23 +269,31 @@ export const useAnalytics = ({
 
   // Lista de page views separada
   const { data: pageViewsList, isLoading: pageViewsLoading } = useQuery({
-    queryKey: ["analytics-page-views", siteId, startDate, endDate, device],
+    queryKey: ["analytics-page-views", siteId, period, startDate, endDate, device],
     queryFn: async () => {
       console.log('🔍 PageViewsList Query Debug:', {
         siteId,
         startDate,
         endDate,
         device,
-        periodDays: period
+        periodDays: period,
+        skipDateFilter: period === "all"
       });
 
       let query = supabase
         .from("rank_rent_conversions")
         .select("*")
         .eq("site_id", siteId)
-        .eq("event_type", "page_view")
-        .gte("created_at", startDate)
-        .lte("created_at", endDate)
+        .eq("event_type", "page_view");
+
+      // Aplicar filtros de data APENAS se não for "todo período"
+      if (period !== "all") {
+        query = query
+          .gte("created_at", startDate)
+          .lte("created_at", endDate);
+      }
+
+      query = query
         .order("created_at", { ascending: false })
         .limit(1000);
 
@@ -299,6 +307,7 @@ export const useAnalytics = ({
         dataCount: data?.length || 0,
         error: error?.message,
         firstRecord: data?.[0],
+        lastRecord: data?.[data?.length - 1],
         limitReached: data?.length === 1000
       });
 
