@@ -99,24 +99,57 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
           })}
         </div>
         
-        {/* Insights */}
-        <div className="mt-6 pt-6 border-t space-y-2">
-          <p className="text-sm font-semibold">💡 Insights:</p>
-          {interactionRate < 50 && (
-            <p className="text-sm text-muted-foreground">
-              • Apenas {interactionRate.toFixed(1)}% dos visitantes interagem com o site
-            </p>
-          )}
-          {conversionRate < 20 && data.interactions > 0 && (
-            <p className="text-sm text-muted-foreground">
-              • Taxa de conversão de interações baixa ({conversionRate.toFixed(1)}%)
-            </p>
-          )}
-          {overallRate < 5 && (
-            <p className="text-sm text-muted-foreground">
-              • Taxa de conversão geral abaixo de 5% - oportunidade de otimização
-            </p>
-          )}
+        {/* Insights e Legendas */}
+        <div className="mt-6 pt-6 border-t space-y-4">
+          <div>
+            <p className="text-sm font-semibold mb-2">💡 Insight:</p>
+            {overallRate < 5 ? (
+              <p className="text-sm text-muted-foreground">
+                Taxa de conversão geral de {overallRate.toFixed(2)}% indica oportunidade de otimização nos CTAs e jornada do usuário.
+              </p>
+            ) : overallRate < 10 ? (
+              <p className="text-sm text-muted-foreground">
+                Performance saudável com {overallRate.toFixed(2)}% de conversão. Continue otimizando para alcançar 10%+.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Excelente taxa de conversão de {overallRate.toFixed(2)}%! Seu funil está bem otimizado.
+              </p>
+            )}
+          </div>
+
+          <div className="border-t pt-4">
+            <p className="text-sm font-semibold mb-3">📖 Legenda:</p>
+            <div className="space-y-2 text-xs">
+              <div className="flex items-start gap-2">
+                <div className="w-3 h-3 rounded bg-gradient-to-r from-blue-500 to-blue-600 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-medium">Page Views:</span>
+                  <span className="text-muted-foreground ml-1">
+                    Visualizações de página - total de acessos às páginas do seu site
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-3 h-3 rounded bg-gradient-to-r from-purple-500 to-purple-600 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-medium">Interações:</span>
+                  <span className="text-muted-foreground ml-1">
+                    Estimativa de usuários que demonstraram interesse (baseado em conversões × 1.5)
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-3 h-3 rounded bg-gradient-to-r from-green-500 to-green-600 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-medium">Conversões:</span>
+                  <span className="text-muted-foreground ml-1">
+                    Cliques em botões de ação (WhatsApp, telefone, formulários, etc.)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
