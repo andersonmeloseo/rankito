@@ -4,9 +4,11 @@ import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tool
 import { MetricCard } from "./MetricCard";
 import { ComparisonMetricCard } from "./ComparisonMetricCard";
 import { ComparisonInsights } from "./ComparisonInsights";
-import { TrendingUp, Eye, Target } from "lucide-react";
+import { TrendingUp, Eye, Target, DollarSign } from "lucide-react";
 import { ReportData } from "@/hooks/useReportData";
 import { ReportStyle } from "./ReportStyleConfigurator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useReportTranslation, formatCurrency, Currency, ReportLocale } from "@/i18n/reportTranslations";
 
 interface ReportPreviewProps {
   reportName: string;
@@ -16,6 +18,11 @@ interface ReportPreviewProps {
   includePageViews: boolean;
   includeTopPages: boolean;
   includeReferrers: boolean;
+  financialConfig?: {
+    costPerConversion: number;
+    currency: Currency;
+    locale: ReportLocale;
+  };
 }
 
 const COLORS = ['#8b5cf6', '#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
@@ -27,8 +34,10 @@ export const ReportPreview = ({
   includeConversions,
   includePageViews,
   includeTopPages,
-  includeReferrers
+  includeReferrers,
+  financialConfig
 }: ReportPreviewProps) => {
+  const { t } = useReportTranslation(financialConfig?.locale || 'pt-BR');
   return (
     <Card id="report-preview" className="mt-6">
       <CardHeader>
@@ -72,6 +81,26 @@ export const ReportPreview = ({
               icon={TrendingUp}
               color={style.customColors.accent}
             />
+            {reportData.financial && financialConfig && (
+              <ComparisonMetricCard
+                title={t('totalValueGenerated')}
+                currentValue={formatCurrency(
+                  reportData.financial.totalValue,
+                  financialConfig.currency,
+                  financialConfig.locale
+                )}
+                previousValue={reportData.financial.previousTotalValue 
+                  ? formatCurrency(
+                      reportData.financial.previousTotalValue,
+                      financialConfig.currency,
+                      financialConfig.locale
+                    )
+                  : undefined}
+                changePercentage={reportData.financial.valueChange}
+                icon={DollarSign}
+                color={style.customColors.accent}
+              />
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -97,7 +126,43 @@ export const ReportPreview = ({
               icon={TrendingUp}
               color={style.customColors.accent}
             />
+            {reportData.financial && financialConfig && (
+              <MetricCard
+                title={t('totalValueGenerated')}
+                value={formatCurrency(
+                  reportData.financial.totalValue,
+                  financialConfig.currency,
+                  financialConfig.locale
+                )}
+                icon={DollarSign}
+                color={style.customColors.accent}
+              />
+            )}
           </div>
+        )}
+
+        {/* Insight de Economia */}
+        {reportData.financial && financialConfig && (
+          <Alert className="border-green-500 bg-green-50 dark:bg-green-950 dark:border-green-800">
+            <AlertDescription className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <span className="text-green-800 dark:text-green-200">
+                {t('savingsMessage', {
+                  conversions: reportData.summary.totalConversions,
+                  value: formatCurrency(
+                    reportData.financial.totalValue,
+                    financialConfig.currency,
+                    financialConfig.locale
+                  ),
+                  costPer: formatCurrency(
+                    financialConfig.costPerConversion,
+                    financialConfig.currency,
+                    financialConfig.locale
+                  )
+                })}
+              </span>
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Gráfico de Linha - Conversões ao Longo do Tempo */}

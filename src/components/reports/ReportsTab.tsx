@@ -307,6 +307,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
             includePageViews={includePageViews}
             includeTopPages={includeTopPages}
             includeReferrers={includeReferrers}
+            financialConfig={financialConfig}
           />
 
           <Card>
