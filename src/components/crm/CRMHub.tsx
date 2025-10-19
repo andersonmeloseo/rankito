@@ -3,6 +3,7 @@ import { LayoutDashboard, TrendingUp, CheckSquare, Settings } from "lucide-react
 import { SalesPipeline } from "./SalesPipeline";
 import { TasksList } from "./TasksList";
 import { CRMSettings } from "./CRMSettings";
+import { CRMDashboard } from "./dashboard/CRMDashboard";
 
 interface CRMHubProps {
   userId: string;
@@ -39,9 +40,7 @@ export const CRMHub = ({ userId }: CRMHubProps) => {
       </TabsContent>
 
       <TabsContent value="dashboard">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Dashboard CRM em desenvolvimento...</p>
-        </div>
+        <CRMDashboard userId={userId} />
       </TabsContent>
 
       <TabsContent value="settings">
