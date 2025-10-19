@@ -31,6 +31,23 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
     e.preventDefault();
     setLoading(true);
 
+    // Validar se usuário tem role 'client'
+    const { data: userRole, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    if (roleError || !userRole) {
+      toast({
+        title: "Erro de Permissão",
+        description: "Você não tem permissão para cadastrar sites. Entre em contato com o suporte.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const { error } = await supabase.from("rank_rent_sites").insert({
         created_by_user_id: userId,
@@ -65,9 +82,25 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
       });
       onOpenChange(false);
     } catch (error: any) {
+      console.error('❌ Erro ao cadastrar site:', error);
+      
+      let errorMessage = error.message || "Erro ao cadastrar site";
+      
+      // Detectar erro de RLS
+      if (error.message?.includes('row-level security') || 
+          error.message?.includes('policy')) {
+        errorMessage = 'Você não tem permissão para cadastrar sites. Entre em contato com o suporte.';
+      }
+      
+      // Detectar erro de campos obrigatórios
+      if (error.message?.includes('not-null') || 
+          error.message?.includes('required')) {
+        errorMessage = 'Preencha todos os campos obrigatórios.';
+      }
+      
       toast({
         title: "Erro ao cadastrar site",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

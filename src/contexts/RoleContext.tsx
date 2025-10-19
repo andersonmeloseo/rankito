@@ -63,7 +63,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               .eq('user_id', session.user.id)
               .maybeSingle()
               .then(({ data }) => {
-                setRole(data?.role as AppRole || null);
+                const userRole = data?.role as AppRole || null;
+                setRole(userRole);
+                
+                // Log de diagnóstico para usuários sem role
+                if (!userRole) {
+                  console.error('⚠️ USUÁRIO SEM ROLE:', {
+                    userId: session.user.id,
+                    email: session.user.email,
+                    message: 'Este usuário não tem role atribuída. Entre em contato com o suporte.'
+                  });
+                }
               });
           }, 0);
         } else {
