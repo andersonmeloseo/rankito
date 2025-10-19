@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Header } from "@/components/layout/Header";
+
 import { Footer } from "@/components/layout/Footer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Mountain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Session } from "@supabase/supabase-js";
 
@@ -189,10 +189,28 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/10 to-accent/10">
-      <Header showSubtitle={true} />
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl">
-          <CardHeader className="space-y-2">
+          <CardHeader className="space-y-4">
+            {/* Logo e Branding do Rankito */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Mountain className="h-8 w-8 text-primary" />
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full animate-pulse" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    Rankito
+                  </h1>
+                  <p className="text-xs text-muted-foreground">
+                    Gestão de Rank & Rent
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Título da seção de login */}
             <CardTitle className="text-2xl text-center">Acesse sua conta</CardTitle>
             <CardDescription className="text-center">
               Desenvolvido pela GO Everest Marketing
