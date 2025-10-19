@@ -49,7 +49,7 @@ export const SaveReportDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Save className="h-5 w-5" />
-            💾 Salvar Relatório
+            Salvar Relatório
           </DialogTitle>
           <DialogDescription>
             Dê um nome para este relatório para acessá-lo facilmente depois

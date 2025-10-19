@@ -43,6 +43,7 @@ export const useSavedReports = () => {
       const { data, error } = await supabase
         .from('saved_reports')
         .insert([{
+          user_id: user.id,
           site_id: siteId,
           report_name: reportName,
           report_data: reportData as any,
