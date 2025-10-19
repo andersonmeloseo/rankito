@@ -198,10 +198,10 @@ export const SitesList = ({ userId }: SitesListProps) => {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate(`/dashboard/site/${site.id}`)}>
-                <FolderOpen className="w-4 h-4 mr-2" />
-                Ver Detalhes
-              </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/dashboard/site/${site.id}`)}>
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  Entrar no Projeto
+                </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEdit(site)}>
                 <Pencil className="w-4 h-4 mr-2" />
                 Editar Projeto
