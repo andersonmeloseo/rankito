@@ -22,19 +22,19 @@ interface ClientsListProps {
 interface ClientMetric {
   client_id: string;
   client_name: string;
-  email: string;
-  phone: string;
-  company: string;
+  email?: string;
+  phone?: string;
+  company?: string;
   niche?: string;
-  contract_start_date: string;
-  contract_end_date: string;
-  created_at: string;
-  updated_at: string;
-  access_token: string;
-  total_pages_rented: number;
-  total_monthly_value: number;
-  total_page_views: number;
-  total_conversions: number;
+  contract_start_date?: string;
+  contract_end_date?: string;
+  created_at?: string;
+  updated_at?: string;
+  access_token?: string;
+  total_pages_rented?: number;
+  total_monthly_value?: number;
+  total_page_views?: number;
+  total_conversions?: number;
 }
 
 export const ClientsList = ({ userId }: ClientsListProps) => {
@@ -51,13 +51,60 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
   const { data: clients, isLoading } = useQuery<ClientMetric[]>({
     queryKey: ["rank-rent-clients", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rank_rent_client_metrics")
+      // Fetch clients with user filter
+      const { data: clientsData, error: clientsError } = await supabase
+        .from("rank_rent_clients")
         .select("*")
-        .order("total_monthly_value", { ascending: false });
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      return data as ClientMetric[];
+      if (clientsError) throw clientsError;
+
+      // Fetch metrics for each client
+      const clientsWithMetrics = await Promise.all(
+        (clientsData || []).map(async (client) => {
+          const { data: sitesData } = await supabase
+            .from("rank_rent_sites")
+            .select("id, monthly_rent_value")
+            .eq("client_id", client.id)
+            .eq("is_rented", true);
+
+          const { data: pagesData } = await supabase
+            .from("rank_rent_pages")
+            .select("id")
+            .eq("client_id", client.id)
+            .eq("is_rented", true);
+
+          const { data: statsData } = await supabase
+            .from("rank_rent_daily_stats")
+            .select("page_views, conversions")
+            .eq("client_id", client.id);
+
+          const totalMonthlyValue = sitesData?.reduce((sum, site) => sum + Number(site.monthly_rent_value || 0), 0) || 0;
+          const totalPageViews = statsData?.reduce((sum, stat) => sum + Number(stat.page_views || 0), 0) || 0;
+          const totalConversions = statsData?.reduce((sum, stat) => sum + Number(stat.conversions || 0), 0) || 0;
+
+          return {
+            client_id: client.id,
+            client_name: client.name,
+            email: client.email,
+            phone: client.phone,
+            company: client.company,
+            niche: client.niche,
+            contract_start_date: client.contract_start_date,
+            contract_end_date: client.contract_end_date,
+            created_at: client.created_at,
+            updated_at: client.updated_at,
+            access_token: client.access_token,
+            total_pages_rented: pagesData?.length || 0,
+            total_monthly_value: totalMonthlyValue,
+            total_page_views: totalPageViews,
+            total_conversions: totalConversions,
+          };
+        })
+      );
+
+      return clientsWithMetrics.sort((a, b) => b.total_monthly_value - a.total_monthly_value) as ClientMetric[];
     },
     refetchInterval: 30000,
   });

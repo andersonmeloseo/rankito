@@ -4,19 +4,19 @@ import { DollarSign, Users, AlertTriangle, TrendingUp } from "lucide-react";
 interface ClientMetric {
   client_id: string;
   client_name: string;
-  email: string;
-  phone: string;
-  company: string;
+  email?: string;
+  phone?: string;
+  company?: string;
   niche?: string;
-  contract_start_date: string;
-  contract_end_date: string;
-  created_at: string;
-  updated_at: string;
-  access_token: string;
-  total_pages_rented: number;
-  total_monthly_value: number;
-  total_page_views: number;
-  total_conversions: number;
+  contract_start_date?: string;
+  contract_end_date?: string;
+  created_at?: string;
+  updated_at?: string;
+  access_token?: string;
+  total_pages_rented?: number;
+  total_monthly_value?: number;
+  total_page_views?: number;
+  total_conversions?: number;
 }
 
 interface ClientsOverviewCardsProps {
