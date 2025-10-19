@@ -54,7 +54,9 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
       <CardContent>
         <div className="space-y-4">
           {stages.map((stage, index) => {
-            const widthPercentage = maxValue > 0 ? (stage.value / maxValue) * 100 : 0;
+            // Larguras fixas para cada estágio do funil
+            const funnelWidths = [90, 70, 40]; // Page Views, Interações, Conversões
+            const widthPercentage = funnelWidths[index];
             const colors = [
               "from-blue-500 to-blue-600",
               "from-purple-500 to-purple-600",
@@ -79,9 +81,9 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
                     )}
                   </div>
                 </div>
-                <div className="relative h-16 w-full overflow-hidden rounded-lg bg-muted">
+                <div className="relative h-16 w-full overflow-hidden rounded-lg bg-muted flex items-center justify-center">
                   <div
-                    className={`h-full bg-gradient-to-r ${colors[index]} transition-all duration-1000 ease-out flex items-center justify-center text-white font-bold shadow-lg`}
+                    className={`h-full bg-gradient-to-r ${colors[index]} transition-all duration-1000 ease-out flex items-center justify-center text-white font-bold shadow-lg rounded-lg`}
                     style={{ 
                       width: `${widthPercentage}%`,
                       minWidth: stage.value > 0 ? '60px' : '0'
@@ -89,7 +91,7 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
                   >
                     {stage.value > 0 && (
                       <span className="text-sm drop-shadow-lg">
-                        {widthPercentage.toFixed(1)}%
+                        {stage.value.toLocaleString()}
                       </span>
                     )}
                   </div>
