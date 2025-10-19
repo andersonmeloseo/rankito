@@ -224,6 +224,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           includeROI,
           includeTopPages,
           includeReferrers,
+          enableComparison,
           style,
           financialConfig: costPerConversion ? {
             costPerConversion: parseFloat(costPerConversion),

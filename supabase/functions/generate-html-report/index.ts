@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { siteId, reportName, period, includeConversions, includePageViews, includeROI, financialConfig } = await req.json();
+    const { siteId, reportName, period, includeConversions, includePageViews, includeROI, financialConfig, enableComparison, style } = await req.json();
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -20,6 +20,33 @@ Deno.serve(async (req) => {
     const periodDays = parseInt(period) || 30;
     const endDate = new Date();
     const startDate = new Date(endDate.getTime() - periodDays * 24 * 60 * 60 * 1000);
+
+    // Comparison period (if enabled)
+    let previousConversions: any[] = [];
+    let comparisonTimelineData: any[] = [];
+    if (enableComparison) {
+      const previousEndDate = new Date(startDate.getTime() - 1);
+      const previousStartDate = new Date(previousEndDate.getTime() - periodDays * 24 * 60 * 60 * 1000);
+      
+      const { data: prevConv } = await supabase
+        .from('rank_rent_conversions')
+        .select('*')
+        .eq('site_id', siteId)
+        .gte('created_at', previousStartDate.toISOString())
+        .lte('created_at', previousEndDate.toISOString())
+        .order('created_at', { ascending: true });
+      
+      previousConversions = prevConv || [];
+      
+      // Group previous period by date
+      const prevTimelineMap = new Map();
+      previousConversions.forEach(c => {
+        const date = new Date(c.created_at).toLocaleDateString('pt-BR');
+        prevTimelineMap.set(date, (prevTimelineMap.get(date) || 0) + 1);
+      });
+      
+      comparisonTimelineData = Array.from(prevTimelineMap.entries()).map(([date, count]) => ({ date, count }));
+    }
 
     // Fetch site info
     const { data: site } = await supabase
@@ -491,6 +518,18 @@ Deno.serve(async (req) => {
     </div>
     ` : ''}
 
+    ${enableComparison && previousConversions.length > 0 ? `
+    <div class="section">
+      <h2 class="section-title">📊 Comparação: Período Atual vs Anterior</h2>
+      <canvas id="comparisonChart"></canvas>
+      <p style="margin-top: 1rem; color: #6b7280; font-size: 0.875rem;">
+        <strong>Período Atual:</strong> ${totalConversions} conversões • 
+        <strong>Período Anterior:</strong> ${previousConversions.length} conversões • 
+        <strong>Variação:</strong> ${totalConversions > previousConversions.length ? '📈' : '📉'} ${((totalConversions - previousConversions.length) / Math.max(1, previousConversions.length) * 100).toFixed(1)}%
+      </p>
+    </div>
+    ` : ''}
+
     <div class="section">
       <h2 class="section-title">🔥 Mapa de Calor - Conversões por Dia/Hora</h2>
       <div class="heatmap-container">
@@ -524,6 +563,9 @@ Deno.serve(async (req) => {
 
     <div class="section">
       <h2 class="section-title">🏆 Top Páginas</h2>
+      <p style="color: #6b7280; margin-bottom: 1rem; font-size: 0.875rem;">
+        Mostrando as top ${Math.min(50, topPages.length)} páginas de ${Array.from(pageStatsMap.values()).length} total
+      </p>
       <table>
         <thead>
           <tr>
@@ -534,7 +576,7 @@ Deno.serve(async (req) => {
           </tr>
         </thead>
         <tbody>
-          ${topPages.slice(0, 10).map(p => `
+          ${topPages.slice(0, 50).map(p => `
             <tr>
               <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis;">${p.title}</td>
               <td style="text-align: right; font-weight: 600; color: #8b5cf6;">${p.conversions}</td>
@@ -588,7 +630,7 @@ Deno.serve(async (req) => {
           {
             label: 'Conversões',
             data: ${JSON.stringify(timelineValues)},
-            borderColor: '#8b5cf6',
+            borderColor: '${style?.customColors?.primary || '#8b5cf6'}',
             backgroundColor: 'rgba(139, 92, 246, 0.1)',
             tension: 0.4,
             fill: true,
@@ -597,7 +639,7 @@ Deno.serve(async (req) => {
           {
             label: 'Page Views',
             data: ${JSON.stringify(pageViewsValues)},
-            borderColor: '#3b82f6',
+            borderColor: '${style?.customColors?.secondary || '#3b82f6'}',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             tension: 0.4,
             fill: true,
@@ -638,7 +680,7 @@ Deno.serve(async (req) => {
         datasets: [{
           label: 'Conversões',
           data: ${JSON.stringify(timelineValues)},
-          borderColor: '#8b5cf6',
+          borderColor: '${style?.customColors?.primary || '#8b5cf6'}',
           backgroundColor: 'rgba(139, 92, 246, 0.2)',
           tension: 0.4,
           fill: true
@@ -652,6 +694,61 @@ Deno.serve(async (req) => {
     });
     ` : ''}
 
+    // Comparison Chart
+    ${enableComparison && previousConversions.length > 0 ? `
+    const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+    const comparisonLabels = ${JSON.stringify(timelineLabels)};
+    const comparisonPrevLabels = ${JSON.stringify(comparisonTimelineData.map((d: any) => d.date))};
+    const comparisonPrevValues = ${JSON.stringify(comparisonTimelineData.map((d: any) => d.count))};
+    
+    new Chart(comparisonCtx, {
+      type: 'line',
+      data: {
+        labels: comparisonLabels,
+        datasets: [
+          {
+            label: 'Período Atual',
+            data: ${JSON.stringify(timelineValues)},
+            borderColor: '${style?.customColors?.primary || '#8b5cf6'}',
+            backgroundColor: 'rgba(139, 92, 246, 0.2)',
+            tension: 0.4,
+            fill: true,
+            borderWidth: 3
+          },
+          {
+            label: 'Período Anterior',
+            data: comparisonPrevValues,
+            borderColor: '#6b7280',
+            backgroundColor: 'rgba(107, 114, 128, 0.1)',
+            tension: 0.4,
+            fill: false,
+            borderWidth: 2,
+            borderDash: [5, 5]
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { 
+          legend: { display: true, position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => \`\${ctx.dataset.label}: \${ctx.parsed.y} conversões\`
+            }
+          }
+        },
+        scales: {
+          y: { 
+            beginAtZero: true,
+            title: { display: true, text: 'Conversões' }
+          }
+        }
+      }
+    });
+    ` : ''}
+
     // Bubble Chart
     const bubbleCtx = document.getElementById('bubbleChart').getContext('2d');
     new Chart(bubbleCtx, {
@@ -661,7 +758,7 @@ Deno.serve(async (req) => {
           label: 'Páginas',
           data: ${JSON.stringify(bubbleData)},
           backgroundColor: 'rgba(139, 92, 246, 0.6)',
-          borderColor: '#8b5cf6',
+          borderColor: '${style?.customColors?.primary || '#8b5cf6'}',
           borderWidth: 2
         }]
       },
@@ -707,12 +804,12 @@ Deno.serve(async (req) => {
           label: 'Performance',
           data: ${JSON.stringify(radarData.map(r => r.value))},
           backgroundColor: 'rgba(139, 92, 246, 0.2)',
-          borderColor: '#8b5cf6',
+          borderColor: '${style?.customColors?.primary || '#8b5cf6'}',
           borderWidth: 3,
-          pointBackgroundColor: '#8b5cf6',
+          pointBackgroundColor: '${style?.customColors?.primary || '#8b5cf6'}',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: '#8b5cf6',
+          pointHoverBorderColor: '${style?.customColors?.primary || '#8b5cf6'}',
           pointRadius: 5
         }]
       },
