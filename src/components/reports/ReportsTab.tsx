@@ -2,11 +2,15 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileSpreadsheet, FileText, Globe, Download } from "lucide-react";
+import { FileSpreadsheet, FileText, Globe, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useReportData } from "@/hooks/useReportData";
+import { ReportStyleConfigurator, ReportStyle } from "./ReportStyleConfigurator";
+import { ReportPreview } from "./ReportPreview";
 
 interface ReportsTabProps {
   siteId: string;
@@ -15,12 +19,30 @@ interface ReportsTabProps {
 
 export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   const { toast } = useToast();
+  const { reportData, loading, fetchReportData } = useReportData();
   const [reportName, setReportName] = useState(`Relatório ${siteName}`);
   const [period, setPeriod] = useState('30');
   const [includeConversions, setIncludeConversions] = useState(true);
   const [includePageViews, setIncludePageViews] = useState(true);
   const [includeROI, setIncludeROI] = useState(true);
+  const [includeTopPages, setIncludeTopPages] = useState(true);
+  const [includeReferrers, setIncludeReferrers] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [style, setStyle] = useState<ReportStyle>({
+    theme: 'modern',
+    customColors: {
+      primary: '#8b5cf6',
+      secondary: '#6366f1',
+      accent: '#06b6d4'
+    }
+  });
+
+  const handleGeneratePreview = async () => {
+    const periodDays = period === 'all' ? -1 : parseInt(period);
+    await fetchReportData(siteId, periodDays);
+    setShowPreview(true);
+  };
 
   const handleExportExcel = async () => {
     setIsExporting(true);
@@ -32,13 +54,15 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           period,
           includeConversions,
           includePageViews,
-          includeROI
+          includeROI,
+          includeTopPages,
+          includeReferrers,
+          style
         }
       });
 
       if (error) throw error;
 
-      // Cria blob e faz download
       const blob = new Blob([data], { 
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
       });
@@ -77,13 +101,15 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           period,
           includeConversions,
           includePageViews,
-          includeROI
+          includeROI,
+          includeTopPages,
+          includeReferrers,
+          style
         }
       });
 
       if (error) throw error;
 
-      // Abre HTML em nova aba para usuário imprimir como PDF
       const blob = new Blob([data], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
@@ -115,7 +141,10 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           period,
           includeConversions,
           includePageViews,
-          includeROI
+          includeROI,
+          includeTopPages,
+          includeReferrers,
+          style
         }
       });
 
@@ -151,15 +180,11 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Download className="h-5 w-5" />
-            Configuração do Relatório
-          </CardTitle>
+          <CardTitle>⚙️ Configuração do Relatório</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Nome do Relatório */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Nome do Relatório</label>
+            <Label className="mb-2 block">Nome do Relatório</Label>
             <Input 
               value={reportName}
               onChange={(e) => setReportName(e.target.value)}
@@ -167,9 +192,8 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
             />
           </div>
 
-          {/* Período */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Período</label>
+            <Label className="mb-2 block">Período</Label>
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger>
                 <SelectValue />
@@ -177,8 +201,6 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
               <SelectContent>
                 <SelectItem value="7">Últimos 7 dias</SelectItem>
                 <SelectItem value="14">Últimos 14 dias</SelectItem>
-                <SelectItem value="21">Últimos 21 dias</SelectItem>
-                <SelectItem value="28">Últimos 28 dias</SelectItem>
                 <SelectItem value="30">Últimos 30 dias</SelectItem>
                 <SelectItem value="60">Últimos 60 dias</SelectItem>
                 <SelectItem value="90">Últimos 90 dias</SelectItem>
@@ -188,79 +210,85 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
             </Select>
           </div>
 
-          {/* Dados a Incluir */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Dados a Incluir</label>
+          <div className="space-y-3">
+            <Label>Dados a Incluir</Label>
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox 
-                  checked={includeConversions} 
-                  onCheckedChange={(checked) => setIncludeConversions(!!checked)} 
-                />
+                <Checkbox checked={includeConversions} onCheckedChange={(c) => setIncludeConversions(!!c)} />
                 <span className="text-sm">Conversões</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox 
-                  checked={includePageViews} 
-                  onCheckedChange={(checked) => setIncludePageViews(!!checked)} 
-                />
+                <Checkbox checked={includePageViews} onCheckedChange={(c) => setIncludePageViews(!!c)} />
                 <span className="text-sm">Page Views</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox 
-                  checked={includeROI} 
-                  onCheckedChange={(checked) => setIncludeROI(!!checked)} 
-                />
-                <span className="text-sm">Análise de ROI</span>
+                <Checkbox checked={includeROI} onCheckedChange={(c) => setIncludeROI(!!c)} />
+                <span className="text-sm">ROI Financeiro</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox checked={includeTopPages} onCheckedChange={(c) => setIncludeTopPages(!!c)} />
+                <span className="text-sm">Top Páginas</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox checked={includeReferrers} onCheckedChange={(c) => setIncludeReferrers(!!c)} />
+                <span className="text-sm">Performance por Referrer</span>
               </label>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Botões de Exportação */}
+      <ReportStyleConfigurator style={style} onStyleChange={setStyle} />
+
       <Card>
-        <CardHeader>
-          <CardTitle>Exportar Relatório</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Button 
-              onClick={handleExportExcel} 
-              disabled={isExporting}
-              className="w-full"
-              variant="default"
-            >
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              {isExporting ? 'Gerando...' : 'Exportar XLSX'}
-            </Button>
-            
-            <Button 
-              onClick={handleExportPDF} 
-              disabled={isExporting}
-              className="w-full"
-              variant="default"
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              {isExporting ? 'Gerando...' : 'Exportar PDF'}
-            </Button>
-            
-            <Button 
-              onClick={handleExportHTML} 
-              disabled={isExporting}
-              className="w-full"
-              variant="default"
-            >
-              <Globe className="mr-2 h-4 w-4" />
-              {isExporting ? 'Gerando...' : 'Gerar HTML'}
-            </Button>
-          </div>
-          
-          <p className="text-sm text-muted-foreground mt-4">
-            💡 O HTML interativo inclui gráficos Chart.js, tabelas ordenáveis e pode ser aberto offline no navegador.
-          </p>
+        <CardContent className="pt-6">
+          <Button 
+            onClick={handleGeneratePreview} 
+            disabled={loading} 
+            className="w-full"
+            size="lg"
+          >
+            <Eye className="mr-2 h-5 w-5" />
+            {loading ? 'Gerando Preview...' : '👁️ Gerar Preview'}
+          </Button>
         </CardContent>
       </Card>
+
+      {showPreview && reportData && (
+        <>
+          <ReportPreview
+            reportName={reportName}
+            reportData={reportData}
+            style={style}
+            includeConversions={includeConversions}
+            includePageViews={includePageViews}
+            includeTopPages={includeTopPages}
+            includeReferrers={includeReferrers}
+          />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>📥 Exportar Relatório</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Button onClick={handleExportExcel} disabled={isExporting} className="w-full">
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  {isExporting ? 'Gerando...' : 'Exportar XLSX'}
+                </Button>
+                <Button onClick={handleExportPDF} disabled={isExporting} className="w-full">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Exportar PDF
+                </Button>
+                <Button onClick={handleExportHTML} disabled={isExporting} className="w-full">
+                  <Globe className="mr-2 h-4 w-4" />
+                  Gerar HTML
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 };
