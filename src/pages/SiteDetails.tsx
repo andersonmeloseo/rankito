@@ -73,7 +73,7 @@ const SiteDetails = () => {
   const [fetchingTitles, setFetchingTitles] = useState(false);
   
   // Analytics States
-  const [analyticsPeriod, setAnalyticsPeriod] = useState("7");
+  const [analyticsPeriod, setAnalyticsPeriod] = useState("0");
   const [analyticsEventType, setAnalyticsEventType] = useState("all");
   const [analyticsDevice, setAnalyticsDevice] = useState("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
