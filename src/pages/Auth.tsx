@@ -189,8 +189,8 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/10 to-accent/10">
-      <div className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-xl">
+      <div className="flex-1 flex items-center justify-center px-4 py-12 md:py-16">
+        <Card className="w-full max-w-md shadow-xl my-8">
           <CardHeader className="space-y-4">
             {/* Logo e Branding do Rankito */}
             <div className="flex flex-col items-center gap-3">
