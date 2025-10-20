@@ -47,6 +47,7 @@ interface ClientsTableProps {
   onViewDetails: (client: ClientMetric) => void;
   onViewReport: (token: string) => void;
   onCopyLink: (token: string) => void;
+  onCopyPortalLink: (clientId: string) => void;
 }
 
 export const ClientsTable = ({
@@ -56,6 +57,7 @@ export const ClientsTable = ({
   onViewDetails,
   onViewReport,
   onCopyLink,
+  onCopyPortalLink,
 }: ClientsTableProps) => {
   const getInitials = (name: string) => {
     return name
@@ -192,6 +194,10 @@ export const ClientsTable = ({
                           </DropdownMenuItem>
                         </>
                       )}
+                      <DropdownMenuItem onClick={() => onCopyPortalLink(client.client_id)}>
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Copiar Link do Portal
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => onDelete(client)}

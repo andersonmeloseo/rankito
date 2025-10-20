@@ -12,6 +12,7 @@ import { ClientDetailsDialog } from "./ClientDetailsDialog";
 import { ClientsOverviewCards } from "./ClientsOverviewCards";
 import { ClientsTable } from "./ClientsTable";
 import { useToast } from "@/hooks/use-toast";
+import { usePortalToken } from "@/hooks/usePortalToken";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,6 +41,7 @@ interface ClientMetric {
 
 export const ClientsList = ({ userId }: ClientsListProps) => {
   const { toast } = useToast();
+  const { generatePortalLink, getPortalByClient } = usePortalToken();
   const [showAddClient, setShowAddClient] = useState(false);
   const [showEditClient, setShowEditClient] = useState(false);
   const [showDeleteClient, setShowDeleteClient] = useState(false);
@@ -134,6 +136,35 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
       title: "Link copiado!",
       description: "Link do relatório copiado para área de transferência",
     });
+  };
+
+  const handleGeneratePortalLink = async (clientId: string) => {
+    try {
+      const existingPortal = await getPortalByClient(clientId);
+      
+      if (existingPortal) {
+        const portalUrl = `${window.location.origin}/client-portal/${existingPortal.portal_token}`;
+        navigator.clipboard.writeText(portalUrl);
+        toast({
+          title: "Link do portal copiado!",
+          description: "Link do portal analítico copiado para área de transferência",
+        });
+      } else {
+        const portal = await generatePortalLink(clientId);
+        const portalUrl = `${window.location.origin}/client-portal/${portal.portal_token}`;
+        navigator.clipboard.writeText(portalUrl);
+        toast({
+          title: "Portal criado e link copiado!",
+          description: "Portal analítico criado e link copiado para área de transferência",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao gerar portal",
+        description: "Não foi possível gerar o link do portal",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -300,6 +331,7 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
                   }}
                   onViewReport={(token) => window.open(`/report/${token}`, '_blank')}
                   onCopyLink={copyReportLink}
+                  onCopyPortalLink={(clientId) => handleGeneratePortalLink(clientId)}
                 />
               </div>
             </CardContent>
