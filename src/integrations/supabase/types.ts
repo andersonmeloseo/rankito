@@ -100,6 +100,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           expected_close_date: string | null
+          follow_up_date: string | null
           id: string
           lost_reason: string | null
           probability: number | null
@@ -123,6 +124,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           expected_close_date?: string | null
+          follow_up_date?: string | null
           id?: string
           lost_reason?: string | null
           probability?: number | null
@@ -146,6 +148,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           expected_close_date?: string | null
+          follow_up_date?: string | null
           id?: string
           lost_reason?: string | null
           probability?: number | null

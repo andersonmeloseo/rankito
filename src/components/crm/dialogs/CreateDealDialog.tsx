@@ -119,6 +119,7 @@ export const CreateDealDialog = ({ open, onOpenChange, userId, initialStage = "l
         stage: data.stage,
         probability: data.probability,
         expected_close_date: data.expected_close_date?.toISOString().split('T')[0] || null,
+        follow_up_date: null,
         contact_name: data.contact_name || null,
         contact_email: data.contact_email || null,
         contact_phone: data.contact_phone || null,

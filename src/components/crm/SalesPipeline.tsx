@@ -42,11 +42,13 @@ const DroppableColumn = ({
 };
 
 const SortableDealCard = ({ 
-  deal, 
+  deal,
+  userId,
   onDelete, 
   onOpenDetails 
 }: { 
-  deal: Deal; 
+  deal: Deal;
+  userId: string;
   onDelete: (id: string) => void;
   onOpenDetails: (deal: Deal) => void;
 }) => {
@@ -64,7 +66,8 @@ const SortableDealCard = ({
   return (
     <div ref={setNodeRef} style={style}>
       <DealCard 
-        deal={deal} 
+        deal={deal}
+        userId={userId}
         onDelete={onDelete} 
         onOpenDetails={onOpenDetails}
         isDragging={isDragging}
@@ -367,7 +370,8 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
                             {stageDeals.map((deal) => (
                               <SortableDealCard 
                                 key={deal.id} 
-                                deal={deal} 
+                                deal={deal}
+                                userId={userId}
                                 onDelete={deleteDeal}
                                 onOpenDetails={(deal) => {
                                   setSelectedDeal(deal);
@@ -394,7 +398,7 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
         <DragOverlay>
           {activeDeal ? (
             <div className="rotate-2 shadow-2xl">
-              <DealCard deal={activeDeal} onDelete={() => {}} onOpenDetails={() => {}} isDragging />
+              <DealCard deal={activeDeal} userId={userId} onDelete={() => {}} onOpenDetails={() => {}} isDragging />
             </div>
           ) : null}
         </DragOverlay>

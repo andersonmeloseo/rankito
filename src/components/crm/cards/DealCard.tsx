@@ -1,12 +1,19 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2, Phone, Mail, ExternalLink, GripVertical, User, Calendar } from "lucide-react";
+import { MoreVertical, Trash2, ExternalLink, GripVertical, User, Calendar, FileText, Clock, Activity } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Deal } from "@/hooks/useDeals";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useDealContext } from "@/hooks/useDealContext";
+import { QuickNoteInput } from "./QuickNoteInput";
+import { DealBadges } from "./DealBadges";
+import { QuickActions } from "./QuickActions";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const getCardColors = (colorValue?: string | null) => {
   const colorMap: Record<string, { bg: string; text: string; textMuted: string }> = {
@@ -61,15 +68,29 @@ const getCardColors = (colorValue?: string | null) => {
 
 interface DealCardProps {
   deal: Deal;
+  userId: string;
   onDelete: (id: string) => void;
   onOpenDetails: (deal: Deal) => void;
+  onTaskCreated?: () => void;
   isDragging?: boolean;
   dragHandleProps?: any;
 }
 
 
-export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandleProps }: DealCardProps) => {
+export const DealCard = ({ deal, userId, onDelete, onOpenDetails, onTaskCreated, isDragging, dragHandleProps }: DealCardProps) => {
   const cardColors = getCardColors(deal.card_color);
+  const { data: context, isLoading, refetch } = useDealContext(deal.id, userId);
+  const [showQuickNote, setShowQuickNote] = useState(false);
+  
+  const handleNoteAdded = () => {
+    setShowQuickNote(false);
+    refetch();
+  };
+
+  const handleTaskCreated = () => {
+    refetch();
+    onTaskCreated?.();
+  };
   
   return (
     <Card 
@@ -80,7 +101,7 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
         isDragging && "shadow-2xl opacity-90"
       )}
     >
-      {/* Drag Handle Invisível */}
+      {/* Drag Handle */}
       {dragHandleProps && (
         <div
           {...dragHandleProps}
@@ -92,13 +113,14 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
       )}
       
       <CardContent 
-        className="p-3 space-y-2.5 cursor-pointer"
+        className="p-3 space-y-2 cursor-pointer"
         onClick={(e) => {
-          if (!isDragging) {
+          if (!isDragging && !showQuickNote) {
             onOpenDetails(deal);
           }
         }}
       >
+        {/* Header: Título, Valor e Menu */}
         <div className="flex justify-between items-start gap-2">
           <div className="flex-1 min-w-0">
             <h3 className={cn("text-sm font-semibold line-clamp-2 mb-1.5", cardColors.text)}>
@@ -135,67 +157,128 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
           </DropdownMenu>
         </div>
 
-        {deal.description && (
-          <p className={cn("text-xs line-clamp-2", cardColors.textMuted)}>{deal.description}</p>
-        )}
+        {/* Badges de Status */}
+        <DealBadges deal={deal} context={context} />
 
-        <div className="flex flex-wrap gap-1.5">
-          {deal.target_niche && (
-            <Badge variant="secondary" className="text-xs px-2 py-0.5 font-normal">
-              {deal.target_niche}
-            </Badge>
-          )}
-          {deal.rank_rent_sites && (
-            <Badge variant="outline" className="text-xs px-2 py-0.5 font-normal text-muted-foreground">
-              <ExternalLink className="h-2.5 w-2.5 mr-1" />
-              <span className="truncate">{deal.rank_rent_sites.site_name}</span>
-            </Badge>
-          )}
-        </div>
-
-        {deal.contact_name && (
-          <div className="space-y-2 pt-2">
-            <div className={cn("flex items-center gap-1.5 text-xs", cardColors.textMuted)}>
-              <User className="h-3 w-3" />
-              <span className="font-medium">{deal.contact_name}</span>
+        {/* Contadores de Stats */}
+        {isLoading ? (
+          <div className="flex gap-3">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        ) : context && (
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <FileText className="h-3 w-3" />
+              <span>{context.counts.notes}</span>
             </div>
-            <div className="flex gap-1.5">
-              {deal.contact_phone && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  asChild 
-                  className="h-7 w-7 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950"
-                  disabled={isDragging}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <a href={`tel:${deal.contact_phone}`}>
-                    <Phone className="h-3.5 w-3.5" />
-                  </a>
-                </Button>
-              )}
-              {deal.contact_email && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  asChild 
-                  className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950"
-                  disabled={isDragging}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <a href={`mailto:${deal.contact_email}`}>
-                    <Mail className="h-3.5 w-3.5" />
-                  </a>
-                </Button>
-              )}
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span>{context.counts.tasks}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Activity className="h-3 w-3" />
+              <span>{context.counts.activities}</span>
             </div>
           </div>
         )}
 
+        <Separator />
+
+        {/* Próxima Tarefa */}
+        {context?.nextTask && (
+          <div className={cn("text-xs space-y-0.5", cardColors.textMuted)}>
+            <div className="flex items-center gap-1.5 font-medium">
+              <Clock className="h-3 w-3" />
+              <span>Próxima: {context.nextTask.title}</span>
+            </div>
+            <p className="text-xs opacity-70 ml-4.5">
+              {format(new Date(context.nextTask.due_date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+            </p>
+          </div>
+        )}
+
+        {/* Última Nota (Preview) */}
+        {context?.lastNote && !showQuickNote && (
+          <div className={cn("text-xs italic line-clamp-2", cardColors.textMuted)}>
+            💬 "{context.lastNote.content.substring(0, 60)}
+            {context.lastNote.content.length > 60 ? "..." : ""}"
+          </div>
+        )}
+
+        {/* Quick Note Input */}
+        {showQuickNote && (
+          <QuickNoteInput
+            dealId={deal.id}
+            userId={userId}
+            onNoteSaved={handleNoteAdded}
+            onCancel={() => setShowQuickNote(false)}
+          />
+        )}
+
+        {/* Quick Actions */}
+        {!showQuickNote && (
+          <div className="flex justify-between items-center pt-1">
+            <QuickActions
+              onAddNote={() => setShowQuickNote(true)}
+              onAddTask={() => {
+                // Abrir dialog de criar tarefa
+                onOpenDetails(deal);
+              }}
+              contactPhone={deal.contact_phone}
+              contactEmail={deal.contact_email}
+              isDragging={isDragging}
+            />
+          </div>
+        )}
+
+        {/* Tags e Badges */}
+        {(deal.target_niche || deal.rank_rent_sites) && (
+          <>
+            <Separator />
+            <div className="flex flex-wrap gap-1.5">
+              {deal.target_niche && (
+                <Badge variant="secondary" className="text-xs px-2 py-0.5 font-normal">
+                  {deal.target_niche}
+                </Badge>
+              )}
+              {deal.rank_rent_sites && (
+                <Badge variant="outline" className="text-xs px-2 py-0.5 font-normal text-muted-foreground">
+                  <ExternalLink className="h-2.5 w-2.5 mr-1" />
+                  <span className="truncate">{deal.rank_rent_sites.site_name}</span>
+                </Badge>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Informações de Contato */}
+        {deal.contact_name && (
+          <>
+            <Separator />
+            <div className={cn("flex items-center gap-1.5 text-xs", cardColors.textMuted)}>
+              <User className="h-3 w-3" />
+              <span className="font-medium">{deal.contact_name}</span>
+            </div>
+          </>
+        )}
+
+        {/* Data de Fechamento Esperada */}
         {deal.expected_close_date && (
-          <div className={cn("flex items-center gap-1.5 text-xs pt-2 border-t", cardColors.textMuted)}>
+          <div className={cn("flex items-center gap-1.5 text-xs", cardColors.textMuted)}>
             <Calendar className="h-3 w-3" />
-            <span>{format(new Date(deal.expected_close_date), "dd/MM/yyyy", { locale: ptBR })}</span>
+            <span>Fechamento: {format(new Date(deal.expected_close_date), "dd/MM/yyyy", { locale: ptBR })}</span>
+          </div>
+        )}
+
+        {/* Última Atividade */}
+        {context?.lastActivity && (
+          <div className="text-xs text-muted-foreground opacity-70">
+            Última atividade: {formatDistanceToNow(new Date(context.lastActivity.created_at), { 
+              addSuffix: true, 
+              locale: ptBR 
+            })}
           </div>
         )}
       </CardContent>

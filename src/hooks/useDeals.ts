@@ -13,6 +13,7 @@ export interface Deal {
   stage: 'lead' | 'contact' | 'proposal' | 'negotiation' | 'won' | 'lost';
   probability: number;
   expected_close_date: string | null;
+  follow_up_date: string | null;
   lost_reason: string | null;
   card_color: string | null;
   created_at: string;
