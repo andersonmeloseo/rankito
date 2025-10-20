@@ -13,9 +13,15 @@ export interface UserSubscription {
   canceled_at: string | null;
   created_at: string;
   updated_at: string;
+  paused_at?: string | null;
+  paused_reason?: string | null;
+  notes?: string | null;
   subscription_plans?: {
     name: string;
     price: number;
+    max_sites: number | null;
+    max_pages_per_site: number | null;
+    features: string[];
   };
   profiles?: {
     email: string;
@@ -33,7 +39,7 @@ export const useSubscriptions = () => {
         .from('user_subscriptions')
         .select(`
           *,
-          subscription_plans(name, price)
+          subscription_plans(name, price, max_sites, max_pages_per_site, features)
         `)
         .order('created_at', { ascending: false });
 

@@ -1420,6 +1420,47 @@ export type Database = {
           },
         ]
       }
+      subscription_history: {
+        Row: {
+          action: string
+          changed_by: string | null
+          created_at: string | null
+          id: string
+          new_values: Json | null
+          notes: string | null
+          old_values: Json | null
+          subscription_id: string
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          new_values?: Json | null
+          notes?: string | null
+          old_values?: Json | null
+          subscription_id: string
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          new_values?: Json | null
+          notes?: string | null
+          old_values?: Json | null
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_payments: {
         Row: {
           amount: number
@@ -1552,6 +1593,9 @@ export type Database = {
           current_period_end: string
           current_period_start: string
           id: string
+          notes: string | null
+          paused_at: string | null
+          paused_reason: string | null
           plan_id: string
           status: Database["public"]["Enums"]["subscription_status"]
           trial_end_date: string | null
@@ -1564,6 +1608,9 @@ export type Database = {
           current_period_end: string
           current_period_start: string
           id?: string
+          notes?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
           plan_id: string
           status?: Database["public"]["Enums"]["subscription_status"]
           trial_end_date?: string | null
@@ -1576,6 +1623,9 @@ export type Database = {
           current_period_end?: string
           current_period_start?: string
           id?: string
+          notes?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
           plan_id?: string
           status?: Database["public"]["Enums"]["subscription_status"]
           trial_end_date?: string | null
