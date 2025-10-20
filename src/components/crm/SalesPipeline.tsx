@@ -45,7 +45,7 @@ const SortableDealCard = ({
 
 export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
   const { deals, isLoading, updateDeal, deleteDeal } = useDeals(userId);
-  const { stages: pipelineStages, isLoading: stagesLoading } = usePipelineStages(userId);
+  const { stages: pipelineStages, isLoading: stagesLoading, error: stagesError, refetch: refetchStages } = usePipelineStages(userId);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedStage, setSelectedStage] = useState<"lead" | "contact" | "proposal" | "negotiation" | "won" | "lost">("lead");
@@ -95,7 +95,30 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
     return <div className="text-center py-12">Carregando pipeline...</div>;
   }
 
+  // Erro ao carregar estágios
+  if (stagesError) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <p className="text-destructive">Erro ao carregar estágios do pipeline</p>
+        <Button onClick={() => refetchStages()}>Tentar Novamente</Button>
+      </div>
+    );
+  }
+
   const activeStages = pipelineStages?.filter((s) => s.is_active) || [];
+
+  // Nenhum estágio encontrado
+  if (activeStages.length === 0) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <p className="text-muted-foreground">Nenhum estágio do pipeline encontrado</p>
+        <p className="text-sm text-muted-foreground">
+          Os estágios padrão devem ser criados automaticamente. Tente recarregar a página.
+        </p>
+        <Button onClick={() => refetchStages()}>Recarregar Estágios</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

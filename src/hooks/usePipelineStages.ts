@@ -18,20 +18,31 @@ export interface PipelineStage {
 export const usePipelineStages = (userId: string) => {
   const queryClient = useQueryClient();
 
-  const { data: stages, isLoading } = useQuery({
+  const { data: stages, isLoading, error, refetch } = useQuery({
     queryKey: ["pipelineStages", userId],
     queryFn: async () => {
+      console.log("🔍 Buscando estágios do pipeline para userId:", userId);
       const { data, error } = await supabase
         .from("crm_pipeline_stages")
         .select("*")
         .eq("user_id", userId)
         .order("display_order", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erro ao buscar estágios:", error);
+        throw error;
+      }
+      
+      console.log("✅ Estágios encontrados:", data?.length || 0, data);
       return data as PipelineStage[];
     },
     enabled: !!userId,
   });
+
+  // Log adicional quando stages muda
+  if (stages) {
+    console.log("📊 Estágios ativos carregados:", stages.filter(s => s.is_active).length, "de", stages.length);
+  }
 
   const createStage = useMutation({
     mutationFn: async (newStage: Omit<PipelineStage, "id" | "user_id" | "created_at" | "updated_at">) => {
@@ -115,6 +126,8 @@ export const usePipelineStages = (userId: string) => {
   return {
     stages,
     isLoading,
+    error,
+    refetch,
     createStage,
     updateStage,
     deleteStage,
