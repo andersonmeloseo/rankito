@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { usePipelineStages } from "@/hooks/usePipelineStages";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,16 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, GripVertical, Trash2, Palette } from "lucide-react";
+import { Plus, GripVertical, Trash2 } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PipelineStage } from "@/hooks/usePipelineStages";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 interface PipelineSettingsProps {
   userId: string;
@@ -107,7 +104,6 @@ const SortableStageItem = ({ stage, onUpdate, onDelete }: { stage: PipelineStage
 };
 
 export const PipelineSettings = ({ userId }: PipelineSettingsProps) => {
-  const queryClient = useQueryClient();
   const { stages, isLoading, createStage, updateStage, deleteStage, reorderStages } = usePipelineStages(userId);
   const [newStageKey, setNewStageKey] = useState("");
   const [newStageLabel, setNewStageLabel] = useState("");
@@ -115,44 +111,6 @@ export const PipelineSettings = ({ userId }: PipelineSettingsProps) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
-
-  // Criar estágios padrão se não existirem
-  useEffect(() => {
-    if (!isLoading && stages && stages.length === 0 && userId) {
-      const createDefaultStages = async () => {
-        try {
-          const defaultStages = [
-            { stage_key: 'lead', label: 'Lead', color: 'bg-slate-100', display_order: 1, is_system: true },
-            { stage_key: 'contact', label: 'Contato', color: 'bg-blue-100', display_order: 2, is_system: true },
-            { stage_key: 'proposal', label: 'Proposta', color: 'bg-purple-100', display_order: 3, is_system: true },
-            { stage_key: 'negotiation', label: 'Negociação', color: 'bg-yellow-100', display_order: 4, is_system: true },
-            { stage_key: 'won', label: 'Ganho', color: 'bg-green-100', display_order: 5, is_system: true },
-            { stage_key: 'lost', label: 'Perdido', color: 'bg-red-100', display_order: 6, is_system: true },
-          ];
-
-          const stagesToInsert = defaultStages.map(stage => ({
-            ...stage,
-            user_id: userId,
-            is_active: true,
-          }));
-
-          const { error } = await supabase
-            .from('crm_pipeline_stages')
-            .insert(stagesToInsert);
-          
-          if (error) throw error;
-          
-          queryClient.invalidateQueries({ queryKey: ["pipelineStages", userId] });
-          toast.success("Estágios padrão criados com sucesso!");
-        } catch (error: any) {
-          console.error("Erro ao criar estágios padrão:", error);
-          toast.error("Erro ao criar estágios padrão: " + error.message);
-        }
-      };
-
-      createDefaultStages();
-    }
-  }, [isLoading, stages, userId, queryClient]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -294,7 +252,7 @@ export const PipelineSettings = ({ userId }: PipelineSettingsProps) => {
         <CardContent>
           {!stages || stages.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Nenhum estágio encontrado. Criando estágios padrão...</p>
+              <p className="text-muted-foreground">Nenhum estágio encontrado. Os estágios padrão devem ter sido criados automaticamente ao criar sua conta.</p>
             </div>
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
