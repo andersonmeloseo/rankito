@@ -10,8 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ExternalLink, FileText, Calendar, Building, Mail, Phone } from "lucide-react";
+import { ExternalLink, FileText, Calendar, Building, Mail, Phone, BarChart3 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { GeneratePortalLinkButton } from "./GeneratePortalLinkButton";
 
 interface ClientDetailsDialogProps {
   open: boolean;
@@ -146,6 +147,20 @@ export const ClientDetailsDialog = ({ open, onOpenChange, clientId, clientName }
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{clientDetails.notes}</p>
                 </div>
               )}
+            </div>
+
+            <Separator />
+
+            {/* Portal Analítico */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Portal Analítico do Cliente
+              </h3>
+              <GeneratePortalLinkButton
+                clientId={clientId}
+                clientName={clientDetails.name}
+              />
             </div>
 
           {/* Só mostra separador e seção se houver páginas ou estiver carregando */}

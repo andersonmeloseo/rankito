@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_portal_analytics: {
+        Row: {
+          client_id: string
+          created_at: string
+          enabled: boolean | null
+          id: string
+          portal_token: string
+          report_config: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          portal_token?: string
+          report_config?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          portal_token?: string
+          report_config?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_analytics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_client_metrics"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_portal_analytics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_activities: {
         Row: {
           activity_type: string
