@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, BarChart3, Users, Globe, DollarSign, Eye, UserCircle } from "lucide-react";
+import { LogOut, BarChart3, Users, Globe, DollarSign, Eye, UserCircle, KeyRound } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,10 +16,12 @@ import { SubscriptionMetricsCards } from "@/components/super-admin/SubscriptionM
 import { PlansManagementTable } from "@/components/super-admin/PlansManagementTable";
 import { SubscriptionsTable } from "@/components/super-admin/SubscriptionsTable";
 import { PaymentsHistoryTable } from "@/components/super-admin/PaymentsHistoryTable";
+import { ResetUserPasswordDialog } from "@/components/super-admin/ResetUserPasswordDialog";
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
   const { isSuperAdmin, isLoading, user } = useRole();
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isSuperAdmin) {
@@ -63,6 +65,14 @@ const SuperAdminDashboard = () => {
               <p className="text-muted-foreground mt-1">{user?.email}</p>
             </div>
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setResetPasswordOpen(true)}
+              className="gap-2"
+            >
+              <KeyRound className="h-4 w-4" />
+              Resetar Senha
+            </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate("/dashboard")}
@@ -133,6 +143,10 @@ const SuperAdminDashboard = () => {
         </div>
       </div>
       <Footer />
+      <ResetUserPasswordDialog 
+        open={resetPasswordOpen} 
+        onOpenChange={setResetPasswordOpen} 
+      />
     </div>
   );
 };

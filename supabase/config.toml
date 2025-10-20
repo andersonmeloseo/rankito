@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.reset-end-client-password]
 verify_jwt = true
+
+[functions.super-admin-reset-password]
+verify_jwt = false
