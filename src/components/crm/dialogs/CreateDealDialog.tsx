@@ -32,7 +32,20 @@ const dealSchema = z.object({
   target_location: z.string().optional(),
   source: z.string().optional(),
   lost_reason: z.string().optional(),
+  card_color: z.string().optional(),
 });
+
+const cardColors = [
+  { value: "default", bg: "bg-white dark:bg-card", label: "Padrão", preview: "#ffffff" },
+  { value: "red", bg: "bg-red-50 dark:bg-red-950/30", label: "Vermelho", preview: "#fef2f2" },
+  { value: "orange", bg: "bg-orange-50 dark:bg-orange-950/30", label: "Laranja", preview: "#fff7ed" },
+  { value: "yellow", bg: "bg-yellow-50 dark:bg-yellow-950/30", label: "Amarelo", preview: "#fefce8" },
+  { value: "green", bg: "bg-green-50 dark:bg-green-950/30", label: "Verde", preview: "#f0fdf4" },
+  { value: "blue", bg: "bg-blue-50 dark:bg-blue-950/30", label: "Azul", preview: "#eff6ff" },
+  { value: "purple", bg: "bg-purple-50 dark:bg-purple-950/30", label: "Roxo", preview: "#faf5ff" },
+  { value: "pink", bg: "bg-pink-50 dark:bg-pink-950/30", label: "Rosa", preview: "#fdf2f8" },
+  { value: "gray", bg: "bg-gray-50 dark:bg-gray-950/30", label: "Cinza", preview: "#f9fafb" },
+];
 
 type DealFormData = z.infer<typeof dealSchema>;
 
@@ -77,6 +90,7 @@ export const CreateDealDialog = ({ open, onOpenChange, userId, initialStage = "l
       target_niche: "",
       target_location: "",
       source: "",
+      card_color: "default",
     },
   });
 
@@ -112,6 +126,7 @@ export const CreateDealDialog = ({ open, onOpenChange, userId, initialStage = "l
         target_location: data.target_location || null,
         source: data.source || null,
         lost_reason: selectedStage === "lost" ? data.lost_reason || null : null,
+        card_color: data.card_color || "default",
         client_id: null,
       });
       form.reset();
@@ -379,6 +394,36 @@ export const CreateDealDialog = ({ open, onOpenChange, userId, initialStage = "l
                 />
               </div>
             </div>
+
+            <FormField
+              control={form.control}
+              name="card_color"
+              render={({ field }) => (
+                <FormItem className="border-t pt-4">
+                  <FormLabel>Cor do Card</FormLabel>
+                  <FormControl>
+                    <div className="flex gap-2 flex-wrap">
+                      {cardColors.map((color) => (
+                        <button
+                          key={color.value}
+                          type="button"
+                          onClick={() => field.onChange(color.value)}
+                          className={cn(
+                            "w-10 h-10 rounded-md border-2 transition-all hover:scale-110",
+                            field.value === color.value
+                              ? "border-primary ring-2 ring-offset-2 ring-primary"
+                              : "border-border"
+                          )}
+                          style={{ backgroundColor: color.preview }}
+                          title={color.label}
+                        />
+                      ))}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {selectedStage === "lost" && (
               <FormField

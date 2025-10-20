@@ -14,6 +14,7 @@ export interface Deal {
   probability: number;
   expected_close_date: string | null;
   lost_reason: string | null;
+  card_color: string | null;
   created_at: string;
   updated_at: string;
   closed_at: string | null;

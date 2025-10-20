@@ -8,6 +8,57 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
+const getCardColors = (colorValue?: string | null) => {
+  const colorMap: Record<string, { bg: string; text: string; textMuted: string }> = {
+    default: { 
+      bg: "bg-white dark:bg-card", 
+      text: "text-foreground",
+      textMuted: "text-muted-foreground"
+    },
+    red: { 
+      bg: "bg-red-50 dark:bg-red-950/30", 
+      text: "text-red-900 dark:text-red-100",
+      textMuted: "text-red-700 dark:text-red-200/70"
+    },
+    orange: { 
+      bg: "bg-orange-50 dark:bg-orange-950/30", 
+      text: "text-orange-900 dark:text-orange-100",
+      textMuted: "text-orange-700 dark:text-orange-200/70"
+    },
+    yellow: { 
+      bg: "bg-yellow-50 dark:bg-yellow-950/30", 
+      text: "text-yellow-900 dark:text-yellow-100",
+      textMuted: "text-yellow-700 dark:text-yellow-200/70"
+    },
+    green: { 
+      bg: "bg-green-50 dark:bg-green-950/30", 
+      text: "text-green-900 dark:text-green-100",
+      textMuted: "text-green-700 dark:text-green-200/70"
+    },
+    blue: { 
+      bg: "bg-blue-50 dark:bg-blue-950/30", 
+      text: "text-blue-900 dark:text-blue-100",
+      textMuted: "text-blue-700 dark:text-blue-200/70"
+    },
+    purple: { 
+      bg: "bg-purple-50 dark:bg-purple-950/30", 
+      text: "text-purple-900 dark:text-purple-100",
+      textMuted: "text-purple-700 dark:text-purple-200/70"
+    },
+    pink: { 
+      bg: "bg-pink-50 dark:bg-pink-950/30", 
+      text: "text-pink-900 dark:text-pink-100",
+      textMuted: "text-pink-700 dark:text-pink-200/70"
+    },
+    gray: { 
+      bg: "bg-gray-50 dark:bg-gray-950/30", 
+      text: "text-gray-900 dark:text-gray-100",
+      textMuted: "text-gray-700 dark:text-gray-200/70"
+    },
+  };
+  return colorMap[colorValue || "default"] || colorMap.default;
+};
+
 interface DealCardProps {
   deal: Deal;
   onDelete: (id: string) => void;
@@ -18,10 +69,13 @@ interface DealCardProps {
 
 
 export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandleProps }: DealCardProps) => {
+  const cardColors = getCardColors(deal.card_color);
+  
   return (
     <Card 
       className={cn(
-        "group relative overflow-hidden transition-all duration-200 bg-white dark:bg-card rounded-xl",
+        "group relative overflow-hidden transition-all duration-200 rounded-xl",
+        cardColors.bg,
         !isDragging && "hover:shadow-lg hover:-translate-y-0.5",
         isDragging && "shadow-2xl opacity-90"
       )}
@@ -47,7 +101,7 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
       >
         <div className="flex justify-between items-start gap-2">
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-foreground line-clamp-2 mb-1.5">
+            <h3 className={cn("text-sm font-semibold line-clamp-2 mb-1.5", cardColors.text)}>
               {deal.title}
             </h3>
             <p className="text-xl font-bold text-green-600 dark:text-green-500">
@@ -82,7 +136,7 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
         </div>
 
         {deal.description && (
-          <p className="text-xs text-muted-foreground/80 line-clamp-2">{deal.description}</p>
+          <p className={cn("text-xs line-clamp-2", cardColors.textMuted)}>{deal.description}</p>
         )}
 
         <div className="flex flex-wrap gap-1.5">
@@ -101,7 +155,7 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
 
         {deal.contact_name && (
           <div className="space-y-2 pt-2">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className={cn("flex items-center gap-1.5 text-xs", cardColors.textMuted)}>
               <User className="h-3 w-3" />
               <span className="font-medium">{deal.contact_name}</span>
             </div>
@@ -139,7 +193,7 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
         )}
 
         {deal.expected_close_date && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-2 border-t">
+          <div className={cn("flex items-center gap-1.5 text-xs pt-2 border-t", cardColors.textMuted)}>
             <Calendar className="h-3 w-3" />
             <span>{format(new Date(deal.expected_close_date), "dd/MM/yyyy", { locale: ptBR })}</span>
           </div>

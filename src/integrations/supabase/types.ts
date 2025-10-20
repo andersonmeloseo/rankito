@@ -91,6 +91,7 @@ export type Database = {
       }
       crm_deals: {
         Row: {
+          card_color: string | null
           client_id: string | null
           closed_at: string | null
           contact_email: string | null
@@ -113,6 +114,7 @@ export type Database = {
           value: number | null
         }
         Insert: {
+          card_color?: string | null
           client_id?: string | null
           closed_at?: string | null
           contact_email?: string | null
@@ -135,6 +137,7 @@ export type Database = {
           value?: number | null
         }
         Update: {
+          card_color?: string | null
           client_id?: string | null
           closed_at?: string | null
           contact_email?: string | null

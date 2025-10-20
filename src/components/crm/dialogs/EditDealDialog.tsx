@@ -13,6 +13,7 @@ import { useDeals, Deal } from "@/hooks/useDeals";
 import { usePipelineStages } from "@/hooks/usePipelineStages";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 const dealSchema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
@@ -29,7 +30,20 @@ const dealSchema = z.object({
   contact_email: z.string().optional(),
   contact_phone: z.string().optional(),
   lost_reason: z.string().optional(),
+  card_color: z.string().optional(),
 });
+
+const cardColors = [
+  { value: "default", bg: "bg-white dark:bg-card", label: "Padrão", preview: "#ffffff" },
+  { value: "red", bg: "bg-red-50 dark:bg-red-950/30", label: "Vermelho", preview: "#fef2f2" },
+  { value: "orange", bg: "bg-orange-50 dark:bg-orange-950/30", label: "Laranja", preview: "#fff7ed" },
+  { value: "yellow", bg: "bg-yellow-50 dark:bg-yellow-950/30", label: "Amarelo", preview: "#fefce8" },
+  { value: "green", bg: "bg-green-50 dark:bg-green-950/30", label: "Verde", preview: "#f0fdf4" },
+  { value: "blue", bg: "bg-blue-50 dark:bg-blue-950/30", label: "Azul", preview: "#eff6ff" },
+  { value: "purple", bg: "bg-purple-50 dark:bg-purple-950/30", label: "Roxo", preview: "#faf5ff" },
+  { value: "pink", bg: "bg-pink-50 dark:bg-pink-950/30", label: "Rosa", preview: "#fdf2f8" },
+  { value: "gray", bg: "bg-gray-50 dark:bg-gray-950/30", label: "Cinza", preview: "#f9fafb" },
+];
 
 type DealFormData = z.infer<typeof dealSchema>;
 
@@ -75,6 +89,7 @@ export function EditDealDialog({ deal, open, onOpenChange, userId }: EditDealDia
       contact_email: "",
       contact_phone: "",
       lost_reason: "",
+      card_color: "default",
     },
   });
 
@@ -95,6 +110,7 @@ export function EditDealDialog({ deal, open, onOpenChange, userId }: EditDealDia
         contact_email: deal.contact_email || "",
         contact_phone: deal.contact_phone || "",
         lost_reason: deal.lost_reason || "",
+        card_color: deal.card_color || "default",
       });
     }
   }, [deal, form]);
@@ -131,6 +147,7 @@ export function EditDealDialog({ deal, open, onOpenChange, userId }: EditDealDia
         contact_email: data.contact_email || null,
         contact_phone: data.contact_phone || null,
         lost_reason: data.lost_reason || null,
+        card_color: data.card_color || "default",
       },
     });
 
@@ -385,6 +402,36 @@ export function EditDealDialog({ deal, open, onOpenChange, userId }: EditDealDia
                 />
               </div>
             </div>
+
+            <FormField
+              control={form.control}
+              name="card_color"
+              render={({ field }) => (
+                <FormItem className="border-t pt-4">
+                  <FormLabel>Cor do Card</FormLabel>
+                  <FormControl>
+                    <div className="flex gap-2 flex-wrap">
+                      {cardColors.map((color) => (
+                        <button
+                          key={color.value}
+                          type="button"
+                          onClick={() => field.onChange(color.value)}
+                          className={cn(
+                            "w-10 h-10 rounded-md border-2 transition-all hover:scale-110",
+                            field.value === color.value
+                              ? "border-primary ring-2 ring-offset-2 ring-primary"
+                              : "border-border"
+                          )}
+                          style={{ backgroundColor: color.preview }}
+                          title={color.label}
+                        />
+                      ))}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {form.watch("stage") === "lost" && (
               <FormField
