@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const UserSettings = () => {
   const navigate = useNavigate();
-  const { user, isLoading: isLoadingRole } = useRole();
+  const { user, role, isLoading: isLoadingRole } = useRole();
   const [activeTab, setActiveTab] = useState('profile');
 
   const {
@@ -30,7 +30,7 @@ const UserSettings = () => {
 
   if (isLoadingRole || isLoadingProfile) {
     return (
-      <UserSettingsLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      <UserSettingsLayout activeTab={activeTab} onTabChange={setActiveTab} userRole={role}>
         <div className="space-y-6">
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-64 w-full" />
@@ -84,7 +84,7 @@ const UserSettings = () => {
   };
 
   return (
-    <UserSettingsLayout activeTab={activeTab} onTabChange={setActiveTab}>
+    <UserSettingsLayout activeTab={activeTab} onTabChange={setActiveTab} userRole={role}>
       {renderActiveTab()}
     </UserSettingsLayout>
   );
