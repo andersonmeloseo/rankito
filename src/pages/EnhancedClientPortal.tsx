@@ -9,16 +9,15 @@ import { usePortalAuth } from '@/hooks/usePortalAuth';
 import { useClientPortalAnalytics } from '@/hooks/useClientPortalAnalytics';
 import { useProjectData } from '@/hooks/useProjectData';
 import { EpicPortalHeader } from '@/components/client-portal/EpicPortalHeader';
-import { ImpactfulOverviewDashboard } from '@/components/client-portal/ImpactfulOverviewDashboard';
+import { OverviewTab } from '@/components/client-portal/OverviewTab';
+import { ConversionsTab } from '@/components/client-portal/ConversionsTab';
+import { PageViewsTab } from '@/components/client-portal/PageViewsTab';
 import { RealtimeMonitoring } from '@/components/client-portal/RealtimeMonitoring';
 import { ContractFinancialDashboard } from '@/components/client-portal/ContractFinancialDashboard';
-import { AdvancedAnalytics } from '@/components/client-portal/AdvancedAnalytics';
-import { SavedReportsSection } from '@/components/client-portal/SavedReportsSection';
 import { ConversionToast } from '@/components/client-portal/ConversionToast';
 import { useRealtimeConversions } from '@/hooks/useRealtimeConversions';
 import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
-import { DeviceAnalyticsChart } from '@/components/client-portal/DeviceAnalyticsChart';
-import { GeoAnalyticsChart } from '@/components/client-portal/GeoAnalyticsChart';
+import { MetricsCards } from '@/components/analytics/MetricsCards';
 
 export const EnhancedClientPortal = () => {
   const { token } = useParams();
@@ -95,52 +94,64 @@ export const EnhancedClientPortal = () => {
           contractStatus={projectData?.contractStatus}
         />
 
+        {/* Professional Metrics Cards */}
+        <MetricsCards
+          metrics={{
+            uniqueVisitors: analytics?.uniqueVisitors || 0,
+            uniquePages: analytics?.uniquePages || 0,
+            pageViews: analytics?.pageViews || 0,
+            conversions: analytics?.totalConversions || 0,
+            conversionRate: analytics?.conversionRate?.toFixed(2) || '0.00',
+          }}
+          previousMetrics={analytics?.previousPeriodMetrics}
+          sparklineData={analytics?.sparklineData}
+          isLoading={false}
+        />
+
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="realtime">Tempo Real</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="financial">Financeiro</TabsTrigger>
-            <TabsTrigger value="reports">Relatórios</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">📊 Visão Geral</TabsTrigger>
+            <TabsTrigger value="conversions">🎯 Conversões</TabsTrigger>
+            <TabsTrigger value="pageviews">👁️ Visualizações</TabsTrigger>
+            <TabsTrigger value="realtime">⚡ Tempo Real</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
-            <ImpactfulOverviewDashboard
-              dailyStats={(analytics?.dailyStats as any[]) || []}
-              topPages={analytics?.topPages || []}
-              totalConversions={analytics?.totalConversions || 0}
-              totalPageViews={analytics?.pageViews || 0}
+            <OverviewTab analytics={analytics} />
+          </TabsContent>
+
+          <TabsContent value="conversions">
+            <ConversionsTab 
+              analytics={analytics} 
+              siteIds={analytics?.sites?.map((s: any) => s.id) || []} 
+            />
+          </TabsContent>
+
+          <TabsContent value="pageviews">
+            <PageViewsTab 
+              analytics={analytics} 
+              siteIds={analytics?.sites?.map((s: any) => s.id) || []} 
             />
           </TabsContent>
 
           <TabsContent value="realtime">
             <RealtimeMonitoring conversions={realtimeConversions} />
           </TabsContent>
-
-          <TabsContent value="analytics">
-            <AdvancedAnalytics analytics={analytics} periodDays={periodDays} />
-            <div className="grid gap-6 md:grid-cols-2 mt-6">
-              <DeviceAnalyticsChart data={(analytics?.deviceStats as any[]) || []} />
-              <GeoAnalyticsChart data={(analytics?.geoStats as any[]) || []} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="financial">
-            <ContractFinancialDashboard
-              contractStartDate={projectData?.contractStartDate}
-              contractEndDate={projectData?.contractEndDate}
-              monthlyValue={projectData?.monthlyValue || 0}
-              autoRenew={projectData?.autoRenew || false}
-              daysRemaining={projectData?.daysRemaining}
-              paymentHistory={projectData?.paymentHistory || []}
-              contractStatus={projectData?.contractStatus || 'active'}
-            />
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <SavedReportsSection reports={reports} />
-          </TabsContent>
         </Tabs>
+
+        {/* Financial Section - Separate from tabs */}
+        <div className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-2xl font-bold mb-6">💰 Informações Financeiras</h2>
+          <ContractFinancialDashboard
+            contractStartDate={projectData?.contractStartDate}
+            contractEndDate={projectData?.contractEndDate}
+            monthlyValue={projectData?.monthlyValue || 0}
+            autoRenew={projectData?.autoRenew || false}
+            daysRemaining={projectData?.daysRemaining}
+            paymentHistory={projectData?.paymentHistory || []}
+            contractStatus={projectData?.contractStatus || 'active'}
+          />
+        </div>
 
         <div className="flex justify-center pt-6">
           <Button variant="outline" size="lg" onClick={() => window.location.href = '/'}>

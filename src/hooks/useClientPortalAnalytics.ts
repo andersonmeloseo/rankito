@@ -160,6 +160,97 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         .sort((a: any, b: any) => b.conversions - a.conversions)
         .slice(0, 10);
 
+      // NEW: Conversions by type
+      const conversionsByType = conversions?.reduce((acc: any, conv) => {
+        if (conv.event_type !== 'page_view') {
+          acc[conv.event_type] = (acc[conv.event_type] || 0) + 1;
+        }
+        return acc;
+      }, {
+        whatsapp_click: 0,
+        phone_click: 0,
+        email_click: 0,
+        form_submit: 0,
+      });
+
+      // NEW: Conversions by day with types
+      const conversionsByDay = conversions?.reduce((acc: any, conv) => {
+        if (conv.event_type !== 'page_view') {
+          const date = new Date(conv.created_at).toLocaleDateString('pt-BR');
+          if (!acc[date]) {
+            acc[date] = { date, whatsapp_click: 0, phone_click: 0, email_click: 0, form_submit: 0, total: 0 };
+          }
+          acc[date][conv.event_type] = (acc[date][conv.event_type] || 0) + 1;
+          acc[date].total++;
+        }
+        return acc;
+      }, {});
+
+      // NEW: Top conversion pages
+      const topConversionPages = Object.values(pageStats || {})
+        .filter((p: any) => p.conversions > 0)
+        .sort((a: any, b: any) => b.conversions - a.conversions)
+        .slice(0, 10);
+
+      // NEW: Top page views
+      const topPageViews = Object.values(pageStats || {})
+        .sort((a: any, b: any) => b.pageViews - a.pageViews)
+        .slice(0, 10);
+
+      // NEW: Unique visitors and unique pages
+      const uniqueVisitors = new Set(conversions?.map(c => c.ip_address).filter(Boolean)).size;
+      const uniquePages = Object.keys(pageStats || {}).length;
+
+      // NEW: Sparkline data (last 7 days)
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (6 - i));
+        return date.toLocaleDateString('pt-BR');
+      });
+
+      const sparklineData = {
+        pageViews: last7Days.map(date => {
+          const dayData = dailyStats?.[date];
+          return dayData?.pageViews || 0;
+        }),
+        conversions: last7Days.map(date => {
+          const dayData = dailyStats?.[date];
+          return dayData?.conversions || 0;
+        }),
+      };
+
+      // NEW: Previous period for comparison
+      const previousStartDate = startOfDay(subDays(startDate, periodDays));
+      const { data: previousConversions } = await supabase
+        .from('rank_rent_conversions')
+        .select('event_type')
+        .in('site_id', siteIds)
+        .gte('created_at', previousStartDate.toISOString())
+        .lt('created_at', startDate.toISOString());
+
+      const previousTotalConversions = previousConversions?.filter(c => c.event_type !== 'page_view').length || 0;
+      const previousPageViews = previousConversions?.filter(c => c.event_type === 'page_view').length || 0;
+      const previousConversionRate = previousPageViews > 0 ? ((previousTotalConversions / previousPageViews) * 100) : 0;
+
+      // NEW: Top referrers
+      const topReferrers = conversions?.reduce((acc: any, conv) => {
+        const referrer = conv.referrer || 'Direto';
+        if (!acc[referrer]) {
+          acc[referrer] = { referrer, count: 0 };
+        }
+        acc[referrer].count++;
+        return acc;
+      }, {});
+
+      const totalReferrers = conversions?.length || 1;
+      const topReferrersList = Object.values(topReferrers || {})
+        .map((r: any) => ({
+          ...r,
+          percentage: ((r.count / totalReferrers) * 100).toFixed(1)
+        }))
+        .sort((a: any, b: any) => b.count - a.count)
+        .slice(0, 5);
+
       return {
         totalSites: sites?.length || 0,
         totalPages,
@@ -175,6 +266,23 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         sites: sites || [],
         conversions: conversions || [],
         isEmpty: false,
+        
+        // NEW DATA
+        conversionsByType,
+        conversionsByDay: Object.values(conversionsByDay || {}),
+        topConversionPages,
+        topPageViews,
+        uniqueVisitors,
+        uniquePages,
+        sparklineData,
+        previousPeriodMetrics: {
+          uniqueVisitors: 0, // Would need to calculate from previous period
+          uniquePages: 0,
+          pageViews: previousPageViews,
+          conversions: previousTotalConversions,
+          conversionRate: previousConversionRate,
+        },
+        topReferrers: topReferrersList,
       };
     },
     enabled: !!clientId && clientId !== 'undefined' && clientId !== 'null',

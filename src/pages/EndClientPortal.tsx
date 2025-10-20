@@ -10,8 +10,10 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useEndClientData } from "@/hooks/useEndClientData";
 import { useClientPortalAnalytics } from "@/hooks/useClientPortalAnalytics";
-import { AnalyticsMetricsCards } from "@/components/client-portal/AnalyticsMetricsCards";
-import { ClientPortalCharts } from "@/components/client-portal/ClientPortalCharts";
+import { MetricsCards } from "@/components/analytics/MetricsCards";
+import { OverviewTab } from "@/components/client-portal/OverviewTab";
+import { ConversionsTab } from "@/components/client-portal/ConversionsTab";
+import { PageViewsTab } from "@/components/client-portal/PageViewsTab";
 import { SavedReportsSection } from "@/components/client-portal/SavedReportsSection";
 import { ClientFinancialSection } from "@/components/client-portal/ClientFinancialSection";
 import { LiveIndicator } from "@/components/client-portal/LiveIndicator";
@@ -236,20 +238,17 @@ const EndClientPortal = () => {
         <div className="container mx-auto px-6 py-8 space-y-8">
           {/* Metrics Cards */}
           {analytics && (
-            <AnalyticsMetricsCards
-              monitoredPages={analytics.totalPages}
-              activePages={analytics.totalPages}
-              totalConversions={liveMetrics.totalConversions}
-              totalPageViews={analytics.pageViews}
-              conversionRate={liveMetrics.conversionRate}
-              monthlyRevenue={analytics.monthlyRevenue}
-              liveMetrics={{
-                rate: liveMetrics.conversionsPerHour,
-                timeAgo: liveMetrics.lastConversionTime 
-                  ? `${Math.floor((Date.now() - new Date(liveMetrics.lastConversionTime).getTime()) / 60000)}m atrás`
-                  : 'Nenhuma',
-                trendDirection: liveMetrics.trendDirection === 'stable' ? 'up' : liveMetrics.trendDirection
+            <MetricsCards
+              metrics={{
+                uniqueVisitors: analytics.uniqueVisitors || 0,
+                uniquePages: analytics.uniquePages || 0,
+                pageViews: analytics.pageViews || 0,
+                conversions: liveMetrics.totalConversions || 0,
+                conversionRate: liveMetrics.conversionRate?.toFixed(2) || '0.00',
               }}
+              previousMetrics={analytics.previousPeriodMetrics}
+              sparklineData={analytics.sparklineData}
+              isLoading={false}
             />
           )}
           
@@ -261,9 +260,10 @@ const EndClientPortal = () => {
 
           {/* Charts Tabs */}
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 lg:w-[750px]">
+            <TabsList className="grid w-full grid-cols-6 lg:w-[900px]">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-              <TabsTrigger value="pages">Páginas</TabsTrigger>
+              <TabsTrigger value="conversions">Conversões</TabsTrigger>
+              <TabsTrigger value="pageviews">Visualizações</TabsTrigger>
               <TabsTrigger value="realtime">
                 Tempo Real
                 {liveCount > 0 && (
@@ -284,21 +284,23 @@ const EndClientPortal = () => {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
+              {analytics && <OverviewTab analytics={analytics} />}
+            </TabsContent>
+
+            <TabsContent value="conversions" className="space-y-6">
               {analytics && (
-                <ClientPortalCharts
-                  dailyStats={analytics.dailyStats as any}
-                  topPages={analytics.topPages as any}
-                  liveData={newConversions}
+                <ConversionsTab 
+                  analytics={analytics} 
+                  siteIds={analytics.sites?.map((s: any) => s.id) || []} 
                 />
               )}
             </TabsContent>
 
-            <TabsContent value="pages" className="space-y-6">
+            <TabsContent value="pageviews" className="space-y-6">
               {analytics && (
-                <ClientPortalCharts
-                  dailyStats={analytics.dailyStats as any}
-                  topPages={analytics.topPages as any}
-                  liveData={newConversions}
+                <PageViewsTab 
+                  analytics={analytics} 
+                  siteIds={analytics.sites?.map((s: any) => s.id) || []} 
                 />
               )}
             </TabsContent>
