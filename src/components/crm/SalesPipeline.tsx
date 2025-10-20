@@ -301,7 +301,7 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-white/90 dark:hover:bg-foreground/10 hover:shadow-sm transition-all"
+                              className="h-8 w-8 hover:bg-black hover:text-white transition-all"
                               onClick={() => {
                                 setSelectedStage(stage.stage_key as any);
                                 setShowCreateDialog(true);
