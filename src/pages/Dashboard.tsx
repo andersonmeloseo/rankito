@@ -156,7 +156,7 @@ const Dashboard = () => {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="gap-2 h-auto py-2 px-3 hover:bg-muted"
+                    className="gap-2 h-auto py-2 px-3 hover:bg-muted hover:text-foreground"
                   >
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Avatar'} />
