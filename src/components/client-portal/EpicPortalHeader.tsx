@@ -1,6 +1,8 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Eye, DollarSign, Target, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Eye, DollarSign, Target, Activity, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface EpicPortalHeaderProps {
   clientName: string;
@@ -16,6 +18,9 @@ interface EpicPortalHeaderProps {
   viewsTrend?: 'up' | 'down';
   daysRemaining?: number | null;
   contractStatus?: string;
+  nextPaymentDate?: string | null;
+  nextPaymentAmount?: number;
+  paymentStatus?: 'current' | 'overdue' | 'due_soon';
 }
 
 export const EpicPortalHeader = ({
@@ -31,6 +36,9 @@ export const EpicPortalHeader = ({
   viewsTrend = 'up',
   daysRemaining,
   contractStatus,
+  nextPaymentDate,
+  nextPaymentAmount,
+  paymentStatus,
 }: EpicPortalHeaderProps) => {
   const initials = clientName
     .split(' ')
@@ -78,6 +86,17 @@ export const EpicPortalHeader = ({
             {contractStatus && daysRemaining !== null && (
               <Badge variant={contractStatus === 'active' ? 'default' : 'secondary'} className="text-xs">
                 {daysRemaining > 0 ? `${daysRemaining} dias restantes` : 'Contrato expirado'}
+              </Badge>
+            )}
+            {nextPaymentDate && (
+              <Badge 
+                variant={paymentStatus === 'overdue' ? 'destructive' : paymentStatus === 'due_soon' ? 'secondary' : 'default'}
+                className="text-xs flex items-center gap-1.5"
+              >
+                <Calendar className="h-3 w-3" />
+                {format(new Date(nextPaymentDate), 'dd/MM/yyyy', { locale: ptBR })} - R$ {nextPaymentAmount?.toLocaleString('pt-BR')}
+                {paymentStatus === 'overdue' && ' (ATRASADO)'}
+                {paymentStatus === 'due_soon' && ' (VENCE EM BREVE)'}
               </Badge>
             )}
           </div>

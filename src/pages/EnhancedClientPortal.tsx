@@ -12,19 +12,17 @@ import { EpicPortalHeader } from '@/components/client-portal/EpicPortalHeader';
 import { OverviewTab } from '@/components/client-portal/OverviewTab';
 import { ConversionsTab } from '@/components/client-portal/ConversionsTab';
 import { PageViewsTab } from '@/components/client-portal/PageViewsTab';
-import { RealtimeMonitoring } from '@/components/client-portal/RealtimeMonitoring';
 import { ContractFinancialDashboard } from '@/components/client-portal/ContractFinancialDashboard';
 import { ConversionToast } from '@/components/client-portal/ConversionToast';
 import { useRealtimeConversions } from '@/hooks/useRealtimeConversions';
 import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
 import { MetricsCards } from '@/components/analytics/MetricsCards';
 import { EmptyState } from '@/components/client-portal/EmptyState';
+import { SavedReportsSection } from '@/components/client-portal/SavedReportsSection';
 
 export const EnhancedClientPortal = () => {
   const { token } = useParams();
   const [periodDays, setPeriodDays] = useState(30);
-  const [realtimeEnabled] = useState(true);
-  const [soundEnabled] = useState(true);
 
   const { data: authData, isLoading: authLoading, error: authError } = usePortalAuth(token);
   const clientId = authData?.clientId;
@@ -38,7 +36,7 @@ export const EnhancedClientPortal = () => {
     liveCount 
   } = useRealtimeConversions(
     clientId ? [clientId] : undefined, 
-    realtimeEnabled ? () => {} : undefined
+    () => {}
   );
   
   const analyticsData = analytics ? {
@@ -129,7 +127,7 @@ export const EnhancedClientPortal = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <ConversionToast conversion={realtimeConversions[0]} soundEnabled={soundEnabled} />
+      <ConversionToast conversion={realtimeConversions[0]} soundEnabled={true} />
       
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <EpicPortalHeader
@@ -144,6 +142,9 @@ export const EnhancedClientPortal = () => {
           sparklineData={sparklineData}
           daysRemaining={projectData?.daysRemaining}
           contractStatus={projectData?.contractStatus}
+          nextPaymentDate={projectData?.nextPaymentDate}
+          nextPaymentAmount={projectData?.nextPaymentAmount}
+          paymentStatus={projectData?.paymentStatus}
         />
 
         {/* Professional Metrics Cards */}
@@ -167,11 +168,12 @@ export const EnhancedClientPortal = () => {
         />
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">📊 Visão Geral</TabsTrigger>
             <TabsTrigger value="conversions">🎯 Conversões</TabsTrigger>
             <TabsTrigger value="pageviews">👁️ Visualizações</TabsTrigger>
-            <TabsTrigger value="realtime">⚡ Tempo Real</TabsTrigger>
+            <TabsTrigger value="financeiro">💰 Financeiro</TabsTrigger>
+            <TabsTrigger value="relatorios">📄 Relatórios</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -192,24 +194,22 @@ export const EnhancedClientPortal = () => {
             />
           </TabsContent>
 
-          <TabsContent value="realtime">
-            <RealtimeMonitoring conversions={realtimeConversions} />
+          <TabsContent value="financeiro">
+            <ContractFinancialDashboard
+              contractStartDate={projectData?.contractStartDate}
+              contractEndDate={projectData?.contractEndDate}
+              monthlyValue={projectData?.monthlyValue || 0}
+              autoRenew={projectData?.autoRenew || false}
+              daysRemaining={projectData?.daysRemaining}
+              paymentHistory={projectData?.paymentHistory || []}
+              contractStatus={projectData?.contractStatus || 'active'}
+            />
+          </TabsContent>
+
+          <TabsContent value="relatorios">
+            <SavedReportsSection reports={reports || []} />
           </TabsContent>
         </Tabs>
-
-        {/* Financial Section - Separate from tabs */}
-        <div className="mt-12 pt-8 border-t border-border">
-          <h2 className="text-2xl font-bold mb-6">💰 Informações Financeiras</h2>
-          <ContractFinancialDashboard
-            contractStartDate={projectData?.contractStartDate}
-            contractEndDate={projectData?.contractEndDate}
-            monthlyValue={projectData?.monthlyValue || 0}
-            autoRenew={projectData?.autoRenew || false}
-            daysRemaining={projectData?.daysRemaining}
-            paymentHistory={projectData?.paymentHistory || []}
-            contractStatus={projectData?.contractStatus || 'active'}
-          />
-        </div>
 
         <div className="flex justify-center pt-6">
           <Button variant="outline" size="lg" onClick={() => window.location.href = '/'}>

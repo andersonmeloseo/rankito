@@ -47,6 +47,24 @@ export const useProjectData = (clientId: string) => {
         0
       ) || 0;
 
+      // Buscar próximo pagamento pendente ou em atraso
+      const nextPayment = payments?.find(p => p.status === 'pending' || p.status === 'overdue');
+      const nextPaymentDate = nextPayment?.due_date || null;
+      const nextPaymentAmount = nextPayment ? Number(nextPayment.amount) : 0;
+
+      // Calcular status do pagamento
+      let paymentStatus: 'current' | 'overdue' | 'due_soon' = 'current';
+      if (nextPaymentDate) {
+        const dueDate = new Date(nextPaymentDate);
+        const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilDue < 0) {
+          paymentStatus = 'overdue'; // Atrasado
+        } else if (daysUntilDue <= 7) {
+          paymentStatus = 'due_soon'; // Vence em breve (próximos 7 dias)
+        }
+      }
+
       return {
         clientName: clientData.name,
         clientCompany: clientData.company,
@@ -60,6 +78,9 @@ export const useProjectData = (clientId: string) => {
         autoRenew: clientData.rank_rent_sites?.[0]?.auto_renew || false,
         paymentHistory: payments || [],
         contractStatus: daysRemaining === null ? 'active' : daysRemaining > 30 ? 'active' : daysRemaining > 0 ? 'expiring_soon' : 'expired',
+        nextPaymentDate,
+        nextPaymentAmount,
+        paymentStatus,
       };
     },
     enabled: !!clientId,
