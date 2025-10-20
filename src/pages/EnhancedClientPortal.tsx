@@ -1,365 +1,145 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useParams } from 'react-router-dom';
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { AnalyticsMetricsCards } from '@/components/client-portal/AnalyticsMetricsCards';
-import { ClientPortalCharts } from '@/components/client-portal/ClientPortalCharts';
-import { SavedReportsSection } from '@/components/client-portal/SavedReportsSection';
-import { LiveIndicator } from '@/components/client-portal/LiveIndicator';
-import { RealtimeConversionsList } from '@/components/client-portal/RealtimeConversionsList';
-import { ConversionToast } from '@/components/client-portal/ConversionToast';
-import { RealtimeSettingsComponent, RealtimeSettings } from '@/components/client-portal/RealtimeSettings';
-import { AdvancedAnalytics } from '@/components/client-portal/AdvancedAnalytics';
-import { FinancialDashboard } from '@/components/client-portal/FinancialDashboard';
-import { ExportMenu } from '@/components/client-portal/ExportMenu';
-import { EmptyState } from '@/components/client-portal/EmptyState';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { usePortalAuth } from '@/hooks/usePortalAuth';
 import { useClientPortalAnalytics } from '@/hooks/useClientPortalAnalytics';
+import { useProjectData } from '@/hooks/useProjectData';
+import { EpicPortalHeader } from '@/components/client-portal/EpicPortalHeader';
+import { ImpactfulOverviewDashboard } from '@/components/client-portal/ImpactfulOverviewDashboard';
+import { RealtimeMonitoring } from '@/components/client-portal/RealtimeMonitoring';
+import { ContractFinancialDashboard } from '@/components/client-portal/ContractFinancialDashboard';
+import { AdvancedAnalytics } from '@/components/client-portal/AdvancedAnalytics';
+import { SavedReportsSection } from '@/components/client-portal/SavedReportsSection';
+import { ConversionToast } from '@/components/client-portal/ConversionToast';
 import { useRealtimeConversions } from '@/hooks/useRealtimeConversions';
 import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
-import { Calendar, LogOut } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { DeviceAnalyticsChart } from '@/components/client-portal/DeviceAnalyticsChart';
+import { GeoAnalyticsChart } from '@/components/client-portal/GeoAnalyticsChart';
 
-export default function EnhancedClientPortal() {
+export const EnhancedClientPortal = () => {
   const { token } = useParams();
-  const navigate = useNavigate();
-  const [clientData, setClientData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [periodDays, setPeriodDays] = useState(30);
-  const [realtimeSettings, setRealtimeSettings] = useState<RealtimeSettings>({
-    realtimeEnabled: true,
-    notificationsEnabled: true,
-    soundEnabled: true,
-    notifyOnPhone: true,
-    notifyOnWhatsApp: true,
-  });
-  const [lastConversion, setLastConversion] = useState<any>(null);
-  const realtimeTabRef = useRef<HTMLDivElement>(null);
+  const [realtimeEnabled] = useState(true);
+  const [soundEnabled] = useState(true);
 
-  const { analytics, reports, isLoading } = useClientPortalAnalytics(
-    clientData?.client_id || '',
-    periodDays
-  );
+  const { data: authData, isLoading: authLoading, error: authError } = usePortalAuth(token);
+  const clientId = authData?.clientId;
+  const clientData = authData?.clientData;
 
-  // Buscar site IDs para realtime
-  const { data: clientSites } = useQuery({
-    queryKey: ['client-sites-public', clientData?.client_id],
-    queryFn: async () => {
-      if (!clientData?.client_id) return [];
-      const { data } = await supabase
-        .from('rank_rent_sites')
-        .select('id')
-        .eq('client_id', clientData.client_id)
-        .eq('is_rented', true);
-      return data?.map((s) => s.id) || [];
-    },
-    enabled: !!clientData?.client_id,
-  });
+  const { analytics, reports, isLoading: analyticsLoading } = useClientPortalAnalytics(clientId || '', periodDays);
+  const { data: projectData, isLoading: projectLoading } = useProjectData(clientId || '');
 
-  // Hook de realtime conversions
-  const handleNewConversion = useCallback((conversion: any) => {
-    if (!realtimeSettings.notificationsEnabled || !realtimeSettings.realtimeEnabled) return;
-    
-    const eventType = conversion.event_type.toLowerCase();
-    const shouldNotify = 
-      (eventType.includes('phone') && realtimeSettings.notifyOnPhone) ||
-      (eventType.includes('whatsapp') && realtimeSettings.notifyOnWhatsApp);
-    
-    if (shouldNotify) {
-      setLastConversion(conversion);
-    }
-  }, [realtimeSettings]);
+  const { 
+    conversions: realtimeConversions, 
+    liveCount 
+  } = useRealtimeConversions([clientId || ''], realtimeEnabled ? () => {} : undefined);
+  
+  const liveMetrics = useRealtimeMetrics(analytics || {}, []);
 
-  const {
-    newConversions,
-    liveCount,
-    isConnected,
-    totalConversionsToday,
-    clearNewConversions,
-  } = useRealtimeConversions(
-    realtimeSettings.realtimeEnabled ? clientSites : undefined,
-    handleNewConversion
-  );
+  const isLoading = authLoading || analyticsLoading || projectLoading;
+  const sparklineData = analytics?.dailyStats?.slice(-7).map((d: any) => d.conversions) || [];
 
-  const liveMetrics = useRealtimeMetrics(analytics, newConversions);
-
-  const scrollToRealtime = useCallback(() => {
-    realtimeTabRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
-  useEffect(() => {
-    if (!token) {
-      navigate('/');
-      return;
-    }
-    loadPortalData();
-  }, [token]);
-
-  const loadPortalData = async () => {
-    try {
-      setLoading(true);
-      
-      console.log('🔍 Buscando portal com token:', token);
-      
-      // Fetch portal data
-      const { data: portalData, error: portalError } = await supabase
-        .from('client_portal_analytics')
-        .select('*, rank_rent_clients(*)')
-        .eq('portal_token', token)
-        .eq('enabled', true)
-        .maybeSingle();
-
-      console.log('📊 Dados do portal:', portalData);
-      console.log('❌ Erro do portal:', portalError);
-
-      if (portalError) {
-        console.error('Erro ao buscar portal:', portalError);
-        throw portalError;
-      }
-
-      if (!portalData) {
-        console.error('Portal não encontrado ou desabilitado');
-        throw new Error('Portal não encontrado');
-      }
-
-      setClientData(portalData);
-    } catch (error) {
-      console.error('Error loading portal:', error);
-      setLoading(false);
-      // Não redirecionar imediatamente, mostrar mensagem de erro
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading || isLoading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 container mx-auto px-4 py-8 space-y-6">
-          <Skeleton className="h-32 w-full" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Skeleton className="h-24" />
-            <Skeleton className="h-24" />
-            <Skeleton className="h-24" />
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Skeleton className="h-48 w-full" />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-32" />)}
           </div>
-          <Skeleton className="h-96 w-full" />
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!loading && !clientData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold mb-4">Portal não encontrado</h1>
-          <p className="text-muted-foreground mb-6">
-            O link que você acessou é inválido, foi desabilitado ou o portal não está configurado.
-          </p>
-          <div className="text-sm text-muted-foreground bg-muted p-4 rounded-lg max-w-md mx-auto">
-            <p className="font-medium mb-2">Para o administrador:</p>
-            <ul className="text-left space-y-1">
-              <li>• Verifique se o portal está habilitado</li>
-              <li>• Confirme se o token está correto</li>
-              <li>• Gere um novo link se necessário</li>
-            </ul>
-          </div>
-          <Button onClick={() => navigate('/')}>Ir para Home</Button>
         </div>
       </div>
     );
   }
 
-  const clientName = clientData.rank_rent_clients?.name || 'Cliente';
+  if (authError || !authData?.isValid) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Portal não encontrado ou acesso negado.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
-      <Header />
+    <div className="min-h-screen bg-background">
+      <ConversionToast conversion={realtimeConversions[0]} soundEnabled={soundEnabled} />
       
-      <main className="flex-1 container mx-auto px-4 py-8 space-y-8 animate-fade-in">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-r from-primary to-primary/70 text-white p-8 rounded-lg shadow-lg">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Bem-vindo, {clientName}! 👋</h1>
-              <p className="text-white/90">Acompanhe o desempenho dos seus sites em tempo real</p>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <LiveIndicator 
-                isConnected={isConnected} 
-                liveCount={liveCount}
-                onViewNew={scrollToRealtime}
-              />
-              
-              <Select value={periodDays.toString()} onValueChange={(v) => setPeriodDays(Number(v))}>
-                <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Últimos 7 dias</SelectItem>
-                  <SelectItem value="30">Últimos 30 dias</SelectItem>
-                  <SelectItem value="90">Últimos 90 dias</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button 
-                variant="outline" 
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                onClick={() => navigate('/')}
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sair
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Metrics Cards */}
-        {analytics && (
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold">Dashboard Completo</h2>
-            {!analytics.isEmpty && clientSites && clientSites.length > 0 && (
-              <ExportMenu 
-                siteId={clientSites[0]} 
-                reportData={analytics}
-              />
-            )}
-          </div>
-        )}
-
-        {analytics && (
-          <AnalyticsMetricsCards
-            totalSites={analytics.totalSites}
-            totalPages={analytics.totalPages}
-            totalConversions={liveMetrics.totalConversions}
-            conversionRate={liveMetrics.conversionRate}
-            monthlyRevenue={analytics.monthlyRevenue}
-            pageViews={analytics.pageViews}
-            liveMetrics={liveMetrics}
-            clientId={clientData?.client_id}
-          />
-        )}
-        
-        {/* Conversion Toast */}
-        <ConversionToast 
-          conversion={lastConversion}
-          soundEnabled={realtimeSettings.soundEnabled}
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <EpicPortalHeader
+          clientName={clientData?.name || 'Portal'}
+          clientCompany={clientData?.company}
+          projectUrl={projectData?.projectUrl}
+          liveConversionsCount={liveCount}
+          totalConversions={analytics?.totalConversions || 0}
+          totalPageViews={analytics?.pageViews || 0}
+          monthlyRevenue={projectData?.monthlyValue || 0}
+          conversionRate={analytics?.conversionRate || 0}
+          sparklineData={sparklineData}
+          daysRemaining={projectData?.daysRemaining}
+          contractStatus={projectData?.contractStatus}
         />
 
-        {/* Tabs with Full Dashboard */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="realtime">
-              Tempo Real
-              {liveCount > 0 && (
-                <Badge variant="default" className="ml-2 bg-green-600">
-                  {liveCount}
-                </Badge>
-              )}
-            </TabsTrigger>
+            <TabsTrigger value="realtime">Tempo Real</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="financial">Financeiro</TabsTrigger>
-            <TabsTrigger value="geo">Geográfico</TabsTrigger>
             <TabsTrigger value="reports">Relatórios</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            {analytics?.isEmpty ? (
-              <EmptyState 
-                title="Bem-vindo ao seu Dashboard"
-                description="Assim que houver dados de conversões e visualizações, você verá todas as métricas aqui."
-              />
-            ) : analytics ? (
-              <ClientPortalCharts
-                dailyStats={analytics.dailyStats}
-                topPages={analytics.topPages}
-                liveData={newConversions}
-              />
-            ) : null}
-          </TabsContent>
-
-          <TabsContent value="realtime" className="space-y-6" ref={realtimeTabRef}>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <RealtimeSettingsComponent onSettingsChange={setRealtimeSettings} />
-              <div className="lg:col-span-2">
-                <RealtimeConversionsList conversions={newConversions} />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-6">
-            <AdvancedAnalytics 
-              analytics={analytics}
-              periodDays={periodDays}
+          <TabsContent value="overview">
+            <ImpactfulOverviewDashboard
+              dailyStats={analytics?.dailyStats || []}
+              topPages={analytics?.topPages || []}
+              totalConversions={analytics?.totalConversions || 0}
+              totalPageViews={analytics?.pageViews || 0}
             />
           </TabsContent>
 
-          <TabsContent value="financial" className="space-y-6">
-            {clientData?.client_id ? (
-              <FinancialDashboard 
-                clientId={clientData.client_id}
-                periodDays={periodDays}
-                monthlyRevenue={analytics?.monthlyRevenue || 0}
-              />
-            ) : (
-              <EmptyState 
-                title="Dados Financeiros"
-                description="Carregando informações financeiras..."
-                icon="trend"
-              />
-            )}
+          <TabsContent value="realtime">
+            <RealtimeMonitoring conversions={realtimeConversions} />
           </TabsContent>
 
-          <TabsContent value="geo" className="space-y-6">
-            {analytics?.geoStats && analytics.geoStats.length > 0 ? (
-              <div className="grid gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Análise Geográfica Detalhada</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-4">
-                      Visualização completa das conversões por localização
-                    </p>
-                    {/* Reuse components from AdvancedAnalytics */}
-                    <div className="space-y-4">
-                      {analytics.geoStats.map((stat: any) => (
-                        <div key={stat.location} className="flex justify-between items-center p-3 border rounded-lg">
-                          <div>
-                            <p className="font-medium">{stat.city}</p>
-                            <p className="text-sm text-muted-foreground">{stat.region}</p>
-                          </div>
-                          <Badge variant="secondary">{stat.count} conversões</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <EmptyState 
-                title="Dados Geográficos"
-                description="Dados de localização insuficientes para análise"
-              />
-            )}
+          <TabsContent value="analytics">
+            <AdvancedAnalytics analytics={analytics} periodDays={periodDays} />
+            <div className="grid gap-6 md:grid-cols-2 mt-6">
+              <DeviceAnalyticsChart data={analytics?.deviceStats || []} />
+              <GeoAnalyticsChart data={analytics?.geoStats || []} />
+            </div>
           </TabsContent>
 
-          <TabsContent value="reports" className="space-y-6">
-            <SavedReportsSection reports={reports || []} />
+          <TabsContent value="financial">
+            <ContractFinancialDashboard
+              contractStartDate={projectData?.contractStartDate}
+              contractEndDate={projectData?.contractEndDate}
+              monthlyValue={projectData?.monthlyValue || 0}
+              autoRenew={projectData?.autoRenew || false}
+              daysRemaining={projectData?.daysRemaining}
+              paymentHistory={projectData?.paymentHistory || []}
+              contractStatus={projectData?.contractStatus || 'active'}
+            />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <SavedReportsSection reports={reports} />
           </TabsContent>
         </Tabs>
-      </main>
 
-      <Footer />
+        <div className="flex justify-center pt-6">
+          <Button variant="outline" size="lg" onClick={() => window.location.href = '/'}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair do Portal
+          </Button>
+        </div>
+      </div>
     </div>
   );
-}
+};

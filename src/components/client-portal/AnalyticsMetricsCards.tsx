@@ -1,145 +1,124 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Globe, FileText, TrendingUp, DollarSign, Target, Activity, CreditCard, ArrowUp, ArrowDown } from 'lucide-react';
-import { useClientFinancials } from '@/hooks/useClientFinancials';
-import { cn } from '@/lib/utils';
+import { Globe, FileText, MousePointerClick, Eye, TrendingUp, DollarSign } from 'lucide-react';
+import { Sparkline } from '@/components/analytics/Sparkline';
 
 interface LiveMetrics {
-  totalConversions: number;
-  conversionRate: number;
-  conversionsPerHour: number;
-  trendDirection: 'up' | 'down' | 'stable';
-  lastConversionTime: string | null;
+  rate: number;
+  timeAgo: string;
+  trendDirection: 'up' | 'down';
 }
 
 interface MetricsCardsProps {
-  totalSites: number;
-  totalPages: number;
+  monitoredPages: number;
+  activePages: number;
   totalConversions: number;
+  totalPageViews: number;
   conversionRate: number;
   monthlyRevenue: number;
-  pageViews: number;
-  clientId?: string | null;
   liveMetrics?: LiveMetrics;
+  sparklineData?: number[];
 }
 
 export const AnalyticsMetricsCards = ({
-  totalSites,
-  totalPages,
+  monitoredPages,
+  activePages,
   totalConversions,
+  totalPageViews,
   conversionRate,
   monthlyRevenue,
-  pageViews,
-  clientId,
   liveMetrics,
+  sparklineData = [],
 }: MetricsCardsProps) => {
-  const { data: financialData } = useClientFinancials(clientId || null, 90);
-  
-  const totalDue = (financialData?.summary.totalPending || 0) + (financialData?.summary.totalOverdue || 0);
-  const overdueCount = financialData?.summary.overdueCount || 0;
+  const getTrendIcon = () => {
+    if (!liveMetrics) return null;
+    return liveMetrics.trendDirection === 'up' ? (
+      <TrendingUp className="h-4 w-4 text-green-500" />
+    ) : (
+      <TrendingUp className="h-4 w-4 text-red-500 rotate-180" />
+    );
+  };
 
   const metrics = [
     {
-      title: "Sites Contratados",
-      value: totalSites,
+      title: "Páginas Monitoradas",
+      value: monitoredPages,
       icon: Globe,
-      color: "text-blue-600",
+      color: "text-primary",
+      context: `${activePages} ativas`
     },
     {
       title: "Páginas Ativas",
-      value: totalPages,
+      value: activePages,
       icon: FileText,
-      color: "text-purple-600",
+      color: "text-accent",
+      context: "Com tráfego"
     },
     {
-      title: "Conversões (30d)",
+      title: "Conversões",
       value: totalConversions,
-      icon: Target,
-      color: "text-green-600",
+      icon: MousePointerClick,
+      color: "text-primary",
+      showLive: true,
+      context: `Taxa: ${conversionRate.toFixed(2)}%`
     },
     {
       title: "Visualizações",
-      value: pageViews,
-      icon: Activity,
-      color: "text-orange-600",
+      value: totalPageViews.toLocaleString(),
+      icon: Eye,
+      color: "text-accent",
+      context: "Total"
     },
     {
       title: "Taxa de Conversão",
       value: `${conversionRate.toFixed(2)}%`,
       icon: TrendingUp,
-      color: "text-indigo-600",
+      color: "text-green-500",
+      context: "Performance"
     },
     {
-      title: "Valor Mensal",
+      title: "Receita Mensal",
       value: `R$ ${monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: DollarSign,
-      color: "text-emerald-600",
-    },
-    {
-      title: "Saldo Devedor",
-      value: `R$ ${totalDue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      icon: CreditCard,
-      color: overdueCount > 0 ? "text-red-600" : "text-green-600",
-      subtitle: overdueCount > 0 ? `${overdueCount} em atraso` : "Em dia",
+      color: "text-green-600",
+      context: totalConversions > 0 ? `R$ ${(monthlyRevenue / totalConversions).toFixed(2)}/conv` : ""
     },
   ];
 
-  const getTrendIcon = () => {
-    if (!liveMetrics) return null;
-    
-    if (liveMetrics.trendDirection === 'up') {
-      return <ArrowUp className="h-4 w-4 text-green-600" />;
-    } else if (liveMetrics.trendDirection === 'down') {
-      return <ArrowDown className="h-4 w-4 text-red-600" />;
-    }
-    return null;
-  };
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {metrics.map((metric, index) => {
-        const Icon = metric.icon;
-        const isConversionMetric = metric.title === "Conversões (30d)" || metric.title === "Taxa de Conversão";
-        const showLiveBadge = isConversionMetric && liveMetrics;
-        
-        return (
-          <Card 
-            key={index} 
-            className={cn(
-              "animate-fade-in transition-all",
-              showLiveBadge && "border-green-500/50 bg-gradient-to-br from-card to-green-50/30"
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {metrics.map((metric, index) => (
+        <Card key={metric.title} className="hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {metric.title}
+              {metric.showLive && liveMetrics && liveMetrics.rate > 0 && (
+                <Badge variant="destructive" className="ml-2 animate-pulse">
+                  LIVE +{liveMetrics.rate}
+                </Badge>
+              )}
+            </CardTitle>
+            <metric.icon className={`h-5 w-5 ${metric.color}`} />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold mb-2">{metric.value}</div>
+            {metric.context && (
+              <p className="text-xs text-muted-foreground">{metric.context}</p>
             )}
-          >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {metric.title}
-                </CardTitle>
-                {showLiveBadge && (
-                  <Badge variant="outline" className="text-xs border-green-500 text-green-700">
-                    LIVE
-                  </Badge>
-                )}
+            {metric.showLive && liveMetrics && (
+              <div className="flex items-center text-xs text-muted-foreground mt-2">
+                {getTrendIcon()}
+                <span className="ml-1">{liveMetrics.timeAgo}</span>
               </div>
-              <Icon className={`w-5 h-5 ${metric.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <div className="text-2xl font-bold">{metric.value}</div>
-                {isConversionMetric && getTrendIcon()}
+            )}
+            {sparklineData.length > 0 && index < 2 && (
+              <div className="mt-3">
+                <Sparkline data={sparklineData} color={metric.color.replace('text-', '')} />
               </div>
-              {'subtitle' in metric && metric.subtitle && (
-                <p className="text-xs text-muted-foreground mt-1">{metric.subtitle}</p>
-              )}
-              {metric.title === "Conversões (30d)" && liveMetrics && liveMetrics.conversionsPerHour > 0 && (
-                <p className="text-xs text-green-600 mt-1 font-medium">
-                  +{liveMetrics.conversionsPerHour}/h agora
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };
