@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, GripVertical, Trash2 } from "lucide-react";
+import { Plus, GripVertical, Trash2, Pencil } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -59,13 +60,37 @@ const SortableStageItem = ({ stage, onUpdate, onDelete }: { stage: PipelineStage
 
       <div className="flex-1">
         {isEditing ? (
-          <Input value={label} onChange={(e) => setLabel(e.target.value)} onBlur={handleSave} onKeyDown={(e) => e.key === "Enter" && handleSave()} autoFocus className="h-8" />
+          <Input 
+            value={label} 
+            onChange={(e) => setLabel(e.target.value)} 
+            onBlur={handleSave} 
+            onKeyDown={(e) => e.key === "Enter" && handleSave()} 
+            autoFocus 
+            className="h-8" 
+          />
         ) : (
           <div className="flex items-center gap-2">
-            <span className="font-medium" onDoubleClick={() => !stage.is_system && setIsEditing(true)}>
+            <span className="font-medium" onDoubleClick={() => setIsEditing(true)}>
               {stage.label}
             </span>
             {stage.is_system && <span className="text-xs text-muted-foreground">(Sistema)</span>}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6" 
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Clique para editar o nome</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         )}
         <span className="text-xs text-muted-foreground">Chave: {stage.stage_key}</span>
@@ -268,7 +293,7 @@ export const PipelineSettings = ({ userId }: PipelineSettingsProps) => {
 
           <div className="mt-6 p-4 bg-muted rounded-lg">
             <p className="text-sm text-muted-foreground">
-              <strong>Dica:</strong> Estágios marcados como "Sistema" não podem ser removidos, apenas desativados. Duplo-clique no nome para editar.
+              <strong>Dica:</strong> Estágios marcados como "Sistema" não podem ser removidos, apenas desativados. Clique no ícone de lápis ou dê duplo-clique no nome para editar.
             </p>
           </div>
         </CardContent>
