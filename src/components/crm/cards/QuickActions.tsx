@@ -12,7 +12,7 @@ interface QuickActionsProps {
 
 export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail, isDragging }: QuickActionsProps) => {
   return (
-    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="flex gap-1">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -26,7 +26,7 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
                 onAddNote();
               }}
             >
-              <MessageSquarePlus className="h-3.5 w-3.5 text-muted-foreground" />
+              <MessageSquarePlus className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Adicionar nota rápida</TooltipContent>
@@ -44,7 +44,7 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
                 onAddTask();
               }}
             >
-              <CalendarPlus className="h-3.5 w-3.5 text-muted-foreground" />
+              <CalendarPlus className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Agendar tarefa</TooltipContent>
@@ -62,7 +62,7 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
                 onClick={(e) => e.stopPropagation()}
               >
                 <a href={`tel:${contactPhone}`}>
-                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Phone className="h-3.5 w-3.5" />
                 </a>
               </Button>
             </TooltipTrigger>
@@ -82,7 +82,7 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
                 onClick={(e) => e.stopPropagation()}
               >
                 <a href={`mailto:${contactEmail}`}>
-                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Mail className="h-3.5 w-3.5" />
                 </a>
               </Button>
             </TooltipTrigger>
