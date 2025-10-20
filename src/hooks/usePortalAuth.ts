@@ -28,9 +28,14 @@ export const usePortalAuth = (token: string | undefined) => {
         .eq('enabled', true)
         .maybeSingle();
 
+      console.log('[Portal Auth] Query result:', { data, error, token: token.substring(0, 10) });
+
       if (error) {
         console.error('[Portal Auth] Erro ao validar token:', error);
-        throw error;
+        if (error.code === 'PGRST116') {
+          throw new Error('Token inválido ou portal desativado');
+        }
+        throw new Error('Erro ao acessar o portal. Tente novamente.');
       }
 
       if (!data) {
