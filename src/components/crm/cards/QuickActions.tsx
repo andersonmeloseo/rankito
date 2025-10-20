@@ -19,7 +19,7 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-foreground hover:bg-primary hover:text-primary-foreground"
+              className="h-7 w-7 hover:bg-primary hover:text-primary-foreground"
               disabled={isDragging}
               onClick={(e) => {
                 e.stopPropagation();
@@ -37,7 +37,7 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-foreground hover:bg-primary hover:text-primary-foreground"
+              className="h-7 w-7 hover:bg-primary hover:text-primary-foreground"
               disabled={isDragging}
               onClick={(e) => {
                 e.stopPropagation();
@@ -57,7 +57,7 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
                 variant="ghost"
                 size="icon"
                 asChild
-                className="h-7 w-7 text-foreground hover:bg-green-500 hover:text-white"
+                className="h-7 w-7 hover:bg-green-500 hover:text-white"
                 disabled={isDragging}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -77,7 +77,7 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
                 variant="ghost"
                 size="icon"
                 asChild
-                className="h-7 w-7 text-foreground hover:bg-blue-500 hover:text-white"
+                className="h-7 w-7 hover:bg-blue-500 hover:text-white"
                 disabled={isDragging}
                 onClick={(e) => e.stopPropagation()}
               >
