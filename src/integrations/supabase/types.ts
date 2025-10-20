@@ -575,6 +575,7 @@ export type Database = {
           contract_start_date: string | null
           created_at: string
           email: string | null
+          end_client_user_id: string | null
           id: string
           name: string
           niche: string | null
@@ -590,6 +591,7 @@ export type Database = {
           contract_start_date?: string | null
           created_at?: string
           email?: string | null
+          end_client_user_id?: string | null
           id?: string
           name: string
           niche?: string | null
@@ -605,6 +607,7 @@ export type Database = {
           contract_start_date?: string | null
           created_at?: string
           email?: string | null
+          end_client_user_id?: string | null
           id?: string
           name?: string
           niche?: string | null
