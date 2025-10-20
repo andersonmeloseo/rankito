@@ -34,7 +34,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
       
       // Return empty data structure if no sites
       if (siteIds.length === 0) {
-        console.log('[Analytics] No sites found, returning empty data');
+        console.log('[Analytics] ⚠️ No sites found for client:', clientId);
         return {
           totalSites: 0,
           totalPages: 0,
@@ -312,6 +312,13 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
       return data;
     },
     enabled: !!clientId,
+  });
+
+  console.log('[Analytics] ✅ Retornando dados:', {
+    hasAnalytics: !!analytics,
+    isEmpty: analytics?.isEmpty,
+    totalConversions: analytics?.totalConversions,
+    clientId
   });
 
   return {

@@ -6,12 +6,16 @@ import { EventsPieChart } from '@/components/analytics/EventsPieChart';
 import { ConversionRateChart } from '@/components/analytics/ConversionRateChart';
 import { HourlyHeatmap } from '@/components/analytics/HourlyHeatmap';
 import { TopReferrersChart } from '@/components/analytics/TopReferrersChart';
+import { EmptyState } from '@/components/client-portal/EmptyState';
 
 interface OverviewTabProps {
   analytics: any;
 }
 
 export const OverviewTab = ({ analytics }: OverviewTabProps) => {
+  if (!analytics || !analytics.dailyStats) {
+    return <EmptyState title="Nenhum dado disponível" description="Aguardando dados de análise..." />;
+  }
   // Prepare data for EventsPieChart
   const pieData = [
     { name: 'WhatsApp', value: analytics.conversionsByType?.whatsapp_click || 0 },

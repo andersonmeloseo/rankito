@@ -4,6 +4,7 @@ import { TopPageViewsChart } from '@/components/analytics/TopPageViewsChart';
 import { PageViewsDistributionChart } from '@/components/analytics/PageViewsDistributionChart';
 import { PageViewsHeatmapChart } from '@/components/analytics/PageViewsHeatmapChart';
 import { PageViewsTable } from '@/components/analytics/PageViewsTable';
+import { EmptyState } from '@/components/client-portal/EmptyState';
 
 interface PageViewsTabProps {
   analytics: any;
@@ -11,6 +12,9 @@ interface PageViewsTabProps {
 }
 
 export const PageViewsTab = ({ analytics, siteIds }: PageViewsTabProps) => {
+  if (!analytics || !analytics.dailyStats) {
+    return <EmptyState title="Nenhuma visualização ainda" description="Aguardando as primeiras visualizações de página..." icon="clock" />;
+  }
   const averageViewsPerPage = analytics.uniquePages > 0 
     ? (analytics.pageViews / analytics.uniquePages).toFixed(1) 
     : '0';

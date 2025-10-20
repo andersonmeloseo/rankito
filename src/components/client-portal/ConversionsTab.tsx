@@ -4,6 +4,7 @@ import { TopConversionPagesChart } from '@/components/analytics/TopConversionPag
 import { ConversionTypeDistributionChart } from '@/components/analytics/ConversionTypeDistributionChart';
 import { ConversionHeatmapChart } from '@/components/analytics/ConversionHeatmapChart';
 import { ConversionsTable } from '@/components/analytics/ConversionsTable';
+import { EmptyState } from '@/components/client-portal/EmptyState';
 
 interface ConversionsTabProps {
   analytics: any;
@@ -11,6 +12,9 @@ interface ConversionsTabProps {
 }
 
 export const ConversionsTab = ({ analytics, siteIds }: ConversionsTabProps) => {
+  if (!analytics || !analytics.conversionsByDay) {
+    return <EmptyState title="Nenhuma conversão ainda" description="Aguardando as primeiras conversões..." icon="trend" />;
+  }
   // Prepare data for timeline
   const timelineData = (analytics.conversionsByDay || []).map((day: any) => ({
     date: day.date,
