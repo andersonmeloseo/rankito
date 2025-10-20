@@ -11,6 +11,7 @@ import EndClientPortal from "./pages/EndClientPortal";
 import EnhancedClientPortal from "./pages/EnhancedClientPortal";
 import SiteDetails from "./pages/SiteDetails";
 import ClientReport from "./pages/ClientReport";
+import UserSettings from "./pages/UserSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/client-portal/:token" element={<EnhancedClientPortal />} />
             <Route path="/dashboard/site/:siteId" element={<SiteDetails />} />
             <Route path="/report/:token" element={<ClientReport />} />
+            <Route path="/settings" element={<UserSettings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
