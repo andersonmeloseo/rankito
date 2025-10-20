@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewCards } from "@/components/rank-rent/OverviewCards";
 import { SitesList } from "@/components/rank-rent/SitesList";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
-import { ClientsList } from "@/components/rank-rent/ClientsList";
+import { ClientsListIntegrated } from "@/components/rank-rent/ClientsListIntegrated";
 import { GlobalFinancialOverview } from "@/components/rank-rent/financial/GlobalFinancialOverview";
 import { GlobalFinancialTable } from "@/components/rank-rent/financial/GlobalFinancialTable";
 import { GlobalCostSettings } from "@/components/rank-rent/financial/GlobalCostSettings";
@@ -277,7 +277,7 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="clients">
-            <ClientsList userId={user.id} />
+            <ClientsListIntegrated userId={user.id} />
           </TabsContent>
         </Tabs>
         </div>
