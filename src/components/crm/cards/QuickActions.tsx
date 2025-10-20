@@ -19,14 +19,14 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+              className="h-7 w-7 hover:bg-primary hover:text-primary-foreground"
               disabled={isDragging}
               onClick={(e) => {
                 e.stopPropagation();
                 onAddNote();
               }}
             >
-              <MessageSquarePlus className="h-3.5 w-3.5" />
+              <MessageSquarePlus className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Adicionar nota rápida</TooltipContent>
@@ -37,14 +37,14 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+              className="h-7 w-7 hover:bg-primary hover:text-primary-foreground"
               disabled={isDragging}
               onClick={(e) => {
                 e.stopPropagation();
                 onAddTask();
               }}
             >
-              <CalendarPlus className="h-3.5 w-3.5" />
+              <CalendarPlus className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Agendar tarefa</TooltipContent>
@@ -57,12 +57,12 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
                 variant="ghost"
                 size="icon"
                 asChild
-                className="h-7 w-7 text-muted-foreground hover:bg-green-500 hover:text-white"
+                className="h-7 w-7 hover:bg-green-500 hover:text-white"
                 disabled={isDragging}
                 onClick={(e) => e.stopPropagation()}
               >
                 <a href={`tel:${contactPhone}`}>
-                  <Phone className="h-3.5 w-3.5" />
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                 </a>
               </Button>
             </TooltipTrigger>
@@ -77,12 +77,12 @@ export const QuickActions = ({ onAddNote, onAddTask, contactPhone, contactEmail,
                 variant="ghost"
                 size="icon"
                 asChild
-                className="h-7 w-7 text-muted-foreground hover:bg-blue-500 hover:text-white"
+                className="h-7 w-7 hover:bg-blue-500 hover:text-white"
                 disabled={isDragging}
                 onClick={(e) => e.stopPropagation()}
               >
                 <a href={`mailto:${contactEmail}`}>
-                  <Mail className="h-3.5 w-3.5" />
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                 </a>
               </Button>
             </TooltipTrigger>
