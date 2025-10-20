@@ -16,22 +16,14 @@ interface DealCardProps {
   dragHandleProps?: any;
 }
 
-const getProbabilityBorderColor = (prob: number) => {
-  if (prob >= 75) return "border-l-green-500";
-  if (prob >= 50) return "border-l-yellow-500";
-  if (prob >= 25) return "border-l-orange-500";
-  if (prob > 0) return "border-l-red-500";
-  return "border-l-gray-300";
-};
 
 export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandleProps }: DealCardProps) => {
   return (
     <Card 
       className={cn(
-        "group relative overflow-hidden transition-all duration-200 bg-white dark:bg-card border-l-4 rounded-xl",
+        "group relative overflow-hidden transition-all duration-200 bg-white dark:bg-card rounded-xl",
         !isDragging && "hover:shadow-lg hover:-translate-y-0.5",
-        isDragging && "shadow-2xl opacity-90",
-        getProbabilityBorderColor(deal.probability)
+        isDragging && "shadow-2xl opacity-90"
       )}
     >
       {/* Drag Handle Invisível */}
