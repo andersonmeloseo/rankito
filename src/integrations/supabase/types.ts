@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      auto_conversion_settings: {
+        Row: {
+          created_at: string | null
+          default_stage: string | null
+          email_click_enabled: boolean | null
+          email_score: number | null
+          enabled: boolean | null
+          form_score: number | null
+          form_submit_enabled: boolean | null
+          id: string
+          phone_click_enabled: boolean | null
+          phone_score: number | null
+          updated_at: string | null
+          user_id: string
+          whatsapp_click_enabled: boolean | null
+          whatsapp_score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_stage?: string | null
+          email_click_enabled?: boolean | null
+          email_score?: number | null
+          enabled?: boolean | null
+          form_score?: number | null
+          form_submit_enabled?: boolean | null
+          id?: string
+          phone_click_enabled?: boolean | null
+          phone_score?: number | null
+          updated_at?: string | null
+          user_id: string
+          whatsapp_click_enabled?: boolean | null
+          whatsapp_score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          default_stage?: string | null
+          email_click_enabled?: boolean | null
+          email_score?: number | null
+          enabled?: boolean | null
+          form_score?: number | null
+          form_submit_enabled?: boolean | null
+          id?: string
+          phone_click_enabled?: boolean | null
+          phone_score?: number | null
+          updated_at?: string | null
+          user_id?: string
+          whatsapp_click_enabled?: boolean | null
+          whatsapp_score?: number | null
+        }
+        Relationships: []
+      }
       client_portal_analytics: {
         Row: {
           client_id: string

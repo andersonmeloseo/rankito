@@ -36,6 +36,8 @@ import { Footer } from "@/components/layout/Footer";
 import { PlanUsageCard } from "@/components/subscription/PlanUsageCard";
 import { LimitWarningBanner } from "@/components/subscription/LimitWarningBanner";
 import { ExternalSourcesManager } from "@/components/integrations/ExternalSourcesManager";
+import { LeadNotificationBanner } from "@/components/crm/LeadNotificationBanner";
+import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -44,6 +46,9 @@ const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
   const navigate = useNavigate();
   const { role, isSuperAdmin, isEndClient, isLoading: roleLoading } = useRole();
+
+  // Realtime leads
+  const { newLeads, clearNewLeads } = useRealtimeLeads(user?.id);
 
   const { sitesMetrics, summary, isLoading: financialLoading } = useGlobalFinancialMetrics(user?.id || "");
 
@@ -137,6 +142,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-primary/10">
       {isSuperAdmin && <SuperAdminBanner currentView="client" />}
+      <LeadNotificationBanner leads={newLeads} onDismiss={clearNewLeads} />
       <Header showSubtitle={false} />
       <div className="flex-1">
         <div className="container mx-auto p-6 pb-64 space-y-6">
