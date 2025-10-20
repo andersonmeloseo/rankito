@@ -6,7 +6,7 @@ import { LogOut, Calendar } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useRole } from "@/contexts/RoleContext";
 import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
-import { ClientPortalHeader } from "@/components/client-portal/ClientPortalHeader";
+import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useEndClientData } from "@/hooks/useEndClientData";
 import { useClientPortalAnalytics } from "@/hooks/useClientPortalAnalytics";
@@ -73,10 +73,7 @@ const EndClientPortal = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
       {isSuperAdmin && <SuperAdminBanner currentView="end_client" />}
-      <ClientPortalHeader 
-        companyName={endClientData?.clientCompany} 
-        showSubtitle={true} 
-      />
+      <Header showSubtitle={true} />
       
       <div className="flex-1">
         {/* Hero Section */}
