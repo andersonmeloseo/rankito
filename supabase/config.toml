@@ -1,5 +1,8 @@
 project_id = "jhzmgexprjnpgadkxjup"
 
+[functions.create-deal-from-external-source]
+verify_jwt = false
+
 [functions.validate-portal-token]
 verify_jwt = false
 

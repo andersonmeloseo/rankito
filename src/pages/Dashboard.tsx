@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Settings, ChevronDown } from "lucide-react";
+import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Settings, ChevronDown, Plug } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -35,6 +35,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PlanUsageCard } from "@/components/subscription/PlanUsageCard";
 import { LimitWarningBanner } from "@/components/subscription/LimitWarningBanner";
+import { ExternalSourcesManager } from "@/components/integrations/ExternalSourcesManager";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -204,7 +205,7 @@ const Dashboard = () => {
             </div>
           </div>
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-4xl">
+          <TabsList className="grid w-full grid-cols-6 max-w-5xl">
             <TabsTrigger value="overview" className="gap-2">
               <LayoutDashboard className="w-4 h-4" />
               Overview
@@ -216,6 +217,10 @@ const Dashboard = () => {
             <TabsTrigger value="crm" className="gap-2">
               <Briefcase className="w-4 h-4" />
               CRM
+            </TabsTrigger>
+            <TabsTrigger value="integrations" className="gap-2">
+              <Plug className="w-4 h-4" />
+              Integrações
             </TabsTrigger>
             <TabsTrigger value="financial" className="gap-2">
               <DollarSign className="w-4 h-4" />
@@ -246,6 +251,10 @@ const Dashboard = () => {
 
           <TabsContent value="crm">
             <CRMHub userId={user.id} />
+          </TabsContent>
+
+          <TabsContent value="integrations">
+            <ExternalSourcesManager userId={user.id} />
           </TabsContent>
 
           <TabsContent value="financial" className="space-y-6">

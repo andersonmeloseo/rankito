@@ -162,12 +162,15 @@ export type Database = {
           created_at: string | null
           description: string | null
           expected_close_date: string | null
+          external_source: string | null
           follow_up_date: string | null
           id: string
+          lead_score: number | null
           lost_reason: string | null
           probability: number | null
           site_id: string | null
           source: string | null
+          source_metadata: Json | null
           stage: string
           target_location: string | null
           target_niche: string | null
@@ -186,12 +189,15 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           expected_close_date?: string | null
+          external_source?: string | null
           follow_up_date?: string | null
           id?: string
+          lead_score?: number | null
           lost_reason?: string | null
           probability?: number | null
           site_id?: string | null
           source?: string | null
+          source_metadata?: Json | null
           stage?: string
           target_location?: string | null
           target_niche?: string | null
@@ -210,12 +216,15 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           expected_close_date?: string | null
+          external_source?: string | null
           follow_up_date?: string | null
           id?: string
+          lead_score?: number | null
           lost_reason?: string | null
           probability?: number | null
           site_id?: string | null
           source?: string | null
+          source_metadata?: Json | null
           stage?: string
           target_location?: string | null
           target_niche?: string | null
@@ -532,6 +541,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      external_lead_sources: {
+        Row: {
+          api_token: string
+          created_at: string
+          id: string
+          is_active: boolean
+          settings: Json | null
+          site_url: string | null
+          source_name: string
+          source_type: Database["public"]["Enums"]["external_source_type"]
+          stats: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_token?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          settings?: Json | null
+          site_url?: string | null
+          source_name: string
+          source_type?: Database["public"]["Enums"]["external_source_type"]
+          stats?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_token?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          settings?: Json | null
+          site_url?: string | null
+          source_name?: string
+          source_type?: Database["public"]["Enums"]["external_source_type"]
+          stats?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -2140,6 +2191,7 @@ export type Database = {
         | "whatsapp_click"
         | "form_submit"
         | "button_click"
+      external_source_type: "wordpress" | "chrome_extension" | "api" | "manual"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       subscription_status:
         | "trial"
@@ -2283,6 +2335,7 @@ export const Constants = {
         "form_submit",
         "button_click",
       ],
+      external_source_type: ["wordpress", "chrome_extension", "api", "manual"],
       payment_status: ["pending", "paid", "failed", "refunded"],
       subscription_status: [
         "trial",
