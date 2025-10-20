@@ -13,6 +13,7 @@ import {
 import { ExternalLink, FileText, Calendar, Building, Mail, Phone, BarChart3 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { GeneratePortalLinkButton } from "./GeneratePortalLinkButton";
+import { EndClientAccessSection } from "./EndClientAccessSection";
 
 interface ClientDetailsDialogProps {
   open: boolean;
@@ -148,6 +149,14 @@ export const ClientDetailsDialog = ({ open, onOpenChange, clientId, clientName }
                 </div>
               )}
             </div>
+
+            <Separator />
+
+            {/* Acesso do Cliente */}
+            <EndClientAccessSection
+              clientId={clientId}
+              clientName={clientDetails.name}
+            />
 
             <Separator />
 

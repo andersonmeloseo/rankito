@@ -29,3 +29,9 @@ verify_jwt = true
 
 [functions.generate-portal-analytics]
 verify_jwt = false
+
+[functions.create-end-client]
+verify_jwt = true
+
+[functions.reset-end-client-password]
+verify_jwt = true

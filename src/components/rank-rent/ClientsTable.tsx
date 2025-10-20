@@ -18,6 +18,7 @@ import {
   Phone,
   FileText,
   ExternalLink,
+  UserPlus,
 } from "lucide-react";
 import { ContractStatusBadge } from "./ContractStatusBadge";
 import { ContractStatus } from "@/hooks/useContractStatus";
@@ -197,6 +198,10 @@ export const ClientsTable = ({
                       <DropdownMenuItem onClick={() => onCopyPortalLink(client.client_id)}>
                         <ExternalLink className="w-4 h-4 mr-2" />
                         Copiar Link do Portal
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onViewDetails(client)}>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Gerenciar Acesso
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
