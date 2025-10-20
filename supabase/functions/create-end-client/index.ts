@@ -38,13 +38,18 @@ serve(async (req) => {
     // Verificar se o cliente pertence ao usuário atual
     const { data: client, error: clientError } = await supabaseClient
       .from('rank_rent_clients')
-      .select('id, user_id')
+      .select('id, user_id, end_client_user_id')
       .eq('id', client_id)
       .eq('user_id', user.id)
       .single();
 
     if (clientError || !client) {
       throw new Error('Cliente não encontrado ou não pertence a você');
+    }
+
+    // Verificar se já existe end_client vinculado a este cliente
+    if (client.end_client_user_id) {
+      throw new Error('Este cliente já possui um usuário end_client vinculado');
     }
 
     // Verificar se já existe um end-client para este cliente
@@ -113,6 +118,22 @@ serve(async (req) => {
     }
 
     console.log('Role updated to end_client');
+
+    // Vincular end_client ao cliente específico
+    const { error: linkError } = await supabaseAdmin
+      .from('rank_rent_clients')
+      .update({ end_client_user_id: newUser.user.id })
+      .eq('id', client_id)
+      .eq('user_id', user.id); // Garantir que pertence ao SaaS user
+
+    if (linkError) {
+      console.error('Error linking end_client to client:', linkError);
+      // Tentar deletar o usuário criado
+      await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
+      throw new Error(`Failed to link end_client: ${linkError.message}`);
+    }
+
+    console.log('End-client successfully linked to client');
 
     return new Response(
       JSON.stringify({

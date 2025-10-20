@@ -17,14 +17,16 @@ export const useEndClientData = (userId: string | undefined) => {
       if (profileError) throw profileError;
       if (!userProfile?.parent_user_id) throw new Error('Parent user not found');
 
-      // Buscar o cliente associado ao parent_user_id (o dono dos sites)
+      // Buscar o cliente vinculado DIRETAMENTE ao end_client (pela coluna end_client_user_id)
       const { data: client, error: clientError } = await supabase
         .from('rank_rent_clients')
         .select('id, name, email, company')
-        .eq('user_id', userProfile.parent_user_id)
+        .eq('end_client_user_id', userId) // ✅ CORREÇÃO: busca pelo end_client específico
+        .eq('user_id', userProfile.parent_user_id) // ✅ Validação adicional
         .single();
 
       if (clientError) {
+        console.error('Client not found for end_client:', clientError);
         return {
           clientId: null,
           ownerUserId: userProfile.parent_user_id,
@@ -36,12 +38,12 @@ export const useEndClientData = (userId: string | undefined) => {
       }
 
       return {
-        clientId: client?.id || null,
+        clientId: client.id,
         ownerUserId: userProfile.parent_user_id,
-        clientName: client?.name || client?.email || null,
-        clientCompany: client?.company || null,
-        clientEmail: client?.email || null,
-        userName: userProfile?.full_name || userProfile?.email || null,
+        clientName: client.name || client.email || null,
+        clientCompany: client.company || null,
+        clientEmail: client.email || null,
+        userName: userProfile.full_name || userProfile.email || null,
       };
     },
     enabled: !!userId,

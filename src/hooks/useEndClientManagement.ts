@@ -25,12 +25,25 @@ export const useEndClientManagement = (clientId?: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
+      // 1. Buscar o end_client_user_id do cliente específico
+      const { data: client, error: clientError } = await supabase
+        .from("rank_rent_clients")
+        .select("end_client_user_id")
+        .eq("id", clientId)
+        .eq("user_id", user.id) // ✅ Garantir que pertence ao SaaS user
+        .single();
+
+      if (clientError || !client?.end_client_user_id) {
+        return null; // Cliente não tem end_client vinculado
+      }
+
+      // 2. Buscar o profile do end_client específico
       const { data, error } = await supabase
         .from("profiles")
         .select("id, email, full_name, created_at, last_activity_at")
-        .eq("parent_user_id", user.id)
-        .limit(1)
-        .maybeSingle();
+        .eq("id", client.end_client_user_id)
+        .eq("parent_user_id", user.id) // ✅ Validação adicional
+        .single();
 
       if (error && error.code !== 'PGRST116') throw error;
       return data;
