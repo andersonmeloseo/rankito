@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +16,10 @@ import { LiveIndicator } from '@/components/client-portal/LiveIndicator';
 import { RealtimeConversionsList } from '@/components/client-portal/RealtimeConversionsList';
 import { ConversionToast } from '@/components/client-portal/ConversionToast';
 import { RealtimeSettingsComponent, RealtimeSettings } from '@/components/client-portal/RealtimeSettings';
+import { AdvancedAnalytics } from '@/components/client-portal/AdvancedAnalytics';
+import { FinancialDashboard } from '@/components/client-portal/FinancialDashboard';
+import { ExportMenu } from '@/components/client-portal/ExportMenu';
+import { EmptyState } from '@/components/client-portal/EmptyState';
 import { useClientPortalAnalytics } from '@/hooks/useClientPortalAnalytics';
 import { useRealtimeConversions } from '@/hooks/useRealtimeConversions';
 import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
@@ -219,6 +224,18 @@ export default function EnhancedClientPortal() {
 
         {/* Metrics Cards */}
         {analytics && (
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold">Dashboard Completo</h2>
+            {!analytics.isEmpty && clientSites && clientSites.length > 0 && (
+              <ExportMenu 
+                siteId={clientSites[0]} 
+                reportData={analytics}
+              />
+            )}
+          </div>
+        )}
+
+        {analytics && (
           <AnalyticsMetricsCards
             totalSites={analytics.totalSites}
             totalPages={analytics.totalPages}
@@ -227,6 +244,7 @@ export default function EnhancedClientPortal() {
             monthlyRevenue={analytics.monthlyRevenue}
             pageViews={analytics.pageViews}
             liveMetrics={liveMetrics}
+            clientId={clientData?.client_id}
           />
         )}
         
@@ -236,9 +254,9 @@ export default function EnhancedClientPortal() {
           soundEnabled={realtimeSettings.soundEnabled}
         />
 
-        {/* Tabs with Realtime */}
+        {/* Tabs with Full Dashboard */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[700px]">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="realtime">
               Tempo Real
@@ -248,17 +266,25 @@ export default function EnhancedClientPortal() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="financial">Financeiro</TabsTrigger>
+            <TabsTrigger value="geo">Geográfico</TabsTrigger>
             <TabsTrigger value="reports">Relatórios</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            {analytics && (
+            {analytics?.isEmpty ? (
+              <EmptyState 
+                title="Bem-vindo ao seu Dashboard"
+                description="Assim que houver dados de conversões e visualizações, você verá todas as métricas aqui."
+              />
+            ) : analytics ? (
               <ClientPortalCharts
                 dailyStats={analytics.dailyStats}
                 topPages={analytics.topPages}
                 liveData={newConversions}
               />
-            )}
+            ) : null}
           </TabsContent>
 
           <TabsContent value="realtime" className="space-y-6" ref={realtimeTabRef}>
@@ -268,6 +294,63 @@ export default function EnhancedClientPortal() {
                 <RealtimeConversionsList conversions={newConversions} />
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <AdvancedAnalytics 
+              analytics={analytics}
+              periodDays={periodDays}
+            />
+          </TabsContent>
+
+          <TabsContent value="financial" className="space-y-6">
+            {clientData?.client_id ? (
+              <FinancialDashboard 
+                clientId={clientData.client_id}
+                periodDays={periodDays}
+                monthlyRevenue={analytics?.monthlyRevenue || 0}
+              />
+            ) : (
+              <EmptyState 
+                title="Dados Financeiros"
+                description="Carregando informações financeiras..."
+                icon="trend"
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="geo" className="space-y-6">
+            {analytics?.geoStats && analytics.geoStats.length > 0 ? (
+              <div className="grid gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Análise Geográfica Detalhada</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground mb-4">
+                      Visualização completa das conversões por localização
+                    </p>
+                    {/* Reuse components from AdvancedAnalytics */}
+                    <div className="space-y-4">
+                      {analytics.geoStats.map((stat: any) => (
+                        <div key={stat.location} className="flex justify-between items-center p-3 border rounded-lg">
+                          <div>
+                            <p className="font-medium">{stat.city}</p>
+                            <p className="text-sm text-muted-foreground">{stat.region}</p>
+                          </div>
+                          <Badge variant="secondary">{stat.count} conversões</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <EmptyState 
+                title="Dados Geográficos"
+                description="Dados de localização insuficientes para análise"
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-6">
