@@ -13,8 +13,11 @@ import { useClientPortalAnalytics } from "@/hooks/useClientPortalAnalytics";
 import { AnalyticsMetricsCards } from "@/components/client-portal/AnalyticsMetricsCards";
 import { ClientPortalCharts } from "@/components/client-portal/ClientPortalCharts";
 import { SavedReportsSection } from "@/components/client-portal/SavedReportsSection";
+import { ClientFinancialSection } from "@/components/client-portal/ClientFinancialSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { useClientFinancials } from "@/hooks/useClientFinancials";
 
 const EndClientPortal = () => {
   const navigate = useNavigate();
@@ -33,6 +36,8 @@ const EndClientPortal = () => {
     endClientData?.clientId || '', 
     periodDays
   );
+
+  const { data: financialData } = useClientFinancials(endClientData?.clientId || null, periodDays);
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -110,14 +115,23 @@ const EndClientPortal = () => {
               conversionRate={analytics.conversionRate}
               monthlyRevenue={analytics.monthlyRevenue}
               pageViews={analytics.pageViews}
+              clientId={endClientData?.clientId}
             />
           )}
 
           {/* Charts Tabs */}
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+            <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="pages">Páginas</TabsTrigger>
+              <TabsTrigger value="financial">
+                Financeiro
+                {financialData?.summary.overdueCount ? (
+                  <Badge variant="destructive" className="ml-2">
+                    {financialData.summary.overdueCount}
+                  </Badge>
+                ) : null}
+              </TabsTrigger>
               <TabsTrigger value="reports">Relatórios</TabsTrigger>
             </TabsList>
 
@@ -137,6 +151,13 @@ const EndClientPortal = () => {
                   topPages={analytics.topPages as any}
                 />
               )}
+            </TabsContent>
+
+            <TabsContent value="financial" className="space-y-6">
+              <ClientFinancialSection 
+                clientId={endClientData?.clientId || null} 
+                periodDays={periodDays}
+              />
             </TabsContent>
 
             <TabsContent value="reports" className="space-y-6">

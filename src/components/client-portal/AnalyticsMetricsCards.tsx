@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Globe, FileText, TrendingUp, DollarSign, Target, Activity } from 'lucide-react';
+import { Globe, FileText, TrendingUp, DollarSign, Target, Activity, CreditCard } from 'lucide-react';
+import { useClientFinancials } from '@/hooks/useClientFinancials';
 
 interface MetricsCardsProps {
   totalSites: number;
@@ -8,6 +9,7 @@ interface MetricsCardsProps {
   conversionRate: number;
   monthlyRevenue: number;
   pageViews: number;
+  clientId?: string | null;
 }
 
 export const AnalyticsMetricsCards = ({
@@ -17,7 +19,13 @@ export const AnalyticsMetricsCards = ({
   conversionRate,
   monthlyRevenue,
   pageViews,
+  clientId,
 }: MetricsCardsProps) => {
+  const { data: financialData } = useClientFinancials(clientId || null, 90);
+  
+  const totalDue = (financialData?.summary.totalPending || 0) + (financialData?.summary.totalOverdue || 0);
+  const overdueCount = financialData?.summary.overdueCount || 0;
+
   const metrics = [
     {
       title: "Sites Contratados",
@@ -55,6 +63,13 @@ export const AnalyticsMetricsCards = ({
       icon: DollarSign,
       color: "text-emerald-600",
     },
+    {
+      title: "Saldo Devedor",
+      value: `R$ ${totalDue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: CreditCard,
+      color: overdueCount > 0 ? "text-red-600" : "text-green-600",
+      subtitle: overdueCount > 0 ? `${overdueCount} em atraso` : "Em dia",
+    },
   ];
 
   return (
@@ -71,6 +86,9 @@ export const AnalyticsMetricsCards = ({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{metric.value}</div>
+              {'subtitle' in metric && metric.subtitle && (
+                <p className="text-xs text-muted-foreground mt-1">{metric.subtitle}</p>
+              )}
             </CardContent>
           </Card>
         );
