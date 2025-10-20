@@ -26,6 +26,7 @@ import { UserProfile } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useAdminPasswordReset } from '@/hooks/useAdminPasswordReset';
 
 interface AccountTabProps {
   profile: UserProfile | undefined;
@@ -37,11 +38,14 @@ export const AccountTab = ({ profile, onUpdatePassword, isUpdating }: AccountTab
   const navigate = useNavigate();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAdminResetDialog, setShowAdminResetDialog] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
+  const [adminNewPassword, setAdminNewPassword] = useState('');
+  const adminResetMutation = useAdminPasswordReset();
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,13 +142,21 @@ export const AccountTab = ({ profile, onUpdatePassword, isUpdating }: AccountTab
             Altere sua senha regularmente para manter sua conta segura
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <Button
             variant="outline"
             onClick={() => setShowPasswordDialog(true)}
           >
             Alterar senha
           </Button>
+          <div className="pt-2">
+            <Button
+              variant="default"
+              onClick={() => setShowAdminResetDialog(true)}
+            >
+              Reset de Senha (Admin)
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -230,6 +242,53 @@ export const AccountTab = ({ profile, onUpdatePassword, isUpdating }: AccountTab
               </Button>
               <Button type="submit" disabled={isUpdating}>
                 {isUpdating ? 'Salvando...' : 'Salvar senha'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de reset admin de senha */}
+      <Dialog open={showAdminResetDialog} onOpenChange={setShowAdminResetDialog}>
+        <DialogContent>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            adminResetMutation.mutate(adminNewPassword, {
+              onSuccess: () => {
+                setShowAdminResetDialog(false);
+                setAdminNewPassword('');
+              }
+            });
+          }}>
+            <DialogHeader>
+              <DialogTitle>Reset de Senha (Admin)</DialogTitle>
+              <DialogDescription>
+                Digite a nova senha. Não é necessário informar a senha atual.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="adminNewPassword">Nova senha</Label>
+                <Input
+                  id="adminNewPassword"
+                  type="password"
+                  value={adminNewPassword}
+                  onChange={(e) => setAdminNewPassword(e.target.value)}
+                  placeholder="Meloalmeida1981@"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAdminResetDialog(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={adminResetMutation.isPending}>
+                {adminResetMutation.isPending ? 'Alterando...' : 'Alterar Senha'}
               </Button>
             </DialogFooter>
           </form>
