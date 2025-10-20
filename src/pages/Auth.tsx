@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { BarChart3, Mountain } from "lucide-react";
+import { Mountain, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Session } from "@supabase/supabase-js";
 
@@ -20,6 +20,8 @@ const Auth = () => {
   const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -179,6 +181,36 @@ const Auth = () => {
     setLoading(false);
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email obrigatório",
+        description: "Por favor, informe seu email para recuperar a senha.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/dashboard`,
+    });
+
+    if (error) {
+      toast({
+        title: "Erro ao enviar email",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Email enviado!",
+        description: "Verifique sua caixa de entrada para redefinir sua senha.",
+      });
+    }
+    setLoading(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-primary/10">
@@ -238,14 +270,39 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password-signin">Senha</Label>
-                    <Input
-                      id="password-signin"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password-signin"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="px-0 text-sm"
+                      onClick={handleForgotPassword}
+                      disabled={loading}
+                    >
+                      Esqueci minha senha
+                    </Button>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Entrando..." : "Entrar"}
@@ -280,15 +337,29 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password-signup">Senha</Label>
-                    <Input
-                      id="password-signup"
-                      type="password"
-                      placeholder="Mínimo 8 caracteres"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={8}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password-signup"
+                        type={showSignupPassword ? "text" : "password"}
+                        placeholder="Mínimo 8 caracteres"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={8}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPassword(!showSignupPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showSignupPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="whatsapp-signup">WhatsApp</Label>
