@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 interface AddSiteDialogProps {
   open: boolean;
@@ -17,6 +20,7 @@ interface AddSiteDialogProps {
 export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps) => {
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
+  const { data: limits, isLoading: limitsLoading } = useSubscriptionLimits();
 
   const [formData, setFormData] = useState({
     site_name: "",
@@ -86,14 +90,17 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
       
       let errorMessage = error.message || "Erro ao cadastrar site";
       
+      // Detectar erro de limite (do trigger)
+      if (error.message?.includes('Limite de')) {
+        errorMessage = error.message;
+      }
       // Detectar erro de RLS
-      if (error.message?.includes('row-level security') || 
+      else if (error.message?.includes('row-level security') || 
           error.message?.includes('policy')) {
         errorMessage = 'Você não tem permissão para cadastrar sites. Entre em contato com o suporte.';
       }
-      
       // Detectar erro de campos obrigatórios
-      if (error.message?.includes('not-null') || 
+      else if (error.message?.includes('not-null') || 
           error.message?.includes('required')) {
         errorMessage = 'Preencha todos os campos obrigatórios.';
       }
@@ -115,6 +122,17 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
           <DialogTitle>Adicionar Novo Site</DialogTitle>
           <DialogDescription>Cadastre um novo site Rank & Rent para começar a rastrear conversões.</DialogDescription>
         </DialogHeader>
+
+        {!limits?.canCreateSite && !limits?.isUnlimited && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Limite atingido</AlertTitle>
+            <AlertDescription>
+              Você atingiu o limite de {limits?.plan?.max_sites} sites do plano {limits?.plan?.name}.
+              Entre em contato para fazer upgrade e criar mais sites.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="grid grid-cols-2 gap-4">
@@ -194,8 +212,14 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Cadastrando..." : "Cadastrar Site"}
+            <Button 
+              type="submit" 
+              disabled={loading || limitsLoading || (!limits?.canCreateSite && !limits?.isUnlimited)}
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {!limits?.canCreateSite && !limits?.isUnlimited
+                ? `Limite atingido (${limits?.plan?.max_sites} sites)` 
+                : loading ? "Cadastrando..." : "Cadastrar Site"}
             </Button>
           </div>
         </form>

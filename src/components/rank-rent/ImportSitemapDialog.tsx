@@ -13,7 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-import { FileText } from "lucide-react";
+import { FileText, AlertCircle } from "lucide-react";
+import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface ImportSitemapDialogProps {
   siteId: string;
@@ -24,6 +26,7 @@ interface ImportSitemapDialogProps {
 export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitemapDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: limits } = useSubscriptionLimits();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [sitemapUrl, setSitemapUrl] = useState("");
@@ -42,6 +45,17 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar limite antes de importar
+    if (!limits?.canCreatePage(siteId) && !limits?.isUnlimited) {
+      toast({
+        title: "Limite de páginas atingido",
+        description: `Seu plano ${limits?.plan?.name} permite ${limits?.plan?.max_pages_per_site} páginas por site.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     setProgress(10);
     setResult(null);
@@ -103,11 +117,19 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
           resetState();
         }, 3000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao importar sitemap:", error);
+      
+      let errorMessage = error instanceof Error ? error.message : "Não foi possível importar o sitemap";
+      
+      // Detectar erro de limite do trigger
+      if (error.message?.includes('Limite de')) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Não foi possível importar o sitemap",
+        description: errorMessage,
         variant: "destructive",
       });
       setProgress(0);

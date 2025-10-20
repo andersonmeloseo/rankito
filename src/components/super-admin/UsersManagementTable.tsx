@@ -12,6 +12,7 @@ import { BlockUserDialog } from "./BlockUserDialog";
 import { EditUserDialog } from "./EditUserDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { BulkAssignPlanDialog } from "./BulkAssignPlanDialog";
+import { ChangePlanDialog } from "./ChangePlanDialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -25,6 +26,7 @@ export const UsersManagementTable = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkPlanDialogOpen, setBulkPlanDialogOpen] = useState(false);
+  const [changePlanDialogOpen, setChangePlanDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const { 
@@ -79,6 +81,15 @@ export const UsersManagementTable = () => {
   const getPlanName = (user: any) => {
     const sub = user.user_subscriptions?.[0];
     return sub?.subscription_plans?.name || '-';
+  };
+
+  const getPlanBadgeVariant = (planSlug?: string) => {
+    if (!planSlug) return "secondary";
+    switch (planSlug) {
+      case 'free': return "secondary";
+      case 'enterprise': return "default";
+      default: return "outline";
+    }
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -219,7 +230,7 @@ export const UsersManagementTable = () => {
               <TableHead>Plano</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Cadastro</TableHead>
-              <TableHead>Ações</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -243,13 +254,30 @@ export const UsersManagementTable = () => {
                     ) : '-'}
                   </TableCell>
                   <TableCell>{user.country_code || '-'}</TableCell>
-                  <TableCell>{getPlanName(user)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getPlanBadgeVariant(user.user_subscriptions?.[0]?.subscription_plans?.slug)}>
+                        {getPlanName(user)}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setChangePlanDialogOpen(true);
+                        }}
+                        className="h-7 w-7 p-0"
+                      >
+                        <DollarSign className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </TableCell>
                   <TableCell>{getStatusBadge(user)}</TableCell>
                   <TableCell>
                     {user.created_at ? format(new Date(user.created_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 justify-end">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -362,6 +390,12 @@ export const UsersManagementTable = () => {
           setBulkPlanDialogOpen(false);
           setSelectedUserIds([]);
         }}
+      />
+
+      <ChangePlanDialog
+        user={selectedUser}
+        open={changePlanDialogOpen}
+        onOpenChange={setChangePlanDialogOpen}
       />
     </div>
   );

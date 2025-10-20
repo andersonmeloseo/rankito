@@ -33,6 +33,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { PlanUsageCard } from "@/components/subscription/PlanUsageCard";
+import { LimitWarningBanner } from "@/components/subscription/LimitWarningBanner";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -226,7 +228,15 @@ const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <OverviewCards userId={user.id} />
+            <LimitWarningBanner />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="lg:col-span-1">
+                <PlanUsageCard />
+              </div>
+              <div className="lg:col-span-3">
+                <OverviewCards userId={user.id} />
+              </div>
+            </div>
             <SitesList userId={user.id} />
           </TabsContent>
 
