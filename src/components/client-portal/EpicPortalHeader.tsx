@@ -1,7 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Eye, DollarSign, Zap } from 'lucide-react';
-import { Sparkline } from '@/components/analytics/Sparkline';
+import { TrendingUp, TrendingDown, Eye, DollarSign, Target, Activity } from 'lucide-react';
 
 interface EpicPortalHeaderProps {
   clientName: string;
@@ -28,7 +27,6 @@ export const EpicPortalHeader = ({
   totalPageViews,
   monthlyRevenue,
   conversionRate,
-  sparklineData = [],
   conversionTrend = 'up',
   viewsTrend = 'up',
   daysRemaining,
@@ -42,18 +40,18 @@ export const EpicPortalHeader = ({
     .slice(0, 2);
 
   return (
-    <div className="space-y-6">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary/10 via-background to-accent/5 rounded-2xl p-8 border border-border/50">
-        <div className="flex items-start justify-between mb-6">
+    <div className="space-y-8">
+      {/* Header Info */}
+      <div className="bg-card border border-border rounded-xl p-8">
+        <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg">
+            <div className="w-16 h-16 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
               {initials}
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground">{clientName}</h1>
               {clientCompany && (
-                <p className="text-muted-foreground text-lg">{clientCompany}</p>
+                <p className="text-muted-foreground text-base mt-1">{clientCompany}</p>
               )}
               {projectUrl && (
                 <a
@@ -68,116 +66,89 @@ export const EpicPortalHeader = ({
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <Badge 
-              className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 text-sm font-bold shadow-lg animate-pulse"
-            >
-              <span className="relative flex h-2 w-2 mr-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-              </span>
-              AO VIVO
-              {liveConversionsCount > 0 && (
-                <span className="ml-2 bg-white text-red-600 px-2 py-0.5 rounded-full text-xs font-extrabold">
-                  +{liveConversionsCount}
+            {liveConversionsCount > 0 && (
+              <Badge className="bg-red-500 text-white px-3 py-1.5 text-xs">
+                <span className="relative flex h-2 w-2 mr-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
                 </span>
-              )}
-            </Badge>
+                AO VIVO {liveConversionsCount > 0 && `+${liveConversionsCount}`}
+              </Badge>
+            )}
             {contractStatus && daysRemaining !== null && (
-              <Badge variant={contractStatus === 'active' ? 'default' : 'destructive'}>
+              <Badge variant={contractStatus === 'active' ? 'default' : 'secondary'} className="text-xs">
                 {daysRemaining > 0 ? `${daysRemaining} dias restantes` : 'Contrato expirado'}
               </Badge>
             )}
           </div>
         </div>
+      </div>
 
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Conversões */}
-          <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:shadow-lg transition-shadow">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Conversões</p>
-                <p className="text-4xl font-bold text-foreground">{totalConversions.toLocaleString()}</p>
-              </div>
+      {/* Metric Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Conversões */}
+        <Card className="bg-card border border-border hover:shadow-lg transition-shadow duration-200">
+          <div className="p-8">
+            <div className="flex items-center justify-between mb-2">
+              <Target className="h-5 w-5 text-muted-foreground" />
               {conversionTrend === 'up' ? (
-                <TrendingUp className="h-5 w-5 text-green-500" />
+                <TrendingUp className="h-4 w-4 text-green-500" />
               ) : (
-                <TrendingDown className="h-5 w-5 text-red-500" />
+                <TrendingDown className="h-4 w-4 text-red-500" />
               )}
             </div>
-            {sparklineData.length > 0 && (
-              <Sparkline data={sparklineData} color="#10b981" />
-            )}
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Conversões</p>
+            <p className="text-4xl font-bold text-foreground mb-1">{totalConversions.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">
               Taxa: {conversionRate.toFixed(2)}%
             </p>
-          </Card>
+          </div>
+        </Card>
 
-          {/* Visualizações */}
-          <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:shadow-lg transition-shadow">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Visualizações</p>
-                <p className="text-4xl font-bold text-foreground">{totalPageViews.toLocaleString()}</p>
-              </div>
+        {/* Visualizações */}
+        <Card className="bg-card border border-border hover:shadow-lg transition-shadow duration-200">
+          <div className="p-8">
+            <div className="flex items-center justify-between mb-2">
+              <Eye className="h-5 w-5 text-muted-foreground" />
               {viewsTrend === 'up' ? (
-                <TrendingUp className="h-5 w-5 text-green-500" />
+                <TrendingUp className="h-4 w-4 text-green-500" />
               ) : (
-                <TrendingDown className="h-5 w-5 text-red-500" />
+                <TrendingDown className="h-4 w-4 text-red-500" />
               )}
             </div>
-            <div className="h-12 flex items-end gap-1 mt-2">
-              {sparklineData.map((value, i) => (
-                <div
-                  key={i}
-                  className="flex-1 bg-primary/20 rounded-t"
-                  style={{ height: `${(value / Math.max(...sparklineData)) * 100}%` }}
-                />
-              ))}
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Visualizações</p>
+            <p className="text-4xl font-bold text-foreground mb-1">{totalPageViews.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
+          </div>
+        </Card>
+
+        {/* Receita */}
+        <Card className="bg-card border border-border hover:shadow-lg transition-shadow duration-200">
+          <div className="p-8">
+            <div className="flex items-center justify-between mb-2">
+              <DollarSign className="h-5 w-5 text-muted-foreground" />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              <Eye className="h-3 w-3 inline mr-1" />
-              Últimos 7 dias
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Receita Mensal</p>
+            <p className="text-4xl font-bold text-foreground mb-1">
+              R$ {monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
             </p>
-          </Card>
+            <p className="text-xs text-muted-foreground">
+              Por conversão: R$ {totalConversions > 0 ? (monthlyRevenue / totalConversions).toFixed(2) : '0.00'}
+            </p>
+          </div>
+        </Card>
 
-          {/* Receita */}
-          <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:shadow-lg transition-shadow">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Receita Mensal</p>
-                <p className="text-4xl font-bold text-foreground">
-                  R$ {monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-              <DollarSign className="h-5 w-5 text-green-500" />
+        {/* Tempo Real */}
+        <Card className="bg-card border border-border hover:shadow-lg transition-shadow duration-200">
+          <div className="p-8">
+            <div className="flex items-center justify-between mb-2">
+              <Activity className="h-5 w-5 text-muted-foreground" />
             </div>
-            <div className="mt-4 pt-4 border-t border-border/50">
-              <p className="text-xs text-muted-foreground">
-                Valor por conversão: R$ {totalConversions > 0 ? (monthlyRevenue / totalConversions).toFixed(2) : '0.00'}
-              </p>
-            </div>
-          </Card>
-
-          {/* Tempo Real */}
-          <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur border-primary/20 hover:shadow-lg transition-shadow relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl" />
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Agora</p>
-                  <p className="text-4xl font-bold text-primary">{liveConversionsCount}</p>
-                </div>
-                <Zap className="h-5 w-5 text-primary animate-pulse" />
-              </div>
-              <div className="mt-4">
-                <p className="text-xs text-muted-foreground">
-                  Conversões ativas
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Agora</p>
+            <p className="text-4xl font-bold text-primary mb-1">{liveConversionsCount}</p>
+            <p className="text-xs text-muted-foreground">Conversões ativas</p>
+          </div>
+        </Card>
       </div>
     </div>
   );

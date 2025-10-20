@@ -32,9 +32,9 @@ export const ModernAreaChart = ({ data, title = 'Performance ao Longo do Tempo' 
   };
 
   return (
-    <Card className="col-span-full backdrop-blur-xl bg-card/80 border-border/50 shadow-xl hover:shadow-2xl transition-all duration-300">
+    <Card className="col-span-full bg-card border border-border hover:shadow-lg transition-shadow duration-200">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <CardTitle className="text-xl font-semibold">
           {title}
         </CardTitle>
       </CardHeader>
@@ -43,11 +43,11 @@ export const ModernAreaChart = ({ data, title = 'Performance ao Longo do Tempo' 
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorConversionsModern" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.9}/>
+                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3}/>
                 <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.05}/>
               </linearGradient>
               <linearGradient id="colorPageViewsModern" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.7}/>
+                <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3}/>
                 <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.05}/>
               </linearGradient>
             </defs>
@@ -85,22 +85,22 @@ export const ModernAreaChart = ({ data, title = 'Performance ao Longo do Tempo' 
               type="monotone"
               dataKey="conversions"
               stroke="hsl(var(--chart-1))"
-              strokeWidth={4}
+              strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorConversionsModern)"
               name="Conversões"
-              dot={<CustomDot />}
-              activeDot={{ r: 8, fill: 'hsl(var(--chart-1))', stroke: '#fff', strokeWidth: 3 }}
+              dot={false}
+              activeDot={{ r: 4, fill: 'hsl(var(--chart-1))' }}
             />
             <Area
               type="monotone"
               dataKey="pageViews"
               stroke="hsl(var(--chart-2))"
-              strokeWidth={3}
+              strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorPageViewsModern)"
               name="Visualizações"
-              activeDot={{ r: 6, fill: 'hsl(var(--chart-2))', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: 'hsl(var(--chart-2))' }}
             />
           </AreaChart>
         </ResponsiveContainer>
