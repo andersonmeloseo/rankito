@@ -10,6 +10,7 @@ import { FileSpreadsheet, FileText, Globe, Eye, DollarSign, Save, FolderOpen } f
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useReportData } from "@/hooks/useReportData";
+import { useReportHTML } from "@/hooks/useReportHTML";
 import { ReportStyleConfigurator, ReportStyle } from "./ReportStyleConfigurator";
 import { ReportPreview } from "./ReportPreview";
 import { Currency, ReportLocale } from "@/i18n/reportTranslations";
@@ -24,6 +25,7 @@ interface ReportsTabProps {
 export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   const { toast } = useToast();
   const { reportData, loading, fetchReportData } = useReportData();
+  const { captureReportHTML } = useReportHTML();
   const [reportName, setReportName] = useState(`Relatório ${siteName}`);
   const [period, setPeriod] = useState('30');
   const [includeConversions, setIncludeConversions] = useState(true);

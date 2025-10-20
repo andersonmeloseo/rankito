@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Save } from "lucide-react";
 import { useSavedReports } from "@/hooks/useSavedReports";
+import { useReportHTML } from "@/hooks/useReportHTML";
 import { ReportData } from "@/hooks/useReportData";
 import { ReportStyle } from "./ReportStyleConfigurator";
 import { FinancialConfig } from "@/hooks/useSavedReports";
+import { useToast } from "@/hooks/use-toast";
 
 interface SaveReportDialogProps {
   open: boolean;
@@ -30,16 +32,31 @@ export const SaveReportDialog = ({
 }: SaveReportDialogProps) => {
   const [reportName, setReportName] = useState(defaultName);
   const { saveReport, loading } = useSavedReports();
+  const { captureReportHTML } = useReportHTML();
+  const { toast } = useToast();
 
   const handleSave = async () => {
     if (!reportName.trim()) return;
     
     try {
-      await saveReport(siteId, reportName, reportData, style, financialConfig);
+      // Capturar HTML do relatório
+      toast({
+        title: "Capturando relatório...",
+        description: "Aguarde enquanto geramos o HTML"
+      });
+      
+      const htmlToSave = await captureReportHTML('report-preview');
+      
+      await saveReport(siteId, reportName, reportData, style, financialConfig, htmlToSave);
       onOpenChange(false);
       setReportName('');
     } catch (error) {
       console.error('Erro ao salvar:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Tente novamente",
+        variant: "destructive"
+      });
     }
   };
 

@@ -17,8 +17,10 @@ export interface SavedReport {
   site_id: string;
   report_name: string;
   report_data: ReportData;
+  report_html?: string; // HTML renderizado do relatório
   style: ReportStyle;
   financial_config: FinancialConfig;
+  client_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -33,7 +35,8 @@ export const useSavedReports = () => {
     reportName: string,
     reportData: ReportData,
     style: ReportStyle,
-    financialConfig: FinancialConfig
+    financialConfig: FinancialConfig,
+    reportHTML?: string // Adicionar parâmetro opcional para HTML
   ) => {
     try {
       setLoading(true);
@@ -47,6 +50,7 @@ export const useSavedReports = () => {
           site_id: siteId,
           report_name: reportName,
           report_data: reportData as any,
+          report_html: reportHTML, // Salvar HTML renderizado
           style: style as any,
           financial_config: financialConfig as any
         }] as any)

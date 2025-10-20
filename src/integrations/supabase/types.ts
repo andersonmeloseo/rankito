@@ -1270,6 +1270,7 @@ export type Database = {
           financial_config: Json
           id: string
           report_data: Json
+          report_html: string | null
           report_name: string
           site_id: string
           style: Json
@@ -1282,6 +1283,7 @@ export type Database = {
           financial_config: Json
           id?: string
           report_data: Json
+          report_html?: string | null
           report_name: string
           site_id: string
           style: Json
@@ -1294,6 +1296,7 @@ export type Database = {
           financial_config?: Json
           id?: string
           report_data?: Json
+          report_html?: string | null
           report_name?: string
           site_id?: string
           style?: Json
