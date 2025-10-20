@@ -253,7 +253,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
       const topReferrersList = Object.values(topReferrers || {})
         .map((r: any) => ({
           ...r,
-          percentage: ((r.count / totalReferrers) * 100).toFixed(1)
+          percentage: (r.count / totalReferrers) * 100
         }))
         .sort((a: any, b: any) => b.count - a.count)
         .slice(0, 5);
