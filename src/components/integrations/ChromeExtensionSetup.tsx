@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Chrome, Download, Copy, Check, ExternalLink, TrendingUp } from 'lucide-react';
+import { Chrome, Download, Copy, Check, ExternalLink, TrendingUp, Upload } from 'lucide-react';
 import { useExternalSources } from '@/hooks/useExternalSources';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ChromeExtensionSetupProps {
   userId: string;
@@ -13,6 +14,7 @@ interface ChromeExtensionSetupProps {
 export const ChromeExtensionSetup = ({ userId }: ChromeExtensionSetupProps) => {
   const { sources } = useExternalSources(userId);
   const [copiedToken, setCopiedToken] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Find Chrome Extension source
   const extensionSource = sources?.find(s => s.source_type === 'chrome_extension');
@@ -31,6 +33,23 @@ export const ChromeExtensionSetup = ({ userId }: ChromeExtensionSetupProps) => {
 
   const openSetupPage = () => {
     window.open('/extension-setup', '_blank');
+  };
+
+  const handleUploadExtension = async () => {
+    setIsUploading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('upload-chrome-extension');
+      
+      if (error) throw error;
+      
+      toast.success('Extensão carregada com sucesso!');
+      console.log('URL da extensão:', data.url);
+    } catch (error) {
+      console.error('Erro ao carregar extensão:', error);
+      toast.error('Erro ao carregar extensão');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   if (!extensionSource) {
@@ -118,15 +137,26 @@ export const ChromeExtensionSetup = ({ userId }: ChromeExtensionSetupProps) => {
               </div>
               <div className="flex-1">
                 <p className="font-medium mb-2">Baixe a extensão</p>
-                <Button variant="outline" size="sm" className="w-full" asChild>
-                  <a 
-                    href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/extensions/rankito-whatsapp-extension.zip`}
-                    download
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1" asChild>
+                    <a 
+                      href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/extensions/rankito-whatsapp-extension.zip`}
+                      download
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Baixar ZIP
+                    </a>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleUploadExtension}
+                    disabled={isUploading}
                   >
-                    <Download className="w-4 h-4 mr-2" />
-                    Baixar Extensão (.zip)
-                  </a>
-                </Button>
+                    <Upload className="w-4 h-4 mr-2" />
+                    {isUploading ? 'Gerando...' : 'Atualizar'}
+                  </Button>
+                </div>
               </div>
             </div>
 
