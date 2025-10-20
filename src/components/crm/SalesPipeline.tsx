@@ -11,7 +11,7 @@ import { Plus } from "lucide-react";
 import { DealCard } from "./cards/DealCard";
 import { CreateDealDialog } from "./dialogs/CreateDealDialog";
 import { DealDetailsDialog } from "./dialogs/DealDetailsDialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface SalesPipelineProps {
   userId: string;
@@ -165,14 +165,14 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
   return (
     <div className="space-y-4">
       <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={({ active }) => setActiveId(active.id as string)}>
-        <ScrollArea className="w-full">
-          <div className="flex gap-4 pb-4">
+        <ScrollArea className="w-full whitespace-nowrap">
+          <div className="flex gap-4 pb-4 px-1">
             {activeStages.map((stage) => {
             const stageDeals = getDealsByStage(stage.stage_key);
             const stageTotal = getStageTotal(stage.stage_key);
 
             return (
-              <div key={stage.id} className="min-w-[340px] flex-shrink-0">
+              <div key={stage.id} className="min-w-[340px] max-w-[340px] flex-shrink-0 inline-block">
                 <DroppableColumn stageKey={stage.stage_key}>
                   <SortableContext id={stage.stage_key} items={stageDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
                     <Card className={stage.color}>
@@ -224,6 +224,7 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
             );
           })}
           </div>
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
         <DragOverlay>
