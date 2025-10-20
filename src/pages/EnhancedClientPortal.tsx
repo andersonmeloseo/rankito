@@ -34,11 +34,20 @@ export const EnhancedClientPortal = () => {
   const { data: projectData, isLoading: projectLoading } = useProjectData(clientId || '');
 
   const { 
-    conversions: realtimeConversions, 
+    newConversions: realtimeConversions, 
     liveCount 
-  } = useRealtimeConversions([clientId || ''], realtimeEnabled ? () => {} : undefined);
+  } = useRealtimeConversions(
+    clientId ? [clientId] : undefined, 
+    realtimeEnabled ? () => {} : undefined
+  );
   
-  const liveMetrics = useRealtimeMetrics(analytics || {}, []);
+  const analyticsData = analytics ? {
+    totalConversions: analytics.totalConversions || 0,
+    conversionRate: analytics.conversionRate || 0,
+    pageViews: analytics.pageViews || 0,
+  } : null;
+  
+  const liveMetrics = useRealtimeMetrics(analyticsData, realtimeConversions);
 
   const isLoading = authLoading || analyticsLoading || projectLoading;
   const sparklineData = analytics?.dailyStats?.slice(-7).map((d: any) => d.conversions) || [];
@@ -97,7 +106,7 @@ export const EnhancedClientPortal = () => {
 
           <TabsContent value="overview">
             <ImpactfulOverviewDashboard
-              dailyStats={analytics?.dailyStats || []}
+              dailyStats={(analytics?.dailyStats as any[]) || []}
               topPages={analytics?.topPages || []}
               totalConversions={analytics?.totalConversions || 0}
               totalPageViews={analytics?.pageViews || 0}
@@ -111,8 +120,8 @@ export const EnhancedClientPortal = () => {
           <TabsContent value="analytics">
             <AdvancedAnalytics analytics={analytics} periodDays={periodDays} />
             <div className="grid gap-6 md:grid-cols-2 mt-6">
-              <DeviceAnalyticsChart data={analytics?.deviceStats || []} />
-              <GeoAnalyticsChart data={analytics?.geoStats || []} />
+              <DeviceAnalyticsChart data={(analytics?.deviceStats as any[]) || []} />
+              <GeoAnalyticsChart data={(analytics?.geoStats as any[]) || []} />
             </div>
           </TabsContent>
 

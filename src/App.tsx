@@ -8,7 +8,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import EndClientPortal from "./pages/EndClientPortal";
-import EnhancedClientPortal from "./pages/EnhancedClientPortal";
+import { EnhancedClientPortal } from "./pages/EnhancedClientPortal";
 import SiteDetails from "./pages/SiteDetails";
 import ClientReport from "./pages/ClientReport";
 import UserSettings from "./pages/UserSettings";

@@ -237,14 +237,19 @@ const EndClientPortal = () => {
           {/* Metrics Cards */}
           {analytics && (
             <AnalyticsMetricsCards
-              totalSites={analytics.totalSites}
-              totalPages={analytics.totalPages}
+              monitoredPages={analytics.totalPages}
+              activePages={analytics.totalPages}
               totalConversions={liveMetrics.totalConversions}
+              totalPageViews={analytics.pageViews}
               conversionRate={liveMetrics.conversionRate}
               monthlyRevenue={analytics.monthlyRevenue}
-              pageViews={analytics.pageViews}
-              clientId={endClientData?.clientId}
-              liveMetrics={liveMetrics}
+              liveMetrics={{
+                rate: liveMetrics.conversionsPerHour,
+                timeAgo: liveMetrics.lastConversionTime 
+                  ? `${Math.floor((Date.now() - new Date(liveMetrics.lastConversionTime).getTime()) / 60000)}m atrás`
+                  : 'Nenhuma',
+                trendDirection: liveMetrics.trendDirection === 'stable' ? 'up' : liveMetrics.trendDirection
+              }}
             />
           )}
           
