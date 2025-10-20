@@ -1,5 +1,8 @@
 project_id = "jhzmgexprjnpgadkxjup"
 
+[functions.validate-portal-token]
+verify_jwt = false
+
 [functions.track-rank-rent-conversion]
 verify_jwt = false
 

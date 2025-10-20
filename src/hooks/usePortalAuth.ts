@@ -9,57 +9,38 @@ export const usePortalAuth = (token: string | undefined) => {
         throw new Error('Token não fornecido');
       }
 
-      console.log('[Portal Auth] Validando token:', token.substring(0, 10) + '...');
+      console.log('[Portal Auth] 🚀 Validando token via Edge Function:', token.substring(0, 10) + '...');
 
-      const { data, error } = await supabase
-        .from('client_portal_analytics')
-        .select(`
-          *,
-          rank_rent_clients (
-            id,
-            name,
-            company,
-            niche,
-            email,
-            phone
-          )
-        `)
-        .eq('portal_token', token)
-        .eq('enabled', true)
-        .maybeSingle();
+      // Chama Edge Function em vez de query direta
+      const { data, error } = await supabase.functions.invoke('validate-portal-token', {
+        body: { token }
+      });
 
-      console.log('[Portal Auth] Query result:', { 
-        data, 
-        error,
-        errorCode: error?.code,
-        errorDetails: error?.details,
-        errorHint: error?.hint,
-        errorMessage: error?.message,
+      console.log('[Portal Auth] 📦 Resposta da Edge Function:', {
         hasData: !!data,
-        clientId: data?.client_id,
-        isValid: !!data && !error,
-        token: token.substring(0, 10) 
+        hasError: !!error,
+        clientId: data?.clientId,
+        isValid: data?.isValid,
+        clientName: data?.clientData?.name,
+        error: error?.message
       });
 
       if (error) {
-        console.error('[Portal Auth] Erro ao validar token:', error);
-        if (error.code === 'PGRST116') {
-          throw new Error('Token inválido ou portal desativado');
-        }
-        throw new Error('Erro ao acessar o portal. Tente novamente.');
+        console.error('[Portal Auth] ❌ Erro na Edge Function:', error);
+        throw new Error(error.message || 'Erro ao validar token');
       }
 
-      if (!data) {
-        console.warn('[Portal Auth] Token inválido ou portal desativado');
-        throw new Error('Portal não encontrado ou desativado');
+      if (!data || !data.isValid) {
+        console.warn('[Portal Auth] ⚠️ Token inválido ou portal desativado');
+        throw new Error('Token inválido ou portal desativado');
       }
 
-      console.log('[Portal Auth] Token válido para cliente:', data.rank_rent_clients?.name);
+      console.log('[Portal Auth] ✅ Token válido para cliente:', data.clientData?.name);
 
       return {
-        portalData: data,
-        clientData: data.rank_rent_clients,
-        clientId: data.client_id,
+        portalData: data.portalData,
+        clientData: data.clientData,
+        clientId: data.clientId,
         isValid: true,
       };
     },
