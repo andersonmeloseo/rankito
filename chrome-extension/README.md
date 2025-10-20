@@ -4,14 +4,24 @@ Extensão Chrome para capturar leads do WhatsApp Web direto para o Rankito CRM.
 
 ## 📦 Como Empacotar para Distribuição
 
-### 1. Preparar os ícones
+### 1. Gerar os ícones
 
-Você precisa criar 3 ícones PNG na pasta `assets/`:
-- `icon16.png` (16x16px)
-- `icon48.png` (48x48px)
-- `icon128.png` (128x128px)
+**IMPORTANTE:** Você precisa gerar 3 ícones PNG antes de distribuir!
 
-**Dica:** Use uma ferramenta como [RealFaviconGenerator](https://realfavicongenerator.net/) para gerar os ícones automaticamente.
+**Método Rápido (Recomendado):**
+```bash
+cd chrome-extension/assets
+open generate-icons.html  # Clique em "Baixar TODOS" e salve aqui
+```
+
+Você também pode usar:
+- **Online:** https://www.iloveimg.com/resize-image (redimensionar `icon-source.png`)
+- **ImageMagick:** Veja instruções em `assets/COMO-GERAR-ICONES.md`
+
+**Arquivos necessários:**
+- ✅ `icon16.png` (16x16px)
+- ✅ `icon48.png` (48x48px)
+- ✅ `icon128.png` (128x128px)
 
 ### 2. Compactar a extensão
 

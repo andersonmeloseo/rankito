@@ -1,36 +1,54 @@
-# Ícones da Extensão
+# 🎨 Ícones da Extensão Rankito
 
-Adicione 3 arquivos de ícone PNG nesta pasta:
+## ✅ Ícone Base Já Criado!
 
-- `icon16.png` (16x16px) - Ícone pequeno usado na barra de extensões
-- `icon48.png` (48x48px) - Ícone médio usado no Chrome Web Store e gerenciamento de extensões
-- `icon128.png` (128x128px) - Ícone grande usado na Chrome Web Store
+O arquivo `icon-source.png` (512x512) já está pronto com o design oficial do Rankito:
+- Gradiente azul profissional (#4D9BFF → #3B7FE0)
+- Letra "R" branca centralizada
+- Cantos arredondados
+- Estilo minimalista e moderno
 
-## Como criar os ícones
+## 📦 Você precisa gerar 3 tamanhos:
 
-1. **Opção 1 - Online (Recomendado)**
-   - Acesse: https://realfavicongenerator.net/
-   - Faça upload de uma imagem de logo (mínimo 512x512px)
-   - Selecione apenas "Chrome Web Store"
-   - Baixe e extraia os arquivos gerados
+- `icon16.png` (16x16px) - Barra de extensões
+- `icon48.png` (48x48px) - Gerenciador de extensões
+- `icon128.png` (128x128px) - Chrome Web Store
 
-2. **Opção 2 - Ferramentas de design**
-   - Use Figma, Canva, Photoshop, etc.
-   - Crie 3 arquivos PNG nas resoluções especificadas
-   - Use fundo transparente para melhor resultado
+## 🚀 Como Gerar (3 Métodos)
 
-3. **Opção 3 - Placeholder simples**
-   - Crie um círculo colorido com texto
-   - Exemplo: Círculo roxo (#764ba2) com as letras "RC" (Rankito CRM)
+### Método 1: Gerador Automático HTML ⭐ MAIS RÁPIDO
+```bash
+# Abra o arquivo no navegador
+open generate-icons.html
+```
+Clique em "Baixar TODOS os Ícones" e salve aqui!
 
-## Exemplo de Design
+### Método 2: Online (Sem instalar nada)
+1. Acesse: https://www.iloveimg.com/resize-image
+2. Upload `icon-source.png`
+3. Redimensione para 128, 48 e 16
+4. Salve os 3 arquivos aqui
 
-**Sugestão de cores:**
-- Fundo: Gradiente roxo (#667eea → #764ba2)
-- Texto: Branco (#ffffff)
-- Ícone: Inicial "R" ou logo do Rankito
+### Método 3: ImageMagick (Linha de comando)
+```bash
+magick icon-source.png -resize 128x128 icon128.png
+magick icon-source.png -resize 48x48 icon48.png
+magick icon-source.png -resize 16x16 icon16.png
+```
 
-**Estilo:**
-- Minimalista e profissional
-- Fácil de identificar em tamanho pequeno
-- Contraste alto para visibilidade
+## 📋 Checklist Final
+
+Após gerar, você deve ter:
+- ✅ `icon-source.png` (512x512)
+- ✅ `icon128.png` (128x128)
+- ✅ `icon48.png` (48x48)
+- ✅ `icon16.png` (16x16)
+
+**Cores Oficiais Rankito:**
+- Primary: #4D9BFF (HSL 217, 91%, 60%)
+- Dark: #3B7FE0
+- Texto: #FFFFFF (branco)
+
+---
+
+**Mais detalhes?** Veja `COMO-GERAR-ICONES.md`
