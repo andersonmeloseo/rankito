@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { useDeals, Deal } from "@/hooks/useDeals";
-import { usePipelineStages } from "@/hooks/usePipelineStages";
+import { usePipelineStages, PipelineStage } from "@/hooks/usePipelineStages";
 import { DndContext, DragEndEvent, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, DragOverlay, useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, DollarSign } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, DollarSign, Pencil } from "lucide-react";
 import { DealCard } from "./cards/DealCard";
 import { CreateDealDialog } from "./dialogs/CreateDealDialog";
 import { DealDetailsDialog } from "./dialogs/DealDetailsDialog";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface SalesPipelineProps {
   userId: string;
@@ -71,14 +74,45 @@ const SortableDealCard = ({
   );
 };
 
+const colorOptions = [
+  { value: "bg-slate-100", label: "Cinza" },
+  { value: "bg-blue-100", label: "Azul" },
+  { value: "bg-purple-100", label: "Roxo" },
+  { value: "bg-yellow-100", label: "Amarelo" },
+  { value: "bg-green-100", label: "Verde" },
+  { value: "bg-red-100", label: "Vermelho" },
+  { value: "bg-orange-100", label: "Laranja" },
+  { value: "bg-pink-100", label: "Rosa" },
+  { value: "bg-indigo-100", label: "Índigo" },
+];
+
+const getColorFromClass = (colorClass: string) => {
+  const colorMap: Record<string, string> = {
+    "bg-slate-100": "#f1f5f9",
+    "bg-blue-100": "#dbeafe",
+    "bg-purple-100": "#f3e8ff",
+    "bg-yellow-100": "#fef3c7",
+    "bg-green-100": "#dcfce7",
+    "bg-red-100": "#fee2e2",
+    "bg-orange-100": "#ffedd5",
+    "bg-pink-100": "#fce7f3",
+    "bg-indigo-100": "#e0e7ff",
+  };
+  return colorMap[colorClass] || "#f1f5f9";
+};
+
 export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
   const { deals, isLoading, updateDeal, deleteDeal } = useDeals(userId);
-  const { stages: pipelineStages, isLoading: stagesLoading, error: stagesError, refetch: refetchStages } = usePipelineStages(userId);
+  const { stages: pipelineStages, isLoading: stagesLoading, error: stagesError, refetch: refetchStages, updateStage } = usePipelineStages(userId);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedStage, setSelectedStage] = useState<"lead" | "contact" | "proposal" | "negotiation" | "won" | "lost">("lead");
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [editingStage, setEditingStage] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editColor, setEditColor] = useState("");
+  const { toast } = useToast();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -133,6 +167,47 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
     return stageDeals.reduce((sum, deal) => sum + (deal.value || 0), 0);
   };
 
+  const handleStartEdit = (stage: PipelineStage) => {
+    if (stage.is_system) {
+      toast({
+        title: "Coluna do sistema",
+        description: "Esta coluna não pode ser editada.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEditingStage(stage.stage_key);
+    setEditLabel(stage.label);
+    setEditColor(stage.color);
+  };
+
+  const handleSaveEdit = (stageId: string) => {
+    if (!editLabel.trim()) {
+      toast({
+        title: "Nome obrigatório",
+        description: "O nome da coluna não pode estar vazio.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    updateStage.mutate({
+      id: stageId,
+      updates: {
+        label: editLabel.trim(),
+        color: editColor,
+      },
+    });
+    
+    setEditingStage(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingStage(null);
+    setEditLabel("");
+    setEditColor("");
+  };
+
   if (isLoading || stagesLoading) {
     return <div className="text-center py-12">Carregando pipeline...</div>;
   }
@@ -175,35 +250,116 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
               <div key={stage.id} className="min-w-[340px] max-w-[340px] flex-shrink-0 inline-block">
                 <DroppableColumn stageKey={stage.stage_key}>
                   <SortableContext id={stage.stage_key} items={stageDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
-                    <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                      <CardHeader className="p-4 border-b border-border/40 bg-muted/20">
-                        <div className="flex justify-between items-center mb-2">
-                          <div>
-                            <CardTitle className="text-base font-semibold text-foreground">
-                              {stage.label}
-                            </CardTitle>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="text-sm font-semibold text-muted-foreground">
-                                R$ {stageTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                • {stageDeals.length}
-                              </span>
+                    <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow group">
+                      <CardHeader 
+                        className="p-4 border-b border-border/40 transition-colors"
+                        style={{ 
+                          backgroundColor: editingStage === stage.stage_key 
+                            ? "hsl(var(--muted))" 
+                            : getColorFromClass(stage.color) 
+                        }}
+                      >
+                        {editingStage !== stage.stage_key ? (
+                          <div className="flex justify-between items-center mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleStartEdit(stage)}
+                                  className="w-3 h-3 rounded-full hover:ring-2 ring-offset-2 ring-primary transition-all flex-shrink-0"
+                                  style={{ backgroundColor: getColorFromClass(stage.color) }}
+                                  title="Clique para editar cor"
+                                />
+                                
+                                <CardTitle 
+                                  className="text-base font-semibold text-foreground cursor-pointer hover:text-primary transition-colors"
+                                  onDoubleClick={() => handleStartEdit(stage)}
+                                >
+                                  {stage.label}
+                                </CardTitle>
+                                
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => handleStartEdit(stage)}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="text-sm font-semibold text-muted-foreground">
+                                  R$ {stageTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  • {stageDeals.length}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-background/80"
+                              onClick={() => {
+                                setSelectedStage(stage.stage_key as any);
+                                setShowCreateDialog(true);
+                              }}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={editLabel}
+                                onChange={(e) => setEditLabel(e.target.value)}
+                                className="h-8 text-sm"
+                                placeholder="Nome da coluna"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleSaveEdit(stage.id);
+                                  if (e.key === "Escape") handleCancelEdit();
+                                }}
+                              />
+                            </div>
+                            
+                            <div className="flex gap-1.5 flex-wrap">
+                              {colorOptions.map((option) => (
+                                <button
+                                  key={option.value}
+                                  onClick={() => setEditColor(option.value)}
+                                  className={cn(
+                                    "w-6 h-6 rounded-full transition-all hover:scale-110",
+                                    editColor === option.value && "ring-2 ring-offset-2 ring-primary"
+                                  )}
+                                  style={{ backgroundColor: getColorFromClass(option.value) }}
+                                  title={option.label}
+                                />
+                              ))}
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleSaveEdit(stage.id)}
+                                className="flex-1"
+                              >
+                                Salvar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleCancelEdit}
+                                className="flex-1"
+                              >
+                                Cancelar
+                              </Button>
                             </div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-background/80"
-                            onClick={() => {
-                              setSelectedStage(stage.stage_key as any);
-                              setShowCreateDialog(true);
-                            }}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        )}
                       </CardHeader>
                       <CardContent className="p-3 bg-muted/5">
                         <ScrollArea className="h-[calc(100vh-280px)]">
