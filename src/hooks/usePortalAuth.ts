@@ -28,7 +28,18 @@ export const usePortalAuth = (token: string | undefined) => {
         .eq('enabled', true)
         .maybeSingle();
 
-      console.log('[Portal Auth] Query result:', { data, error, token: token.substring(0, 10) });
+      console.log('[Portal Auth] Query result:', { 
+        data, 
+        error,
+        errorCode: error?.code,
+        errorDetails: error?.details,
+        errorHint: error?.hint,
+        errorMessage: error?.message,
+        hasData: !!data,
+        clientId: data?.client_id,
+        isValid: !!data && !error,
+        token: token.substring(0, 10) 
+      });
 
       if (error) {
         console.error('[Portal Auth] Erro ao validar token:', error);

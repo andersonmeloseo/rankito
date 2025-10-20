@@ -49,7 +49,7 @@ export const EnhancedClientPortal = () => {
   
   const liveMetrics = useRealtimeMetrics(analyticsData, realtimeConversions);
 
-  const isLoading = authLoading || analyticsLoading || projectLoading || !clientId;
+  const isLoading = authLoading || (clientId && analyticsLoading) || (clientId && projectLoading);
   const sparklineData = analytics?.dailyStats?.slice(-7).map((d: any) => d.conversions) || [];
 
   console.log('[Portal] 📊 Estado do Analytics:', {
@@ -73,7 +73,22 @@ export const EnhancedClientPortal = () => {
     );
   }
 
-  if (authError || !authData?.isValid) {
+  if (authError) {
+    console.error('[Portal] ❌ Erro de autenticação:', authError);
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {authError.message || 'Erro ao validar acesso ao portal'}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (!authData?.isValid || !clientId) {
+    console.error('[Portal] ❌ Token inválido ou clientId ausente:', { isValid: authData?.isValid, clientId });
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <Alert variant="destructive" className="max-w-md">

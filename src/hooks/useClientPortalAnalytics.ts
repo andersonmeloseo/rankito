@@ -292,7 +292,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         topReferrers: topReferrersList,
       };
     },
-    enabled: !!clientId && clientId !== 'undefined' && clientId !== 'null',
+    enabled: !!clientId && clientId !== 'undefined' && clientId !== 'null' && clientId !== '',
     staleTime: 30000, // 30 segundos
     refetchInterval: 60000, // Refetch every minute
     retry: 2,
