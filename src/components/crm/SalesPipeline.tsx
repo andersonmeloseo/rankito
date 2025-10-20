@@ -165,15 +165,17 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
   return (
     <div className="space-y-4">
       <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={({ active }) => setActiveId(active.id as string)}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {activeStages.map((stage) => {
+        <ScrollArea className="w-full">
+          <div className="flex gap-4 pb-4">
+            {activeStages.map((stage) => {
             const stageDeals = getDealsByStage(stage.stage_key);
             const stageTotal = getStageTotal(stage.stage_key);
 
             return (
-              <DroppableColumn key={stage.id} stageKey={stage.stage_key}>
-                <SortableContext id={stage.stage_key} items={stageDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
-                  <Card className={stage.color}>
+              <div key={stage.id} className="min-w-[340px] flex-shrink-0">
+                <DroppableColumn stageKey={stage.stage_key}>
+                  <SortableContext id={stage.stage_key} items={stageDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+                    <Card className={stage.color}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-center">
                         <CardTitle className="text-sm font-semibold">
@@ -218,9 +220,11 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
                   </Card>
                 </SortableContext>
               </DroppableColumn>
+            </div>
             );
           })}
-        </div>
+          </div>
+        </ScrollArea>
 
         <DragOverlay>
           {activeDeal ? (

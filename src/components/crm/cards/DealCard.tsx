@@ -1,11 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2, Phone, Mail, ExternalLink, GripVertical } from "lucide-react";
+import { MoreVertical, Trash2, Phone, Mail, ExternalLink, GripVertical, TrendingUp } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Deal } from "@/hooks/useDeals";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface DealCardProps {
   deal: Deal;
@@ -15,19 +16,11 @@ interface DealCardProps {
   dragHandleProps?: any;
 }
 
-const sourceLabels: Record<string, string> = {
-  website: "Website",
-  referral: "Indicação",
-  social: "Redes Sociais",
-  cold: "Cold Call",
-  other: "Outro",
-};
-
-const probabilityColor = (prob: number) => {
-  if (prob >= 75) return "text-green-600";
-  if (prob >= 50) return "text-yellow-600";
-  if (prob >= 25) return "text-orange-600";
-  return "text-red-600";
+const probabilityBadgeClasses = (prob: number) => {
+  if (prob >= 75) return "bg-green-100 text-green-700 border-green-300";
+  if (prob >= 50) return "bg-yellow-100 text-yellow-700 border-yellow-300";
+  if (prob >= 25) return "bg-orange-100 text-orange-700 border-orange-300";
+  return "bg-red-100 text-red-700 border-red-300";
 };
 
 export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandleProps }: DealCardProps) => {
@@ -92,54 +85,65 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
           <p className="text-sm text-muted-foreground line-clamp-2">{deal.description}</p>
         )}
 
-        {deal.rank_rent_sites && (
-          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-            <ExternalLink className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs font-medium">{deal.rank_rent_sites.site_name}</span>
-          </div>
-        )}
-
         <div className="flex flex-wrap gap-2">
-          {deal.source && (
-            <Badge variant="outline">{sourceLabels[deal.source] || deal.source}</Badge>
-          )}
-          {deal.target_niche && (
-            <Badge variant="secondary">{deal.target_niche}</Badge>
-          )}
           {deal.probability > 0 && (
-            <Badge className={probabilityColor(deal.probability)}>
+            <Badge 
+              variant="outline"
+              className={cn(
+                "font-semibold",
+                probabilityBadgeClasses(deal.probability)
+              )}
+            >
+              <TrendingUp className="h-3 w-3 mr-1" />
               {deal.probability}%
+            </Badge>
+          )}
+          
+          {deal.target_niche && (
+            <Badge variant="secondary" className="text-xs">
+              {deal.target_niche}
             </Badge>
           )}
         </div>
 
+        {deal.rank_rent_sites && (
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/30 rounded text-xs text-muted-foreground">
+            <ExternalLink className="h-3 w-3" />
+            <span className="truncate">{deal.rank_rent_sites.site_name}</span>
+          </div>
+        )}
+
         {deal.contact_name && (
-          <div className="pt-2 border-t space-y-1">
-            <p className="text-sm font-medium">{deal.contact_name}</p>
+          <div className="pt-3 border-t space-y-2">
+            <p className="text-sm font-semibold">{deal.contact_name}</p>
             <div className="flex gap-2">
               {deal.contact_phone && (
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
                   asChild 
-                  className="h-7 px-2"
+                  className="h-8 flex-1"
                   disabled={isDragging}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <a href={`tel:${deal.contact_phone}`}>
-                    <Phone className="h-3 w-3" />
+                  <a href={`tel:${deal.contact_phone}`} className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5" />
+                    <span className="text-xs">Ligar</span>
                   </a>
                 </Button>
               )}
               {deal.contact_email && (
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
                   asChild 
-                  className="h-7 px-2"
+                  className="h-8 flex-1"
                   disabled={isDragging}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <a href={`mailto:${deal.contact_email}`}>
-                    <Mail className="h-3 w-3" />
+                  <a href={`mailto:${deal.contact_email}`} className="flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5" />
+                    <span className="text-xs">Email</span>
                   </a>
                 </Button>
               )}
