@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,12 @@ import { AnalyticsMetricsCards } from "@/components/client-portal/AnalyticsMetri
 import { ClientPortalCharts } from "@/components/client-portal/ClientPortalCharts";
 import { SavedReportsSection } from "@/components/client-portal/SavedReportsSection";
 import { ClientFinancialSection } from "@/components/client-portal/ClientFinancialSection";
+import { LiveIndicator } from "@/components/client-portal/LiveIndicator";
+import { RealtimeConversionsList } from "@/components/client-portal/RealtimeConversionsList";
+import { ConversionToast } from "@/components/client-portal/ConversionToast";
+import { RealtimeSettingsComponent, RealtimeSettings } from "@/components/client-portal/RealtimeSettings";
+import { useRealtimeConversions } from "@/hooks/useRealtimeConversions";
+import { useRealtimeMetrics } from "@/hooks/useRealtimeMetrics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +40,15 @@ const EndClientPortal = () => {
   const navigate = useNavigate();
   const { isEndClient, isSuperAdmin, isLoading, user } = useRole();
   const [periodDays, setPeriodDays] = useState(30);
+  const [realtimeSettings, setRealtimeSettings] = useState<RealtimeSettings>({
+    realtimeEnabled: true,
+    notificationsEnabled: true,
+    soundEnabled: true,
+    notifyOnPhone: true,
+    notifyOnWhatsApp: true,
+  });
+  const [lastConversion, setLastConversion] = useState<any>(null);
+  const realtimeTabRef = useRef<HTMLDivElement>(null);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -56,6 +71,52 @@ const EndClientPortal = () => {
   );
 
   const { data: financialData } = useClientFinancials(endClientData?.clientId || null, periodDays);
+
+  // Buscar site IDs para realtime
+  const { data: clientSites } = useQuery({
+    queryKey: ['client-sites', endClientData?.clientId],
+    queryFn: async () => {
+      if (!endClientData?.clientId) return [];
+      const { data } = await supabase
+        .from('rank_rent_sites')
+        .select('id')
+        .eq('client_id', endClientData.clientId)
+        .eq('is_rented', true);
+      return data?.map((s) => s.id) || [];
+    },
+    enabled: !!endClientData?.clientId,
+  });
+
+  // Hook de realtime conversions
+  const handleNewConversion = useCallback((conversion: any) => {
+    if (!realtimeSettings.notificationsEnabled || !realtimeSettings.realtimeEnabled) return;
+    
+    const eventType = conversion.event_type.toLowerCase();
+    const shouldNotify = 
+      (eventType.includes('phone') && realtimeSettings.notifyOnPhone) ||
+      (eventType.includes('whatsapp') && realtimeSettings.notifyOnWhatsApp);
+    
+    if (shouldNotify) {
+      setLastConversion(conversion);
+    }
+  }, [realtimeSettings]);
+
+  const {
+    newConversions,
+    liveCount,
+    isConnected,
+    totalConversionsToday,
+    clearNewConversions,
+  } = useRealtimeConversions(
+    realtimeSettings.realtimeEnabled ? clientSites : undefined,
+    handleNewConversion
+  );
+
+  const liveMetrics = useRealtimeMetrics(analytics, newConversions);
+
+  const scrollToRealtime = useCallback(() => {
+    realtimeTabRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   // Buscar perfil completo do usuário
   const { data: profile } = useQuery({
@@ -123,6 +184,12 @@ const EndClientPortal = () => {
               </div>
               
               <div className="flex items-center gap-3">
+                <LiveIndicator 
+                  isConnected={isConnected} 
+                  liveCount={liveCount}
+                  onViewNew={scrollToRealtime}
+                />
+                
                 <Select value={periodDays.toString()} onValueChange={(v) => setPeriodDays(Number(v))}>
                   <SelectTrigger className="w-[180px]">
                     <Calendar className="h-4 w-4 mr-2" />
@@ -172,19 +239,34 @@ const EndClientPortal = () => {
             <AnalyticsMetricsCards
               totalSites={analytics.totalSites}
               totalPages={analytics.totalPages}
-              totalConversions={analytics.totalConversions}
-              conversionRate={analytics.conversionRate}
+              totalConversions={liveMetrics.totalConversions}
+              conversionRate={liveMetrics.conversionRate}
               monthlyRevenue={analytics.monthlyRevenue}
               pageViews={analytics.pageViews}
               clientId={endClientData?.clientId}
+              liveMetrics={liveMetrics}
             />
           )}
+          
+          {/* Conversion Toast */}
+          <ConversionToast 
+            conversion={lastConversion}
+            soundEnabled={realtimeSettings.soundEnabled}
+          />
 
           {/* Charts Tabs */}
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+            <TabsList className="grid w-full grid-cols-5 lg:w-[750px]">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="pages">Páginas</TabsTrigger>
+              <TabsTrigger value="realtime">
+                Tempo Real
+                {liveCount > 0 && (
+                  <Badge variant="default" className="ml-2 bg-green-600">
+                    {liveCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="financial">
                 Financeiro
                 {financialData?.summary.overdueCount ? (
@@ -201,6 +283,7 @@ const EndClientPortal = () => {
                 <ClientPortalCharts
                   dailyStats={analytics.dailyStats as any}
                   topPages={analytics.topPages as any}
+                  liveData={newConversions}
                 />
               )}
             </TabsContent>
@@ -210,8 +293,18 @@ const EndClientPortal = () => {
                 <ClientPortalCharts
                   dailyStats={analytics.dailyStats as any}
                   topPages={analytics.topPages as any}
+                  liveData={newConversions}
                 />
               )}
+            </TabsContent>
+
+            <TabsContent value="realtime" className="space-y-6" ref={realtimeTabRef}>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <RealtimeSettingsComponent onSettingsChange={setRealtimeSettings} />
+                <div className="lg:col-span-2">
+                  <RealtimeConversionsList conversions={newConversions} />
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="financial" className="space-y-6">
