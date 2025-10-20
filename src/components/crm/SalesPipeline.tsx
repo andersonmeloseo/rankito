@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDeals, Deal } from "@/hooks/useDeals";
 import { usePipelineStages } from "@/hooks/usePipelineStages";
-import { DndContext, DragEndEvent, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, DragOverlay, useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -16,6 +16,27 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface SalesPipelineProps {
   userId: string;
 }
+
+const DroppableColumn = ({ 
+  stageKey, 
+  children 
+}: { 
+  stageKey: string; 
+  children: React.ReactNode;
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: stageKey,
+  });
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      className={`transition-colors ${isOver ? 'bg-accent/5' : ''}`}
+    >
+      {children}
+    </div>
+  );
+};
 
 const SortableDealCard = ({ 
   deal, 
@@ -34,11 +55,18 @@ const SortableDealCard = ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'default',
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <DealCard deal={deal} onDelete={onDelete} onOpenDetails={onOpenDetails} />
+    <div ref={setNodeRef} style={style}>
+      <DealCard 
+        deal={deal} 
+        onDelete={onDelete} 
+        onOpenDetails={onOpenDetails}
+        isDragging={isDragging}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
     </div>
   );
 };
@@ -69,13 +97,27 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
     if (!over) return;
 
     const dealId = active.id as string;
-    const newStage = over.id as "lead" | "contact" | "proposal" | "negotiation" | "won" | "lost";
-
     const deal = deals?.find((d) => d.id === dealId);
-    if (deal && deal.stage !== newStage) {
+    
+    if (!deal) return;
+
+    // Check if dropped over a column (stage_key) or another deal
+    let newStage: string;
+    
+    // If dropped over a stage key directly
+    if (pipelineStages?.some(s => s.stage_key === over.id)) {
+      newStage = over.id as string;
+    } else {
+      // If dropped over another deal, find that deal's stage
+      const targetDeal = deals?.find((d) => d.id === over.id);
+      if (!targetDeal) return;
+      newStage = targetDeal.stage;
+    }
+
+    if (deal.stage !== newStage) {
       updateDeal({
         id: dealId,
-        updates: { stage: newStage },
+        updates: { stage: newStage as any },
       });
     }
   };
@@ -129,56 +171,64 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
             const stageTotal = getStageTotal(stage.stage_key);
 
             return (
-              <SortableContext key={stage.id} id={stage.stage_key} items={stageDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
-                <Card className={stage.color}>
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-sm font-semibold">
-                        {stage.label} ({stageDeals.length})
-                      </CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => {
-                          setSelectedStage(stage.stage_key as any);
-                          setShowCreateDialog(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-semibold">
-                      R$ {stageTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </p>
-                  </CardHeader>
-                  <CardContent className="p-2">
-                    <ScrollArea className="h-[600px] pr-2">
-                      <div className="space-y-2">
-                        {stageDeals.map((deal) => (
-                          <SortableDealCard 
-                            key={deal.id} 
-                            deal={deal} 
-                            onDelete={deleteDeal}
-                            onOpenDetails={(deal) => {
-                              setSelectedDeal(deal);
-                              setDetailsDialogOpen(true);
-                            }}
-                          />
-                        ))}
-                        {stageDeals.length === 0 && (
-                          <div className="text-center py-8 text-sm text-muted-foreground">Nenhum deal</div>
-                        )}
+              <DroppableColumn key={stage.id} stageKey={stage.stage_key}>
+                <SortableContext id={stage.stage_key} items={stageDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+                  <Card className={stage.color}>
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-sm font-semibold">
+                          {stage.label} ({stageDeals.length})
+                        </CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => {
+                            setSelectedStage(stage.stage_key as any);
+                            setShowCreateDialog(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </SortableContext>
+                      <p className="text-xs text-muted-foreground font-semibold">
+                        R$ {stageTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="p-2">
+                      <ScrollArea className="h-[600px] pr-2">
+                        <div className="space-y-2">
+                          {stageDeals.map((deal) => (
+                            <SortableDealCard 
+                              key={deal.id} 
+                              deal={deal} 
+                              onDelete={deleteDeal}
+                              onOpenDetails={(deal) => {
+                                setSelectedDeal(deal);
+                                setDetailsDialogOpen(true);
+                              }}
+                            />
+                          ))}
+                          {stageDeals.length === 0 && (
+                            <div className="text-center py-8 text-sm text-muted-foreground">Nenhum deal</div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </SortableContext>
+              </DroppableColumn>
             );
           })}
         </div>
 
-        <DragOverlay>{activeDeal ? <DealCard deal={activeDeal} onDelete={() => {}} onOpenDetails={() => {}} /> : null}</DragOverlay>
+        <DragOverlay>
+          {activeDeal ? (
+            <div className="rotate-2 shadow-2xl">
+              <DealCard deal={activeDeal} onDelete={() => {}} onOpenDetails={() => {}} isDragging />
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       <CreateDealDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} userId={userId} initialStage={selectedStage} />
