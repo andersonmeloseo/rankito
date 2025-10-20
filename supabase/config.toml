@@ -3,6 +3,15 @@ project_id = "jhzmgexprjnpgadkxjup"
 [functions.auto-convert-hot-leads]
 verify_jwt = false
 
+[functions.create-deal-from-whatsapp]
+verify_jwt = false
+
+[functions.get-whatsapp-history]
+verify_jwt = false
+
+[functions.link-whatsapp-to-client]
+verify_jwt = false
+
 [functions.create-deal-from-external-source]
 verify_jwt = false
 
