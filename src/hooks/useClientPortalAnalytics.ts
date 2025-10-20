@@ -1,8 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
+import React from 'react';
 
 export const useClientPortalAnalytics = (clientId: string, periodDays: number = 30) => {
+  console.log('[Analytics] 🚀 Iniciando query com:', {
+    clientId,
+    isEnabled: !!clientId && clientId !== 'undefined' && clientId !== 'null',
+    periodDays
+  });
+  
   const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery({
     queryKey: ['client-portal-analytics', clientId, periodDays],
     queryFn: async () => {
@@ -291,6 +298,17 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
     retry: 2,
     retryDelay: 1000,
   });
+
+  React.useEffect(() => {
+    if (analytics) {
+      console.log('[Analytics] 📊 Dados carregados:', {
+        totalSites: analytics.totalSites,
+        totalConversions: analytics.totalConversions,
+        pageViews: analytics.pageViews,
+        isEmpty: analytics.isEmpty
+      });
+    }
+  }, [analytics]);
 
   const { data: reports, isLoading: reportsLoading } = useQuery({
     queryKey: ['client-saved-reports', clientId],

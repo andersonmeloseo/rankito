@@ -49,7 +49,7 @@ export const EnhancedClientPortal = () => {
   
   const liveMetrics = useRealtimeMetrics(analyticsData, realtimeConversions);
 
-  const isLoading = authLoading || analyticsLoading || projectLoading;
+  const isLoading = authLoading || analyticsLoading || projectLoading || !clientId;
   const sparklineData = analytics?.dailyStats?.slice(-7).map((d: any) => d.conversions) || [];
 
   console.log('[Portal] 📊 Estado do Analytics:', {
@@ -85,7 +85,7 @@ export const EnhancedClientPortal = () => {
   }
 
   // Show empty state if no analytics data
-  if (!analytics || analytics.isEmpty) {
+  if (analytics?.isEmpty) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto p-6 space-y-6">
