@@ -118,7 +118,7 @@ export function EditDealDialog({ deal, open, onOpenChange, userId }: EditDealDia
   const selectedSiteId = form.watch("site_id");
   
   useEffect(() => {
-    if (selectedSiteId && sites) {
+    if (selectedSiteId && selectedSiteId !== "none" && sites) {
       const selectedSite = sites.find(s => s.id === selectedSiteId);
       if (selectedSite) {
         form.setValue("target_niche", selectedSite.niche || "");
@@ -139,7 +139,7 @@ export function EditDealDialog({ deal, open, onOpenChange, userId }: EditDealDia
         stage: data.stage as any,
         probability: Number(data.probability),
         expected_close_date: data.expected_close_date || null,
-        site_id: data.site_id || null,
+        site_id: data.site_id && data.site_id !== "none" ? data.site_id : null,
         target_niche: data.target_niche || null,
         target_location: data.target_location || null,
         source: data.source || null,
@@ -287,7 +287,7 @@ export function EditDealDialog({ deal, open, onOpenChange, userId }: EditDealDia
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="none">Nenhum</SelectItem>
                       {sites?.map((site) => (
                         <SelectItem key={site.id} value={site.id}>
                           {site.site_name} - {site.niche}
