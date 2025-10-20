@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2, Phone, Mail, ExternalLink, GripVertical, TrendingUp } from "lucide-react";
+import { MoreVertical, Trash2, Phone, Mail, ExternalLink, GripVertical, User, Calendar } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Deal } from "@/hooks/useDeals";
 import { format } from "date-fns";
@@ -16,41 +16,49 @@ interface DealCardProps {
   dragHandleProps?: any;
 }
 
-const probabilityBadgeClasses = (prob: number) => {
-  if (prob >= 75) return "bg-green-100 text-green-700 border-green-300";
-  if (prob >= 50) return "bg-yellow-100 text-yellow-700 border-yellow-300";
-  if (prob >= 25) return "bg-orange-100 text-orange-700 border-orange-300";
-  return "bg-red-100 text-red-700 border-red-300";
+const getProbabilityBorderColor = (prob: number) => {
+  if (prob >= 75) return "border-l-green-500";
+  if (prob >= 50) return "border-l-yellow-500";
+  if (prob >= 25) return "border-l-orange-500";
+  if (prob > 0) return "border-l-red-500";
+  return "border-l-gray-300";
 };
 
 export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandleProps }: DealCardProps) => {
   return (
     <Card 
-      className={`transition-shadow ${!isDragging ? 'hover:shadow-md' : 'shadow-lg'}`}
+      className={cn(
+        "group relative overflow-hidden transition-all duration-200 bg-white dark:bg-card border-l-4 rounded-xl",
+        !isDragging && "hover:shadow-lg hover:-translate-y-0.5",
+        isDragging && "shadow-2xl opacity-90",
+        getProbabilityBorderColor(deal.probability)
+      )}
     >
-      {/* Drag Handle Area */}
+      {/* Drag Handle Invisível */}
       {dragHandleProps && (
         <div
           {...dragHandleProps}
-          className="flex items-center justify-center py-1.5 bg-muted/30 cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors border-b"
+          className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-10"
           onClick={(e) => e.stopPropagation()}
         >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <GripVertical className="h-4 w-4 text-muted-foreground/50" />
         </div>
       )}
       
       <CardContent 
-        className="p-4 space-y-3 cursor-pointer" 
+        className="p-3 space-y-2.5 cursor-pointer"
         onClick={(e) => {
           if (!isDragging) {
             onOpenDetails(deal);
           }
         }}
       >
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <h3 className="font-semibold line-clamp-1">{deal.title}</h3>
-            <p className="text-2xl font-bold text-primary mt-1">
+        <div className="flex justify-between items-start gap-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-foreground line-clamp-2 mb-1.5">
+              {deal.title}
+            </h3>
+            <p className="text-xl font-bold text-green-600 dark:text-green-500">
               R$ {deal.value?.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
           </div>
@@ -59,11 +67,11 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8"
+                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
                 disabled={isDragging}
                 onClick={(e) => e.stopPropagation()}
               >
-                <MoreVertical className="h-4 w-4" />
+                <MoreVertical className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -82,68 +90,55 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
         </div>
 
         {deal.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">{deal.description}</p>
+          <p className="text-xs text-muted-foreground/80 line-clamp-2">{deal.description}</p>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          {deal.probability > 0 && (
-            <Badge 
-              variant="outline"
-              className={cn(
-                "font-semibold",
-                probabilityBadgeClasses(deal.probability)
-              )}
-            >
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {deal.probability}%
+        <div className="flex flex-wrap gap-1.5">
+          {deal.target_niche && (
+            <Badge variant="secondary" className="text-xs px-2 py-0.5 font-normal">
+              {deal.target_niche}
             </Badge>
           )}
-          
-          {deal.target_niche && (
-            <Badge variant="secondary" className="text-xs">
-              {deal.target_niche}
+          {deal.rank_rent_sites && (
+            <Badge variant="outline" className="text-xs px-2 py-0.5 font-normal text-muted-foreground">
+              <ExternalLink className="h-2.5 w-2.5 mr-1" />
+              <span className="truncate">{deal.rank_rent_sites.site_name}</span>
             </Badge>
           )}
         </div>
 
-        {deal.rank_rent_sites && (
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/30 rounded text-xs text-muted-foreground">
-            <ExternalLink className="h-3 w-3" />
-            <span className="truncate">{deal.rank_rent_sites.site_name}</span>
-          </div>
-        )}
-
         {deal.contact_name && (
-          <div className="pt-3 border-t space-y-2">
-            <p className="text-sm font-semibold">{deal.contact_name}</p>
-            <div className="flex gap-2">
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <User className="h-3 w-3" />
+              <span className="font-medium">{deal.contact_name}</span>
+            </div>
+            <div className="flex gap-1.5">
               {deal.contact_phone && (
                 <Button 
-                  variant="outline" 
-                  size="sm" 
+                  variant="ghost" 
+                  size="icon" 
                   asChild 
-                  className="h-8 flex-1"
+                  className="h-7 w-7 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950"
                   disabled={isDragging}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <a href={`tel:${deal.contact_phone}`} className="flex items-center gap-2">
+                  <a href={`tel:${deal.contact_phone}`}>
                     <Phone className="h-3.5 w-3.5" />
-                    <span className="text-xs">Ligar</span>
                   </a>
                 </Button>
               )}
               {deal.contact_email && (
                 <Button 
-                  variant="outline" 
-                  size="sm" 
+                  variant="ghost" 
+                  size="icon" 
                   asChild 
-                  className="h-8 flex-1"
+                  className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950"
                   disabled={isDragging}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <a href={`mailto:${deal.contact_email}`} className="flex items-center gap-2">
+                  <a href={`mailto:${deal.contact_email}`}>
                     <Mail className="h-3.5 w-3.5" />
-                    <span className="text-xs">Email</span>
                   </a>
                 </Button>
               )}
@@ -152,9 +147,10 @@ export const DealCard = ({ deal, onDelete, onOpenDetails, isDragging, dragHandle
         )}
 
         {deal.expected_close_date && (
-          <p className="text-xs text-muted-foreground">
-            Previsão: {format(new Date(deal.expected_close_date), "dd/MM/yyyy", { locale: ptBR })}
-          </p>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-2 border-t">
+            <Calendar className="h-3 w-3" />
+            <span>{format(new Date(deal.expected_close_date), "dd/MM/yyyy", { locale: ptBR })}</span>
+          </div>
         )}
       </CardContent>
     </Card>

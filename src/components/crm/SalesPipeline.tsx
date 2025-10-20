@@ -7,7 +7,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, DollarSign } from "lucide-react";
 import { DealCard } from "./cards/DealCard";
 import { CreateDealDialog } from "./dialogs/CreateDealDialog";
 import { DealDetailsDialog } from "./dialogs/DealDetailsDialog";
@@ -175,52 +175,60 @@ export const SalesPipeline = ({ userId }: SalesPipelineProps) => {
               <div key={stage.id} className="min-w-[340px] max-w-[340px] flex-shrink-0 inline-block">
                 <DroppableColumn stageKey={stage.stage_key}>
                   <SortableContext id={stage.stage_key} items={stageDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
-                    <Card className={stage.color}>
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="text-sm font-semibold">
-                          {stage.label} ({stageDeals.length})
-                        </CardTitle>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => {
-                            setSelectedStage(stage.stage_key as any);
-                            setShowCreateDialog(true);
-                          }}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground font-semibold">
-                        R$ {stageTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </p>
-                    </CardHeader>
-                    <CardContent className="p-2">
-                      <ScrollArea className="h-[600px] pr-2">
-                        <div className="space-y-2">
-                          {stageDeals.map((deal) => (
-                            <SortableDealCard 
-                              key={deal.id} 
-                              deal={deal} 
-                              onDelete={deleteDeal}
-                              onOpenDetails={(deal) => {
-                                setSelectedDeal(deal);
-                                setDetailsDialogOpen(true);
-                              }}
-                            />
-                          ))}
-                          {stageDeals.length === 0 && (
-                            <div className="text-center py-8 text-sm text-muted-foreground">Nenhum deal</div>
-                          )}
+                    <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="p-4 border-b border-border/40 bg-muted/20">
+                        <div className="flex justify-between items-center mb-2">
+                          <div>
+                            <CardTitle className="text-base font-semibold text-foreground">
+                              {stage.label}
+                            </CardTitle>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-sm font-semibold text-muted-foreground">
+                                R$ {stageTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                • {stageDeals.length}
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-background/80"
+                            onClick={() => {
+                              setSelectedStage(stage.stage_key as any);
+                              setShowCreateDialog(true);
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
                         </div>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                </SortableContext>
-              </DroppableColumn>
-            </div>
+                      </CardHeader>
+                      <CardContent className="p-3 bg-muted/5">
+                        <ScrollArea className="h-[calc(100vh-280px)]">
+                          <div className="space-y-3 pr-3">
+                            {stageDeals.map((deal) => (
+                              <SortableDealCard 
+                                key={deal.id} 
+                                deal={deal} 
+                                onDelete={deleteDeal}
+                                onOpenDetails={(deal) => {
+                                  setSelectedDeal(deal);
+                                  setDetailsDialogOpen(true);
+                                }}
+                              />
+                            ))}
+                            {stageDeals.length === 0 && (
+                              <div className="text-center py-8 text-sm text-muted-foreground">Nenhum deal</div>
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
+                  </SortableContext>
+                </DroppableColumn>
+              </div>
             );
           })}
           </div>
