@@ -120,7 +120,7 @@ export const ChromeExtensionSetup = ({ userId }: ChromeExtensionSetupProps) => {
                 <p className="font-medium mb-2">Baixe a extensão</p>
                 <Button variant="outline" size="sm" className="w-full" asChild>
                   <a 
-                    href="https://jhzmgexprjnpgadkxjup.supabase.co/storage/v1/object/public/extensions/rankito-whatsapp-extension.zip"
+                    href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/extensions/rankito-whatsapp-extension.zip`}
                     download
                   >
                     <Download className="w-4 h-4 mr-2" />
