@@ -3,10 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
 
 export const useClientPortalAnalytics = (clientId: string, periodDays: number = 30) => {
-  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery({
     queryKey: ['client-portal-analytics', clientId, periodDays],
     queryFn: async () => {
-      console.log('[Analytics] Fetching data for client:', clientId, 'period:', periodDays);
+      // Validação crítica do clientId
+      if (!clientId || clientId === 'undefined' || clientId === 'null') {
+        console.error('[Analytics] Client ID inválido:', clientId);
+        throw new Error('Client ID inválido');
+      }
+
+      console.log('[Analytics] 🚀 Fetching data for client:', clientId, 'period:', periodDays);
 
       // Fetch client sites
       const { data: sites, error: sitesError } = await supabase
@@ -171,8 +177,11 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         isEmpty: false,
       };
     },
-    enabled: !!clientId,
+    enabled: !!clientId && clientId !== 'undefined' && clientId !== 'null',
+    staleTime: 30000, // 30 segundos
     refetchInterval: 60000, // Refetch every minute
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const { data: reports, isLoading: reportsLoading } = useQuery({
@@ -201,5 +210,6 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
     analytics,
     reports,
     isLoading: analyticsLoading || reportsLoading,
+    error: analyticsError,
   };
 };
