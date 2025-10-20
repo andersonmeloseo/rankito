@@ -1265,6 +1265,7 @@ export type Database = {
       }
       saved_reports: {
         Row: {
+          client_id: string | null
           created_at: string | null
           financial_config: Json
           id: string
@@ -1276,6 +1277,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string | null
           financial_config: Json
           id?: string
@@ -1287,6 +1289,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string | null
           financial_config?: Json
           id?: string
@@ -1298,6 +1301,27 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "saved_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_status"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "saved_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_client_metrics"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "saved_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "saved_reports_site_id_fkey"
             columns: ["site_id"]

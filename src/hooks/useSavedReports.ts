@@ -138,12 +138,77 @@ export const useSavedReports = () => {
     };
   };
 
+  const shareWithClient = async (reportId: string, clientId: string) => {
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('saved_reports')
+        .update({ client_id: clientId })
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Relatório compartilhado!",
+        description: "O relatório está disponível no portal do cliente.",
+      });
+
+      // Atualizar estado local
+      setSavedReports(prev => 
+        prev.map(r => r.id === reportId ? { ...r, client_id: clientId } as any : r)
+      );
+    } catch (error: any) {
+      console.error('Error sharing report:', error);
+      toast({
+        title: "Erro ao compartilhar",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const unshareWithClient = async (reportId: string) => {
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('saved_reports')
+        .update({ client_id: null })
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Compartilhamento removido!",
+        description: "O relatório não está mais visível no portal do cliente.",
+      });
+
+      setSavedReports(prev => 
+        prev.map(r => r.id === reportId ? { ...r, client_id: null } as any : r)
+      );
+    } catch (error: any) {
+      console.error('Error unsharing report:', error);
+      toast({
+        title: "Erro ao remover",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     savedReports,
     loading,
     saveReport,
     listReports,
     deleteReport,
-    loadReport
+    loadReport,
+    shareWithClient,
+    unshareWithClient
   };
 };

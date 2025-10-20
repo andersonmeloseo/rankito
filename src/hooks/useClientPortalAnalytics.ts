@@ -313,20 +313,17 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
   const { data: reports, isLoading: reportsLoading } = useQuery({
     queryKey: ['client-saved-reports', clientId],
     queryFn: async () => {
-      const { data: sites } = await supabase
-        .from('rank_rent_sites')
-        .select('id')
-        .eq('client_id', clientId);
-
-      if (!sites || sites.length === 0) return [];
-
+      // Buscar relatórios compartilhados diretamente com este cliente
       const { data, error } = await supabase
         .from('saved_reports')
         .select('*')
-        .in('site_id', sites.map(s => s.id))
+        .eq('client_id', clientId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      console.log('[Analytics] 📄 Relatórios compartilhados:', data?.length || 0);
+      
       return data;
     },
     enabled: !!clientId,
