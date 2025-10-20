@@ -6,7 +6,7 @@ import { LogOut, Calendar } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useRole } from "@/contexts/RoleContext";
 import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
-import { Header } from "@/components/layout/Header";
+import { ClientPortalHeader } from "@/components/client-portal/ClientPortalHeader";
 import { Footer } from "@/components/layout/Footer";
 import { useEndClientData } from "@/hooks/useEndClientData";
 import { useClientPortalAnalytics } from "@/hooks/useClientPortalAnalytics";
@@ -23,6 +23,13 @@ const EndClientPortal = () => {
   const navigate = useNavigate();
   const { isEndClient, isSuperAdmin, isLoading, user } = useRole();
   const [periodDays, setPeriodDays] = useState(30);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  };
 
   useEffect(() => {
     if (!isLoading && !isEndClient && !isSuperAdmin) {
@@ -66,7 +73,10 @@ const EndClientPortal = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
       {isSuperAdmin && <SuperAdminBanner currentView="end_client" />}
-      <Header showSubtitle={false} />
+      <ClientPortalHeader 
+        companyName={endClientData?.clientCompany} 
+        showSubtitle={true} 
+      />
       
       <div className="flex-1">
         {/* Hero Section */}
@@ -75,11 +85,18 @@ const EndClientPortal = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">
-                  Portal Analítico Premium
+                  {getGreeting()}, {endClientData?.userName || 'Cliente'}! 👋
                 </h1>
-                <p className="text-muted-foreground mt-2">
-                  {endClientData?.clientName || user?.email}
-                </p>
+                <div className="flex flex-col gap-1 mt-2">
+                  <p className="text-lg font-medium text-muted-foreground">
+                    {endClientData?.clientCompany || endClientData?.clientName}
+                  </p>
+                  {endClientData?.clientEmail && (
+                    <p className="text-sm text-muted-foreground/80">
+                      {endClientData.clientEmail}
+                    </p>
+                  )}
+                </div>
               </div>
               
               <div className="flex items-center gap-3">
