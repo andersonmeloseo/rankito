@@ -183,9 +183,42 @@
 }
 
 .connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
   opacity: 0.9;
   font-weight: 500;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #94a3b8;
+}
+
+.status-indicator.status-connected {
+  background-color: #10b981;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-indicator.status-disconnected {
+  background-color: #ef4444;
+}
+
+.status-indicator.status-loading {
+  background-color: #f59e0b;
+  animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 #rankito-close-sidebar {

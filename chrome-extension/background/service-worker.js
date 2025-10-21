@@ -1,5 +1,5 @@
 // 🚀 Service Worker para Extensão Rankito CRM
-console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.1');
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.2');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -122,13 +122,25 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 });
 
 // 5. Handle clicks on extension icon
-chrome.action.onClicked.addListener((tab) => {
+chrome.action.onClicked.addListener(async (tab) => {
+  log('🖱️ Extension icon clicked, tab:', tab.id, tab.url);
+  
   // Check if on WhatsApp Web
   if (tab.url?.includes('web.whatsapp.com')) {
-    // Toggle sidebar visibility
-    chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
+    try {
+      // Tentar enviar mensagem para content script
+      const response = await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
+      log('✅ Sidebar toggle message sent successfully', response);
+    } catch (error) {
+      logError('⚠️ Could not send message to content script:', error);
+      log('🔄 Reloading tab to reinitialize extension...');
+      
+      // Se falhar, recarregar a página (content script pode não estar pronto)
+      chrome.tabs.reload(tab.id);
+    }
   } else {
     // Open WhatsApp Web
+    log('🌐 Opening WhatsApp Web...');
     chrome.tabs.create({ url: 'https://web.whatsapp.com' });
   }
 });

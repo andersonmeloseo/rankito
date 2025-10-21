@@ -141,7 +141,7 @@ function generateIcon(size: number): Uint8Array {
 const manifest = {
   manifest_version: 3,
   name: "Rankito CRM - WhatsApp Connector",
-  version: "1.0.1",
+  version: "1.0.2",
   description: "Capture leads do WhatsApp Web direto para o Rankito CRM",
   permissions: ["storage", "activeTab", "alarms", "scripting"],
   host_permissions: ["https://web.whatsapp.com/*", "https://*.supabase.co/*"],
@@ -179,7 +179,7 @@ const manifest = {
 };
 
 const serviceWorkerCode = `// 🚀 Service Worker para Extensão Rankito CRM
-console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.1');
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.2');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -282,9 +282,16 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 });
 
-chrome.action.onClicked.addListener((tab) => {
+chrome.action.onClicked.addListener(async (tab) => {
+  log('🖱️ Extension icon clicked');
   if (tab.url?.includes('web.whatsapp.com')) {
-    chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
+    try {
+      await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
+      log('✅ Toggle message sent');
+    } catch (error) {
+      logError('⚠️ Could not send message, reloading tab');
+      chrome.tabs.reload(tab.id);
+    }
   } else {
     chrome.tabs.create({ url: 'https://web.whatsapp.com' });
   }
@@ -293,7 +300,7 @@ chrome.action.onClicked.addListener((tab) => {
 log('🚀 Service Worker fully loaded and ready');`;
 
 const contentScriptCode = `// 🚀 PRIMEIRO LOG - Confirma que o script foi carregado
-console.log('[Rankito Content] 🚀 Script loaded on WhatsApp Web - Version 1.0.1');
+console.log('[Rankito Content] 🚀 Script loaded on WhatsApp Web - Version 1.0.2');
 
 // Content Script for WhatsApp Web Integration
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
