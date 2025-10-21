@@ -9,7 +9,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     // Open setup page on first install
     chrome.tabs.create({
-      url: chrome.runtime.getURL('../../extension-setup')
+      url: 'https://rankito.lovable.app/extension-setup'
     });
   }
   
