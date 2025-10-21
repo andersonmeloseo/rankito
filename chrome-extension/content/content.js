@@ -1,7 +1,16 @@
 // Content Script for WhatsApp Web Integration
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
-console.log('[Rankito Content] 🚀 Script loaded on WhatsApp Web');
+// Debug mode - set to false to reduce console logs
+const DEBUG = true;
+
+function debugLog(...args) {
+  if (DEBUG) {
+    console.log('[Rankito Content]', ...args);
+  }
+}
+
+debugLog('🚀 Script loaded on WhatsApp Web');
 
 let sidebarInjected = false;
 let currentContact = { name: null, phone: null };
@@ -9,36 +18,41 @@ let apiToken = null;
 
 // Initialize
 (async function init() {
-  console.log('[Rankito Content] 🚀 Initializing...');
-  
-  // Get API token from storage
-  const result = await chrome.storage.local.get('apiToken');
-  apiToken = result.apiToken;
-  
-  if (!apiToken) {
-    console.warn('[Rankito Content] ⚠️ No API token found - showing config modal');
+  try {
+    debugLog('🚀 Initializing extension...');
     
-    // Show configuration modal after delay
+    // Get API token from storage
+    const result = await chrome.storage.local.get('apiToken');
+    apiToken = result.apiToken;
+    
+    if (!apiToken) {
+      debugLog('⚠️ No API token found - showing config modal');
+      
+      // Show configuration modal after delay
+      setTimeout(() => {
+        showConfigModal();
+      }, 2000);
+      return;
+    }
+    
+    debugLog('✅ Token loaded');
+    
+    // Inject sidebar after a short delay to ensure DOM is ready
     setTimeout(() => {
-      showConfigModal();
+      debugLog('💉 Injecting sidebar...');
+      injectSidebar();
+      observeConversationChanges();
+      
+      // Force first contact update
+      setTimeout(() => {
+        debugLog('🔄 Forcing first contact update...');
+        updateContactInfo();
+      }, 1000);
     }, 2000);
-    return;
+  } catch (error) {
+    console.error('[Rankito Content] ❌ Error initializing extension:', error);
+    alert('Erro ao inicializar extensão Rankito. Verifique o console (F12) para mais detalhes.');
   }
-  
-  console.log('[Rankito Content] ✅ Token loaded:', apiToken.substring(0, 20) + '...');
-  
-  // Inject sidebar after a short delay to ensure DOM is ready
-  setTimeout(() => {
-    console.log('[Rankito Content] 💉 Injecting sidebar...');
-    injectSidebar();
-    observeConversationChanges();
-    
-    // Forçar primeira atualização do contato
-    setTimeout(() => {
-      console.log('[Rankito Content] 🔄 Forcing first contact update...');
-      updateContactInfo();
-    }, 1000);
-  }, 2000);
 })();
 
 // Show configuration modal
@@ -88,7 +102,7 @@ function showConfigModal() {
       const text = await navigator.clipboard.readText();
       const input = document.getElementById('rankito-token-input');
       if (input) input.value = text;
-      toast.success('Token colado!');
+      alert('✅ Token colado!');
     } catch (error) {
       alert('❌ Erro ao ler área de transferência. Cole manualmente com Ctrl+V');
     }
@@ -136,14 +150,26 @@ function injectSidebar() {
   
   sidebar.innerHTML = `
     <div class="rankito-sidebar-header">
-      <h3>🔥 Rankito CRM</h3>
+      <div class="header-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span>Rankito CRM</span>
+      </div>
+      <div id="connection-status" class="connection-status">⚠️ Aguardando contato...</div>
       <button id="rankito-close-sidebar" title="Fechar">×</button>
     </div>
     <div class="rankito-sidebar-content">
       <div id="rankito-contact-info">
         <p class="rankito-label">Contato detectado:</p>
         <h4 id="rankito-contact-name">—</h4>
-        <p id="rankito-contact-phone">—</p>
+        <div id="rankito-contact-phone">
+          <span id="phone-display">Detectando número...</span>
+          <button id="manual-phone-btn" class="manual-phone-btn" style="display: none;">📝 Inserir manualmente</button>
+        </div>
       </div>
       
       <button id="rankito-create-lead-btn" class="rankito-primary-btn">
@@ -161,7 +187,7 @@ function injectSidebar() {
   
   document.body.appendChild(sidebar);
   sidebarInjected = true;
-  console.log('[Rankito Content] ✅ Sidebar injected');
+  debugLog('✅ Sidebar injected');
   
   // Add event listeners
   document.getElementById('rankito-close-sidebar')?.addEventListener('click', () => {
@@ -184,14 +210,16 @@ function observeConversationChanges() {
       childList: true, 
       subtree: true 
     });
-    console.log('[Rankito Content] 👀 Observing conversation changes');
+    debugLog('👀 Observing conversation changes');
   }
 }
 
-// Extract contact info from WhatsApp UI
+// Extract contact info from WhatsApp UI - IMPROVED VERSION
 function updateContactInfo() {
   try {
-    // MÉTODO 1: Pegar nome do header
+    debugLog('🔍 Updating contact info...');
+    
+    // METHOD 1: Get contact name from header
     const headerSelectors = [
       'header span[title]',
       'header div[title]',
@@ -204,30 +232,63 @@ function updateContactInfo() {
       const el = document.querySelector(selector);
       if (el?.textContent && el.textContent.length > 0) {
         name = el.textContent.trim();
+        debugLog('📝 Name found:', name);
         break;
       }
     }
     
     if (!name) name = 'Contato não identificado';
     
-    // MÉTODO 2: Extrair telefone da URL da conversa
+    // METHOD 2: Extract phone from URL (most reliable)
     let phone = null;
-    const urlMatch = window.location.href.match(/\/(\d{10,15})$/);
+    const urlMatch = window.location.href.match(/\/(\d{10,15})/);
     if (urlMatch) {
       phone = urlMatch[1];
-      console.log('[Rankito Content] 📱 Phone from URL:', phone);
+      debugLog('✅ Phone found in URL:', phone);
     }
     
-    // MÉTODO 3: Tentar pegar do span de telefone
+    // METHOD 3: Try to find phone in header title attribute
     if (!phone) {
+      debugLog('🔍 Trying header title attribute...');
+      const headerTitle = document.querySelector('[data-testid="conversation-info-header"]');
+      if (headerTitle) {
+        const titleAttr = headerTitle.getAttribute('title') || headerTitle.textContent;
+        const phoneMatch = titleAttr?.match(/\+?(\d{10,15})/);
+        if (phoneMatch) {
+          phone = phoneMatch[1];
+          debugLog('✅ Phone found in header:', phone);
+        }
+      }
+    }
+    
+    // METHOD 4: Look for phone in any span with digits
+    if (!phone) {
+      debugLog('🔍 Searching for phone in spans...');
       const phoneElements = document.querySelectorAll('span[dir="ltr"]');
       for (const el of phoneElements) {
         const text = el.textContent;
         if (text && /^\+?\d[\d\s\-\(\)]{8,}$/.test(text)) {
-          phone = text.replace(/\D/g, '');
-          console.log('[Rankito Content] 📱 Phone from span:', phone);
-          break;
+          const cleanPhone = text.replace(/\D/g, '');
+          if (cleanPhone.length >= 10 && cleanPhone.length <= 15) {
+            phone = cleanPhone;
+            debugLog('✅ Phone found in span:', phone);
+            break;
+          }
         }
+      }
+    }
+    
+    debugLog('📞 Final contact:', { name, phone });
+    
+    // Update status indicator
+    const statusEl = document.getElementById('connection-status');
+    if (statusEl) {
+      if (phone) {
+        statusEl.textContent = '✅ Conectado';
+        statusEl.style.color = '#22c55e';
+      } else {
+        statusEl.textContent = '⚠️ Telefone não detectado';
+        statusEl.style.color = '#f59e0b';
       }
     }
     
@@ -236,45 +297,51 @@ function updateContactInfo() {
       currentContact = { name, phone };
       
       const nameEl = document.getElementById('rankito-contact-name');
-      const phoneEl = document.getElementById('rankito-contact-phone');
+      const phoneDisplay = document.getElementById('phone-display');
+      const manualBtn = document.getElementById('manual-phone-btn');
       
       if (nameEl) nameEl.textContent = name;
-      if (phoneEl) {
-        phoneEl.textContent = phone || 'Clique para inserir';
-        phoneEl.style.cursor = phone ? 'default' : 'pointer';
-        
-        // Se não tem telefone, permite clicar para inserir manualmente
-        if (!phone) {
-          phoneEl.onclick = () => {
-            const input = prompt('Digite o telefone do contato (somente números):');
-            if (input) {
-              const cleanPhone = input.replace(/\D/g, '');
-              if (cleanPhone.length >= 10) {
+      
+      if (phoneDisplay && manualBtn) {
+        if (phone) {
+          phoneDisplay.innerHTML = `<span style="color: #22c55e;">✅ ${phone}</span>`;
+          manualBtn.style.display = 'none';
+        } else {
+          phoneDisplay.innerHTML = '<span style="color: #f59e0b;">⚠️ Não detectado</span>';
+          manualBtn.style.display = 'inline-block';
+          
+          // Add click handler for manual input
+          manualBtn.onclick = () => {
+            const manualPhone = prompt('Digite o número do telefone (somente números, 10-15 dígitos):');
+            if (manualPhone) {
+              const cleanPhone = manualPhone.replace(/\D/g, '');
+              if (cleanPhone.length >= 10 && cleanPhone.length <= 15) {
                 currentContact.phone = cleanPhone;
-                phoneEl.textContent = cleanPhone;
-                phoneEl.style.cursor = 'default';
-                phoneEl.onclick = null;
+                phoneDisplay.innerHTML = `<span style="color: #22c55e;">✅ ${cleanPhone}</span>`;
+                manualBtn.style.display = 'none';
+                if (statusEl) {
+                  statusEl.textContent = '✅ Conectado (manual)';
+                  statusEl.style.color = '#22c55e';
+                }
                 loadHistory(cleanPhone);
               } else {
-                alert('❌ Telefone inválido. Digite pelo menos 10 dígitos.');
+                alert('❌ Número inválido. Use apenas números (10-15 dígitos).');
               }
             }
           };
-        } else {
-          phoneEl.onclick = null;
         }
       }
       
-      console.log('[Rankito Content] ✅ Contact updated:', currentContact);
+      debugLog('✅ Contact updated:', currentContact);
       
       // Load history if we have a phone
       if (phone) {
         loadHistory(phone);
       } else {
-        // Se não tem telefone, mostrar aviso
+        // If no phone, show warning
         const historyDiv = document.getElementById('rankito-history-list');
         if (historyDiv) {
-          historyDiv.innerHTML = '<p class="rankito-empty">📱 Clique no telefone acima para inserir manualmente</p>';
+          historyDiv.innerHTML = '<p class="rankito-empty">⚠️ Insira o telefone manualmente para carregar histórico</p>';
         }
       }
     }
@@ -285,18 +352,29 @@ function updateContactInfo() {
 
 // Load CRM history for contact
 async function loadHistory(phone) {
-  if (!apiToken || !phone) {
-    console.warn('[Rankito Content] ⚠️ Cannot load history - missing token or phone');
+  debugLog('📋 Loading history for:', phone);
+  
+  if (!apiToken) {
+    debugLog('⚠️ No token available');
+    return;
+  }
+  
+  if (!phone) {
+    debugLog('⚠️ No phone number provided');
+    const historyDiv = document.getElementById('rankito-history-list');
+    if (historyDiv) {
+      historyDiv.innerHTML = '<div class="rankito-empty">⚠️ Número de telefone não disponível</div>';
+    }
     return;
   }
   
   const historyDiv = document.getElementById('rankito-history-list');
   if (!historyDiv) return;
   
-  console.log('[Rankito Content] 📥 Loading history for:', phone);
   historyDiv.innerHTML = '<div class="rankito-loading">Carregando histórico...</div>';
   
   try {
+    debugLog('🌐 Fetching history from API...');
     const response = await fetch(`${SUPABASE_URL}/functions/v1/get-whatsapp-history`, {
       method: 'POST',
       headers: {
@@ -306,16 +384,16 @@ async function loadHistory(phone) {
       body: JSON.stringify({ phone })
     });
     
-    console.log('[Rankito Content] 📡 History response status:', response.status);
+    debugLog('📡 Response status:', response.status);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Rankito Content] ❌ History error:', errorText);
+      console.error('[Rankito Content] ❌ API error:', errorText);
       throw new Error(`Failed to load history: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log('[Rankito Content] ✅ History loaded:', data);
+    debugLog('✅ History loaded:', data.total_deals, 'deals');
     
     if (data.total_deals > 0) {
       renderHistory(data.deals);
@@ -324,7 +402,7 @@ async function loadHistory(phone) {
     }
   } catch (error) {
     console.error('[Rankito Content] ❌ Error loading history:', error);
-    historyDiv.innerHTML = `<p class="rankito-error">Erro: ${error.message}</p>`;
+    historyDiv.innerHTML = `<p class="rankito-error">❌ Erro ao carregar: ${error.message}<br><small>Verifique o console (F12)</small></p>`;
   }
 }
 
@@ -377,7 +455,7 @@ async function handleCreateLead() {
       body: JSON.stringify({
         name: currentContact.name,
         phone: currentContact.phone || 'não disponível',
-        message: lastMessage.substring(0, 500), // Limit message length
+        message: lastMessage.substring(0, 500),
         stage: 'lead',
         metadata: {
           conversation_url: window.location.href,
@@ -438,4 +516,4 @@ window.addEventListener('message', async (event) => {
   }
 });
 
-console.log('[Rankito Content] ✅ All listeners set up');
+debugLog('✅ All listeners set up');
