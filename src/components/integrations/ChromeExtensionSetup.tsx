@@ -35,18 +35,30 @@ export const ChromeExtensionSetup = ({ userId }: ChromeExtensionSetupProps) => {
     window.open('/extension-setup', '_blank');
   };
 
-  const handleUploadExtension = async () => {
+  const handleDownloadExtension = async () => {
     setIsUploading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('upload-chrome-extension');
+      const { data, error } = await supabase.functions.invoke('upload-chrome-extension', {
+        responseType: 'blob'
+      });
       
       if (error) throw error;
       
-      toast.success('Extensão carregada com sucesso!');
-      console.log('URL da extensão:', data.url);
+      // Create download link
+      const blob = new Blob([data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'rankito-whatsapp-extension.zip';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Download iniciado!');
     } catch (error) {
-      console.error('Erro ao carregar extensão:', error);
-      toast.error('Erro ao carregar extensão');
+      console.error('Erro ao baixar extensão:', error);
+      toast.error('Erro ao gerar extensão');
     } finally {
       setIsUploading(false);
     }
@@ -137,26 +149,16 @@ export const ChromeExtensionSetup = ({ userId }: ChromeExtensionSetupProps) => {
               </div>
               <div className="flex-1">
                 <p className="font-medium mb-2">Baixe a extensão</p>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" asChild>
-                    <a 
-                      href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/extensions/rankito-whatsapp-extension.zip`}
-                      download
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Baixar ZIP
-                    </a>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleUploadExtension}
-                    disabled={isUploading}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    {isUploading ? 'Gerando...' : 'Atualizar'}
-                  </Button>
-                </div>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={handleDownloadExtension}
+                  disabled={isUploading}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isUploading ? 'Gerando extensão...' : 'Baixar Extensão (.zip)'}
+                </Button>
               </div>
             </div>
 

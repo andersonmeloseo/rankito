@@ -363,46 +363,16 @@ Deno.serve(async (req) => {
     console.log('Gerando ZIP da extensão...');
     const zipContent = createSimpleZip();
     
-    console.log('Fazendo upload para Storage...');
-    
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    // Upload usando fetch direto
-    const uploadResponse = await fetch(
-      `${supabaseUrl}/storage/v1/object/extensions/rankito-whatsapp-extension.zip`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'Content-Type': 'application/zip',
-          'x-upsert': 'true',
-        },
-        body: zipContent as unknown as BodyInit,
-      }
-    );
+    console.log('Retornando ZIP para download direto');
 
-    if (!uploadResponse.ok) {
-      const error = await uploadResponse.text();
-      console.error('Erro no upload:', error);
-      throw new Error(error);
-    }
-
-    console.log('Upload concluído com sucesso!');
-
-    const publicUrl = `${supabaseUrl}/storage/v1/object/public/extensions/rankito-whatsapp-extension.zip`;
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Extensão carregada com sucesso!',
-        url: publicUrl
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
-    );
+    return new Response(zipContent, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/zip',
+        'Content-Disposition': 'attachment; filename="rankito-whatsapp-extension.zip"',
+      },
+      status: 200
+    });
 
   } catch (error) {
     console.error('Erro:', error);
