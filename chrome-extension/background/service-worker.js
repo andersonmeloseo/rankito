@@ -9,7 +9,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     // Open setup page on first install
     chrome.tabs.create({
-      url: 'https://jhzmgexprjnpgadkxjup.lovable.app/extension-setup'
+      url: 'https://jhzmgexprjnpgadkxjup.lovable.dev/extension-setup'
     });
   }
   
