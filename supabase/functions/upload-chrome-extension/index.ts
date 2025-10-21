@@ -515,7 +515,8 @@ Deno.serve(async (req) => {
     const zipData = zip.generate();
     console.log('[Extension Download] ZIP ready:', zipData.length, 'bytes');
     
-    return new Response(zipData.buffer, {
+    // Type assertion needed for Deno compatibility
+    return new Response(zipData as unknown as BodyInit, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/zip',
