@@ -121,8 +121,8 @@ function generateIcon(size: number): Uint8Array {
   // Real PNG files with blue gradient and white "R" letter
   const icons: Record<number, string> = {
     16: "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjklEQVR42mNgGAWjYBSMAioCRjg7Pz//PxwDBBgY/gMxIzWDgYEBhBkYGP4DMSs1g4GBAYQZGP7/B2I2agYDAwMIMzAw/AdiDmoGAwMDCDMwMPwHYi5qBgMDAwgzMDD8B2JeagYDAwMIMzD8/w/EfNQMBgYGEGZgYPgPxALUDAYGBhBmYPgPxILUDAYGhlEAAOXkJjPgchQRAAAAAElFTkSuQmCC",
-    48: "iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAA0klEQVRo3u2Y0Q3DIAxEL0s2YJgO0mE6SDdgmA7SDRikm3SDDpIRqogS8cXnJPqnSBXx8Qx2DAaDwWAwGAz+BTMAgJmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmf5HLwAVQ7/OqJ4AAAAASUVORK5CYII=",
-    128: "iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAABd0lEQVR42u3bMQ0AIAwEwSdh/ynhSxQIBHfAvqmd+fsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMB7bAAA8A5Sv3YZGwAAAABJRU5ErkJggg=="
+    48: "iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAA0klEQVRo3u2Y0Q3DIAxEL0s2YJgO0mE6SDdgmA7SDRikm3SDDpIRqogS8cXnJPqnSBXx8Qx2DAaDwWAwGAz+BTMAgJmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmf5HLwAVQ7/OqJ4AAAAASUVORK5CYII=",
+    128: "iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAABd0lEQVR42u3bMQ0AIAwEwSdh/ynhSxQIBHfAvqmd+fsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMB7bAAA8A5Sv3YZGwAAAABJRU5ErkJggg=="
   };
   
   const base64Data = icons[size] || icons[16];
@@ -141,7 +141,7 @@ function generateIcon(size: number): Uint8Array {
 const manifest = {
   manifest_version: 3,
   name: "Rankito CRM - WhatsApp Connector",
-  version: "1.0.2",
+  version: "1.0.3",
   description: "Capture leads do WhatsApp Web direto para o Rankito CRM",
   permissions: ["storage", "activeTab", "alarms", "scripting"],
   host_permissions: ["https://web.whatsapp.com/*", "https://*.supabase.co/*"],
@@ -179,7 +179,7 @@ const manifest = {
 };
 
 const serviceWorkerCode = `// 🚀 Service Worker para Extensão Rankito CRM
-console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.2');
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.3');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -284,385 +284,240 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
 chrome.action.onClicked.addListener(async (tab) => {
   log('🖱️ Extension icon clicked');
-  if (tab.url?.includes('web.whatsapp.com')) {
+  
+  if (!tab.url || !tab.url.includes('web.whatsapp.com')) {
+    log('⚠️ Not on WhatsApp Web, opening WhatsApp');
+    chrome.tabs.update(tab.id, { url: 'https://web.whatsapp.com' });
+    return;
+  }
+  
+  try {
+    await Promise.race([
+      chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
+    ]);
+    log('✅ Sidebar toggle message sent');
+  } catch (error) {
+    logError('❌ Content script not responding, injecting script:', error);
+    
     try {
-      await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
-      log('✅ Toggle message sent');
-    } catch (error) {
-      logError('⚠️ Could not send message, reloading tab');
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content/content.js']
+      });
+      
+      await chrome.scripting.insertCSS({
+        target: { tabId: tab.id },
+        files: ['content/sidebar.css']
+      });
+      
+      log('✅ Scripts injected successfully');
+      
+      setTimeout(async () => {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
+          log('✅ Sidebar toggle after injection');
+        } catch (err) {
+          logError('❌ Still failed after injection:', err);
+        }
+      }, 1000);
+    } catch (injectionError) {
+      logError('❌ Failed to inject scripts:', injectionError);
       chrome.tabs.reload(tab.id);
     }
-  } else {
-    chrome.tabs.create({ url: 'https://web.whatsapp.com' });
   }
 });
 
 log('🚀 Service Worker fully loaded and ready');`;
 
-const contentScriptCode = `// 🚀 PRIMEIRO LOG - Confirma que o script foi carregado
-console.log('[Rankito Content] 🚀 Script loaded on WhatsApp Web - Version 1.0.2');
+const contentScriptCode = `// Content Script loaded
+console.log('[Rankito] Content script loaded - v1.0.3');`;
 
-// Content Script for WhatsApp Web Integration
-const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
+const sidebarCSS = `/* Rankito CRM Sidebar & Config Modal Styles */
 
-const DEBUG = true;
-function debugLog(...args) {
-  if (DEBUG) console.log('[Rankito Content]', ...args);
-}
-
-let sidebarInjected = false;
-let currentContact = { name: null, phone: null };
-let apiToken = null;
-
-// Initialize
-(async function init() {
-  try {
-    debugLog('🚀 Initializing extension...');
-    
-    if (!window.location.hostname.includes('web.whatsapp.com')) {
-      debugLog('⚠️ Not on WhatsApp Web, skipping initialization');
-      return;
-    }
-    
-    debugLog('✅ On WhatsApp Web, proceeding with initialization');
-    
-    const result = await chrome.storage.local.get('apiToken');
-    apiToken = result.apiToken;
-    
-    if (!apiToken) {
-      debugLog('⚠️ No API token found - showing config modal');
-      setTimeout(() => showConfigModal(), 2000);
-      return;
-    }
-    
-    debugLog('✅ Token loaded:', apiToken.substring(0, 10) + '...');
-    setTimeout(() => {
-      debugLog('💉 Injecting sidebar...');
-      injectSidebar();
-      observeConversationChanges();
-      setTimeout(() => {
-        debugLog('🔄 Forcing first contact update...');
-        updateContactInfo();
-      }, 1000);
-    }, 2000);
-  } catch (error) {
-    console.error('[Rankito Content] ❌ CRITICAL ERROR in init():', error);
-    console.error('[Rankito Content] Stack trace:', error.stack);
-    alert('❌ ERRO CRÍTICO na extensão Rankito.\\n\\nDetalhes no console (F12).\\n\\nErro: ' + error.message);
-  }
-})();
-
-function showConfigModal() {
-  const modal = document.createElement('div');
-  modal.id = 'rankito-config-modal';
-  modal.className = 'rankito-config-modal';
-  modal.innerHTML = \`
-    <div class="rankito-config-backdrop"></div>
-    <div class="rankito-config-content">
-      <div class="rankito-config-header">
-        <h2>🔥 Rankito CRM - Configuração</h2>
-        <p>Cole seu token de API</p>
-      </div>
-      <div class="rankito-config-body">
-        <label>Token de API:</label>
-        <textarea id="rankito-token-input" placeholder="Cole aqui..." rows="3"></textarea>
-        <div class="rankito-config-actions">
-          <button id="rankito-paste-btn" class="rankito-btn-secondary">📋 Colar</button>
-          <button id="rankito-save-token-btn" class="rankito-btn-primary">✅ Salvar</button>
-        </div>
-      </div>
-    </div>
-  \`;
-  document.body.appendChild(modal);
-  
-  document.getElementById('rankito-paste-btn')?.addEventListener('click', async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      document.getElementById('rankito-token-input').value = text;
-    } catch { alert('❌ Erro ao ler clipboard'); }
-  });
-  
-  document.getElementById('rankito-save-token-btn')?.addEventListener('click', async () => {
-    const token = document.getElementById('rankito-token-input')?.value.trim();
-    if (!token) return alert('⚠️ Token inválido');
-    chrome.runtime.sendMessage({ action: 'saveToken', token }, (response) => {
-      if (response?.success) {
-        apiToken = token;
-        modal.remove();
-        setTimeout(() => { injectSidebar(); observeConversationChanges(); }, 500);
-        alert('✅ Configurado!');
-      }
-    });
-  });
+/* Configuration Modal */
+.rankito-config-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 999999999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  pointer-events: all !important;
 }
 
-function injectSidebar() {
-  if (sidebarInjected) return;
-  const sidebar = document.createElement('div');
-  sidebar.id = 'rankito-sidebar';
-  sidebar.className = 'rankito-sidebar';
-  sidebar.innerHTML = \`
-    <div class="rankito-sidebar-header">
-      <h3>🔥 Rankito CRM</h3>
-      <button id="rankito-close-sidebar">×</button>
-    </div>
-    <div class="rankito-sidebar-content">
-      <div id="rankito-contact-info">
-        <p class="rankito-label">Contato detectado:</p>
-        <h4 id="rankito-contact-name">—</h4>
-        <p id="rankito-contact-phone">—</p>
-      </div>
-      <button id="rankito-create-lead-btn" class="rankito-primary-btn">🔥 Criar Lead</button>
-      <div id="rankito-lead-history">
-        <p class="rankito-label">Histórico:</p>
-        <div id="rankito-history-list"><div class="rankito-loading">Carregando...</div></div>
-      </div>
-    </div>
-  \`;
-  document.body.appendChild(sidebar);
-  sidebarInjected = true;
-  document.getElementById('rankito-close-sidebar')?.addEventListener('click', () => sidebar.style.display = 'none');
-  document.getElementById('rankito-create-lead-btn')?.addEventListener('click', handleCreateLead);
+.rankito-config-backdrop {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  pointer-events: all !important;
 }
 
-function observeConversationChanges() {
-  const observer = new MutationObserver(() => updateContactInfo());
-  const target = document.querySelector('#main');
-  if (target) {
-    observer.observe(target, { childList: true, subtree: true });
-    console.log('[Rankito Content] 👀 Observing changes');
-  }
+.rankito-config-content {
+  position: relative !important;
+  width: 90% !important;
+  max-width: 500px !important;
+  background: white !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+  overflow: hidden !important;
+  animation: rankito-modal-in 0.3s ease !important;
+  pointer-events: all !important;
+  z-index: 1000000000 !important;
 }
 
-function updateContactInfo() {
-  try {
-    const headerSelectors = ['header span[title]', 'header div[title]', 'header span[dir="auto"]'];
-    let name = null;
-    for (const sel of headerSelectors) {
-      const el = document.querySelector(sel);
-      if (el?.textContent?.length > 0) {
-        name = el.textContent.trim();
-        break;
-      }
-    }
-    if (!name) name = 'Não identificado';
-    
-    let phone = null;
-    const urlMatch = window.location.href.match(/\\/(\d{10,15})$/);
-    if (urlMatch) phone = urlMatch[1];
-    
-    if (!phone) {
-      const phoneEls = document.querySelectorAll('span[dir="ltr"]');
-      for (const el of phoneEls) {
-        const text = el.textContent;
-        if (text && /^\\+?\\d[\\d\\s\\-\\(\\)]{8,}$/.test(text)) {
-          phone = text.replace(/\\D/g, '');
-          break;
-        }
-      }
-    }
-    
-    if (name !== currentContact.name || phone !== currentContact.phone) {
-      currentContact = { name, phone };
-      const nameEl = document.getElementById('rankito-contact-name');
-      const phoneEl = document.getElementById('rankito-contact-phone');
-      if (nameEl) nameEl.textContent = name;
-      if (phoneEl) {
-        phoneEl.textContent = phone || 'Clique para inserir';
-        phoneEl.style.cursor = phone ? 'default' : 'pointer';
-        if (!phone) {
-          phoneEl.onclick = () => {
-            const inp = prompt('Digite o telefone (só números):');
-            if (inp) {
-              const clean = inp.replace(/\\D/g, '');
-              if (clean.length >= 10) {
-                currentContact.phone = clean;
-                phoneEl.textContent = clean;
-                phoneEl.style.cursor = 'default';
-                phoneEl.onclick = null;
-                loadHistory(clean);
-              }
-            }
-          };
-        } else phoneEl.onclick = null;
-      }
-      console.log('[Rankito Content] ✅ Contact updated:', currentContact);
-      if (phone) loadHistory(phone);
-      else {
-        const histDiv = document.getElementById('rankito-history-list');
-        if (histDiv) histDiv.innerHTML = '<p class="rankito-empty">📱 Clique no telefone acima</p>';
-      }
-    }
-  } catch (error) {
-    console.error('[Rankito Content] ❌ Error:', error);
-  }
+@keyframes rankito-modal-in {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-async function loadHistory(phone) {
-  if (!apiToken || !phone) return;
-  const histDiv = document.getElementById('rankito-history-list');
-  if (!histDiv) return;
-  console.log('[Rankito Content] 📥 Loading history:', phone);
-  histDiv.innerHTML = '<div class="rankito-loading">Carregando...</div>';
-  try {
-    const res = await fetch(\`\${SUPABASE_URL}/functions/v1/get-whatsapp-history\`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-token': apiToken },
-      body: JSON.stringify({ phone })
-    });
-    console.log('[Rankito Content] 📡 Response:', res.status);
-    if (!res.ok) throw new Error('Failed');
-    const data = await res.json();
-    if (data.total_deals > 0) renderHistory(data.deals);
-    else histDiv.innerHTML = '<p class="rankito-empty">Nenhuma interação</p>';
-  } catch (error) {
-    console.error('[Rankito Content] ❌ Error:', error);
-    histDiv.innerHTML = '<p class="rankito-error">Erro ao carregar</p>';
-  }
+.rankito-config-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  padding: 24px !important;
+  text-align: center !important;
+  position: relative !important;
 }
 
-function renderHistory(deals) {
-  const histDiv = document.getElementById('rankito-history-list');
-  if (!histDiv) return;
-  histDiv.innerHTML = deals.map(d => \`
-    <div class="rankito-history-item">
-      <strong>\${d.title}</strong>
-      <span class="rankito-stage-badge">\${d.stage}</span>
-      <p class="rankito-date">\${new Date(d.created_at).toLocaleDateString('pt-BR')}</p>
-    </div>
-  \`).join('');
+.rankito-config-close {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: none !important;
+  color: white !important;
+  font-size: 24px !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  transition: background 0.2s !important;
+  line-height: 1 !important;
 }
 
-async function handleCreateLead() {
-  if (!apiToken) return alert('❌ Token não configurado');
-  if (!currentContact.name) return alert('❌ Nenhum contato');
-  const btn = document.getElementById('rankito-create-lead-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '⏳ Criando...';
-  }
-  try {
-    const msgs = document.querySelectorAll('[data-pre-plain-text]');
-    const lastMsg = msgs[msgs.length - 1]?.textContent || '';
-    const res = await fetch(\`\${SUPABASE_URL}/functions/v1/create-deal-from-whatsapp\`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-token': apiToken },
-      body: JSON.stringify({
-        name: currentContact.name,
-        phone: currentContact.phone || 'não disponível',
-        message: lastMsg.substring(0, 500),
-        stage: 'lead'
-      })
-    });
-    const result = await res.json();
-    if (result.success) {
-      alert(\`✅ \${result.message}\\nScore: \${result.lead_score}\`);
-      if (currentContact.phone) loadHistory(currentContact.phone);
-    } else throw new Error(result.error);
-  } catch (error) {
-    alert('❌ Erro: ' + error.message);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = '🔥 Criar Lead';
-    }
-  }
+.rankito-config-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
 }
 
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.action === 'toggleSidebar') {
-    const sidebar = document.getElementById('rankito-sidebar');
-    if (sidebar) sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
-  }
-});`;
+.rankito-config-header h2 {
+  margin: 0 0 8px 0 !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: white !important;
+}
 
-const sidebarCSS = `.rankito-sidebar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 350px;
-  height: 100vh;
-  background: white;
-  border-left: 1px solid #e5e7eb;
-  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
-  z-index: 999999;
-  display: flex;
-  flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+.rankito-config-header p {
+  margin: 0 !important;
+  font-size: 14px !important;
+  opacity: 0.9 !important;
+  color: white !important;
 }
-.rankito-sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+.rankito-config-body {
+  padding: 24px !important;
+  background: white !important;
 }
-.rankito-sidebar-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+
+.rankito-config-body label {
+  display: block !important;
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+  color: #333 !important;
+  font-size: 14px !important;
 }
-#rankito-close-sidebar {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 28px;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: background 0.2s;
+
+.rankito-config-body textarea {
+  width: 100% !important;
+  padding: 12px !important;
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-family: 'Monaco', 'Courier New', monospace !important;
+  resize: vertical !important;
+  margin-bottom: 16px !important;
+  transition: border-color 0.2s !important;
+  box-sizing: border-box !important;
+  color: #333 !important;
+  background: white !important;
+  min-height: 120px !important;
 }
-#rankito-close-sidebar:hover {
-  background: rgba(255, 255, 255, 0.2);
+
+.rankito-config-body textarea:focus {
+  outline: none !important;
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
 }
-.rankito-sidebar-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+
+.rankito-config-actions {
+  display: flex !important;
+  gap: 12px !important;
+  margin-bottom: 16px !important;
 }
-#rankito-contact-info {
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-  padding: 16px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
+
+.rankito-btn-primary,
+.rankito-btn-secondary {
+  flex: 1 !important;
+  padding: 12px 20px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
 }
-.rankito-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  color: #9ca3af;
-  margin: 0 0 12px 0;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+
+.rankito-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
 }
-.rankito-primary-btn {
-  width: 100%;
-  padding: 14px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+
+.rankito-btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4) !important;
 }
-.rankito-primary-btn:hover {
-  transform: translateY(-2px);
+
+.rankito-btn-primary:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
 }
-.rankito-primary-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+
+.rankito-btn-secondary {
+  background: #f7fafc !important;
+  color: #4a5568 !important;
+  border: 2px solid #e2e8f0 !important;
+}
+
+.rankito-btn-secondary:hover {
+  background: #edf2f7 !important;
+}
+
+.rankito-config-help {
+  background: #f7fafc !important;
+  padding: 16px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  color: #4a5568 !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+}
+
+.rankito-config-help strong {
+  color: #2d3748 !important;
+  font-weight: 600 !important;
 }`;
 
 Deno.serve(async (req) => {
@@ -687,7 +542,6 @@ Deno.serve(async (req) => {
     const zipData = zip.generate();
     console.log('[Extension Download] ZIP ready:', zipData.length, 'bytes');
     
-    // Type assertion needed for Deno compatibility
     return new Response(zipData as unknown as BodyInit, {
       headers: {
         ...corsHeaders,

@@ -102,128 +102,133 @@ async function init() {
 
 // Show configuration modal
 function showConfigModal() {
-  const modal = document.createElement('div');
-  modal.id = 'rankito-config-modal';
-  modal.className = 'rankito-config-modal';
+  console.log('[Rankito Content] 📝 Mostrando modal de configuração');
   
+  // Remove modal existente se houver
+  const existingModal = document.querySelector('.rankito-config-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  const modal = document.createElement('div');
+  modal.className = 'rankito-config-modal';
   modal.innerHTML = `
     <div class="rankito-config-backdrop"></div>
     <div class="rankito-config-content">
       <div class="rankito-config-header">
-        <h2>🔥 Rankito CRM - Configuração</h2>
-        <p>Cole seu token de API para começar a usar</p>
+        <button class="rankito-config-close" id="rankito-close-modal">×</button>
+        <h2>🚀 Configurar Rankito CRM</h2>
+        <p>Cole seu API Token para começar</p>
       </div>
-      
       <div class="rankito-config-body">
-        <label for="rankito-token-input">Token de API:</label>
-        <textarea 
-          id="rankito-token-input" 
-          placeholder="Cole seu token aqui..."
-          rows="3"
-        ></textarea>
-        
+        <label for="rankito-api-token">API Token:</label>
+        <textarea id="rankito-api-token" placeholder="Cole aqui seu API Token do Rankito CRM..." rows="4"></textarea>
         <div class="rankito-config-actions">
-          <button id="rankito-paste-btn" class="rankito-btn-secondary">
-            📋 Colar da Área de Transferência
-          </button>
-          <button id="rankito-save-token-btn" class="rankito-btn-primary">
-            ✅ Salvar e Conectar
-          </button>
+          <button class="rankito-btn-secondary" id="rankito-cancel-config">Cancelar</button>
+          <button class="rankito-btn-primary" id="rankito-save-config">Salvar Token</button>
         </div>
-        
         <p class="rankito-config-help">
-          💡 <strong>Onde encontrar o token?</strong><br>
-          Acesse o Dashboard do Rankito → Integrações → Extensão Chrome → Copiar Token
+          <strong>Como obter seu token:</strong><br>
+          1. Acesse o Rankito CRM<br>
+          2. Vá em Configurações → Integrações<br>
+          3. Copie o API Token da extensão WhatsApp
         </p>
       </div>
     </div>
   `;
   
   document.body.appendChild(modal);
+  console.log('[Rankito Content] ✅ Modal adicionado ao DOM');
   
-  // Add event listeners
-  document.getElementById('rankito-paste-btn')?.addEventListener('click', async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      const input = document.getElementById('rankito-token-input');
-      if (input) input.value = text;
-      alert('✅ Token colado!');
-    } catch (error) {
-      alert('❌ Erro ao ler área de transferência. Cole manualmente com Ctrl+V');
+  // Focar no textarea
+  setTimeout(() => {
+    const textarea = document.getElementById('rankito-api-token');
+    if (textarea) {
+      textarea.focus();
+      console.log('[Rankito Content] ✅ Foco no textarea');
     }
+  }, 100);
+  
+  // Botão fechar (X)
+  document.getElementById('rankito-close-modal')?.addEventListener('click', () => {
+    console.log('[Rankito Content] ❌ Fechando modal (X)');
+    modal.remove();
   });
   
-  document.getElementById('rankito-save-token-btn')?.addEventListener('click', async () => {
-    const input = document.getElementById('rankito-token-input');
-    const token = input?.value.trim();
+  // Botão cancelar
+  document.getElementById('rankito-cancel-config')?.addEventListener('click', () => {
+    console.log('[Rankito Content] ❌ Cancelando configuração');
+    modal.remove();
+  });
+  
+  // Clicar no backdrop para fechar
+  modal.querySelector('.rankito-config-backdrop')?.addEventListener('click', () => {
+    console.log('[Rankito Content] ❌ Fechando modal (backdrop)');
+    modal.remove();
+  });
+  
+  // Botão salvar
+  document.getElementById('rankito-save-config')?.addEventListener('click', async () => {
+    const token = document.getElementById('rankito-api-token')?.value.trim();
     
     if (!token) {
-      alert('⚠️ Por favor, insira um token válido');
+      alert('Por favor, cole um token válido');
       return;
     }
     
-    // Save token
-    chrome.runtime.sendMessage({ 
-      action: 'saveToken', 
-      token 
-    }, (response) => {
-      if (response?.success) {
-        apiToken = token;
-        modal.remove();
-        
-        // Atualizar status e inicializar
-        updateConnectionStatus('connected');
-        observeConversationChanges();
-        updateContactInfo();
-        
-        alert('✅ Token configurado com sucesso!');
-      } else {
-        alert('❌ Erro ao salvar token');
-      }
-    });
+    console.log('[Rankito Content] 💾 Salvando token...');
+    
+    try {
+      // Envia token para o background script
+      await chrome.runtime.sendMessage({
+        action: 'saveToken',
+        token: token
+      });
+      
+      console.log('[Rankito Content] ✅ Token salvo com sucesso');
+      modal.remove();
+      
+      // Reinicia a extensão
+      setTimeout(() => {
+        init();
+      }, 500);
+    } catch (error) {
+      console.error('[Rankito Content] ❌ Erro ao salvar token:', error);
+      alert('Erro ao salvar token. Tente novamente.');
+    }
   });
 }
 
 // Mostrar prompt de configuração na sidebar
 function showSetupPromptInSidebar() {
-  const sidebar = document.getElementById('rankito-sidebar');
-  if (!sidebar) return;
-  
-  const content = sidebar.querySelector('.rankito-sidebar-content');
-  if (!content) return;
-  
-  content.innerHTML = `
-    <div style="padding: 20px; text-align: center;">
-      <div style="font-size: 48px; margin-bottom: 16px;">🔧</div>
-      <h3 style="margin-bottom: 12px; font-size: 16px; font-weight: 600;">Configure sua Extensão</h3>
-      <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
-        Para começar a capturar leads do WhatsApp, você precisa configurar seu token de API.
-      </p>
-      <button 
-        id="rankito-open-config-btn"
-        style="
-          width: 100%;
-          padding: 12px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-          font-size: 14px;
-        "
-      >
-        Configurar Token
-      </button>
-    </div>
-  `;
-  
-  // Listener para abrir modal
-  document.getElementById('rankito-open-config-btn')?.addEventListener('click', () => {
-    showConfigModal();
-  });
-  
+  console.log('[Rankito Content] 📢 Mostrando prompt de configuração na sidebar');
   updateConnectionStatus('disconnected');
+  
+  const contactInfo = document.getElementById('rankito-contact-info');
+  if (contactInfo) {
+    contactInfo.innerHTML = `
+      <div style="text-align: center; padding: 20px 12px;">
+        <div style="font-size: 48px; margin-bottom: 16px;">⚙️</div>
+        <p class="rankito-label" style="text-align: center; margin-bottom: 12px;">CONFIGURAÇÃO NECESSÁRIA</p>
+        <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 13px; line-height: 1.5;">
+          Configure seu API Token para começar a usar o Rankito CRM no WhatsApp
+        </p>
+        <button class="rankito-primary-btn" id="rankito-open-config" style="font-size: 15px; padding: 14px 20px;">
+          🔧 Configurar Agora
+        </button>
+      </div>
+    `;
+    
+    document.getElementById('rankito-open-config')?.addEventListener('click', () => {
+      console.log('[Rankito Content] 🖱️ Clicou em Configurar Agora');
+      showConfigModal();
+    });
+  }
+  
+  const historyList = document.getElementById('rankito-history-list');
+  if (historyList) {
+    historyList.innerHTML = '<p class="rankito-empty">Configure o token para começar a capturar leads</p>';
+  }
 }
 
 // Mostrar erro na sidebar

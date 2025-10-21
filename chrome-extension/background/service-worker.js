@@ -1,5 +1,5 @@
 // 🚀 Service Worker para Extensão Rankito CRM
-console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.2');
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.3');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -123,25 +123,55 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
 // 5. Handle clicks on extension icon
 chrome.action.onClicked.addListener(async (tab) => {
-  log('🖱️ Extension icon clicked, tab:', tab.id, tab.url);
+  log('🖱️ Extension icon clicked');
   
-  // Check if on WhatsApp Web
-  if (tab.url?.includes('web.whatsapp.com')) {
+  // Check if it's WhatsApp Web
+  if (!tab.url || !tab.url.includes('web.whatsapp.com')) {
+    log('⚠️ Not on WhatsApp Web, opening WhatsApp');
+    chrome.tabs.update(tab.id, { url: 'https://web.whatsapp.com' });
+    return;
+  }
+  
+  try {
+    // Try to send message to content script with timeout
+    await Promise.race([
+      chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
+    ]);
+    log('✅ Sidebar toggle message sent');
+  } catch (error) {
+    // If content script is not loaded or timeout, inject and initialize
+    logError('❌ Content script not responding, injecting script:', error);
+    
     try {
-      // Tentar enviar mensagem para content script
-      const response = await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
-      log('✅ Sidebar toggle message sent successfully', response);
-    } catch (error) {
-      logError('⚠️ Could not send message to content script:', error);
-      log('🔄 Reloading tab to reinitialize extension...');
+      // Inject content script
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content/content.js']
+      });
       
-      // Se falhar, recarregar a página (content script pode não estar pronto)
+      // Inject CSS
+      await chrome.scripting.insertCSS({
+        target: { tabId: tab.id },
+        files: ['content/sidebar.css']
+      });
+      
+      log('✅ Scripts injected successfully');
+      
+      // Wait a bit and try to toggle sidebar
+      setTimeout(async () => {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
+          log('✅ Sidebar toggle after injection');
+        } catch (err) {
+          logError('❌ Still failed after injection:', err);
+        }
+      }, 1000);
+    } catch (injectionError) {
+      logError('❌ Failed to inject scripts:', injectionError);
+      // Last resort: reload page
       chrome.tabs.reload(tab.id);
     }
-  } else {
-    // Open WhatsApp Web
-    log('🌐 Opening WhatsApp Web...');
-    chrome.tabs.create({ url: 'https://web.whatsapp.com' });
   }
 });
 
