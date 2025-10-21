@@ -38,14 +38,20 @@ export const ChromeExtensionSetup = ({ userId }: ChromeExtensionSetupProps) => {
   const handleDownloadExtension = async () => {
     setIsUploading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('upload-chrome-extension', {
-        responseType: 'blob'
-      });
+      // Call edge function directly to get blob
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-chrome-extension`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
       
-      if (error) throw error;
+      if (!response.ok) throw new Error('Erro ao gerar extensão');
       
-      // Create download link
-      const blob = new Blob([data], { type: 'application/zip' });
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

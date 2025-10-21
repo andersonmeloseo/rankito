@@ -1,3 +1,5 @@
+import { JSZip } from 'https://deno.land/x/jszip@0.11.0/mod.ts';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -6,26 +8,35 @@ const corsHeaders = {
 // Conteúdo dos arquivos da extensão
 const manifest = {
   manifest_version: 3,
-  name: "Rankito CRM - WhatsApp Lead Capture",
+  name: "Rankito CRM - WhatsApp Connector",
   version: "1.0.0",
-  description: "Capture leads do WhatsApp Web diretamente no Rankito CRM",
-  permissions: ["storage", "tabs"],
-  host_permissions: ["https://web.whatsapp.com/*"],
-  background: {
-    service_worker: "background/service-worker.js",
-    type: "module"
+  description: "Capture leads do WhatsApp Web direto para o Rankito CRM",
+  permissions: ["storage", "activeTab", "alarms"],
+  host_permissions: ["https://web.whatsapp.com/*", "https://*.supabase.co/*"],
+  action: {
+    default_icon: {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
   },
   content_scripts: [
     {
       matches: ["https://web.whatsapp.com/*"],
       js: ["content/content.js"],
       css: ["content/sidebar.css"],
-      run_at: "document_idle"
+      run_at: "document_end"
     }
   ],
-  action: {
-    default_title: "Rankito CRM"
+  background: {
+    service_worker: "background/service-worker.js"
   },
+  web_accessible_resources: [
+    {
+      resources: ["assets/*"],
+      matches: ["https://web.whatsapp.com/*"]
+    }
+  ],
   icons: {
     "16": "assets/icon16.png",
     "48": "assets/icon48.png",
@@ -33,227 +44,229 @@ const manifest = {
   }
 };
 
-const serviceWorker = `// Rankito CRM Service Worker
-let apiToken = '';
-let apiUrl = '';
+const serviceWorkerCode = `// Service Worker for Rankito CRM Extension
+const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
-chrome.storage.local.get(['rankitoToken', 'rankitoApiUrl'], (result) => {
-  apiToken = result.rankitoToken || '';
-  apiUrl = result.rankitoApiUrl || '';
-  updateBadge();
+chrome.runtime.onInstalled.addListener((details) => {
+  console.log('[Rankito] Extension installed:', details.reason);
+  if (details.reason === 'install') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('../../extension-setup') });
+  }
+  chrome.action.setBadgeText({ text: '!' });
+  chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
 });
 
-function updateBadge() {
-  const isConfigured = apiToken && apiUrl;
-  chrome.action.setBadgeText({ text: isConfigured ? '✓' : '!' });
-  chrome.action.setBadgeBackgroundColor({ color: isConfigured ? '#22c55e' : '#ef4444' });
-}
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'RANKITO_CONFIG_UPDATE') {
-    apiToken = message.token;
-    apiUrl = message.apiUrl;
-    updateBadge();
-    sendResponse({ success: true });
+  if (message.action === 'saveToken') {
+    chrome.storage.local.set({ 
+      apiToken: message.token,
+      connectedAt: new Date().toISOString()
+    }, () => {
+      chrome.action.setBadgeText({ text: '✓' });
+      chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
+      sendResponse({ success: true });
+    });
+    return true;
   }
   
-  if (message.type === 'RANKITO_GET_CONFIG') {
-    sendResponse({ token: apiToken, apiUrl: apiUrl });
-  }
-  
-  if (message.type === 'RANKITO_CREATE_LEAD') {
-    createLead(message.data)
-      .then(result => sendResponse({ success: true, data: result }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
+  if (message.action === 'getToken') {
+    chrome.storage.local.get('apiToken', (data) => {
+      sendResponse({ token: data.apiToken });
+    });
     return true;
   }
 });
 
-async function createLead(leadData) {
-  if (!apiToken || !apiUrl) {
-    throw new Error('Extensão não configurada');
-  }
-
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': \`Bearer \${apiToken}\`
-    },
-    body: JSON.stringify(leadData)
-  });
-
-  if (!response.ok) {
-    throw new Error(\`Erro ao criar lead: \${response.status}\`);
-  }
-
-  return await response.json();
-}
-
-console.log('Rankito CRM Service Worker loaded');`;
-
-const contentScript = `// Rankito CRM Content Script
-console.log('Rankito CRM: Content script loaded');
-
-let config = { token: '', apiUrl: '' };
-
-chrome.runtime.sendMessage({ type: 'RANKITO_GET_CONFIG' }, (response) => {
-  if (response) {
-    config = response;
-    console.log('Rankito CRM: Config loaded', config.apiUrl ? 'Configured' : 'Not configured');
+chrome.storage.local.get('apiToken', (data) => {
+  if (data.apiToken) {
+    chrome.action.setBadgeText({ text: '✓' });
+    chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
   }
 });
 
-window.addEventListener('message', (event) => {
-  if (event.data.type === 'RANKITO_CONFIGURE') {
-    config.token = event.data.token;
-    config.apiUrl = event.data.apiUrl;
-    
-    chrome.storage.local.set({
-      rankitoToken: config.token,
-      rankitoApiUrl: config.apiUrl
-    });
-    
-    chrome.runtime.sendMessage({
-      type: 'RANKITO_CONFIG_UPDATE',
-      token: config.token,
-      apiUrl: config.apiUrl
-    });
-    
-    window.postMessage({ type: 'RANKITO_TOKEN_SAVED' }, '*');
+console.log('[Rankito] Service Worker loaded');`;
+
+const contentScriptCode = `// Rankito CRM Content Script
+console.log('[Rankito] Content script loaded');
+
+let apiToken = null;
+let sidebar = null;
+
+chrome.runtime.sendMessage({ action: 'getToken' }, (response) => {
+  if (response?.token) {
+    apiToken = response.token;
+    injectSidebar();
   }
 });
 
-function createSidebar() {
-  const sidebar = document.createElement('div');
-  sidebar.id = 'rankito-sidebar';
+function injectSidebar() {
+  if (sidebar) return;
+  
+  sidebar = document.createElement('div');
+  sidebar.className = 'rankito-sidebar';
   sidebar.innerHTML = \`
-    <div class="rankito-header">
+    <div class="rankito-sidebar-header">
       <h3>Rankito CRM</h3>
+      <button id="rankito-close-sidebar">×</button>
     </div>
-    <div class="rankito-content">
-      <button id="rankito-capture-btn" class="rankito-btn">
-        📋 Capturar Lead
+    <div class="rankito-sidebar-content">
+      <div id="rankito-contact-info">
+        <p class="rankito-label">Contato Selecionado</p>
+        <h4 id="rankito-contact-name">-</h4>
+        <p id="rankito-contact-phone">-</p>
+      </div>
+      <button id="rankito-create-lead" class="rankito-primary-btn">
+        🔥 Criar Lead no CRM
       </button>
-      <div id="rankito-status"></div>
+      <div id="rankito-lead-history">
+        <p class="rankito-label">Histórico no CRM</p>
+        <div id="rankito-history-list"></div>
+      </div>
     </div>
   \`;
   
   document.body.appendChild(sidebar);
-  document.getElementById('rankito-capture-btn')?.addEventListener('click', captureLead);
+  
+  document.getElementById('rankito-close-sidebar')?.addEventListener('click', () => {
+    sidebar.remove();
+    sidebar = null;
+  });
+  
+  document.getElementById('rankito-create-lead')?.addEventListener('click', handleCreateLead);
+  
+  observeConversationChanges();
 }
 
-async function captureLead() {
-  const statusEl = document.getElementById('rankito-status');
+function observeConversationChanges() {
+  const observer = new MutationObserver(() => {
+    updateContactInfo();
+  });
   
-  if (!config.token || !config.apiUrl) {
-    showStatus('❌ Extensão não configurada', 'error');
-    return;
-  }
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  
+  updateContactInfo();
+}
+
+function updateContactInfo() {
+  const header = document.querySelector('[data-testid="conversation-header"]');
+  const name = header?.querySelector('span')?.textContent || '-';
+  const phone = header?.querySelector('span[title]')?.getAttribute('title') || '-';
+  
+  const nameEl = document.getElementById('rankito-contact-name');
+  const phoneEl = document.getElementById('rankito-contact-phone');
+  
+  if (nameEl) nameEl.textContent = name;
+  if (phoneEl) phoneEl.textContent = phone;
+}
+
+async function handleCreateLead() {
+  const btn = document.getElementById('rankito-create-lead');
+  if (!btn) return;
+  
+  const header = document.querySelector('[data-testid="conversation-header"]');
+  const name = header?.querySelector('span')?.textContent;
+  const phone = header?.querySelector('span[title]')?.getAttribute('title');
+  
+  btn.disabled = true;
+  btn.textContent = '⏳ Criando...';
   
   try {
-    showStatus('⏳ Capturando lead...', 'loading');
-    
-    const phoneNumber = extractPhoneNumber();
-    const contactName = extractContactName();
-    const lastMessage = extractLastMessage();
-    
-    if (!phoneNumber) {
-      showStatus('❌ Não foi possível identificar o número', 'error');
-      return;
-    }
-    
-    chrome.runtime.sendMessage({
-      type: 'RANKITO_CREATE_LEAD',
-      data: {
-        phone: phoneNumber,
-        name: contactName || 'WhatsApp Lead',
-        message: lastMessage,
-        source: 'whatsapp_extension'
-      }
-    }, (response) => {
-      if (response?.success) {
-        showStatus('✅ Lead capturado com sucesso!', 'success');
-      } else {
-        showStatus(\`❌ Erro: \${response?.error || 'Desconhecido'}\`, 'error');
-      }
+    const response = await fetch('https://jhzmgexprjnpgadkxjup.supabase.co/functions/v1/create-deal-from-whatsapp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-token': apiToken
+      },
+      body: JSON.stringify({ phone, name })
     });
     
-  } catch (error) {
-    showStatus(\`❌ Erro: \${error.message}\`, 'error');
-  }
-}
-
-function extractPhoneNumber() {
-  const header = document.querySelector('[data-testid="conversation-header"]');
-  const titleSpan = header?.querySelector('span[title]');
-  return titleSpan?.getAttribute('title') || '';
-}
-
-function extractContactName() {
-  const header = document.querySelector('[data-testid="conversation-header"]');
-  return header?.querySelector('span')?.textContent || '';
-}
-
-function extractLastMessage() {
-  const messages = document.querySelectorAll('[data-testid="msg-container"]');
-  const lastMsg = messages[messages.length - 1];
-  return lastMsg?.querySelector('.selectable-text')?.textContent || '';
-}
-
-function showStatus(message, type) {
-  const statusEl = document.getElementById('rankito-status');
-  if (statusEl) {
-    statusEl.textContent = message;
-    statusEl.className = \`rankito-status rankito-status-\${type}\`;
-    
-    if (type !== 'loading') {
+    if (response.ok) {
+      btn.textContent = '✅ Lead Criado!';
       setTimeout(() => {
-        statusEl.textContent = '';
-        statusEl.className = 'rankito-status';
-      }, 3000);
+        btn.textContent = '🔥 Criar Lead no CRM';
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      throw new Error('Erro ao criar lead');
     }
+  } catch (error) {
+    btn.textContent = '❌ Erro';
+    setTimeout(() => {
+      btn.textContent = '🔥 Criar Lead no CRM';
+      btn.disabled = false;
+    }, 2000);
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', createSidebar);
-} else {
-  createSidebar();
-}`;
+window.addEventListener('message', (event) => {
+  if (event.data.type === 'RANKITO_TOKEN_SAVED') {
+    chrome.runtime.sendMessage({ action: 'getToken' }, (response) => {
+      if (response?.token) {
+        apiToken = response.token;
+        injectSidebar();
+      }
+    });
+  }
+});`;
 
-const sidebarCSS = `#rankito-sidebar {
+const sidebarCSS = `.rankito-sidebar {
   position: fixed;
-  right: 0;
   top: 0;
-  width: 300px;
+  right: 0;
+  width: 320px;
   height: 100vh;
   background: white;
   border-left: 1px solid #e5e7eb;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
   z-index: 9999;
   display: flex;
   flex-direction: column;
 }
 
-.rankito-header {
+.rankito-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 16px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
-.rankito-header h3 {
-  margin: 0;
-  font-size: 18px;
+#rankito-close-sidebar {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.rankito-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#rankito-contact-info {
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.rankito-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin: 0 0 8px 0;
   font-weight: 600;
 }
 
-.rankito-content {
-  padding: 16px;
-  flex: 1;
-}
-
-.rankito-btn {
+.rankito-primary-btn {
   width: 100%;
   padding: 12px 16px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -263,96 +276,7 @@ const sidebarCSS = `#rankito-sidebar {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.rankito-btn:hover {
-  transform: translateY(-2px);
-}
-
-.rankito-btn:active {
-  transform: translateY(0);
-}
-
-.rankito-status {
-  margin-top: 16px;
-  padding: 12px;
-  border-radius: 6px;
-  font-size: 14px;
-  text-align: center;
-}
-
-.rankito-status-success {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.rankito-status-error {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.rankito-status-loading {
-  background: #dbeafe;
-  color: #1e40af;
 }`;
-
-// Criar ZIP manualmente (formato ZIP simplificado)
-function createSimpleZip(): Uint8Array {
-  const files = [
-    { name: 'manifest.json', content: JSON.stringify(manifest, null, 2) },
-    { name: 'background/service-worker.js', content: serviceWorker },
-    { name: 'content/content.js', content: contentScript },
-    { name: 'content/sidebar.css', content: sidebarCSS },
-  ];
-
-  const encoder = new TextEncoder();
-  const chunks: Uint8Array[] = [];
-  
-  // ZIP file header
-  const zipHeader = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
-  
-  files.forEach(file => {
-    const content = encoder.encode(file.content);
-    const filename = encoder.encode(file.name);
-    
-    // Local file header
-    chunks.push(zipHeader);
-    chunks.push(new Uint8Array([0x14, 0x00])); // Version
-    chunks.push(new Uint8Array([0x00, 0x00])); // Flags
-    chunks.push(new Uint8Array([0x00, 0x00])); // Compression
-    chunks.push(new Uint8Array([0x00, 0x00, 0x00, 0x00])); // Time/Date
-    chunks.push(new Uint8Array([0x00, 0x00, 0x00, 0x00])); // CRC32
-    
-    // Sizes
-    const size = content.length;
-    chunks.push(new Uint8Array([size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, (size >> 24) & 0xff]));
-    chunks.push(new Uint8Array([size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, (size >> 24) & 0xff]));
-    
-    // Filename length
-    chunks.push(new Uint8Array([filename.length & 0xff, (filename.length >> 8) & 0xff]));
-    chunks.push(new Uint8Array([0x00, 0x00])); // Extra length
-    
-    chunks.push(filename);
-    chunks.push(content);
-  });
-  
-  // End of central directory
-  chunks.push(new Uint8Array([0x50, 0x4b, 0x05, 0x06]));
-  chunks.push(new Uint8Array(18).fill(0));
-  
-  // Concatenar
-  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-  
-  chunks.forEach(chunk => {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  });
-  
-  return result;
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -360,12 +284,22 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Gerando ZIP da extensão...');
-    const zipContent = createSimpleZip();
+    console.log('Creating ZIP file...');
     
-    console.log('Retornando ZIP para download direto');
-
-    return new Response(zipContent, {
+    const zip = new JSZip();
+    
+    // Add files to ZIP
+    zip.addFile('manifest.json', JSON.stringify(manifest, null, 2));
+    zip.folder('background').addFile('service-worker.js', serviceWorkerCode);
+    zip.folder('content').addFile('content.js', contentScriptCode);
+    zip.folder('content').addFile('sidebar.css', sidebarCSS);
+    
+    // Generate ZIP
+    const zipData = await zip.generateAsync({ type: 'uint8array' });
+    
+    console.log('ZIP generated successfully');
+    
+    return new Response(zipData as unknown as BodyInit, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/zip',
@@ -375,11 +309,11 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Erro:', error);
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: (error as Error).message
+      JSON.stringify({ 
+        success: false, 
+        error: (error as Error).message 
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
