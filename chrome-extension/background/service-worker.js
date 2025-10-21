@@ -2,20 +2,15 @@
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
-// 1. On install, open setup page
+// 1. On install, set badge status
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('[Rankito] Extension installed/updated:', details.reason);
-  
-  if (details.reason === 'install') {
-    // Open setup page on first install
-    chrome.tabs.create({
-      url: 'https://jhzmgexprjnpgadkxjup.lovable.dev/extension-setup'
-    });
-  }
   
   // Set badge as red (disconnected) initially
   chrome.action.setBadgeText({ text: '!' });
   chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+  
+  console.log('[Rankito] ⚠️ Configure o token ao abrir o WhatsApp Web');
 });
 
 // 2. Message listener for saving token

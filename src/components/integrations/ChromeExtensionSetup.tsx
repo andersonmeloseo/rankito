@@ -227,7 +227,7 @@ export const ChromeExtensionSetup = ({ userId }: ChromeExtensionSetupProps) => {
                 6
               </div>
               <div className="flex-1">
-                <p className="font-medium mb-2">Configure o token</p>
+                <p className="font-medium mb-2">Copie o token</p>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <code className="flex-1 px-3 py-2 text-xs bg-muted rounded-md font-mono truncate">
@@ -245,17 +245,8 @@ export const ChromeExtensionSetup = ({ userId }: ChromeExtensionSetupProps) => {
                       )}
                     </Button>
                   </div>
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={openSetupPage}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Abrir Página de Configuração
-                  </Button>
                   <p className="text-xs text-muted-foreground">
-                    A página de configuração abrirá automaticamente após a instalação
+                    Cole este token quando a extensão solicitar ao abrir o WhatsApp Web
                   </p>
                 </div>
               </div>

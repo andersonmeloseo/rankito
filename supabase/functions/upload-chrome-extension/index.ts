@@ -181,11 +181,9 @@ const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('[Rankito] Extension installed:', details.reason);
-  if (details.reason === 'install') {
-    chrome.tabs.create({ url: 'https://jhzmgexprjnpgadkxjup.lovable.dev/extension-setup' });
-  }
   chrome.action.setBadgeText({ text: '!' });
   chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+  console.log('[Rankito] ⚠️ Configure o token ao abrir o WhatsApp Web');
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

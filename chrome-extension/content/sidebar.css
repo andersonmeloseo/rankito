@@ -1,4 +1,152 @@
-/* Rankito CRM Sidebar Styles */
+/* Rankito CRM Sidebar & Config Modal Styles */
+
+/* Configuration Modal */
+.rankito-config-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.rankito-config-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.rankito-config-content {
+  position: relative;
+  width: 90%;
+  max-width: 500px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: rankito-modal-in 0.3s ease;
+}
+
+@keyframes rankito-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.rankito-config-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 24px;
+  text-align: center;
+}
+
+.rankito-config-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.rankito-config-header p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.rankito-config-body {
+  padding: 24px;
+}
+
+.rankito-config-body label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 14px;
+}
+
+.rankito-config-body textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  resize: vertical;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.rankito-config-body textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.rankito-config-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rankito-btn-primary,
+.rankito-btn-secondary {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rankito-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.rankito-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.rankito-btn-secondary {
+  background: #f7fafc;
+  color: #4a5568;
+  border: 2px solid #e2e8f0;
+}
+
+.rankito-btn-secondary:hover {
+  background: #edf2f7;
+}
+
+.rankito-config-help {
+  background: #f7fafc;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #4a5568;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.rankito-config-help strong {
+  color: #2d3748;
+}
+
+/* Sidebar Styles */
 
 .rankito-sidebar {
   position: fixed;

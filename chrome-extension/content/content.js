@@ -14,7 +14,12 @@ let apiToken = null;
   apiToken = result.apiToken;
   
   if (!apiToken) {
-    console.warn('[Rankito Content] ⚠️ No API token found');
+    console.warn('[Rankito Content] ⚠️ No API token found - showing config modal');
+    
+    // Show configuration modal after delay
+    setTimeout(() => {
+      showConfigModal();
+    }, 2000);
     return;
   }
   
@@ -26,6 +31,91 @@ let apiToken = null;
     observeConversationChanges();
   }, 2000);
 })();
+
+// Show configuration modal
+function showConfigModal() {
+  const modal = document.createElement('div');
+  modal.id = 'rankito-config-modal';
+  modal.className = 'rankito-config-modal';
+  
+  modal.innerHTML = `
+    <div class="rankito-config-backdrop"></div>
+    <div class="rankito-config-content">
+      <div class="rankito-config-header">
+        <h2>🔥 Rankito CRM - Configuração</h2>
+        <p>Cole seu token de API para começar a usar</p>
+      </div>
+      
+      <div class="rankito-config-body">
+        <label for="rankito-token-input">Token de API:</label>
+        <textarea 
+          id="rankito-token-input" 
+          placeholder="Cole seu token aqui..."
+          rows="3"
+        ></textarea>
+        
+        <div class="rankito-config-actions">
+          <button id="rankito-paste-btn" class="rankito-btn-secondary">
+            📋 Colar da Área de Transferência
+          </button>
+          <button id="rankito-save-token-btn" class="rankito-btn-primary">
+            ✅ Salvar e Conectar
+          </button>
+        </div>
+        
+        <p class="rankito-config-help">
+          💡 <strong>Onde encontrar o token?</strong><br>
+          Acesse o Dashboard do Rankito → Integrações → Extensão Chrome → Copiar Token
+        </p>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Add event listeners
+  document.getElementById('rankito-paste-btn')?.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const input = document.getElementById('rankito-token-input');
+      if (input) input.value = text;
+      toast.success('Token colado!');
+    } catch (error) {
+      alert('❌ Erro ao ler área de transferência. Cole manualmente com Ctrl+V');
+    }
+  });
+  
+  document.getElementById('rankito-save-token-btn')?.addEventListener('click', async () => {
+    const input = document.getElementById('rankito-token-input');
+    const token = input?.value.trim();
+    
+    if (!token) {
+      alert('⚠️ Por favor, insira um token válido');
+      return;
+    }
+    
+    // Save token
+    chrome.runtime.sendMessage({ 
+      action: 'saveToken', 
+      token 
+    }, (response) => {
+      if (response?.success) {
+        apiToken = token;
+        modal.remove();
+        
+        // Initialize sidebar
+        setTimeout(() => {
+          injectSidebar();
+          observeConversationChanges();
+        }, 500);
+        
+        alert('✅ Token configurado com sucesso!');
+      } else {
+        alert('❌ Erro ao salvar token');
+      }
+    });
+  });
+}
 
 // Inject sidebar into WhatsApp Web
 function injectSidebar() {
