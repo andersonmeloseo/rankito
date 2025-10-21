@@ -182,7 +182,7 @@ const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('[Rankito] Extension installed:', details.reason);
   if (details.reason === 'install') {
-    chrome.tabs.create({ url: 'https://rankito.lovable.app/extension-setup' });
+    chrome.tabs.create({ url: 'https://jhzmgexprjnpgadkxjup.lovable.app/extension-setup' });
   }
   chrome.action.setBadgeText({ text: '!' });
   chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
