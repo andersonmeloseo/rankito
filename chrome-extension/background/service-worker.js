@@ -1,5 +1,5 @@
 // 🚀 Service Worker para Extensão Rankito CRM
-console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.4');
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.5');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -108,7 +108,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         // Token is valid (404 just means no deals found, but auth worked)
         chrome.action.setBadgeText({ text: '✓' });
         chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
-        console.log('[Rankito] ✅ Connection check passed');
+        log('✅ Connection check passed');
       } else {
         // Token might be invalid
         chrome.action.setBadgeText({ text: '!' });
@@ -116,12 +116,12 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         console.warn('[Rankito] ⚠️ Connection check failed');
       }
     } catch (error) {
-      console.error('[Rankito] Connection check error:', error);
+      logError('Connection check error:', error);
     }
   }
 });
 
-// 5. Handle clicks on extension icon
+// 5. Handle clicks on extension icon - AGGRESSIVE INJECTION
 chrome.action.onClicked.addListener(async (tab) => {
   log('🖱️ Extension icon clicked');
   
@@ -137,8 +137,8 @@ chrome.action.onClicked.addListener(async (tab) => {
     await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
     log('✅ Sidebar toggle message sent');
   } catch (error) {
-    // If content script is not loaded, inject and initialize
-    logError('❌ Content script not responding, injecting scripts');
+    // If content script is not loaded, inject and reload
+    logError('❌ Content script not responding, injecting scripts and reloading');
     
     try {
       // Inject content script
@@ -153,17 +153,11 @@ chrome.action.onClicked.addListener(async (tab) => {
         files: ['content/sidebar.css']
       });
       
-      log('✅ Scripts injected successfully');
+      log('✅ Scripts injected, reloading page...');
       
-      // Wait and try to toggle sidebar
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Force reload to ensure clean state
+      await chrome.tabs.reload(tab.id);
       
-      try {
-        await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
-        log('✅ Sidebar toggled after injection');
-      } catch (err) {
-        logError('❌ Toggle failed after injection');
-      }
     } catch (injectionError) {
       logError('❌ Failed to inject scripts:', injectionError);
       chrome.tabs.reload(tab.id);

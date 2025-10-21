@@ -141,7 +141,7 @@ function generateIcon(size: number): Uint8Array {
 const manifest = {
   manifest_version: 3,
   name: "Rankito CRM - WhatsApp Connector",
-  version: "1.0.3",
+  version: "1.0.5",
   description: "Capture leads do WhatsApp Web direto para o Rankito CRM",
   permissions: ["storage", "activeTab", "alarms", "scripting"],
   host_permissions: ["https://web.whatsapp.com/*", "https://*.supabase.co/*"],
@@ -157,7 +157,7 @@ const manifest = {
       matches: ["https://web.whatsapp.com/*"],
       js: ["content/content.js"],
       css: ["content/sidebar.css"],
-      run_at: "document_idle",
+      run_at: "document_end",
       all_frames: false
     }
   ],
@@ -179,7 +179,7 @@ const manifest = {
 };
 
 const serviceWorkerCode = `// 🚀 Service Worker para Extensão Rankito CRM
-console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.4');
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.5');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -292,13 +292,10 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
   
   try {
-    await Promise.race([
-      chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
-    ]);
+    await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
     log('✅ Sidebar toggle message sent');
   } catch (error) {
-    logError('❌ Content script not responding, injecting script:', error);
+    logError('❌ Content script not responding, injecting scripts and reloading');
     
     try {
       await chrome.scripting.executeScript({
@@ -311,16 +308,8 @@ chrome.action.onClicked.addListener(async (tab) => {
         files: ['content/sidebar.css']
       });
       
-      log('✅ Scripts injected successfully');
-      
-      setTimeout(async () => {
-        try {
-          await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
-          log('✅ Sidebar toggle after injection');
-        } catch (err) {
-          logError('❌ Still failed after injection:', err);
-        }
-      }, 1000);
+      log('✅ Scripts injected, reloading page...');
+      await chrome.tabs.reload(tab.id);
     } catch (injectionError) {
       logError('❌ Failed to inject scripts:', injectionError);
       chrome.tabs.reload(tab.id);
@@ -331,7 +320,7 @@ chrome.action.onClicked.addListener(async (tab) => {
 log('🚀 Service Worker fully loaded and ready');`;
 
 const contentScriptCode = `// Content Script loaded
-console.log('[Rankito] Content script loaded - v1.0.4');`;
+console.log('[Rankito] Content script loaded - v1.0.5');`;
 
 const sidebarCSS = `/* Rankito CRM Sidebar & Config Modal Styles */
 
