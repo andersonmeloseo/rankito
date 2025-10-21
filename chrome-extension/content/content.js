@@ -1,3 +1,6 @@
+// 🚀 PRIMEIRO LOG - Confirma que o script foi carregado
+console.log('[Rankito Content] 🚀 Script loaded on WhatsApp Web - Version 1.0.1');
+
 // Content Script for WhatsApp Web Integration
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -10,8 +13,6 @@ function debugLog(...args) {
   }
 }
 
-debugLog('🚀 Script loaded on WhatsApp Web');
-
 let sidebarInjected = false;
 let currentContact = { name: null, phone: null };
 let apiToken = null;
@@ -20,6 +21,14 @@ let apiToken = null;
 (async function init() {
   try {
     debugLog('🚀 Initializing extension...');
+    
+    // Verificar se estamos no WhatsApp Web
+    if (!window.location.hostname.includes('web.whatsapp.com')) {
+      debugLog('⚠️ Not on WhatsApp Web, skipping initialization');
+      return;
+    }
+    
+    debugLog('✅ On WhatsApp Web, proceeding with initialization');
     
     // Get API token from storage
     const result = await chrome.storage.local.get('apiToken');
@@ -35,7 +44,7 @@ let apiToken = null;
       return;
     }
     
-    debugLog('✅ Token loaded');
+    debugLog('✅ Token loaded:', apiToken.substring(0, 10) + '...');
     
     // Inject sidebar after a short delay to ensure DOM is ready
     setTimeout(() => {
@@ -50,8 +59,9 @@ let apiToken = null;
       }, 1000);
     }, 2000);
   } catch (error) {
-    console.error('[Rankito Content] ❌ Error initializing extension:', error);
-    alert('Erro ao inicializar extensão Rankito. Verifique o console (F12) para mais detalhes.');
+    console.error('[Rankito Content] ❌ CRITICAL ERROR in init():', error);
+    console.error('[Rankito Content] Stack trace:', error.stack);
+    alert('❌ ERRO CRÍTICO na extensão Rankito.\n\nDetalhes no console (F12).\n\nErro: ' + error.message);
   }
 })();
 

@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Rankito CRM - WhatsApp Connector",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Capture leads do WhatsApp Web direto para o Rankito CRM",
   "permissions": [
     "storage",
     "activeTab",
-    "alarms"
+    "alarms",
+    "scripting"
   ],
   "host_permissions": [
     "https://web.whatsapp.com/*",
@@ -24,11 +25,13 @@
       "matches": ["https://web.whatsapp.com/*"],
       "js": ["content/content.js"],
       "css": ["content/sidebar.css"],
-      "run_at": "document_end"
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ],
   "background": {
-    "service_worker": "background/service-worker.js"
+    "service_worker": "background/service-worker.js",
+    "type": "module"
   },
   "web_accessible_resources": [
     {

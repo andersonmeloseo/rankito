@@ -1,52 +1,69 @@
-// Service Worker for Rankito CRM Extension
+// 🚀 Service Worker para Extensão Rankito CRM
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.1');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
+// Debug mode
+const DEBUG = true;
+const log = (...args) => {
+  if (DEBUG) console.log('[Rankito Background]', ...args);
+};
+const logError = (...args) => {
+  console.error('[Rankito Background]', ...args);
+};
+
 // 1. On install, set badge status
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('[Rankito] Extension installed/updated:', details.reason);
+  log('✅ Extension installed/updated:', details.reason);
   
   // Set badge as red (disconnected) initially
   chrome.action.setBadgeText({ text: '!' });
   chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
   
-  console.log('[Rankito] ⚠️ Configure o token ao abrir o WhatsApp Web');
+  log('⚠️ Configure o token ao abrir o WhatsApp Web');
 });
 
 // 2. Message listener for saving token
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[Rankito] Message received:', message.action);
-  
-  if (message.action === 'saveToken') {
-    chrome.storage.local.set({ 
-      apiToken: message.token,
-      connectedAt: new Date().toISOString()
-    }, () => {
-      console.log('[Rankito] ✅ Token saved successfully');
-      
-      // Update badge to green (connected)
-      chrome.action.setBadgeText({ text: '✓' });
-      chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
-      
-      sendResponse({ success: true });
-    });
-    return true; // Keep channel open for async response
-  }
-  
-  if (message.action === 'getToken') {
-    chrome.storage.local.get('apiToken', (data) => {
-      sendResponse({ token: data.apiToken });
-    });
-    return true;
-  }
+  try {
+    log('📨 Message received:', message.action);
+    
+    if (message.action === 'saveToken') {
+      chrome.storage.local.set({ 
+        apiToken: message.token,
+        connectedAt: new Date().toISOString()
+      }, () => {
+        log('✅ Token saved successfully');
+        
+        // Update badge to green (connected)
+        chrome.action.setBadgeText({ text: '✓' });
+        chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
+        
+        sendResponse({ success: true });
+      });
+      return true; // Keep channel open for async response
+    }
+    
+    if (message.action === 'getToken') {
+      chrome.storage.local.get('apiToken', (data) => {
+        log('📤 Token retrieved:', data.apiToken ? 'Present' : 'Not found');
+        sendResponse({ token: data.apiToken });
+      });
+      return true;
+    }
 
-  if (message.action === 'disconnect') {
-    chrome.storage.local.remove(['apiToken', 'connectedAt'], () => {
-      chrome.action.setBadgeText({ text: '!' });
-      chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
-      sendResponse({ success: true });
-    });
-    return true;
+    if (message.action === 'disconnect') {
+      chrome.storage.local.remove(['apiToken', 'connectedAt'], () => {
+        log('🔌 Token removed, disconnected');
+        chrome.action.setBadgeText({ text: '!' });
+        chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+        sendResponse({ success: true });
+      });
+      return true;
+    }
+  } catch (error) {
+    logError('❌ Error handling message:', error);
+    sendResponse({ success: false, error: error.message });
   }
 });
 
@@ -55,11 +72,11 @@ chrome.storage.local.get('apiToken', (data) => {
   if (data.apiToken) {
     chrome.action.setBadgeText({ text: '✓' });
     chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
-    console.log('[Rankito] ✅ Token found, extension ready');
+    log('✅ Token found on startup, extension ready');
   } else {
     chrome.action.setBadgeText({ text: '!' });
     chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
-    console.log('[Rankito] ⚠️ No token found, need configuration');
+    log('⚠️ No token found on startup, need configuration');
   }
 });
 
@@ -116,4 +133,4 @@ chrome.action.onClicked.addListener((tab) => {
   }
 });
 
-console.log('[Rankito] 🚀 Service Worker loaded');
+log('🚀 Service Worker fully loaded and ready');

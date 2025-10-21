@@ -141,9 +141,9 @@ function generateIcon(size: number): Uint8Array {
 const manifest = {
   manifest_version: 3,
   name: "Rankito CRM - WhatsApp Connector",
-  version: "1.0.0",
+  version: "1.0.1",
   description: "Capture leads do WhatsApp Web direto para o Rankito CRM",
-  permissions: ["storage", "activeTab", "alarms"],
+  permissions: ["storage", "activeTab", "alarms", "scripting"],
   host_permissions: ["https://web.whatsapp.com/*", "https://*.supabase.co/*"],
   action: {
     default_icon: {
@@ -157,11 +157,13 @@ const manifest = {
       matches: ["https://web.whatsapp.com/*"],
       js: ["content/content.js"],
       css: ["content/sidebar.css"],
-      run_at: "document_end"
+      run_at: "document_idle",
+      all_frames: false
     }
   ],
   background: {
-    service_worker: "background/service-worker.js"
+    service_worker: "background/service-worker.js",
+    type: "module"
   },
   web_accessible_resources: [
     {
@@ -176,44 +178,59 @@ const manifest = {
   }
 };
 
-const serviceWorkerCode = `// Service Worker for Rankito CRM Extension
+const serviceWorkerCode = `// 🚀 Service Worker para Extensão Rankito CRM
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.1');
+
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
+const DEBUG = true;
+const log = (...args) => DEBUG && console.log('[Rankito Background]', ...args);
+const logError = (...args) => console.error('[Rankito Background]', ...args);
+
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('[Rankito] Extension installed:', details.reason);
+  log('✅ Extension installed/updated:', details.reason);
   chrome.action.setBadgeText({ text: '!' });
   chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
-  console.log('[Rankito] ⚠️ Configure o token ao abrir o WhatsApp Web');
+  log('⚠️ Configure o token ao abrir o WhatsApp Web');
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'saveToken') {
-    chrome.storage.local.set({ 
-      apiToken: message.token,
-      connectedAt: new Date().toISOString()
-    }, () => {
-      console.log('[Rankito] Token saved');
-      chrome.action.setBadgeText({ text: '✓' });
-      chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
-      sendResponse({ success: true });
-    });
-    return true;
-  }
-  
-  if (message.action === 'getToken') {
-    chrome.storage.local.get('apiToken', (data) => {
-      sendResponse({ token: data.apiToken });
-    });
-    return true;
-  }
-  
-  if (message.action === 'disconnect') {
-    chrome.storage.local.remove('apiToken', () => {
-      chrome.action.setBadgeText({ text: '!' });
-      chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
-      sendResponse({ success: true });
-    });
-    return true;
+  try {
+    log('📨 Message received:', message.action);
+    
+    if (message.action === 'saveToken') {
+      chrome.storage.local.set({ 
+        apiToken: message.token,
+        connectedAt: new Date().toISOString()
+      }, () => {
+        log('✅ Token saved successfully');
+        chrome.action.setBadgeText({ text: '✓' });
+        chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
+        sendResponse({ success: true });
+      });
+      return true;
+    }
+    
+    if (message.action === 'getToken') {
+      chrome.storage.local.get('apiToken', (data) => {
+        log('📤 Token retrieved:', data.apiToken ? 'Present' : 'Not found');
+        sendResponse({ token: data.apiToken });
+      });
+      return true;
+    }
+    
+    if (message.action === 'disconnect') {
+      chrome.storage.local.remove(['apiToken', 'connectedAt'], () => {
+        log('🔌 Token removed, disconnected');
+        chrome.action.setBadgeText({ text: '!' });
+        chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+        sendResponse({ success: true });
+      });
+      return true;
+    }
+  } catch (error) {
+    logError('❌ Error handling message:', error);
+    sendResponse({ success: false, error: error.message });
   }
 });
 
@@ -221,26 +238,47 @@ chrome.storage.local.get('apiToken', (data) => {
   if (data.apiToken) {
     chrome.action.setBadgeText({ text: '✓' });
     chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
+    log('✅ Token found on startup, extension ready');
+  } else {
+    chrome.action.setBadgeText({ text: '!' });
+    chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+    log('⚠️ No token found on startup, need configuration');
   }
 });
 
 chrome.alarms.create('checkConnection', { periodInMinutes: 30 });
-chrome.alarms.onAlarm.addListener((alarm) => {
+chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'checkConnection') {
-    chrome.storage.local.get('apiToken', async (data) => {
-      if (data.apiToken) {
-        try {
-          const response = await fetch(\`\${SUPABASE_URL}/rest/v1/\`, {
-            headers: { 'apikey': data.apiToken, 'Authorization': \`Bearer \${data.apiToken}\` }
-          });
-          chrome.action.setBadgeText({ text: response.ok ? '✓' : '!' });
-          chrome.action.setBadgeBackgroundColor({ color: response.ok ? '#10B981' : '#EF4444' });
-        } catch {
-          chrome.action.setBadgeText({ text: '!' });
-          chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
-        }
+    const { apiToken } = await chrome.storage.local.get('apiToken');
+    
+    if (!apiToken) {
+      chrome.action.setBadgeText({ text: '!' });
+      chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+      return;
+    }
+    
+    try {
+      const response = await fetch(\`\${SUPABASE_URL}/functions/v1/get-whatsapp-history\`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-token': apiToken
+        },
+        body: JSON.stringify({ phone: '+00000000000' })
+      });
+      
+      if (response.ok || response.status === 404) {
+        chrome.action.setBadgeText({ text: '✓' });
+        chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
+        log('✅ Connection check passed');
+      } else {
+        chrome.action.setBadgeText({ text: '!' });
+        chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+        log('⚠️ Connection check failed');
       }
-    });
+    } catch (error) {
+      logError('Connection check error:', error);
+    }
   }
 });
 
@@ -250,12 +288,20 @@ chrome.action.onClicked.addListener((tab) => {
   } else {
     chrome.tabs.create({ url: 'https://web.whatsapp.com' });
   }
-});`;
+});
 
-const contentScriptCode = `// Content Script for WhatsApp Web Integration
+log('🚀 Service Worker fully loaded and ready');`;
+
+const contentScriptCode = `// 🚀 PRIMEIRO LOG - Confirma que o script foi carregado
+console.log('[Rankito Content] 🚀 Script loaded on WhatsApp Web - Version 1.0.1');
+
+// Content Script for WhatsApp Web Integration
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
-console.log('[Rankito Content] 🚀 Script loaded on WhatsApp Web');
+const DEBUG = true;
+function debugLog(...args) {
+  if (DEBUG) console.log('[Rankito Content]', ...args);
+}
 
 let sidebarInjected = false;
 let currentContact = { name: null, phone: null };
@@ -263,26 +309,40 @@ let apiToken = null;
 
 // Initialize
 (async function init() {
-  console.log('[Rankito Content] 🚀 Initializing...');
-  const result = await chrome.storage.local.get('apiToken');
-  apiToken = result.apiToken;
-  
-  if (!apiToken) {
-    console.warn('[Rankito Content] ⚠️ No API token found - showing config modal');
-    setTimeout(() => showConfigModal(), 2000);
-    return;
-  }
-  
-  console.log('[Rankito Content] ✅ Token loaded:', apiToken.substring(0, 20) + '...');
-  setTimeout(() => {
-    console.log('[Rankito Content] 💉 Injecting sidebar...');
-    injectSidebar();
-    observeConversationChanges();
+  try {
+    debugLog('🚀 Initializing extension...');
+    
+    if (!window.location.hostname.includes('web.whatsapp.com')) {
+      debugLog('⚠️ Not on WhatsApp Web, skipping initialization');
+      return;
+    }
+    
+    debugLog('✅ On WhatsApp Web, proceeding with initialization');
+    
+    const result = await chrome.storage.local.get('apiToken');
+    apiToken = result.apiToken;
+    
+    if (!apiToken) {
+      debugLog('⚠️ No API token found - showing config modal');
+      setTimeout(() => showConfigModal(), 2000);
+      return;
+    }
+    
+    debugLog('✅ Token loaded:', apiToken.substring(0, 10) + '...');
     setTimeout(() => {
-      console.log('[Rankito Content] 🔄 Forcing first contact update...');
-      updateContactInfo();
-    }, 1000);
-  }, 2000);
+      debugLog('💉 Injecting sidebar...');
+      injectSidebar();
+      observeConversationChanges();
+      setTimeout(() => {
+        debugLog('🔄 Forcing first contact update...');
+        updateContactInfo();
+      }, 1000);
+    }, 2000);
+  } catch (error) {
+    console.error('[Rankito Content] ❌ CRITICAL ERROR in init():', error);
+    console.error('[Rankito Content] Stack trace:', error.stack);
+    alert('❌ ERRO CRÍTICO na extensão Rankito.\\n\\nDetalhes no console (F12).\\n\\nErro: ' + error.message);
+  }
 })();
 
 function showConfigModal() {
