@@ -252,153 +252,260 @@ chrome.action.onClicked.addListener((tab) => {
   }
 });`;
 
-const contentScriptCode = `// Rankito CRM Content Script
-console.log('[Rankito] Content script loaded');
+const contentScriptCode = `// Content Script for WhatsApp Web Integration
+const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
+console.log('[Rankito Content] 🚀 Script loaded on WhatsApp Web');
+
+let sidebarInjected = false;
+let currentContact = { name: null, phone: null };
 let apiToken = null;
-let sidebar = null;
 
-chrome.runtime.sendMessage({ action: 'getToken' }, (response) => {
-  if (response?.token) {
-    apiToken = response.token;
+// Initialize
+(async function init() {
+  console.log('[Rankito Content] 🚀 Initializing...');
+  const result = await chrome.storage.local.get('apiToken');
+  apiToken = result.apiToken;
+  
+  if (!apiToken) {
+    console.warn('[Rankito Content] ⚠️ No API token found - showing config modal');
+    setTimeout(() => showConfigModal(), 2000);
+    return;
+  }
+  
+  console.log('[Rankito Content] ✅ Token loaded:', apiToken.substring(0, 20) + '...');
+  setTimeout(() => {
+    console.log('[Rankito Content] 💉 Injecting sidebar...');
     injectSidebar();
     observeConversationChanges();
-  }
-});
+    setTimeout(() => {
+      console.log('[Rankito Content] 🔄 Forcing first contact update...');
+      updateContactInfo();
+    }, 1000);
+  }, 2000);
+})();
+
+function showConfigModal() {
+  const modal = document.createElement('div');
+  modal.id = 'rankito-config-modal';
+  modal.className = 'rankito-config-modal';
+  modal.innerHTML = \`
+    <div class="rankito-config-backdrop"></div>
+    <div class="rankito-config-content">
+      <div class="rankito-config-header">
+        <h2>🔥 Rankito CRM - Configuração</h2>
+        <p>Cole seu token de API</p>
+      </div>
+      <div class="rankito-config-body">
+        <label>Token de API:</label>
+        <textarea id="rankito-token-input" placeholder="Cole aqui..." rows="3"></textarea>
+        <div class="rankito-config-actions">
+          <button id="rankito-paste-btn" class="rankito-btn-secondary">📋 Colar</button>
+          <button id="rankito-save-token-btn" class="rankito-btn-primary">✅ Salvar</button>
+        </div>
+      </div>
+    </div>
+  \`;
+  document.body.appendChild(modal);
+  
+  document.getElementById('rankito-paste-btn')?.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      document.getElementById('rankito-token-input').value = text;
+    } catch { alert('❌ Erro ao ler clipboard'); }
+  });
+  
+  document.getElementById('rankito-save-token-btn')?.addEventListener('click', async () => {
+    const token = document.getElementById('rankito-token-input')?.value.trim();
+    if (!token) return alert('⚠️ Token inválido');
+    chrome.runtime.sendMessage({ action: 'saveToken', token }, (response) => {
+      if (response?.success) {
+        apiToken = token;
+        modal.remove();
+        setTimeout(() => { injectSidebar(); observeConversationChanges(); }, 500);
+        alert('✅ Configurado!');
+      }
+    });
+  });
+}
 
 function injectSidebar() {
-  if (sidebar) return;
-  sidebar = document.createElement('div');
+  if (sidebarInjected) return;
+  const sidebar = document.createElement('div');
+  sidebar.id = 'rankito-sidebar';
   sidebar.className = 'rankito-sidebar';
   sidebar.innerHTML = \`
     <div class="rankito-sidebar-header">
-      <h3>Rankito CRM</h3>
+      <h3>🔥 Rankito CRM</h3>
       <button id="rankito-close-sidebar">×</button>
     </div>
     <div class="rankito-sidebar-content">
       <div id="rankito-contact-info">
-        <p class="rankito-label">Contato Selecionado</p>
-        <h4 id="rankito-contact-name">-</h4>
-        <p id="rankito-contact-phone">-</p>
+        <p class="rankito-label">Contato detectado:</p>
+        <h4 id="rankito-contact-name">—</h4>
+        <p id="rankito-contact-phone">—</p>
       </div>
-      <button id="rankito-create-lead" class="rankito-primary-btn">🔥 Criar Lead no CRM</button>
+      <button id="rankito-create-lead-btn" class="rankito-primary-btn">🔥 Criar Lead</button>
       <div id="rankito-lead-history">
-        <p class="rankito-label">Histórico no CRM</p>
-        <div id="rankito-history-list"><p style="color: #9ca3af; font-size: 13px;">Carregando...</p></div>
+        <p class="rankito-label">Histórico:</p>
+        <div id="rankito-history-list"><div class="rankito-loading">Carregando...</div></div>
       </div>
     </div>
   \`;
   document.body.appendChild(sidebar);
-  document.getElementById('rankito-close-sidebar')?.addEventListener('click', () => {
-    sidebar.remove();
-    sidebar = null;
-  });
-  document.getElementById('rankito-create-lead')?.addEventListener('click', handleCreateLead);
+  sidebarInjected = true;
+  document.getElementById('rankito-close-sidebar')?.addEventListener('click', () => sidebar.style.display = 'none');
+  document.getElementById('rankito-create-lead-btn')?.addEventListener('click', handleCreateLead);
 }
 
 function observeConversationChanges() {
-  new MutationObserver(() => updateContactInfo()).observe(document.body, { childList: true, subtree: true });
-  updateContactInfo();
+  const observer = new MutationObserver(() => updateContactInfo());
+  const target = document.querySelector('#main');
+  if (target) {
+    observer.observe(target, { childList: true, subtree: true });
+    console.log('[Rankito Content] 👀 Observing changes');
+  }
 }
 
 function updateContactInfo() {
-  if (!sidebar) return;
-  const header = document.querySelector('[data-testid="conversation-header"]');
-  if (!header) return;
-  const name = header.querySelector('span[dir="auto"]')?.textContent || '-';
-  let phone = '-';
-  const titleEl = header.querySelector('[title]');
-  if (titleEl) {
-    const title = titleEl.getAttribute('title');
-    if (title?.match(/\d/)) phone = title;
+  try {
+    const headerSelectors = ['header span[title]', 'header div[title]', 'header span[dir="auto"]'];
+    let name = null;
+    for (const sel of headerSelectors) {
+      const el = document.querySelector(sel);
+      if (el?.textContent?.length > 0) {
+        name = el.textContent.trim();
+        break;
+      }
+    }
+    if (!name) name = 'Não identificado';
+    
+    let phone = null;
+    const urlMatch = window.location.href.match(/\\/(\d{10,15})$/);
+    if (urlMatch) phone = urlMatch[1];
+    
+    if (!phone) {
+      const phoneEls = document.querySelectorAll('span[dir="ltr"]');
+      for (const el of phoneEls) {
+        const text = el.textContent;
+        if (text && /^\\+?\\d[\\d\\s\\-\\(\\)]{8,}$/.test(text)) {
+          phone = text.replace(/\\D/g, '');
+          break;
+        }
+      }
+    }
+    
+    if (name !== currentContact.name || phone !== currentContact.phone) {
+      currentContact = { name, phone };
+      const nameEl = document.getElementById('rankito-contact-name');
+      const phoneEl = document.getElementById('rankito-contact-phone');
+      if (nameEl) nameEl.textContent = name;
+      if (phoneEl) {
+        phoneEl.textContent = phone || 'Clique para inserir';
+        phoneEl.style.cursor = phone ? 'default' : 'pointer';
+        if (!phone) {
+          phoneEl.onclick = () => {
+            const inp = prompt('Digite o telefone (só números):');
+            if (inp) {
+              const clean = inp.replace(/\\D/g, '');
+              if (clean.length >= 10) {
+                currentContact.phone = clean;
+                phoneEl.textContent = clean;
+                phoneEl.style.cursor = 'default';
+                phoneEl.onclick = null;
+                loadHistory(clean);
+              }
+            }
+          };
+        } else phoneEl.onclick = null;
+      }
+      console.log('[Rankito Content] ✅ Contact updated:', currentContact);
+      if (phone) loadHistory(phone);
+      else {
+        const histDiv = document.getElementById('rankito-history-list');
+        if (histDiv) histDiv.innerHTML = '<p class="rankito-empty">📱 Clique no telefone acima</p>';
+      }
+    }
+  } catch (error) {
+    console.error('[Rankito Content] ❌ Error:', error);
   }
-  const nameEl = document.getElementById('rankito-contact-name');
-  const phoneEl = document.getElementById('rankito-contact-phone');
-  if (nameEl) nameEl.textContent = name;
-  if (phoneEl) phoneEl.textContent = phone;
-  if (phone !== '-') loadHistory(phone);
 }
 
 async function loadHistory(phone) {
-  const list = document.getElementById('rankito-history-list');
-  if (!list) return;
+  if (!apiToken || !phone) return;
+  const histDiv = document.getElementById('rankito-history-list');
+  if (!histDiv) return;
+  console.log('[Rankito Content] 📥 Loading history:', phone);
+  histDiv.innerHTML = '<div class="rankito-loading">Carregando...</div>';
   try {
-    const res = await fetch('https://jhzmgexprjnpgadkxjup.supabase.co/functions/v1/get-whatsapp-history', {
+    const res = await fetch(\`\${SUPABASE_URL}/functions/v1/get-whatsapp-history\`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-token': apiToken },
       body: JSON.stringify({ phone })
     });
-    if (!res.ok) throw new Error();
+    console.log('[Rankito Content] 📡 Response:', res.status);
+    if (!res.ok) throw new Error('Failed');
     const data = await res.json();
-    renderHistory(data.deals || []);
-  } catch {
-    list.innerHTML = '<p style="color: #ef4444; font-size: 13px;">Erro ao carregar</p>';
+    if (data.total_deals > 0) renderHistory(data.deals);
+    else histDiv.innerHTML = '<p class="rankito-empty">Nenhuma interação</p>';
+  } catch (error) {
+    console.error('[Rankito Content] ❌ Error:', error);
+    histDiv.innerHTML = '<p class="rankito-error">Erro ao carregar</p>';
   }
 }
 
 function renderHistory(deals) {
-  const list = document.getElementById('rankito-history-list');
-  if (!list) return;
-  if (deals.length === 0) {
-    list.innerHTML = '<p style="color: #9ca3af; font-size: 13px;">Sem histórico</p>';
-    return;
-  }
-  list.innerHTML = deals.map(d => \`
-    <div style="background: #f9fafb; padding: 12px; border-radius: 6px; margin-bottom: 8px;">
+  const histDiv = document.getElementById('rankito-history-list');
+  if (!histDiv) return;
+  histDiv.innerHTML = deals.map(d => \`
+    <div class="rankito-history-item">
       <strong>\${d.title}</strong>
-      <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
-        Estágio: <span style="background: #dbeafe; padding: 2px 8px; border-radius: 4px;">\${d.stage}</span>
-      </div>
-      <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
-        \${new Date(d.created_at).toLocaleDateString('pt-BR')}
-      </div>
+      <span class="rankito-stage-badge">\${d.stage}</span>
+      <p class="rankito-date">\${new Date(d.created_at).toLocaleDateString('pt-BR')}</p>
     </div>
   \`).join('');
 }
 
 async function handleCreateLead() {
-  const btn = document.getElementById('rankito-create-lead');
-  if (!btn) return;
-  const header = document.querySelector('[data-testid="conversation-header"]');
-  if (!header) { alert('Selecione uma conversa'); return; }
-  const name = header.querySelector('span[dir="auto"]')?.textContent;
-  let phone = '-';
-  const titleEl = header.querySelector('[title]');
-  if (titleEl) {
-    const title = titleEl.getAttribute('title');
-    if (title?.match(/\d/)) phone = title;
+  if (!apiToken) return alert('❌ Token não configurado');
+  if (!currentContact.name) return alert('❌ Nenhum contato');
+  const btn = document.getElementById('rankito-create-lead-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Criando...';
   }
-  if (phone === '-') { alert('Número não encontrado'); return; }
-  const messages = document.querySelectorAll('[data-testid="msg-container"]');
-  const lastMessage = messages[messages.length - 1]?.textContent || '';
-  btn.disabled = true;
-  btn.textContent = '⏳ Criando...';
   try {
-    const res = await fetch('https://jhzmgexprjnpgadkxjup.supabase.co/functions/v1/create-deal-from-whatsapp', {
+    const msgs = document.querySelectorAll('[data-pre-plain-text]');
+    const lastMsg = msgs[msgs.length - 1]?.textContent || '';
+    const res = await fetch(\`\${SUPABASE_URL}/functions/v1/create-deal-from-whatsapp\`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-token': apiToken },
-      body: JSON.stringify({ phone, name, lastMessage })
+      body: JSON.stringify({
+        name: currentContact.name,
+        phone: currentContact.phone || 'não disponível',
+        message: lastMsg.substring(0, 500),
+        stage: 'lead'
+      })
     });
-    if (!res.ok) throw new Error();
-    btn.textContent = '✅ Criado!';
-    setTimeout(() => { loadHistory(phone); btn.textContent = '🔥 Criar Lead no CRM'; btn.disabled = false; }, 2000);
-  } catch {
-    btn.textContent = '❌ Erro';
-    setTimeout(() => { btn.textContent = '🔥 Criar Lead no CRM'; btn.disabled = false; }, 2000);
+    const result = await res.json();
+    if (result.success) {
+      alert(\`✅ \${result.message}\\nScore: \${result.lead_score}\`);
+      if (currentContact.phone) loadHistory(currentContact.phone);
+    } else throw new Error(result.error);
+  } catch (error) {
+    alert('❌ Erro: ' + error.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🔥 Criar Lead';
+    }
   }
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === 'toggleSidebar') {
-    if (sidebar) { sidebar.remove(); sidebar = null; } 
-    else { injectSidebar(); updateContactInfo(); }
-  }
-});
-
-window.addEventListener('message', (e) => {
-  if (e.data.type === 'RANKITO_TOKEN_SAVED' && e.data.token) {
-    apiToken = e.data.token;
-    if (!sidebar) { injectSidebar(); observeConversationChanges(); }
+    const sidebar = document.getElementById('rankito-sidebar');
+    if (sidebar) sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
   }
 });`;
 

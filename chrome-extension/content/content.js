@@ -9,6 +9,8 @@ let apiToken = null;
 
 // Initialize
 (async function init() {
+  console.log('[Rankito Content] 🚀 Initializing...');
+  
   // Get API token from storage
   const result = await chrome.storage.local.get('apiToken');
   apiToken = result.apiToken;
@@ -23,12 +25,19 @@ let apiToken = null;
     return;
   }
   
-  console.log('[Rankito Content] ✅ Token loaded');
+  console.log('[Rankito Content] ✅ Token loaded:', apiToken.substring(0, 20) + '...');
   
   // Inject sidebar after a short delay to ensure DOM is ready
   setTimeout(() => {
+    console.log('[Rankito Content] 💉 Injecting sidebar...');
     injectSidebar();
     observeConversationChanges();
+    
+    // Forçar primeira atualização do contato
+    setTimeout(() => {
+      console.log('[Rankito Content] 🔄 Forcing first contact update...');
+      updateContactInfo();
+    }, 1000);
   }, 2000);
 })();
 
@@ -182,30 +191,43 @@ function observeConversationChanges() {
 // Extract contact info from WhatsApp UI
 function updateContactInfo() {
   try {
-    // Try to get contact name from header
-    const nameElement = document.querySelector('header [title]');
-    const name = nameElement?.getAttribute('title') || 'Desconhecido';
+    // MÉTODO 1: Pegar nome do header
+    const headerSelectors = [
+      'header span[title]',
+      'header div[title]',
+      'header span[dir="auto"]',
+      '[data-testid="conversation-info-header"] span'
+    ];
     
-    // Try to get phone number (might not always be visible)
-    // WhatsApp doesn't always show phone in DOM, so we'll try multiple selectors
-    let phone = null;
-    
-    // Method 1: Click on contact info might reveal phone
-    const contactElements = document.querySelectorAll('span[title]');
-    for (const el of contactElements) {
-      const text = el.textContent;
-      if (text && /\+?\d{2,}/.test(text)) {
-        phone = text.replace(/\D/g, '');
+    let name = null;
+    for (const selector of headerSelectors) {
+      const el = document.querySelector(selector);
+      if (el?.textContent && el.textContent.length > 0) {
+        name = el.textContent.trim();
         break;
       }
     }
     
+    if (!name) name = 'Contato não identificado';
+    
+    // MÉTODO 2: Extrair telefone da URL da conversa
+    let phone = null;
+    const urlMatch = window.location.href.match(/\/(\d{10,15})$/);
+    if (urlMatch) {
+      phone = urlMatch[1];
+      console.log('[Rankito Content] 📱 Phone from URL:', phone);
+    }
+    
+    // MÉTODO 3: Tentar pegar do span de telefone
     if (!phone) {
-      // Method 2: Extract from any visible phone-like pattern
-      const allText = document.body.innerText;
-      const phoneMatch = allText.match(/\+?\d{2,}\s?\d{2,}\s?\d{4,}/);
-      if (phoneMatch) {
-        phone = phoneMatch[0].replace(/\D/g, '');
+      const phoneElements = document.querySelectorAll('span[dir="ltr"]');
+      for (const el of phoneElements) {
+        const text = el.textContent;
+        if (text && /^\+?\d[\d\s\-\(\)]{8,}$/.test(text)) {
+          phone = text.replace(/\D/g, '');
+          console.log('[Rankito Content] 📱 Phone from span:', phone);
+          break;
+        }
       }
     }
     
@@ -217,27 +239,61 @@ function updateContactInfo() {
       const phoneEl = document.getElementById('rankito-contact-phone');
       
       if (nameEl) nameEl.textContent = name;
-      if (phoneEl) phoneEl.textContent = phone || '(número não disponível)';
+      if (phoneEl) {
+        phoneEl.textContent = phone || 'Clique para inserir';
+        phoneEl.style.cursor = phone ? 'default' : 'pointer';
+        
+        // Se não tem telefone, permite clicar para inserir manualmente
+        if (!phone) {
+          phoneEl.onclick = () => {
+            const input = prompt('Digite o telefone do contato (somente números):');
+            if (input) {
+              const cleanPhone = input.replace(/\D/g, '');
+              if (cleanPhone.length >= 10) {
+                currentContact.phone = cleanPhone;
+                phoneEl.textContent = cleanPhone;
+                phoneEl.style.cursor = 'default';
+                phoneEl.onclick = null;
+                loadHistory(cleanPhone);
+              } else {
+                alert('❌ Telefone inválido. Digite pelo menos 10 dígitos.');
+              }
+            }
+          };
+        } else {
+          phoneEl.onclick = null;
+        }
+      }
       
-      console.log('[Rankito Content] 📞 Contact updated:', currentContact);
+      console.log('[Rankito Content] ✅ Contact updated:', currentContact);
       
       // Load history if we have a phone
       if (phone) {
         loadHistory(phone);
+      } else {
+        // Se não tem telefone, mostrar aviso
+        const historyDiv = document.getElementById('rankito-history-list');
+        if (historyDiv) {
+          historyDiv.innerHTML = '<p class="rankito-empty">📱 Clique no telefone acima para inserir manualmente</p>';
+        }
       }
     }
   } catch (error) {
-    console.error('[Rankito Content] Error updating contact:', error);
+    console.error('[Rankito Content] ❌ Error updating contact:', error);
   }
 }
 
 // Load CRM history for contact
 async function loadHistory(phone) {
-  if (!apiToken || !phone) return;
+  if (!apiToken || !phone) {
+    console.warn('[Rankito Content] ⚠️ Cannot load history - missing token or phone');
+    return;
+  }
   
   const historyDiv = document.getElementById('rankito-history-list');
   if (!historyDiv) return;
   
+  console.log('[Rankito Content] 📥 Loading history for:', phone);
   historyDiv.innerHTML = '<div class="rankito-loading">Carregando histórico...</div>';
   
   try {
@@ -250,11 +306,16 @@ async function loadHistory(phone) {
       body: JSON.stringify({ phone })
     });
     
+    console.log('[Rankito Content] 📡 History response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error('Failed to load history');
+      const errorText = await response.text();
+      console.error('[Rankito Content] ❌ History error:', errorText);
+      throw new Error(`Failed to load history: ${response.status}`);
     }
     
     const data = await response.json();
+    console.log('[Rankito Content] ✅ History loaded:', data);
     
     if (data.total_deals > 0) {
       renderHistory(data.deals);
@@ -262,8 +323,8 @@ async function loadHistory(phone) {
       historyDiv.innerHTML = '<p class="rankito-empty">Nenhuma interação anterior</p>';
     }
   } catch (error) {
-    console.error('[Rankito Content] Error loading history:', error);
-    historyDiv.innerHTML = '<p class="rankito-error">Erro ao carregar histórico</p>';
+    console.error('[Rankito Content] ❌ Error loading history:', error);
+    historyDiv.innerHTML = `<p class="rankito-error">Erro: ${error.message}</p>`;
   }
 }
 
