@@ -1,5 +1,5 @@
 // 🚀 Service Worker para Extensão Rankito CRM
-console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.3');
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.4');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -133,15 +133,12 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
   
   try {
-    // Try to send message to content script with timeout
-    await Promise.race([
-      chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
-    ]);
+    // Try to send message to content script
+    await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
     log('✅ Sidebar toggle message sent');
   } catch (error) {
-    // If content script is not loaded or timeout, inject and initialize
-    logError('❌ Content script not responding, injecting script:', error);
+    // If content script is not loaded, inject and initialize
+    logError('❌ Content script not responding, injecting scripts');
     
     try {
       // Inject content script
@@ -158,18 +155,17 @@ chrome.action.onClicked.addListener(async (tab) => {
       
       log('✅ Scripts injected successfully');
       
-      // Wait a bit and try to toggle sidebar
-      setTimeout(async () => {
-        try {
-          await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
-          log('✅ Sidebar toggle after injection');
-        } catch (err) {
-          logError('❌ Still failed after injection:', err);
-        }
-      }, 1000);
+      // Wait and try to toggle sidebar
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      try {
+        await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
+        log('✅ Sidebar toggled after injection');
+      } catch (err) {
+        logError('❌ Toggle failed after injection');
+      }
     } catch (injectionError) {
       logError('❌ Failed to inject scripts:', injectionError);
-      // Last resort: reload page
       chrome.tabs.reload(tab.id);
     }
   }

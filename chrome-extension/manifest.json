@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Rankito CRM - WhatsApp Connector",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Capture leads do WhatsApp Web direto para o Rankito CRM",
   "permissions": [
     "storage",

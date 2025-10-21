@@ -1,18 +1,12 @@
 // 🚀 RANKITO CRM - Content Script para WhatsApp Web
-console.log('[Rankito Content] 🚀 Script loaded on WhatsApp Web - Version 1.0.2');
+console.log('[Rankito Content] 🚀 Script loaded on WhatsApp Web - Version 1.0.4');
 
 const DEBUG = true;
-const MAX_RETRIES = 3;
-let retryCount = 0;
+const log = (...args) => DEBUG && console.log('[Rankito Content]', ...args);
+const logError = (...args) => console.error('[Rankito Content]', ...args);
 
 // Content Script for WhatsApp Web Integration
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
-
-function debugLog(...args) {
-  if (DEBUG) {
-    console.log('[Rankito Content]', ...args);
-  }
-}
 
 let sidebarInjected = false;
 let currentContact = { name: null, phone: null };
@@ -20,214 +14,266 @@ let apiToken = null;
 
 // Verificar se está no WhatsApp Web
 if (!window.location.hostname.includes('web.whatsapp.com')) {
-  console.log('[Rankito Content] ⚠️ Not on WhatsApp Web, stopping initialization');
+  log('⚠️ Not on WhatsApp Web, stopping initialization');
 } else {
-  console.log('[Rankito Content] ✅ On WhatsApp Web, proceeding with initialization');
-  
-  // Aguardar WhatsApp carregar completamente antes de inicializar
-  waitForWhatsAppReady();
+  log('✅ On WhatsApp Web, proceeding with initialization');
+  waitForWhatsAppReady().then(ready => {
+    if (ready) init();
+  });
 }
 
-// Função para aguardar WhatsApp estar realmente pronto
-function waitForWhatsAppReady() {
-  console.log('[Rankito Content] ⏳ Waiting for WhatsApp Web to be fully loaded...');
+// Wait for WhatsApp Web to be fully loaded with EXTENDED timeout
+async function waitForWhatsAppReady(maxRetries = 30) {
+  log('⏳ Aguardando WhatsApp Web carregar (até 15 segundos)...');
   
-  const checkReady = setInterval(() => {
-    // Verificar se elementos principais do WhatsApp existem
-    const hasMainElement = document.querySelector('[data-testid="conversation-panel-wrapper"]') || 
-                          document.querySelector('#main') ||
-                          document.querySelector('[role="main"]');
+  for (let i = 0; i < maxRetries; i++) {
+    const mainPanel = document.querySelector('[data-testid="conversation-panel-wrapper"]') ||
+                     document.querySelector('div[role="main"]') ||
+                     document.querySelector('#pane-side') ||
+                     document.querySelector('[data-testid="chat-list"]') ||
+                     document.querySelector('#main');
     
-    if (hasMainElement || retryCount >= MAX_RETRIES) {
-      clearInterval(checkReady);
-      
-      if (hasMainElement) {
-        console.log('[Rankito Content] ✅ WhatsApp Web is ready, initializing extension...');
-        setTimeout(() => init(), 1000); // Delay adicional de 1s para segurança
-      } else {
-        console.warn('[Rankito Content] ⚠️ WhatsApp not ready after max retries, trying anyway...');
-        init();
-      }
-    } else {
-      retryCount++;
-      console.log(`[Rankito Content] ⏳ Retry ${retryCount}/${MAX_RETRIES}...`);
+    if (mainPanel) {
+      log('✅ WhatsApp Web is ready');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Extra stability wait
+      return true;
     }
-  }, 2000); // Verificar a cada 2 segundos
+    
+    log(`⏳ Tentativa ${i + 1}/${maxRetries}...`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  
+  logError('❌ WhatsApp Web did not load in time');
+  return false;
 }
 
-// Inicializar extensão
+// Main initialization with AUTO-OPEN sidebar
 async function init() {
+  log('🚀 Initializing Rankito extension...');
+  
+  // Inject sidebar FIRST
+  injectSidebar();
+  
+  // FORCE sidebar to be visible immediately
+  setTimeout(() => {
+    const sidebar = document.getElementById('rankito-sidebar');
+    if (sidebar) {
+      sidebar.style.display = 'flex';
+      sidebar.style.right = '0';
+      log('✅ Sidebar forçada a abrir automaticamente');
+    }
+  }, 500);
+  
+  // Get token from background
   try {
-    console.log('[Rankito Content] 🔧 Initializing extension...');
+    const response = await chrome.runtime.sendMessage({ action: 'getToken' });
+    apiToken = response?.token;
     
-    // SEMPRE injetar sidebar primeiro (mesmo sem token)
-    injectSidebar();
+    log('🔑 Token status:', apiToken ? `Present (${apiToken.substring(0, 10)}...)` : 'Not configured');
     
-    // Buscar token salvo
-    try {
-      const response = await chrome.runtime.sendMessage({ action: 'getToken' });
-      apiToken = response?.token;
-      
-      console.log('[Rankito Content] 🔑 Token status:', apiToken ? `Present (${apiToken.substring(0, 10)}...)` : 'Not configured');
-    } catch (err) {
-      console.warn('[Rankito Content] ⚠️ Could not get token from background:', err);
-    }
-    
-    // Atualizar UI da sidebar baseado no token
     if (!apiToken) {
-      console.log('[Rankito Content] ⚠️ No token configured, showing setup prompt in sidebar');
+      log('⚠️ No token found, showing setup prompt');
       showSetupPromptInSidebar();
-    } else {
-      console.log('[Rankito Content] ✅ Token found, starting monitoring');
-      observeConversationChanges();
-      
-      // Force first contact update
-      setTimeout(() => {
-        debugLog('🔄 Forcing first contact update...');
-        updateContactInfo();
-      }, 1000);
+      return;
     }
     
-    console.log('[Rankito Content] ✅ Extension fully initialized');
+    log('✅ Token loaded successfully');
+    updateConnectionStatus('connected');
+    
+    // Start observing conversations
+    observeConversationChanges();
+    
+    // Force first contact update
+    setTimeout(() => updateContactInfo(), 1000);
+    
   } catch (error) {
-    console.error('[Rankito Content] ❌ Critical initialization error:', error);
-    
-    // Mesmo com erro, tentar injetar sidebar
-    if (!document.getElementById('rankito-sidebar')) {
-      injectSidebar();
-      showErrorInSidebar(error.message);
-    }
+    logError('❌ Error getting token:', error);
+    showSetupPromptInSidebar();
   }
 }
 
-// Show configuration modal
+// Show configuration modal with FORCED inline styles
 function showConfigModal() {
-  console.log('[Rankito Content] 📝 Mostrando modal de configuração');
+  log('📝 Mostrando modal de configuração');
   
-  // Remove modal existente se houver
-  const existingModal = document.querySelector('.rankito-config-modal');
-  if (existingModal) {
-    existingModal.remove();
-  }
+  // Remove existing modal if present
+  const existingModal = document.getElementById('rankito-config-modal');
+  const existingBackdrop = document.getElementById('rankito-config-backdrop');
+  if (existingModal) existingModal.remove();
+  if (existingBackdrop) existingBackdrop.remove();
+  log('🗑️ Modais anteriores removidos');
   
+  // Create backdrop with FORCED inline styles
+  const backdrop = document.createElement('div');
+  backdrop.id = 'rankito-config-backdrop';
+  backdrop.className = 'rankito-config-backdrop';
+  backdrop.style.cssText = `
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    z-index: 999999999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  `;
+  
+  // Create modal with FORCED inline styles
   const modal = document.createElement('div');
+  modal.id = 'rankito-config-modal';
   modal.className = 'rankito-config-modal';
+  modal.style.cssText = `
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5) !important;
+    z-index: 9999999999 !important;
+    width: 90% !important;
+    max-width: 500px !important;
+    max-height: 90vh !important;
+    overflow: auto !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  `;
+  
   modal.innerHTML = `
-    <div class="rankito-config-backdrop"></div>
-    <div class="rankito-config-content">
-      <div class="rankito-config-header">
-        <button class="rankito-config-close" id="rankito-close-modal">×</button>
-        <h2>🚀 Configurar Rankito CRM</h2>
-        <p>Cole seu API Token para começar</p>
+    <div class="rankito-config-header" style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827;">🚀 Configurar Rankito CRM</h2>
+      <button class="rankito-config-close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;">×</button>
+    </div>
+    
+    <div class="rankito-config-body" style="padding: 24px;">
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #374151;">
+          Token de API
+        </label>
+        <textarea 
+          id="rankito-token-input" 
+          placeholder="Cole aqui o token gerado no Rankito CRM..." 
+          style="width: 100%; min-height: 120px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-family: monospace; font-size: 13px; resize: vertical; box-sizing: border-box;"
+        ></textarea>
       </div>
-      <div class="rankito-config-body">
-        <label for="rankito-api-token">API Token:</label>
-        <textarea id="rankito-api-token" placeholder="Cole aqui seu API Token do Rankito CRM..." rows="4"></textarea>
-        <div class="rankito-config-actions">
-          <button class="rankito-btn-secondary" id="rankito-cancel-config">Cancelar</button>
-          <button class="rankito-btn-primary" id="rankito-save-config">Salvar Token</button>
-        </div>
-        <p class="rankito-config-help">
-          <strong>Como obter seu token:</strong><br>
+      
+      <div style="padding: 12px; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 6px; margin-bottom: 16px;">
+        <p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.5;">
+          <strong>💡 Como obter o token:</strong><br>
           1. Acesse o Rankito CRM<br>
           2. Vá em Configurações → Integrações<br>
-          3. Copie o API Token da extensão WhatsApp
+          3. Copie o token gerado
         </p>
+      </div>
+      
+      <div class="rankito-config-actions" style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button id="rankito-cancel-btn" class="rankito-btn-secondary" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; color: #374151; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+          Cancelar
+        </button>
+        <button id="rankito-save-token-btn" class="rankito-btn-primary" style="padding: 10px 20px; border: none; border-radius: 8px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; font-weight: 500; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+          💾 Salvar Token
+        </button>
       </div>
     </div>
   `;
   
+  // Add to DOM
+  document.body.appendChild(backdrop);
   document.body.appendChild(modal);
-  console.log('[Rankito Content] ✅ Modal adicionado ao DOM');
   
-  // Focar no textarea
+  log('✅ Modal adicionado ao DOM');
+  
+  // Verify visibility after 100ms
   setTimeout(() => {
-    const textarea = document.getElementById('rankito-api-token');
-    if (textarea) {
-      textarea.focus();
-      console.log('[Rankito Content] ✅ Foco no textarea');
-    }
+    const isVisible = modal.offsetWidth > 0 && modal.offsetHeight > 0;
+    const rect = modal.getBoundingClientRect();
+    log(`✅ Modal is visible: ${isVisible}`);
+    log(`✅ Modal dimensions: ${rect.width}px x ${rect.height}px`);
+    log(`✅ Modal position: top=${rect.top}px, left=${rect.left}px`);
   }, 100);
   
-  // Botão fechar (X)
-  document.getElementById('rankito-close-modal')?.addEventListener('click', () => {
-    console.log('[Rankito Content] ❌ Fechando modal (X)');
-    modal.remove();
-  });
+  // Event listeners
+  const closeBtn = modal.querySelector('.rankito-config-close');
+  const cancelBtn = modal.querySelector('#rankito-cancel-btn');
+  const saveBtn = modal.querySelector('#rankito-save-token-btn');
+  const tokenInput = modal.querySelector('#rankito-token-input');
   
-  // Botão cancelar
-  document.getElementById('rankito-cancel-config')?.addEventListener('click', () => {
-    console.log('[Rankito Content] ❌ Cancelando configuração');
+  const closeModal = () => {
+    backdrop.remove();
     modal.remove();
-  });
+    log('❌ Modal fechado');
+  };
   
-  // Clicar no backdrop para fechar
-  modal.querySelector('.rankito-config-backdrop')?.addEventListener('click', () => {
-    console.log('[Rankito Content] ❌ Fechando modal (backdrop)');
-    modal.remove();
-  });
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
   
-  // Botão salvar
-  document.getElementById('rankito-save-config')?.addEventListener('click', async () => {
-    const token = document.getElementById('rankito-api-token')?.value.trim();
-    
-    if (!token) {
-      alert('Por favor, cole um token válido');
-      return;
-    }
-    
-    console.log('[Rankito Content] 💾 Salvando token...');
-    
-    try {
-      // Envia token para o background script
-      await chrome.runtime.sendMessage({
-        action: 'saveToken',
-        token: token
+  backdrop.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => e.stopPropagation());
+  
+  if (saveBtn && tokenInput) {
+    saveBtn.addEventListener('click', () => {
+      const token = tokenInput.value.trim();
+      if (!token) {
+        alert('Por favor, insira o token');
+        return;
+      }
+      
+      log('💾 Salvando token...');
+      chrome.runtime.sendMessage({ 
+        action: 'saveToken', 
+        token: token 
+      }, (response) => {
+        if (response && response.success) {
+          log('✅ Token salvo com sucesso');
+          apiToken = token;
+          closeModal();
+          updateConnectionStatus('connected');
+          observeConversationChanges();
+          updateContactInfo();
+        }
       });
-      
-      console.log('[Rankito Content] ✅ Token salvo com sucesso');
-      modal.remove();
-      
-      // Reinicia a extensão
-      setTimeout(() => {
-        init();
-      }, 500);
-    } catch (error) {
-      console.error('[Rankito Content] ❌ Erro ao salvar token:', error);
-      alert('Erro ao salvar token. Tente novamente.');
-    }
-  });
-}
-
-// Mostrar prompt de configuração na sidebar
-function showSetupPromptInSidebar() {
-  console.log('[Rankito Content] 📢 Mostrando prompt de configuração na sidebar');
-  updateConnectionStatus('disconnected');
-  
-  const contactInfo = document.getElementById('rankito-contact-info');
-  if (contactInfo) {
-    contactInfo.innerHTML = `
-      <div style="text-align: center; padding: 20px 12px;">
-        <div style="font-size: 48px; margin-bottom: 16px;">⚙️</div>
-        <p class="rankito-label" style="text-align: center; margin-bottom: 12px;">CONFIGURAÇÃO NECESSÁRIA</p>
-        <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 13px; line-height: 1.5;">
-          Configure seu API Token para começar a usar o Rankito CRM no WhatsApp
-        </p>
-        <button class="rankito-primary-btn" id="rankito-open-config" style="font-size: 15px; padding: 14px 20px;">
-          🔧 Configurar Agora
-        </button>
-      </div>
-    `;
-    
-    document.getElementById('rankito-open-config')?.addEventListener('click', () => {
-      console.log('[Rankito Content] 🖱️ Clicou em Configurar Agora');
-      showConfigModal();
     });
   }
+}
+
+// Show ENHANCED setup prompt in sidebar when no token
+function showSetupPromptInSidebar() {
+  const content = document.getElementById('rankito-sidebar-content');
+  if (!content) return;
   
-  const historyList = document.getElementById('rankito-history-list');
-  if (historyList) {
-    historyList.innerHTML = '<p class="rankito-empty">Configure o token para começar a capturar leads</p>';
+  content.innerHTML = `
+    <div style="text-align: center; padding: 32px 20px;">
+      <div style="font-size: 64px; margin-bottom: 24px; animation: pulse 2s infinite;">🔌</div>
+      <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 700;">
+        Configure sua Extensão
+      </h3>
+      <p style="color: #6b7280; font-size: 15px; line-height: 1.7; margin-bottom: 28px;">
+        Conecte ao Rankito CRM para começar a capturar leads automaticamente do WhatsApp
+      </p>
+      <button 
+        id="rankito-open-config-btn"
+        style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; padding: 16px 32px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 16px; box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); transition: all 0.3s; width: 100%; max-width: 280px;"
+        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(59, 130, 246, 0.5)';"
+        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px rgba(59, 130, 246, 0.4)';"
+      >
+        🚀 Configurar Token Agora
+      </button>
+      <p style="color: #9ca3af; font-size: 12px; margin-top: 20px; line-height: 1.5;">
+        O token está disponível em:<br>
+        <strong>Rankito CRM → Integrações</strong>
+      </p>
+    </div>
+  `;
+  
+  const configBtn = document.getElementById('rankito-open-config-btn');
+  if (configBtn) {
+    configBtn.addEventListener('click', () => {
+      log('🖱️ Botão CONFIGURAR clicado');
+      showConfigModal();
+    });
   }
 }
 
@@ -270,7 +316,7 @@ function showErrorInSidebar(errorMsg) {
 function injectSidebar() {
   if (sidebarInjected) return;
   
-  debugLog('💉 Injecting sidebar into DOM...');
+  log('💉 Injecting sidebar into DOM...');
   
   const sidebar = document.createElement('div');
   sidebar.id = 'rankito-sidebar';
@@ -293,7 +339,7 @@ function injectSidebar() {
       </div>
       <button id="rankito-close-sidebar" title="Fechar">×</button>
     </div>
-    <div class="rankito-sidebar-content">
+    <div class="rankito-sidebar-content" id="rankito-sidebar-content">
       <div id="rankito-contact-info">
         <p class="rankito-label">Contato detectado:</p>
         <h4 id="rankito-contact-name">—</h4>
@@ -319,9 +365,9 @@ function injectSidebar() {
   document.body.appendChild(sidebar);
   sidebarInjected = true;
   
-  console.log('[Rankito Content] ✅ Sidebar injected successfully');
+  log('✅ Sidebar injected successfully');
   
-  // Atualizar status após 500ms
+  // Update status after 500ms
   setTimeout(() => {
     updateConnectionStatus(apiToken ? 'connected' : 'disconnected');
   }, 500);
@@ -334,7 +380,7 @@ function injectSidebar() {
   document.getElementById('rankito-create-lead-btn')?.addEventListener('click', handleCreateLead);
 }
 
-// Atualizar status de conexão na sidebar
+// Update connection status in sidebar
 function updateConnectionStatus(status) {
   const statusIndicator = document.querySelector('#connection-status .status-indicator');
   const statusText = document.querySelector('#connection-status .status-text');
@@ -368,14 +414,14 @@ function observeConversationChanges() {
       childList: true, 
       subtree: true 
     });
-    debugLog('👀 Observing conversation changes');
+    log('👀 Observing conversation changes');
   }
 }
 
-// Extract contact info from WhatsApp UI - IMPROVED VERSION
+// Extract contact info from WhatsApp UI
 function updateContactInfo() {
   try {
-    debugLog('🔍 Updating contact info...');
+    log('🔍 Updating contact info...');
     
     // METHOD 1: Get contact name from header
     const headerSelectors = [
@@ -390,7 +436,7 @@ function updateContactInfo() {
       const el = document.querySelector(selector);
       if (el?.textContent && el.textContent.length > 0) {
         name = el.textContent.trim();
-        debugLog('📝 Name found:', name);
+        log('📝 Name found:', name);
         break;
       }
     }
@@ -402,26 +448,26 @@ function updateContactInfo() {
     const urlMatch = window.location.href.match(/\/(\d{10,15})/);
     if (urlMatch) {
       phone = urlMatch[1];
-      debugLog('✅ Phone found in URL:', phone);
+      log('✅ Phone found in URL:', phone);
     }
     
     // METHOD 3: Try to find phone in header title attribute
     if (!phone) {
-      debugLog('🔍 Trying header title attribute...');
+      log('🔍 Trying header title attribute...');
       const headerTitle = document.querySelector('[data-testid="conversation-info-header"]');
       if (headerTitle) {
         const titleAttr = headerTitle.getAttribute('title') || headerTitle.textContent;
         const phoneMatch = titleAttr?.match(/\+?(\d{10,15})/);
         if (phoneMatch) {
           phone = phoneMatch[1];
-          debugLog('✅ Phone found in header:', phone);
+          log('✅ Phone found in header:', phone);
         }
       }
     }
     
     // METHOD 4: Look for phone in any span with digits
     if (!phone) {
-      debugLog('🔍 Searching for phone in spans...');
+      log('🔍 Searching for phone in spans...');
       const phoneElements = document.querySelectorAll('span[dir="ltr"]');
       for (const el of phoneElements) {
         const text = el.textContent;
@@ -429,14 +475,14 @@ function updateContactInfo() {
           const cleanPhone = text.replace(/\D/g, '');
           if (cleanPhone.length >= 10 && cleanPhone.length <= 15) {
             phone = cleanPhone;
-            debugLog('✅ Phone found in span:', phone);
+            log('✅ Phone found in span:', phone);
             break;
           }
         }
       }
     }
     
-    debugLog('📞 Final contact:', { name, phone });
+    log('📞 Final contact:', { name, phone });
     
     // Update connection status
     updateConnectionStatus(apiToken ? 'connected' : 'disconnected');
@@ -477,13 +523,12 @@ function updateContactInfo() {
         }
       }
       
-      debugLog('✅ Contact updated:', currentContact);
+      log('✅ Contact updated:', currentContact);
       
       // Load history if we have a phone
       if (phone) {
         loadHistory(phone);
       } else {
-        // If no phone, show warning
         const historyDiv = document.getElementById('rankito-history-list');
         if (historyDiv) {
           historyDiv.innerHTML = '<p class="rankito-empty">⚠️ Insira o telefone manualmente para carregar histórico</p>';
@@ -491,25 +536,16 @@ function updateContactInfo() {
       }
     }
   } catch (error) {
-    console.error('[Rankito Content] ❌ Error updating contact:', error);
+    logError('❌ Error updating contact:', error);
   }
 }
 
 // Load CRM history for contact
 async function loadHistory(phone) {
-  debugLog('📋 Loading history for:', phone);
+  log('📋 Loading history for:', phone);
   
   if (!apiToken) {
-    debugLog('⚠️ No token available');
-    return;
-  }
-  
-  if (!phone) {
-    debugLog('⚠️ No phone number provided');
-    const historyDiv = document.getElementById('rankito-history-list');
-    if (historyDiv) {
-      historyDiv.innerHTML = '<div class="rankito-empty">⚠️ Número de telefone não disponível</div>';
-    }
+    log('⚠️ No API token, cannot load history');
     return;
   }
   
@@ -519,7 +555,6 @@ async function loadHistory(phone) {
   historyDiv.innerHTML = '<div class="rankito-loading">Carregando histórico...</div>';
   
   try {
-    debugLog('🌐 Fetching history from API...');
     const response = await fetch(`${SUPABASE_URL}/functions/v1/get-whatsapp-history`, {
       method: 'POST',
       headers: {
@@ -529,25 +564,18 @@ async function loadHistory(phone) {
       body: JSON.stringify({ phone })
     });
     
-    debugLog('📡 Response status:', response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[Rankito Content] ❌ API error:', errorText);
-      throw new Error(`Failed to load history: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    debugLog('✅ History loaded:', data.total_deals, 'deals');
-    
-    if (data.total_deals > 0) {
-      renderHistory(data.deals);
+    if (response.ok) {
+      const data = await response.json();
+      log('✅ History loaded:', data);
+      renderHistory(data.deals || []);
+    } else if (response.status === 404) {
+      historyDiv.innerHTML = '<p class="rankito-empty">Nenhum histórico encontrado</p>';
     } else {
-      historyDiv.innerHTML = '<p class="rankito-empty">Nenhuma interação anterior</p>';
+      throw new Error(`HTTP ${response.status}`);
     }
   } catch (error) {
-    console.error('[Rankito Content] ❌ Error loading history:', error);
-    historyDiv.innerHTML = `<p class="rankito-error">❌ Erro ao carregar: ${error.message}<br><small>Verifique o console (F12)</small></p>`;
+    logError('❌ Error loading history:', error);
+    historyDiv.innerHTML = '<p class="rankito-error">Erro ao carregar histórico</p>';
   }
 }
 
@@ -556,40 +584,51 @@ function renderHistory(deals) {
   const historyDiv = document.getElementById('rankito-history-list');
   if (!historyDiv) return;
   
+  if (!deals || deals.length === 0) {
+    historyDiv.innerHTML = '<p class="rankito-empty">Nenhum histórico encontrado</p>';
+    return;
+  }
+  
   historyDiv.innerHTML = deals.map(deal => `
-    <div class="rankito-history-item">
-      <strong>${deal.title}</strong>
-      <span class="rankito-stage-badge">${deal.stage}</span>
-      <p class="rankito-date">${new Date(deal.created_at).toLocaleDateString('pt-BR')}</p>
-      <p class="rankito-activity">${deal.last_activity}</p>
+    <div class="history-item">
+      <div class="history-header">
+        <span class="history-badge badge-${deal.stage?.toLowerCase().replace(/\s+/g, '-') || 'unknown'}">
+          ${deal.stage || 'Unknown'}
+        </span>
+        <span class="history-date">${new Date(deal.created_at).toLocaleDateString('pt-BR')}</span>
+      </div>
+      <div class="history-title">${deal.title || 'Sem título'}</div>
+      ${deal.notes ? `<div class="history-notes">${deal.notes}</div>` : ''}
     </div>
   `).join('');
 }
 
-// Handle create lead button
+// Handle create lead button click
 async function handleCreateLead() {
+  log('🔥 Create lead button clicked');
+  
   if (!apiToken) {
-    alert('❌ Token não configurado. Configure a extensão primeiro.');
+    alert('❌ Token não configurado. Configure primeiro.');
+    showConfigModal();
     return;
   }
   
-  if (!currentContact.name) {
-    alert('❌ Nenhum contato selecionado');
+  if (!currentContact.phone) {
+    alert('❌ Número de telefone não detectado. Por favor, insira manualmente.');
     return;
   }
   
   const btn = document.getElementById('rankito-create-lead-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '⏳ Criando...';
-  }
+  if (!btn) return;
+  
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ Criando...';
+  btn.disabled = true;
   
   try {
-    // Try to capture last message
-    const messageElements = document.querySelectorAll('[data-pre-plain-text]');
-    const lastMessage = messageElements.length > 0 
-      ? messageElements[messageElements.length - 1]?.textContent || ''
-      : '';
+    // Get last message from chat
+    const messages = document.querySelectorAll('[data-testid="msg-container"]');
+    const lastMessage = messages[messages.length - 1]?.textContent || '';
     
     const response = await fetch(`${SUPABASE_URL}/functions/v1/create-deal-from-whatsapp`, {
       method: 'POST',
@@ -598,76 +637,54 @@ async function handleCreateLead() {
         'x-api-token': apiToken
       },
       body: JSON.stringify({
+        phone: currentContact.phone,
         name: currentContact.name,
-        phone: currentContact.phone || 'não disponível',
-        message: lastMessage.substring(0, 500),
-        stage: 'lead',
-        metadata: {
-          conversation_url: window.location.href,
-          captured_at: new Date().toISOString(),
-          message_count: messageElements.length
-        }
+        lastMessage: lastMessage.substring(0, 500)
       })
     });
     
-    const result = await response.json();
-    
-    if (result.success) {
-      alert(`✅ ${result.message}\nScore: ${result.lead_score} pontos`);
+    if (response.ok) {
+      log('✅ Lead created successfully');
+      btn.innerHTML = '✅ Lead Criado!';
+      
       // Reload history
-      if (currentContact.phone) {
+      setTimeout(() => {
         loadHistory(currentContact.phone);
-      }
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }, 2000);
     } else {
-      throw new Error(result.error || 'Erro desconhecido');
+      throw new Error(`HTTP ${response.status}`);
     }
   } catch (error) {
-    console.error('[Rankito Content] Error creating lead:', error);
-    alert('❌ Erro ao criar lead: ' + error.message);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = '🔥 Criar Lead no CRM';
-    }
+    logError('❌ Error creating lead:', error);
+    alert('❌ Erro ao criar lead. Tente novamente.');
+    btn.innerHTML = originalText;
+    btn.disabled = false;
   }
 }
 
-// Listener para mensagens do background
+// Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[Rankito Content] 📨 Message received:', message.action);
+  log('📨 Message received:', message.action);
   
   if (message.action === 'toggleSidebar') {
     const sidebar = document.getElementById('rankito-sidebar');
     if (sidebar) {
-      const isHidden = sidebar.style.display === 'none';
-      sidebar.style.display = isHidden ? 'flex' : 'none';
-      console.log('[Rankito Content] 👁️ Sidebar toggled:', isHidden ? 'shown' : 'hidden');
-    } else {
-      console.warn('[Rankito Content] ⚠️ Sidebar not found, injecting...');
-      init(); // Re-inicializar se sidebar não existir
+      sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
+      log('🔄 Sidebar toggled');
     }
     sendResponse({ success: true });
   }
   
   if (message.action === 'saveToken') {
     apiToken = message.token;
-    console.log('[Rankito Content] ✅ Token saved from setup page');
-    
-    // Fechar modal se estiver aberto
-    const modal = document.getElementById('rankito-config-modal');
-    if (modal) {
-      modal.remove();
-    }
-    
-    // Atualizar status
+    log('✅ Token updated from message');
     updateConnectionStatus('connected');
-    
-    // Inicializar monitoramento
     observeConversationChanges();
     updateContactInfo();
-    
     sendResponse({ success: true });
   }
   
-  return true; // Keep channel open for async response
+  return true;
 });

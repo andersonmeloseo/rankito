@@ -179,7 +179,7 @@ const manifest = {
 };
 
 const serviceWorkerCode = `// 🚀 Service Worker para Extensão Rankito CRM
-console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.3');
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.4');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -331,7 +331,7 @@ chrome.action.onClicked.addListener(async (tab) => {
 log('🚀 Service Worker fully loaded and ready');`;
 
 const contentScriptCode = `// Content Script loaded
-console.log('[Rankito] Content script loaded - v1.0.3');`;
+console.log('[Rankito] Content script loaded - v1.0.4');`;
 
 const sidebarCSS = `/* Rankito CRM Sidebar & Config Modal Styles */
 
