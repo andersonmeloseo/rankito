@@ -48,7 +48,7 @@ export const CreateTaskDialog = ({ open, onOpenChange, userId, initialDealId }: 
       type: "call",
       priority: "medium",
       due_time: "09:00",
-      deal_id: initialDealId || "",
+      deal_id: initialDealId || undefined,
     },
   });
 
@@ -69,7 +69,7 @@ export const CreateTaskDialog = ({ open, onOpenChange, userId, initialDealId }: 
         priority: data.priority,
         due_date: dueDateTime.toISOString(),
         status: "pending",
-        deal_id: data.deal_id || null,
+        deal_id: data.deal_id && data.deal_id !== "none" ? data.deal_id : null,
         client_id: null,
         outcome: null,
         notes: null,
@@ -234,7 +234,7 @@ export const CreateTaskDialog = ({ open, onOpenChange, userId, initialDealId }: 
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="none">Nenhum</SelectItem>
                       {deals?.map((deal) => (
                         <SelectItem key={deal.id} value={deal.id}>
                           {deal.title}
