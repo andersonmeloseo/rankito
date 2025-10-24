@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ interface BulkAssignPlanDialogProps {
 export const BulkAssignPlanDialog = ({ users, open, onOpenChange, onConfirm }: BulkAssignPlanDialogProps) => {
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [assigning, setAssigning] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['subscription-plans'],
@@ -39,8 +40,14 @@ export const BulkAssignPlanDialog = ({ users, open, onOpenChange, onConfirm }: B
     setAssigning(true);
     try {
       await onConfirm(selectedPlanId);
+      
+      // Force refetch
+      await queryClient.invalidateQueries({ queryKey: ['saas-users'] });
+      
       onOpenChange(false);
       setSelectedPlanId("");
+    } catch (error) {
+      console.error('Erro ao atribuir plano:', error);
     } finally {
       setAssigning(false);
     }

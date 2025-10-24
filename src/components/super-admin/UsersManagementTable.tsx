@@ -51,6 +51,21 @@ export const UsersManagementTable = () => {
     refetch();
   }, [refetch]);
 
+  // Debug logging
+  useEffect(() => {
+    if (users && users.length > 0) {
+      console.log('🔍 UsersManagementTable - Dados dos usuários:', users);
+      users.forEach((user: any) => {
+        console.log(`📊 User ${user.email}:`, {
+          id: user.id,
+          user_subscriptions: user.user_subscriptions,
+          subscription_plan: user.user_subscriptions?.[0]?.subscription_plans,
+          plan_slug: user.user_subscriptions?.[0]?.subscription_plans?.slug,
+        });
+      });
+    }
+  }, [users]);
+
   const getStatusBadge = (user: any) => {
     const sub = user.user_subscriptions?.[0];
     
@@ -161,6 +176,16 @@ export const UsersManagementTable = () => {
             className="pl-10"
           />
         </div>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          className="gap-2"
+        >
+          <Search className="h-4 w-4" />
+          Atualizar
+        </Button>
         
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full md:w-[200px]">

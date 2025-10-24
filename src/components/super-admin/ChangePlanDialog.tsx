@@ -7,6 +7,7 @@ import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ChangePlanDialogProps {
   user: any;
@@ -18,6 +19,7 @@ export const ChangePlanDialog = ({ user, open, onOpenChange }: ChangePlanDialogP
   const { plans } = useSubscriptionPlans();
   const { updateSubscription, createSubscription } = useSubscriptions();
   const [selectedPlanId, setSelectedPlanId] = useState("");
+  const queryClient = useQueryClient();
 
   const currentPlan = user?.user_subscriptions?.[0]?.subscription_plans;
   const currentSubscription = user?.user_subscriptions?.[0];
@@ -25,23 +27,31 @@ export const ChangePlanDialog = ({ user, open, onOpenChange }: ChangePlanDialogP
   const handleSave = async () => {
     if (!selectedPlanId) return;
 
-    if (currentSubscription?.id) {
-      // Atualizar assinatura existente
-      await updateSubscription({
-        id: currentSubscription.id,
-        updates: { plan_id: selectedPlanId }
-      });
-    } else {
-      // Criar nova assinatura
-      await createSubscription({
-        user_id: user.id,
-        plan_id: selectedPlanId,
-        status: 'active',
-        current_period_start: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      });
+    try {
+      if (currentSubscription?.id) {
+        // Atualizar assinatura existente
+        await updateSubscription({
+          id: currentSubscription.id,
+          updates: { plan_id: selectedPlanId }
+        });
+      } else {
+        // Criar nova assinatura
+        await createSubscription({
+          user_id: user.id,
+          plan_id: selectedPlanId,
+          status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+      }
+      
+      // Force refetch
+      await queryClient.invalidateQueries({ queryKey: ['saas-users'] });
+      
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Erro ao alterar plano:', error);
     }
-    onOpenChange(false);
   };
 
   return (
