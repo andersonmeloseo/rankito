@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { 
   Globe, 
-  Chrome, 
+  Webhook, 
   Code, 
   Plus, 
   Copy, 
@@ -19,7 +19,6 @@ import { useExternalSources } from "@/hooks/useExternalSources";
 import { CreateIntegrationDialog } from "./CreateIntegrationDialog";
 import { IntegrationStatsCard } from "./IntegrationStatsCard";
 import { AutoConversionSettings } from "@/components/rank-rent/AutoConversionSettings";
-import { ChromeExtensionSetup } from "./ChromeExtensionSetup";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -47,16 +46,18 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
   const getSourceIcon = (type: string) => {
     switch (type) {
       case 'wordpress': return <Globe className="w-5 h-5" />;
-      case 'chrome_extension': return <Chrome className="w-5 h-5" />;
+      case 'webhook': return <Webhook className="w-5 h-5" />;
+      case 'chatbot': return <Webhook className="w-5 h-5" />;
       case 'api': return <Code className="w-5 h-5" />;
-      default: return <Globe className="w-5 h-5" />;
+      default: return <Webhook className="w-5 h-5" />;
     }
   };
 
   const getSourceLabel = (type: string) => {
     switch (type) {
       case 'wordpress': return 'WordPress';
-      case 'chrome_extension': return 'Chrome Extension';
+      case 'webhook': return 'Webhook';
+      case 'chatbot': return 'Chatbot';
       case 'api': return 'API';
       default: return type;
     }
@@ -102,7 +103,7 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Integrações Externas</h2>
           <p className="text-muted-foreground">
-            Capture leads automaticamente do WordPress, WhatsApp e outras fontes
+            Capture leads automaticamente via webhook, WordPress e outras fontes
           </p>
         </div>
         <Button onClick={() => setShowCreateDialog(true)}>
@@ -142,9 +143,6 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
           </CardContent>
         </Card>
       )}
-
-      {/* Chrome Extension Setup */}
-      <ChromeExtensionSetup userId={userId} />
 
       {/* Auto-Conversion Settings */}
       <AutoConversionSettings />

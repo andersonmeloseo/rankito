@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Globe, Chrome, Code } from "lucide-react";
+import { Globe, Webhook, Code } from "lucide-react";
 import { useExternalSources } from "@/hooks/useExternalSources";
 import { IntegrationInstructions } from "./IntegrationInstructions";
 
@@ -32,7 +32,7 @@ export const CreateIntegrationDialog = ({
   open,
   onOpenChange,
 }: CreateIntegrationDialogProps) => {
-  const [sourceType, setSourceType] = useState<'wordpress' | 'chrome_extension' | 'api'>('wordpress');
+  const [sourceType, setSourceType] = useState<'wordpress' | 'webhook' | 'api'>('webhook');
   const [sourceName, setSourceName] = useState('');
   const [siteUrl, setSiteUrl] = useState('');
   const [showInstructions, setShowInstructions] = useState(false);
@@ -98,16 +98,16 @@ export const CreateIntegrationDialog = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="webhook">
+                  <div className="flex items-center gap-2">
+                    <Webhook className="w-4 h-4" />
+                    Webhook / Chatbot
+                  </div>
+                </SelectItem>
                 <SelectItem value="wordpress">
                   <div className="flex items-center gap-2">
                     <Globe className="w-4 h-4" />
                     WordPress Plugin
-                  </div>
-                </SelectItem>
-                <SelectItem value="chrome_extension">
-                  <div className="flex items-center gap-2">
-                    <Chrome className="w-4 h-4" />
-                    Extensão Chrome (WhatsApp)
                   </div>
                 </SelectItem>
                 <SelectItem value="api">
@@ -119,9 +119,9 @@ export const CreateIntegrationDialog = ({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
+              {sourceType === 'webhook' && 'Receba leads de chatbots, WhatsApp e outras automações via webhook'}
               {sourceType === 'wordpress' && 'Capture leads de formulários e botões no WordPress'}
-              {sourceType === 'chrome_extension' && 'Adicione contatos do WhatsApp Web direto no CRM'}
-              {sourceType === 'api' && 'Integre com qualquer sistema usando nossa API'}
+              {sourceType === 'api' && 'Integre com qualquer sistema usando nossa API REST'}
             </p>
           </div>
 
@@ -130,7 +130,7 @@ export const CreateIntegrationDialog = ({
             <Label htmlFor="source-name">Nome da Integração *</Label>
             <Input
               id="source-name"
-              placeholder="Ex: Site Principal, WhatsApp Vendas, API Leads..."
+              placeholder="Ex: Chatbot WhatsApp, Site Principal, API Externa..."
               value={sourceName}
               onChange={(e) => setSourceName(e.target.value)}
             />
