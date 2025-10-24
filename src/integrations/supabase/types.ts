@@ -2213,10 +2213,7 @@ export type Database = {
       }
     }
     Functions: {
-      get_parent_user_id: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_parent_user_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -2228,10 +2225,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      update_contract_statuses: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      update_contract_statuses: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "super_admin" | "client" | "end_client"
@@ -2242,7 +2236,12 @@ export type Database = {
         | "whatsapp_click"
         | "form_submit"
         | "button_click"
-      external_source_type: "wordpress" | "chrome_extension" | "api" | "manual"
+      external_source_type:
+        | "wordpress"
+        | "webhook"
+        | "chatbot"
+        | "api"
+        | "manual"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       subscription_status:
         | "trial"
@@ -2386,7 +2385,13 @@ export const Constants = {
         "form_submit",
         "button_click",
       ],
-      external_source_type: ["wordpress", "chrome_extension", "api", "manual"],
+      external_source_type: [
+        "wordpress",
+        "webhook",
+        "chatbot",
+        "api",
+        "manual",
+      ],
       payment_status: ["pending", "paid", "failed", "refunded"],
       subscription_status: [
         "trial",

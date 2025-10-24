@@ -1,8 +1,5 @@
 project_id = "jhzmgexprjnpgadkxjup"
 
-[functions.upload-chrome-extension]
-verify_jwt = false
-
 [functions.auto-convert-hot-leads]
 verify_jwt = false
 
