@@ -1,5 +1,5 @@
-// 🚀 Service Worker para Extensão Rankito CRM
-console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.5');
+// 🚀 Service Worker para Extensão Rankito CRM v1.0.6
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.6');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -23,10 +23,20 @@ chrome.runtime.onInstalled.addListener((details) => {
   log('⚠️ Configure o token ao abrir o WhatsApp Web');
 });
 
-// 2. Message listener for saving token
+// 2. Message listener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   try {
     log('📨 Message received:', message.action);
+    
+    if (message.action === 'openConfig') {
+      // Open config page in new tab
+      chrome.tabs.create({
+        url: chrome.runtime.getURL('config.html')
+      });
+      log('✅ Config page opened');
+      sendResponse({ success: true });
+      return true;
+    }
     
     if (message.action === 'saveToken') {
       chrome.storage.local.set({ 
@@ -39,9 +49,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.action.setBadgeText({ text: '✓' });
         chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
         
+        // Notify all WhatsApp Web tabs about token update
+        chrome.tabs.query({ url: 'https://web.whatsapp.com/*' }, (tabs) => {
+          tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, { 
+              action: 'updateToken', 
+              token: message.token 
+            }).catch(() => {
+              // Ignore if tab is not ready
+            });
+          });
+        });
+        
         sendResponse({ success: true });
       });
-      return true; // Keep channel open for async response
+      return true;
     }
     
     if (message.action === 'getToken') {
@@ -121,47 +143,28 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 });
 
-// 5. Handle clicks on extension icon - AGGRESSIVE INJECTION
+// 5. Handle clicks on extension icon - Open config or WhatsApp
 chrome.action.onClicked.addListener(async (tab) => {
   log('🖱️ Extension icon clicked');
   
-  // Check if it's WhatsApp Web
-  if (!tab.url || !tab.url.includes('web.whatsapp.com')) {
-    log('⚠️ Not on WhatsApp Web, opening WhatsApp');
-    chrome.tabs.update(tab.id, { url: 'https://web.whatsapp.com' });
+  // Check if token exists
+  const { apiToken } = await chrome.storage.local.get('apiToken');
+  
+  if (!apiToken) {
+    // No token, open config page
+    log('⚠️ No token, opening config page');
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('config.html')
+    });
     return;
   }
   
-  try {
-    // Try to send message to content script
-    await chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
-    log('✅ Sidebar toggle message sent');
-  } catch (error) {
-    // If content script is not loaded, inject and reload
-    logError('❌ Content script not responding, injecting scripts and reloading');
-    
-    try {
-      // Inject content script
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['content/content.js']
-      });
-      
-      // Inject CSS
-      await chrome.scripting.insertCSS({
-        target: { tabId: tab.id },
-        files: ['content/sidebar.css']
-      });
-      
-      log('✅ Scripts injected, reloading page...');
-      
-      // Force reload to ensure clean state
-      await chrome.tabs.reload(tab.id);
-      
-    } catch (injectionError) {
-      logError('❌ Failed to inject scripts:', injectionError);
-      chrome.tabs.reload(tab.id);
-    }
+  // Token exists, open WhatsApp Web if not already there
+  if (!tab.url || !tab.url.includes('web.whatsapp.com')) {
+    log('✅ Token exists, opening WhatsApp Web');
+    chrome.tabs.update(tab.id, { url: 'https://web.whatsapp.com' });
+  } else {
+    log('✅ Already on WhatsApp Web and configured');
   }
 });
 

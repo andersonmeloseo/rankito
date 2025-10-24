@@ -141,7 +141,7 @@ function generateIcon(size: number): Uint8Array {
 const manifest = {
   manifest_version: 3,
   name: "Rankito CRM - WhatsApp Connector",
-  version: "1.0.5",
+  version: "1.0.6",
   description: "Capture leads do WhatsApp Web direto para o Rankito CRM",
   permissions: ["storage", "activeTab", "alarms", "scripting"],
   host_permissions: ["https://web.whatsapp.com/*", "https://*.supabase.co/*"],
@@ -167,8 +167,8 @@ const manifest = {
   },
   web_accessible_resources: [
     {
-      resources: ["assets/*"],
-      matches: ["https://web.whatsapp.com/*"]
+      resources: ["assets/*", "config.html", "config.js"],
+      matches: ["https://web.whatsapp.com/*", "<all_urls>"]
     }
   ],
   icons: {
@@ -178,8 +178,8 @@ const manifest = {
   }
 };
 
-const serviceWorkerCode = `// 🚀 Service Worker para Extensão Rankito CRM
-console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.5');
+const serviceWorkerCode = `// 🚀 Service Worker para Extensão Rankito CRM v1.0.6
+console.log('[Rankito Background] 🚀 Service Worker Starting - Version 1.0.6');
 
 const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
 
@@ -198,6 +198,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   try {
     log('📨 Message received:', message.action);
     
+    if (message.action === 'openConfig') {
+      chrome.tabs.create({
+        url: chrome.runtime.getURL('config.html')
+      });
+      log('✅ Config page opened');
+      sendResponse({ success: true });
+      return true;
+    }
+    
     if (message.action === 'saveToken') {
       chrome.storage.local.set({ 
         apiToken: message.token,
@@ -206,6 +215,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         log('✅ Token saved successfully');
         chrome.action.setBadgeText({ text: '✓' });
         chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
+        
+        chrome.tabs.query({ url: 'https://web.whatsapp.com/*' }, (tabs) => {
+          tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, { 
+              action: 'updateToken', 
+              token: message.token 
+            }).catch(() => {});
+          });
+        });
+        
         sendResponse({ success: true });
       });
       return true;
@@ -319,195 +338,527 @@ chrome.action.onClicked.addListener(async (tab) => {
 
 log('🚀 Service Worker fully loaded and ready');`;
 
-const contentScriptCode = `// Content Script loaded
-console.log('[Rankito] Content script loaded - v1.0.5');`;
+const contentScriptCode = `// 🚀 Rankito CRM - WhatsApp Connector v1.0.6 (SIMPLIFIED)
+console.log('[Rankito] 🚀 Content script starting v1.0.6');
 
-const sidebarCSS = `/* Rankito CRM Sidebar & Config Modal Styles */
+const SUPABASE_URL = 'https://jhzmgexprjnpgadkxjup.supabase.co';
+let apiToken = null;
+let currentPhone = null;
+let isProcessing = false;
 
-/* Configuration Modal */
-.rankito-config-modal {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  z-index: 999999999 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  pointer-events: all !important;
+if (!window.location.href.includes('web.whatsapp.com')) {
+  console.log('[Rankito] ⚠️ Not on WhatsApp Web, script will not run');
+} else {
+  console.log('[Rankito] ✅ On WhatsApp Web, initializing...');
+  init();
 }
 
-.rankito-config-backdrop {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  background: rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  pointer-events: all !important;
+function init() {
+  chrome.runtime.sendMessage({ action: 'getToken' }, (response) => {
+    apiToken = response?.token;
+    
+    if (!apiToken) {
+      console.log('[Rankito] ⚠️ No token found, showing config button');
+      injectConfigButton();
+    } else {
+      console.log('[Rankito] ✅ Token found, extension ready');
+      startObserving();
+    }
+  });
 }
 
-.rankito-config-content {
-  position: relative !important;
-  width: 90% !important;
-  max-width: 500px !important;
-  background: white !important;
-  border-radius: 16px !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
-  overflow: hidden !important;
-  animation: rankito-modal-in 0.3s ease !important;
-  pointer-events: all !important;
-  z-index: 1000000000 !important;
+function injectConfigButton() {
+  if (document.getElementById('rankito-config-btn')) {
+    return;
+  }
+
+  const button = document.createElement('button');
+  button.id = 'rankito-config-btn';
+  button.innerHTML = '🚀 Configurar Rankito';
+  button.style.cssText = \\\`
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 999999;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  \\\`;
+
+  button.onmouseover = () => {
+    button.style.transform = 'translateY(-2px)';
+    button.style.boxShadow = '0 12px 32px rgba(102, 126, 234, 0.5)';
+  };
+
+  button.onmouseout = () => {
+    button.style.transform = 'translateY(0)';
+    button.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.4)';
+  };
+
+  button.onclick = () => {
+    console.log('[Rankito] 🖱️ Config button clicked, opening config page');
+    chrome.runtime.sendMessage({ action: 'openConfig' });
+  };
+
+  document.body.appendChild(button);
+  console.log('[Rankito] ✅ Config button injected');
 }
 
-@keyframes rankito-modal-in {
-  from { opacity: 0; transform: scale(0.9) translateY(20px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+function startObserving() {
+  console.log('[Rankito] 👀 Starting to observe conversations...');
+
+  updateContactInfo();
+
+  const observer = new MutationObserver(() => {
+    updateContactInfo();
+  });
+
+  const targetNode = document.querySelector('#main') || document.body;
+  observer.observe(targetNode, {
+    childList: true,
+    subtree: true
+  });
+
+  console.log('[Rankito] ✅ Observer started');
 }
 
-.rankito-config-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: white !important;
-  padding: 24px !important;
-  text-align: center !important;
-  position: relative !important;
+function updateContactInfo() {
+  try {
+    const nameElement = document.querySelector('header [role="img"]')?.nextElementSibling?.querySelector('span');
+    const contactName = nameElement?.textContent?.trim() || 'Desconhecido';
+
+    let phoneNumber = null;
+
+    const urlMatch = window.location.href.match(/\\/(\\d+)@/);
+    if (urlMatch) {
+      phoneNumber = '+' + urlMatch[1];
+    }
+
+    if (!phoneNumber) {
+      const headerImg = document.querySelector('header [role="img"]');
+      if (headerImg?.alt) {
+        const altMatch = headerImg.alt.match(/\\+?\\d{10,}/);
+        if (altMatch) {
+          phoneNumber = altMatch[0].startsWith('+') ? altMatch[0] : '+' + altMatch[0];
+        }
+      }
+    }
+
+    if (phoneNumber && phoneNumber !== currentPhone) {
+      currentPhone = phoneNumber;
+      console.log('[Rankito] 📞 New contact detected:', contactName, phoneNumber);
+      
+      if (!isProcessing) {
+        handleNewContact(contactName, phoneNumber);
+      }
+    }
+  } catch (error) {
+    console.error('[Rankito] ❌ Error updating contact info:', error);
+  }
 }
 
-.rankito-config-close {
-  position: absolute !important;
-  top: 12px !important;
-  right: 12px !important;
-  background: rgba(255, 255, 255, 0.2) !important;
-  border: none !important;
-  color: white !important;
-  font-size: 24px !important;
-  cursor: pointer !important;
-  padding: 4px 8px !important;
-  width: 32px !important;
-  height: 32px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 6px !important;
-  transition: background 0.2s !important;
-  line-height: 1 !important;
+async function handleNewContact(name, phone) {
+  if (!apiToken) {
+    console.log('[Rankito] ⚠️ No token, skipping lead creation');
+    return;
+  }
+
+  isProcessing = true;
+
+  try {
+    console.log('[Rankito] 📤 Creating lead for:', name, phone);
+
+    const response = await fetch(\\\`\\\${SUPABASE_URL}/functions/v1/create-deal-from-whatsapp\\\`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-token': apiToken
+      },
+      body: JSON.stringify({
+        contact_name: name,
+        phone: phone,
+        source: 'whatsapp_web_extension'
+      })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      console.log('[Rankito] ✅ Lead created/updated successfully:', result);
+      showNotification('✅ Lead sincronizado com Rankito CRM', 'success');
+    } else {
+      console.error('[Rankito] ❌ Error creating lead:', result);
+      if (response.status === 401) {
+        showNotification('❌ Token inválido. Reconfigure a extensão.', 'error');
+        apiToken = null;
+        injectConfigButton();
+      }
+    }
+  } catch (error) {
+    console.error('[Rankito] ❌ Network error:', error);
+  } finally {
+    isProcessing = false;
+  }
 }
 
-.rankito-config-close:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
+function showNotification(message, type) {
+  const notification = document.createElement('div');
+  notification.textContent = message;
+  notification.style.cssText = \\\`
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 999999;
+    background: \\\${type === 'success' ? '#10b981' : '#ef4444'};
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    animation: slideIn 0.3s ease-out;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  \\\`;
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(400px)';
+    notification.style.transition = 'all 0.3s ease-out';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
 
-.rankito-config-header h2 {
-  margin: 0 0 8px 0 !important;
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  color: white !important;
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('[Rankito] 📨 Message received:', message.action);
+
+  if (message.action === 'updateToken') {
+    apiToken = message.token;
+    console.log('[Rankito] ✅ Token updated');
+    
+    const configBtn = document.getElementById('rankito-config-btn');
+    if (configBtn) {
+      configBtn.remove();
+    }
+    
+    startObserving();
+    
+    sendResponse({ success: true });
+  }
+
+  return true;
+});
+
+console.log('[Rankito] 🚀 Content script fully loaded v1.0.6');`;
+
+const sidebarCSS = `/* Minimal CSS for v1.0.6 - not used anymore */`;
+
+const configHTML = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurar Rankito CRM</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 100%;
+      padding: 40px;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .logo {
+      font-size: 48px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      color: #667eea;
+      font-size: 28px;
+      text-align: center;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    h2 {
+      color: #64748b;
+      font-size: 16px;
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 400;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: all 0.2s;
+      font-family: monospace;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .instructions {
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 24px;
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    .instructions strong {
+      color: #334155;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .instructions ol {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+
+    .instructions li {
+      margin-bottom: 6px;
+    }
+
+    .instructions code {
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: monospace;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+    }
+
+    .status.success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      display: block;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🚀</div>
+    <h1>Rankito CRM</h1>
+    <h2>Configure sua Extensão do WhatsApp</h2>
+
+    <div id="status" class="status"></div>
+
+    <div class="form-group">
+      <label for="token-input">Token de API</label>
+      <input 
+        type="text" 
+        id="token-input" 
+        placeholder="Cole seu token aqui (ex: usr_abc123...)"
+        autocomplete="off"
+        spellcheck="false"
+      >
+    </div>
+
+    <button id="save-btn">
+      💾 Salvar e Conectar
+    </button>
+
+    <div class="instructions">
+      <strong>📋 Como obter seu token:</strong>
+      <ol>
+        <li>Acesse o <code>Rankito CRM</code></li>
+        <li>Vá em <code>Integrações</code> → <code>WhatsApp</code></li>
+        <li>Copie o token gerado</li>
+        <li>Cole aqui e clique em "Salvar"</li>
+      </ol>
+      <p style="margin-top: 12px;">
+        ✨ Após salvar, esta aba fechará automaticamente e você poderá usar o WhatsApp Web normalmente.
+      </p>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+</body>
+</html>`;
+
+const configJS = `console.log('[Rankito Config] 📄 Config page loaded');
+
+const tokenInput = document.getElementById('token-input');
+const saveBtn = document.getElementById('save-btn');
+const statusDiv = document.getElementById('status');
+
+chrome.storage.local.get('apiToken', (data) => {
+  if (data.apiToken) {
+    tokenInput.value = data.apiToken;
+    showStatus('Token já configurado. Você pode atualizá-lo se necessário.', 'success');
+  }
+});
+
+saveBtn.onclick = async () => {
+  const token = tokenInput.value.trim();
+  
+  if (!token) {
+    showStatus('❌ Por favor, cole um token válido!', 'error');
+    tokenInput.focus();
+    return;
+  }
+
+  if (token.length < 10) {
+    showStatus('❌ Token parece inválido. Verifique e tente novamente.', 'error');
+    tokenInput.focus();
+    return;
+  }
+
+  try {
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ Salvando...';
+    
+    await chrome.storage.local.set({ 
+      apiToken: token,
+      connectedAt: new Date().toISOString()
+    });
+    
+    console.log('[Rankito Config] ✅ Token saved successfully');
+    
+    await chrome.runtime.sendMessage({ 
+      action: 'saveToken',
+      token: token 
+    });
+    
+    showStatus('✅ Token salvo com sucesso! Fechando...', 'success');
+    
+    setTimeout(() => {
+      window.close();
+    }, 1000);
+    
+  } catch (error) {
+    console.error('[Rankito Config] ❌ Error saving token:', error);
+    showStatus('❌ Erro ao salvar. Tente novamente.', 'error');
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 Salvar e Conectar';
+  }
+};
+
+tokenInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    saveBtn.click();
+  }
+});
+
+function showStatus(message, type) {
+  statusDiv.textContent = message;
+  statusDiv.className = \\\`status \\\${type}\\\`;
+  
+  if (type === 'error') {
+    setTimeout(() => {
+      statusDiv.style.display = 'none';
+    }, 5000);
+  }
 }
 
-.rankito-config-header p {
-  margin: 0 !important;
-  font-size: 14px !important;
-  opacity: 0.9 !important;
-  color: white !important;
-}
-
-.rankito-config-body {
-  padding: 24px !important;
-  background: white !important;
-}
-
-.rankito-config-body label {
-  display: block !important;
-  font-weight: 600 !important;
-  margin-bottom: 8px !important;
-  color: #333 !important;
-  font-size: 14px !important;
-}
-
-.rankito-config-body textarea {
-  width: 100% !important;
-  padding: 12px !important;
-  border: 2px solid #e2e8f0 !important;
-  border-radius: 8px !important;
-  font-size: 13px !important;
-  font-family: 'Monaco', 'Courier New', monospace !important;
-  resize: vertical !important;
-  margin-bottom: 16px !important;
-  transition: border-color 0.2s !important;
-  box-sizing: border-box !important;
-  color: #333 !important;
-  background: white !important;
-  min-height: 120px !important;
-}
-
-.rankito-config-body textarea:focus {
-  outline: none !important;
-  border-color: #667eea !important;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-}
-
-.rankito-config-actions {
-  display: flex !important;
-  gap: 12px !important;
-  margin-bottom: 16px !important;
-}
-
-.rankito-btn-primary,
-.rankito-btn-secondary {
-  flex: 1 !important;
-  padding: 12px 20px !important;
-  border: none !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  font-size: 14px !important;
-  cursor: pointer !important;
-  transition: all 0.2s !important;
-}
-
-.rankito-btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: white !important;
-}
-
-.rankito-btn-primary:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4) !important;
-}
-
-.rankito-btn-primary:disabled {
-  opacity: 0.6 !important;
-  cursor: not-allowed !important;
-  transform: none !important;
-}
-
-.rankito-btn-secondary {
-  background: #f7fafc !important;
-  color: #4a5568 !important;
-  border: 2px solid #e2e8f0 !important;
-}
-
-.rankito-btn-secondary:hover {
-  background: #edf2f7 !important;
-}
-
-.rankito-config-help {
-  background: #f7fafc !important;
-  padding: 16px !important;
-  border-radius: 8px !important;
-  font-size: 13px !important;
-  color: #4a5568 !important;
-  line-height: 1.6 !important;
-  margin: 0 !important;
-}
-
-.rankito-config-help strong {
-  color: #2d3748 !important;
-  font-weight: 600 !important;
-}`;
+tokenInput.focus();`;
 
 Deno.serve(async (req) => {
   console.log('[Extension Download] Request:', req.method);
@@ -524,6 +875,8 @@ Deno.serve(async (req) => {
     zip.addFile('background/service-worker.js', serviceWorkerCode);
     zip.addFile('content/content.js', contentScriptCode);
     zip.addFile('content/sidebar.css', sidebarCSS);
+    zip.addFile('config.html', configHTML);
+    zip.addFile('config.js', configJS);
     zip.addFile('assets/icon16.png', generateIcon(16));
     zip.addFile('assets/icon48.png', generateIcon(48));
     zip.addFile('assets/icon128.png', generateIcon(128));
