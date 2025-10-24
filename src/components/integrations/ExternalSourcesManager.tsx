@@ -18,7 +18,6 @@ import {
 import { useExternalSources } from "@/hooks/useExternalSources";
 import { CreateIntegrationDialog } from "./CreateIntegrationDialog";
 import { IntegrationStatsCard } from "./IntegrationStatsCard";
-import { AutoConversionSettings } from "@/components/rank-rent/AutoConversionSettings";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -152,9 +151,6 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
           </CardContent>
         </Card>
       )}
-
-      {/* Auto-Conversion Settings */}
-      <AutoConversionSettings />
 
       {/* Sources List */}
       {sources && sources.length > 0 ? (

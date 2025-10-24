@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Workflow } from "lucide-react";
+import { Settings, Workflow, Zap } from "lucide-react";
 import { PipelineSettings } from "./settings/PipelineSettings";
+import { AutoConversionSettings } from "@/components/rank-rent/AutoConversionSettings";
 
 interface CRMSettingsProps {
   userId: string;
@@ -20,10 +21,18 @@ export const CRMSettings = ({ userId }: CRMSettingsProps) => {
             <Workflow className="w-4 h-4" />
             Pipeline
           </TabsTrigger>
+          <TabsTrigger value="auto-conversion" className="gap-2">
+            <Zap className="w-4 h-4" />
+            Auto-Conversão
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pipeline">
           <PipelineSettings userId={userId} />
+        </TabsContent>
+
+        <TabsContent value="auto-conversion">
+          <AutoConversionSettings />
         </TabsContent>
       </Tabs>
     </div>
