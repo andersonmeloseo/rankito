@@ -1,23 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
 
-export interface ExternalSource {
-  id: string;
-  user_id: string;
-  source_type: 'wordpress' | 'chrome_extension' | 'api' | 'manual';
-  source_name: string;
-  api_token: string;
-  site_url: string | null;
-  is_active: boolean;
-  settings: Record<string, any>;
-  stats: {
-    total_leads: number;
-    last_lead_at: string | null;
-  };
-  created_at: string;
-  updated_at: string;
-}
+type ExternalSource = Database['public']['Tables']['external_lead_sources']['Row'];
 
 export const useExternalSources = (userId: string) => {
   const queryClient = useQueryClient();
@@ -39,17 +25,20 @@ export const useExternalSources = (userId: string) => {
 
   const createSource = useMutation({
     mutationFn: async (newSource: {
-      source_type: 'wordpress' | 'chrome_extension' | 'api';
+      source_type: 'wordpress' | 'webhook' | 'chatbot' | 'api';
       source_name: string;
       site_url?: string;
       settings?: Record<string, any>;
     }) => {
       const { data, error } = await supabase
         .from('external_lead_sources')
-        .insert({
+        .insert([{
           user_id: userId,
-          ...newSource,
-        })
+          source_name: newSource.source_name,
+          source_type: newSource.source_type,
+          site_url: newSource.site_url,
+          settings: newSource.settings,
+        }])
         .select()
         .single();
 

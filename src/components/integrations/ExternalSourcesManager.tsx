@@ -43,6 +43,15 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sourceToDelete, setSourceToDelete] = useState<string | null>(null);
 
+  // Helper para acessar stats com segurança
+  const getStats = (stats: any) => {
+    if (!stats || typeof stats !== 'object') return { total_leads: 0, last_lead_at: null };
+    return {
+      total_leads: stats.total_leads || 0,
+      last_lead_at: stats.last_lead_at || null,
+    };
+  };
+
   const getSourceIcon = (type: string) => {
     switch (type) {
       case 'wordpress': return <Globe className="w-5 h-5" />;
@@ -131,7 +140,7 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
               </div>
               <div>
                 <div className="text-2xl font-bold">
-                  {sources.reduce((acc, s) => acc + (s.stats?.total_leads || 0), 0)}
+                  {sources.reduce((acc, s) => acc + getStats(s.stats).total_leads, 0)}
                 </div>
                 <p className="text-sm text-muted-foreground">Total de Leads Capturados</p>
               </div>
@@ -178,13 +187,13 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
                       <div className="flex items-center gap-6 text-sm">
                         <div>
                           <span className="text-muted-foreground">Leads capturados: </span>
-                          <span className="font-medium">{source.stats?.total_leads || 0}</span>
+                          <span className="font-medium">{getStats(source.stats).total_leads}</span>
                         </div>
-                        {source.stats?.last_lead_at && (
+                        {getStats(source.stats).last_lead_at && (
                           <div>
                             <span className="text-muted-foreground">Último lead: </span>
                             <span className="font-medium">
-                              {new Date(source.stats.last_lead_at).toLocaleDateString('pt-BR')}
+                              {new Date(getStats(source.stats).last_lead_at!).toLocaleDateString('pt-BR')}
                             </span>
                           </div>
                         )}
