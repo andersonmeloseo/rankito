@@ -28,7 +28,7 @@ export const useSaasUsers = (filters?: UserFilters) => {
             current_period_end,
             trial_end_date,
             canceled_at,
-            subscription_plans(name, price)
+            subscription_plans(name, price, slug)
           )
         `)
         .order('created_at', { ascending: false });
