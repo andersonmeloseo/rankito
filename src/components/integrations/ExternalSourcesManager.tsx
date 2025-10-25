@@ -13,11 +13,14 @@ import {
   Eye,
   EyeOff,
   TrendingUp,
-  Check
+  Check,
+  Download,
+  FileText
 } from "lucide-react";
 import { useExternalSources } from "@/hooks/useExternalSources";
 import { CreateIntegrationDialog } from "./CreateIntegrationDialog";
 import { IntegrationStatsCard } from "./IntegrationStatsCard";
+import { PluginDocumentationDialog } from "./PluginDocumentationDialog";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -41,6 +44,7 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
   const [showToken, setShowToken] = useState<Record<string, boolean>>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sourceToDelete, setSourceToDelete] = useState<string | null>(null);
+  const [showPluginDocs, setShowPluginDocs] = useState(false);
 
   // Helper para acessar stats com segurança
   const getStats = (stats: any) => {
@@ -96,6 +100,17 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
     }
   };
 
+  const handleDownloadPlugin = () => {
+    const link = document.createElement('a');
+    link.href = '/plugins/rankito-leadgen.zip';
+    link.download = 'rankito-leadgen.zip';
+    link.click();
+    
+    toast.success('Plugin baixado!', {
+      description: 'Instale no WordPress: Plugins → Adicionar Novo → Enviar Plugin',
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -119,6 +134,47 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
           Nova Integração
         </Button>
       </div>
+
+      {/* Plugin Download Card */}
+      <Card className="border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="p-4 rounded-lg bg-primary text-primary-foreground">
+                <Download className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold">Plugin WordPress: Rankito LeadGen</h3>
+                <p className="text-sm text-muted-foreground max-w-2xl">
+                  Capture leads profissionalmente com modal customizável, campos dinâmicos, 
+                  validações automáticas e integração direta com seu CRM. Pronto para instalar!
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Badge variant="outline">✓ Modal Customizável</Badge>
+                  <Badge variant="outline">✓ Campos Dinâmicos</Badge>
+                  <Badge variant="outline">✓ Captura UTMs</Badge>
+                  <Badge variant="outline">✓ 100% Responsivo</Badge>
+                  <Badge variant="outline">✓ Validação Client-Side</Badge>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button size="lg" className="gap-2" onClick={handleDownloadPlugin}>
+                <Download className="w-5 h-5" />
+                Baixar Plugin
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setShowPluginDocs(true)}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Documentação
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Overview */}
       {sources && sources.length > 0 && (
@@ -306,6 +362,13 @@ export const ExternalSourcesManager = ({ userId }: ExternalSourcesManagerProps) 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Plugin Documentation Dialog */}
+      <PluginDocumentationDialog
+        open={showPluginDocs}
+        onClose={() => setShowPluginDocs(false)}
+        onDownload={handleDownloadPlugin}
+      />
     </div>
   );
 };

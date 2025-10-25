@@ -1,0 +1,73 @@
+/* Rankito LeadGen - Admin Styles */
+
+.rankito-admin-wrap {
+  max-width: 1200px;
+  margin: 20px 0;
+}
+
+.tab-content {
+  display: none;
+  padding: 20px 0;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.form-table th {
+  width: 220px;
+  font-weight: 600;
+}
+
+.floating-options {
+  display: none;
+}
+
+input[name="rankito_settings[trigger][type]"][value="floating"]:checked ~ .floating-options {
+  display: table-row;
+}
+
+.rankito-admin-wrap .nav-tab-wrapper {
+  margin-bottom: 0;
+}
+
+.rankito-admin-wrap .nav-tab {
+  padding: 10px 15px;
+}
+
+#rankito-connection-status {
+  margin-left: 10px;
+  font-weight: 600;
+}
+
+.rankito-color-picker {
+  max-width: 100px;
+}
+
+.rankito-admin-wrap code {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.rankito-preview-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 600px;
+  width: 90%;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  z-index: 999999;
+}
+
+.rankito-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999998;
+}
