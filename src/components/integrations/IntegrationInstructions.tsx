@@ -9,9 +9,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, Check, Webhook, ExternalLink, Globe, Code } from "lucide-react";
+import { Copy, Check, Webhook, ExternalLink, Globe, Code, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useTestExternalConnection } from "@/hooks/useTestExternalConnection";
+import { Badge } from "@/components/ui/badge";
 
 interface IntegrationInstructionsProps {
   source: any;
@@ -25,8 +27,16 @@ export const IntegrationInstructions = ({
   onClose,
 }: IntegrationInstructionsProps) => {
   const [copied, setCopied] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<any>(null);
+  const { testConnection, isTesting } = useTestExternalConnection();
 
-  const apiUrl = `${window.location.origin}/functions/v1/create-deal-from-external-source`;
+  const apiUrl = `${window.location.origin}/api/external-leads`;
+  const testUrl = `${window.location.origin}/api/external-leads/test?token=${source.api_token}`;
+
+  const handleTestConnection = async () => {
+    const result = await testConnection(source.api_token, source.source_name);
+    setTestResult(result);
+  };
 
   const copyToClipboard = async (text: string, label: string) => {
     await navigator.clipboard.writeText(text);
@@ -144,12 +154,19 @@ x-api-token: ${source.api_token}`}
 
   const WordPressInstructions = () => (
     <div className="space-y-4">
+      <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+        <AlertDescription className="text-sm">
+          💡 <strong>Plugin Manus:</strong> Se você está usando o plugin Manus, configure os campos abaixo no painel do plugin.
+          Certifique-se de que o plugin envia o header <code className="text-xs bg-blue-100 dark:bg-blue-900 px-1 py-0.5 rounded">x-api-token</code> com o token fornecido.
+        </AlertDescription>
+      </Alert>
+
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div>
             <h4 className="font-medium mb-2">1. Configure o Plugin</h4>
             <p className="text-sm text-muted-foreground mb-2">
-              No WordPress, vá em <strong>Configurações → Rank & Rent CRM</strong> e cole:
+              No WordPress ou no Plugin Manus, cole estas configurações:
             </p>
             
             <div className="space-y-3">
@@ -197,16 +214,92 @@ x-api-token: ${source.api_token}`}
 
           <div>
             <h4 className="font-medium mb-2">2. Teste a Integração</h4>
-            <p className="text-sm text-muted-foreground">
+            <div className="flex gap-2 items-center">
+              <Button 
+                onClick={handleTestConnection}
+                disabled={isTesting}
+                size="sm"
+                variant="outline"
+              >
+                {isTesting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Testando...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Testar Conexão
+                  </>
+                )}
+              </Button>
+              {testResult?.success && (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Conexão OK
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
               Após salvar, preencha um formulário no seu site. O lead deve aparecer no CRM automaticamente!
             </p>
           </div>
         </CardContent>
       </Card>
 
+      <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+        <h5 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          🚀 Usando com Plugin Manus
+        </h5>
+        <p className="text-xs text-muted-foreground mb-3">
+          O Plugin Manus permite capturar leads de forma profissional diretamente do seu site WordPress:
+        </p>
+        <ol className="space-y-2 text-xs list-decimal list-inside mb-4">
+          <li>No painel do Manus, configure o botão/widget de captura de leads</li>
+          <li>Cole a <strong>URL da API</strong> acima no campo "Endpoint"</li>
+          <li>Cole o <strong>Token da API</strong> acima no campo "API Key"</li>
+          <li>Configure quais campos deseja capturar (ver lista abaixo)</li>
+          <li>Configure o <strong>Estágio Padrão</strong> em CRM → Auto-Conversão</li>
+          <li>Publique o widget no seu site e teste!</li>
+        </ol>
+
+        <div className="bg-white dark:bg-purple-900 rounded p-3 space-y-2">
+          <p className="text-xs font-medium">📋 Campos que podem ser capturados:</p>
+          <div className="grid grid-cols-2 gap-1 text-xs">
+            <div className="flex items-center gap-1">
+              <Check className="w-3 h-3 text-primary" />
+              <span>Nome (obrigatório)</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Check className="w-3 h-3 text-primary" />
+              <span>Email</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Check className="w-3 h-3 text-primary" />
+              <span>Telefone</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Check className="w-3 h-3 text-primary" />
+              <span>Empresa</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Check className="w-3 h-3 text-primary" />
+              <span>Mensagem</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Check className="w-3 h-3 text-primary" />
+              <span>Campos personalizados</span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            <strong>Captura automática:</strong> URL da página, título da página, parâmetros UTM
+          </p>
+        </div>
+      </div>
+
       <Card>
         <CardContent className="pt-6">
-          <h4 className="font-medium mb-3">Recursos do Plugin:</h4>
+          <h4 className="font-medium mb-3">Recursos de Integração WordPress:</h4>
           <ul className="space-y-2 text-sm">
             <li className="flex items-start gap-2">
               <Check className="w-4 h-4 mt-0.5 text-primary" />
@@ -218,11 +311,19 @@ x-api-token: ${source.api_token}`}
             </li>
             <li className="flex items-start gap-2">
               <Check className="w-4 h-4 mt-0.5 text-primary" />
-              <span>Score automático de leads</span>
+              <span>Score automático de leads (Hot, Warm, Cold)</span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="w-4 h-4 mt-0.5 text-primary" />
-              <span>Tracking de UTMs e origem</span>
+              <span>Tracking de UTMs e origem do tráfego</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="w-4 h-4 mt-0.5 text-primary" />
+              <span>Detecção automática de dispositivo (mobile/desktop)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="w-4 h-4 mt-0.5 text-primary" />
+              <span>Prevenção de leads duplicados (24h)</span>
             </li>
           </ul>
         </CardContent>

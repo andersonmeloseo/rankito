@@ -110,6 +110,16 @@ serve(async (req) => {
       );
     }
 
+    // Fetch user's default stage configuration
+    const { data: autoConfig } = await supabase
+      .from('auto_conversion_settings')
+      .select('default_stage')
+      .eq('user_id', source.user_id)
+      .single();
+
+    const targetStage = autoConfig?.default_stage || 'lead';
+    console.log(`📍 Using stage: ${targetStage} for user ${source.user_id}`);
+
     // Parse request body
     const leadData: LeadData = await req.json();
     console.log('Received lead data:', leadData);
@@ -206,7 +216,7 @@ serve(async (req) => {
         contact_name: leadData.name,
         contact_email: leadData.email || null,
         contact_phone: leadData.phone || null,
-        stage: 'lead',
+        stage: targetStage,
         value: 0,
         source: `external_${source.source_type}`,
         external_source: source.source_name,

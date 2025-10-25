@@ -13,6 +13,8 @@ import SiteDetails from "./pages/SiteDetails";
 import ClientReport from "./pages/ClientReport";
 import UserSettings from "./pages/UserSettings";
 import NotFound from "./pages/NotFound";
+import ExternalLeadsAPI from "./pages/ExternalLeadsAPI";
+import ExternalLeadsTestAPI from "./pages/ExternalLeadsTestAPI";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="/dashboard/site/:siteId" element={<SiteDetails />} />
             <Route path="/report/:token" element={<ClientReport />} />
             <Route path="/settings" element={<UserSettings />} />
+            <Route path="/api/external-leads" element={<ExternalLeadsAPI />} />
+            <Route path="/api/external-leads/test" element={<ExternalLeadsTestAPI />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
