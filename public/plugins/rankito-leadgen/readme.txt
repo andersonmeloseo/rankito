@@ -93,5 +93,5 @@ Primeira versão estável do plugin.
 
 == Support ==
 
-Para suporte técnico, acesse: https://rankito.com/suporte
+Para suporte técnico, acesse: https://rankitocrm.com/suporte
 Email: suporte@rankito.com

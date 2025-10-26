@@ -159,7 +159,7 @@ x-api-token: ${source.api_token}`}
     <div className="space-y-4">
       <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
         <AlertDescription className="text-sm">
-          💡 <strong>Plugin Manus:</strong> Se você está usando o plugin Manus, configure os campos abaixo no painel do plugin.
+          💡 <strong>Plugin Rankito LeadGen:</strong> Se você está usando o plugin Rankito LeadGen, configure os campos abaixo no painel do plugin.
           Certifique-se de que o plugin envia o header <code className="text-xs bg-blue-100 dark:bg-blue-900 px-1 py-0.5 rounded">x-api-token</code> com o token fornecido.
         </AlertDescription>
       </Alert>
@@ -169,7 +169,7 @@ x-api-token: ${source.api_token}`}
           <div>
             <h4 className="font-medium mb-2">1. Configure o Plugin</h4>
             <p className="text-sm text-muted-foreground mb-2">
-              No WordPress ou no Plugin Manus, cole estas configurações:
+              No WordPress ou no Plugin Rankito LeadGen, cole estas configurações:
             </p>
             
             <div className="space-y-3">
@@ -252,17 +252,18 @@ x-api-token: ${source.api_token}`}
 
       <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
         <h5 className="font-semibold text-sm mb-3 flex items-center gap-2">
-          🚀 Usando com Plugin Manus
+          🚀 Usando com Plugin Rankito LeadGen
         </h5>
         <p className="text-xs text-muted-foreground mb-3">
-          O Plugin Manus permite capturar leads de forma profissional diretamente do seu site WordPress:
+          O Plugin Rankito LeadGen permite capturar leads de forma profissional diretamente do seu site WordPress:
         </p>
         <ol className="space-y-2 text-xs list-decimal list-inside mb-4">
-          <li>No painel do Manus, configure o botão/widget de captura de leads</li>
-          <li>Cole a <strong>URL da API</strong> acima no campo "Endpoint"</li>
-          <li>Cole o <strong>Token da API</strong> acima no campo "API Key"</li>
+          <li>No painel do Rankito LeadGen, configure o botão/widget de captura de leads</li>
+          <li>Cole a <strong>URL da API</strong> acima no campo "URL da API"</li>
+          <li>Cole o <strong>Token da API</strong> acima no campo "Token"</li>
           <li>Configure quais campos deseja capturar (ver lista abaixo)</li>
           <li>Configure o <strong>Estágio Padrão</strong> em CRM → Auto-Conversão</li>
+          <li>Personalize o visual do modal (cores, logo, mensagens)</li>
           <li>Publique o widget no seu site e teste!</li>
         </ol>
 

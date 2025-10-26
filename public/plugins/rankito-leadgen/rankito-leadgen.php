@@ -1,110 +1,96 @@
 <?php
 /**
  * Plugin Name: Rankito LeadGen
- * Plugin URI: https://rankito.com
- * Description: Capture leads profissionalmente com modal customizável e integração direta com RankiTO CRM
+ * Plugin URI: https://rankitocrm.com
+ * Description: Captura leads profissionalmente com modal customizável e integração direta com RankiTO CRM
  * Version: 1.0.0
  * Author: RankiTO
- * Author URI: https://rankito.com
- * License: GPL-2.0+
+ * Author URI: https://rankitocrm.com
  * Text Domain: rankito-leadgen
- * Domain Path: /languages
+ * License: GPL v2 or later
  */
 
 if (!defined('ABSPATH')) exit;
 
+// Constants
 define('RANKITO_LEADGEN_VERSION', '1.0.0');
 define('RANKITO_LEADGEN_PATH', plugin_dir_path(__FILE__));
 define('RANKITO_LEADGEN_URL', plugin_dir_url(__FILE__));
 
-// Autoload
-spl_autoload_register(function($class) {
+// Autoload classes
+spl_autoload_register(function ($class) {
     if (strpos($class, 'Rankito_LeadGen_') === 0) {
-        $file = RANKITO_LEADGEN_PATH . 'includes/class-' . 
-                strtolower(str_replace('_', '-', substr($class, 16))) . '.php';
-        if (file_exists($file)) require_once $file;
+        $file = RANKITO_LEADGEN_PATH . 'includes/' . strtolower(str_replace('_', '-', $class)) . '.php';
+        if (file_exists($file)) {
+            require_once $file;
+        }
     }
 });
 
-// Inicialização
+// Initialize plugin
 function rankito_leadgen_init() {
-    $admin = new Rankito_LeadGen_Admin();
-    $frontend = new Rankito_LeadGen_Frontend();
+    new Rankito_LeadGen_Admin();
+    new Rankito_LeadGen_Frontend();
     
-    add_shortcode('rankito_button', [$frontend, 'button_shortcode']);
-    add_shortcode('rankito_link', [$frontend, 'link_shortcode']);
+    // Register shortcodes
+    add_shortcode('rankito_button', ['Rankito_LeadGen_Frontend', 'button_shortcode']);
+    add_shortcode('rankito_link', ['Rankito_LeadGen_Frontend', 'link_shortcode']);
 }
 add_action('plugins_loaded', 'rankito_leadgen_init');
 
-// Ativação
+// Set default settings on activation
 register_activation_hook(__FILE__, function() {
-    $defaults = [
+    $default_settings = [
         'api' => [
             'url' => 'https://app.rankitocrm.com/api/external-leads',
             'token' => '',
-            'connection_status' => 'disconnected'
         ],
         'trigger' => [
-            'type' => 'floating',
-            'floating' => [
-                'text' => 'Falar com Consultor',
-                'icon' => 'phone',
-                'bg_color' => '#0066cc',
-                'text_color' => '#ffffff',
-                'position' => 'bottom-right',
-                'size' => 'medium'
-            ]
+            'type' => 'floating', // floating, shortcode, both
+            'position' => 'bottom-right', // bottom-right, bottom-left
+            'icon' => 'message',
+            'size' => 'medium',
+            'enabled' => true,
         ],
         'fields' => [
-            'name' => ['enabled' => true, 'label' => 'Nome', 'placeholder' => 'Seu nome', 'required' => true],
-            'email' => ['enabled' => true, 'label' => 'Email', 'placeholder' => 'seu@email.com', 'required' => false],
-            'phone' => ['enabled' => true, 'label' => 'Telefone', 'placeholder' => '(11) 99999-9999', 'required' => false],
-            'company' => ['enabled' => false, 'label' => 'Empresa', 'placeholder' => '', 'required' => false],
-            'message' => ['enabled' => true, 'label' => 'Mensagem', 'placeholder' => 'Como podemos ajudar?', 'required' => false],
-            'custom' => []
+            'name' => ['enabled' => true, 'required' => true, 'label' => 'Nome', 'placeholder' => 'Seu nome completo'],
+            'email' => ['enabled' => true, 'required' => false, 'label' => 'E-mail', 'placeholder' => 'seu@email.com'],
+            'phone' => ['enabled' => true, 'required' => false, 'label' => 'Telefone', 'placeholder' => '(11) 99999-9999'],
+            'message' => ['enabled' => true, 'required' => false, 'label' => 'Mensagem', 'placeholder' => 'Como podemos ajudar?'],
         ],
+        'custom_fields' => [], // User-defined custom fields
         'modal' => [
-            'layout' => 'classic',
-            'size' => 'medium',
-            'border_radius' => 8,
-            'padding' => 30,
+            'logo' => '',
+            'title' => 'Entre em contato',
+            'subtitle' => 'Preencha o formulário e retornaremos em breve',
+            'layout' => 'vertical', // vertical, horizontal
             'bg_color' => '#ffffff',
-            'overlay_color' => '#000000',
-            'overlay_opacity' => 0.6,
-            'text_color' => '#333333',
-            'label_color' => '#555555',
-            'title' => 'Fale com nossa equipe',
-            'subtitle' => 'Preencha o formulário e entraremos em contato',
-            'logo_url' => ''
+            'text_color' => '#000000',
+            'primary_color' => '#4F46E5',
+            'width' => 'medium', // small, medium, large, full
+            'padding' => 'normal',
+            'border_radius' => '8',
         ],
         'button' => [
-            'text' => 'Enviar Mensagem',
-            'bg_color' => '#0066cc',
-            'bg_hover_color' => '#0052a3',
+            'text' => 'Fale Conosco',
+            'bg_color' => '#4F46E5',
             'text_color' => '#ffffff',
-            'width' => '100%',
-            'icon' => 'check'
+            'hover_bg_color' => '#4338CA',
         ],
         'messages' => [
-            'success_title' => '✓ Enviado com sucesso!',
-            'success_text' => 'Obrigado! Entraremos em contato em breve.',
-            'error_generic' => 'Erro ao enviar. Tente novamente.',
-            'error_name_empty' => 'Por favor, digite seu nome',
-            'error_email_invalid' => 'Email inválido',
-            'error_phone_invalid' => 'Telefone inválido',
-            'error_duplicate' => 'Você já nos enviou uma mensagem recentemente!',
-            'loading_text' => 'Enviando...',
-            'privacy_text' => 'Seus dados estão seguros e não serão compartilhados.'
+            'success_title' => 'Mensagem enviada!',
+            'success_text' => 'Obrigado pelo contato. Retornaremos em breve.',
+            'error_title' => 'Erro ao enviar',
+            'error_text' => 'Tente novamente ou entre em contato por telefone.',
+            'privacy_text' => 'Seus dados estão protegidos e não serão compartilhados com terceiros.',
         ],
         'advanced' => [
-            'capture_url' => true,
-            'capture_title' => true,
             'capture_utm' => true,
             'capture_user_agent' => true,
-            'debug_mode' => false,
-            'prevent_multiple' => true,
-            'timeout' => 30
-        ]
+            'duplicate_prevention_hours' => 24,
+            'require_privacy_consent' => false,
+        ],
     ];
-    add_option('rankito_leadgen_settings', $defaults);
+    
+    add_option('rankito_leadgen_settings', $default_settings);
 });
