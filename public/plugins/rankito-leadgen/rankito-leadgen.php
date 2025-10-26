@@ -40,7 +40,7 @@ add_action('plugins_loaded', 'rankito_leadgen_init');
 register_activation_hook(__FILE__, function() {
     $defaults = [
         'api' => [
-            'url' => '',
+            'url' => 'https://app.rankitocrm.com/api/external-leads',
             'token' => '',
             'connection_status' => 'disconnected'
         ],

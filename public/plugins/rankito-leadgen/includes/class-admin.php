@@ -59,8 +59,13 @@ class Rankito_LeadGen_Admin {
             wp_send_json_error(['message' => 'Configure URL e Token primeiro']);
         }
         
-        $test_url = $api_url . '/test?token=' . $token;
-        $response = wp_remote_get($test_url, ['timeout' => 10]);
+        // Usar endpoint de teste específico
+        $test_url = str_replace('/api/external-leads', '/api/external-leads/test', $api_url) . '?token=' . urlencode($token);
+        
+        $response = wp_remote_get($test_url, [
+            'timeout' => 10,
+            'headers' => ['x-api-token' => $token]
+        ]);
         
         if (is_wp_error($response)) {
             wp_send_json_error(['message' => $response->get_error_message()]);
@@ -70,7 +75,9 @@ class Rankito_LeadGen_Admin {
         $data = json_decode($body, true);
         
         if ($data['success'] ?? false) {
-            wp_send_json_success(['message' => 'Conexão estabelecida com sucesso!']);
+            $name = $data['integration']['name'] ?? 'integração';
+            $leads = $data['integration']['stats']['total_leads'] ?? 0;
+            wp_send_json_success(['message' => "✅ {$name} conectado! {$leads} leads capturados"]);
         } else {
             wp_send_json_error(['message' => $data['message'] ?? 'Falha na conexão']);
         }

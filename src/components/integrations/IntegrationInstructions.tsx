@@ -19,19 +19,22 @@ interface IntegrationInstructionsProps {
   source: any;
   open: boolean;
   onClose: () => void;
+  apiUrl?: string;
 }
 
 export const IntegrationInstructions = ({
   source,
   open,
   onClose,
+  apiUrl: customApiUrl,
 }: IntegrationInstructionsProps) => {
   const [copied, setCopied] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<any>(null);
   const { testConnection, isTesting } = useTestExternalConnection();
 
-  const apiUrl = `${window.location.origin}/api/external-leads`;
-  const testUrl = `${window.location.origin}/api/external-leads/test?token=${source.api_token}`;
+  const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+  const apiUrl = customApiUrl || `${appUrl}/api/external-leads`;
+  const testUrl = `${appUrl}/api/external-leads/test?token=${source.api_token}`;
 
   const handleTestConnection = async () => {
     const result = await testConnection(source.api_token, source.source_name);

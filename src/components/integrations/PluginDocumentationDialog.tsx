@@ -110,7 +110,7 @@ export const PluginDocumentationDialog = ({
                     <ul className="space-y-1 text-sm">
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-primary" />
-                        <span><strong>URL da API:</strong> Cole a URL da sua integração criada</span>
+                        <span><strong>URL da API:</strong> https://app.rankitocrm.com/api/external-leads</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-primary" />

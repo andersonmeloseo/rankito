@@ -75,6 +75,7 @@ export const CreateIntegrationDialog = ({
         source={createdSource}
         open={open}
         onClose={handleClose}
+        apiUrl="https://app.rankitocrm.com/api/external-leads"
       />
     );
   }

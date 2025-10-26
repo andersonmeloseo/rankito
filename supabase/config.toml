@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.create-deal-from-external-source]
 verify_jwt = false
 
+[functions.test-external-connection]
+verify_jwt = false
+
 [functions.validate-portal-token]
 verify_jwt = false
 
