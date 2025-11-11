@@ -36,8 +36,8 @@ serve(async (req) => {
       );
     }
 
-    // ROUTE: Test connection
-    if (url.pathname.includes('/test') || url.searchParams.has('test')) {
+    // ROUTE: Test connection (any GET request)
+    if (req.method === 'GET') {
       console.log('🔍 Testing connection for token:', apiToken.substring(0, 8) + '...');
       
       const { data: source, error: sourceError } = await supabase
