@@ -3,6 +3,9 @@ project_id = "jhzmgexprjnpgadkxjup"
 [functions.api-track]
 verify_jwt = false
 
+[functions.api-external-leads]
+verify_jwt = false
+
 [functions.auto-convert-hot-leads]
 verify_jwt = false
 
