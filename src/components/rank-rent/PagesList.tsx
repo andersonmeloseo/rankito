@@ -93,6 +93,7 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
               <TableHead className="text-right">Page Views</TableHead>
               <TableHead className="text-right">Conversões</TableHead>
               <TableHead className="text-right">Taxa Conv.</TableHead>
+              <TableHead className="text-right">Tempo Médio</TableHead>
               <TableHead className="text-right">Valor Mensal</TableHead>
               <TableHead className="text-center">Status</TableHead>
               <TableHead className="text-center">Ações</TableHead>
@@ -126,6 +127,16 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
                   <TableCell className="text-right">{page.total_page_views || 0}</TableCell>
                   <TableCell className="text-right font-semibold">{page.total_conversions || 0}</TableCell>
                   <TableCell className="text-right">{page.conversion_rate || 0}%</TableCell>
+                  <TableCell className="text-right">
+                    {page.avg_time_on_page ? (
+                      <span className="text-sm">
+                        {Math.floor(page.avg_time_on_page / 60)}:
+                        {(page.avg_time_on_page % 60).toString().padStart(2, '0')}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     R$ {Number(page.monthly_rent_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </TableCell>

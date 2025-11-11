@@ -108,13 +108,6 @@ export type Database = {
             foreignKeyName: "client_portal_analytics_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "client_portal_analytics_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
           },
@@ -163,13 +156,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "client_portal_status"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "crm_activities_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
             referencedColumns: ["client_id"]
           },
           {
@@ -290,13 +276,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "client_portal_status"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "crm_deals_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
             referencedColumns: ["client_id"]
           },
           {
@@ -430,13 +409,6 @@ export type Database = {
             foreignKeyName: "crm_notes_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "crm_notes_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
           },
@@ -561,13 +533,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "client_portal_status"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "crm_tasks_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
             referencedColumns: ["client_id"]
           },
           {
@@ -1029,13 +994,6 @@ export type Database = {
             foreignKeyName: "rank_rent_pages_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "rank_rent_pages_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
           },
@@ -1121,13 +1079,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "client_portal_status"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "rank_rent_payments_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
             referencedColumns: ["client_id"]
           },
           {
@@ -1294,13 +1245,6 @@ export type Database = {
             foreignKeyName: "rank_rent_sites_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "rank_rent_sites_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
           },
@@ -1411,13 +1355,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "client_portal_status"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "saved_reports_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
             referencedColumns: ["client_id"]
           },
           {
@@ -1821,26 +1758,6 @@ export type Database = {
           },
         ]
       }
-      rank_rent_client_metrics: {
-        Row: {
-          access_token: string | null
-          client_id: string | null
-          client_name: string | null
-          company: string | null
-          contract_end_date: string | null
-          contract_start_date: string | null
-          created_at: string | null
-          email: string | null
-          niche: string | null
-          phone: string | null
-          total_conversions: number | null
-          total_monthly_value: number | null
-          total_page_views: number | null
-          total_pages_rented: number | null
-          updated_at: string | null
-        }
-        Relationships: []
-      }
       rank_rent_contract_status: {
         Row: {
           auto_renew: boolean | null
@@ -1871,13 +1788,6 @@ export type Database = {
             foreignKeyName: "rank_rent_sites_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "rank_rent_sites_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
           },
@@ -1898,13 +1808,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "client_portal_status"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "rank_rent_pages_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
             referencedColumns: ["client_id"]
           },
           {
@@ -1983,13 +1886,6 @@ export type Database = {
             foreignKeyName: "rank_rent_pages_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "rank_rent_pages_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
           },
@@ -2057,13 +1953,6 @@ export type Database = {
             foreignKeyName: "rank_rent_sites_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "rank_rent_sites_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
           },
@@ -2071,6 +1960,10 @@ export type Database = {
       }
       rank_rent_page_metrics: {
         Row: {
+          avg_engagement_score: number | null
+          avg_scroll_depth: number | null
+          avg_time_on_page: number | null
+          avg_total_time: number | null
           client_id: string | null
           client_name: string | null
           conversion_rate: number | null
@@ -2096,13 +1989,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "client_portal_status"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "rank_rent_pages_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
             referencedColumns: ["client_id"]
           },
           {
@@ -2179,13 +2065,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "client_portal_status"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "rank_rent_sites_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_client_metrics"
             referencedColumns: ["client_id"]
           },
           {

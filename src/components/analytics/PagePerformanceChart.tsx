@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Loader2, FileText } from "lucide-react";
 
 interface PagePerformanceChartProps {
-  data: { page: string; views: number; conversions: number; conversionRate: number }[];
+  data: { page: string; views: number; conversions: number; conversionRate: number; avgTime?: number }[];
   isLoading: boolean;
 }
 
@@ -114,14 +114,25 @@ export const PagePerformanceChart = ({ data, isLoading }: PagePerformanceChartPr
               formatter={(value: any, name: string) => {
                 if (name === "views") return [value, "Visualizações"];
                 if (name === "conversions") return [value, "Conversões"];
+                if (name === "avgTime") {
+                  const minutes = Math.floor(value / 60);
+                  const seconds = value % 60;
+                  return [`${minutes}:${seconds.toString().padStart(2, '0')}`, "Tempo Médio"];
+                }
                 return [value, name];
               }}
               labelFormatter={(label, payload) => {
                 const fullPath = payload?.[0]?.payload?.page || label;
+                const avgTime = payload?.[0]?.payload?.avgTime;
                 return (
                   <div className="font-medium text-xs">
                     <div className="text-muted-foreground mb-1">Página:</div>
                     <div className="text-foreground break-all">{fullPath}</div>
+                    {avgTime && (
+                      <div className="text-muted-foreground mt-1">
+                        ⏱️ Tempo: {Math.floor(avgTime / 60)}:{(avgTime % 60).toString().padStart(2, '0')}
+                      </div>
+                    )}
                   </div>
                 );
               }}
