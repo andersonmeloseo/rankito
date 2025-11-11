@@ -14,6 +14,7 @@ import { DealBadges } from "./DealBadges";
 import { QuickActions } from "./QuickActions";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EngagementBadge } from "./EngagementBadge";
 
 const getCardColors = (colorValue?: string | null) => {
   const colorMap: Record<string, { bg: string; text: string; textMuted: string }> = {
@@ -159,6 +160,18 @@ export const DealCard = ({ deal, userId, onDelete, onOpenDetails, onTaskCreated,
 
         {/* Badges de Status */}
         <DealBadges deal={deal} context={context} />
+
+        {/* Engagement Score */}
+        {deal.source_metadata?.engagement_score && (
+          <div className="mt-2">
+            <EngagementBadge 
+              score={deal.source_metadata.engagement_score}
+              timeOnPage={deal.source_metadata.time_on_page}
+              scrollDepth={deal.source_metadata.scroll_depth}
+              size="sm"
+            />
+          </div>
+        )}
 
         {/* Contadores de Stats */}
         {isLoading ? (

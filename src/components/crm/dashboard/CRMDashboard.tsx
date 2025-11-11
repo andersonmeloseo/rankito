@@ -6,6 +6,7 @@ import { SalesFunnelChart } from "./SalesFunnelChart";
 import { WinRateGauge } from "./WinRateGauge";
 import { ActivityTimeline } from "./ActivityTimeline";
 import { UpcomingDeals } from "./UpcomingDeals";
+import { EngagementAnalytics } from "./EngagementAnalytics";
 import { TrendingUp, Target, DollarSign, Clock, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -101,6 +102,9 @@ export const CRMDashboard = ({ userId }: CRMDashboardProps) => {
           winRate={metrics.winRate}
         />
       </div>
+
+      {/* Engagement Analytics */}
+      <EngagementAnalytics deals={deals} />
 
       {/* Timeline and Upcoming Deals */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

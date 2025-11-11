@@ -25,6 +25,15 @@ export interface Deal {
   contact_phone: string | null;
   target_niche: string | null;
   target_location: string | null;
+  source_metadata?: {
+    engagement_score?: number;
+    time_on_page?: number;
+    scroll_depth?: number;
+    form_fill_time?: number;
+    total_time?: number;
+    tab_switches?: number;
+    [key: string]: any;
+  } | null;
   rank_rent_clients?: {
     name: string;
     email: string;

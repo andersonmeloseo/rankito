@@ -23,7 +23,11 @@ import {
   CheckCircle2,
   Circle,
   Clock,
+  Activity,
+  MousePointer,
+  Timer,
 } from "lucide-react";
+import { EngagementBadge } from "../cards/EngagementBadge";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -207,6 +211,58 @@ export function DealDetailsDialog({ deal, open, onOpenChange, userId }: DealDeta
                         <span className="text-muted-foreground">{deal.contact_phone}</span>
                       </div>
                     )}
+                  </div>
+                </>
+              )}
+
+              {/* Métricas de Engajamento */}
+              {deal.source_metadata?.engagement_score && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Activity className="w-4 h-4" />
+                      Métricas de Engajamento
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1 p-3 bg-accent/50 rounded-lg">
+                        <div className="text-xs text-muted-foreground">Score de Engajamento</div>
+                        <EngagementBadge 
+                          score={deal.source_metadata.engagement_score}
+                          size="lg"
+                        />
+                      </div>
+                      {deal.source_metadata.time_on_page && (
+                        <div className="flex flex-col gap-1 p-3 bg-accent/50 rounded-lg">
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Tempo Ativo
+                          </div>
+                          <div className="text-lg font-semibold">
+                            {Math.floor(deal.source_metadata.time_on_page / 60)}:
+                            {(deal.source_metadata.time_on_page % 60).toString().padStart(2, '0')}
+                          </div>
+                        </div>
+                      )}
+                      {deal.source_metadata.scroll_depth !== undefined && (
+                        <div className="flex flex-col gap-1 p-3 bg-accent/50 rounded-lg">
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MousePointer className="w-3 h-3" />
+                            Profundidade de Scroll
+                          </div>
+                          <div className="text-lg font-semibold">{deal.source_metadata.scroll_depth}%</div>
+                        </div>
+                      )}
+                      {deal.source_metadata.form_fill_time && (
+                        <div className="flex flex-col gap-1 p-3 bg-accent/50 rounded-lg">
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Timer className="w-3 h-3" />
+                            Tempo de Preenchimento
+                          </div>
+                          <div className="text-lg font-semibold">{deal.source_metadata.form_fill_time}s</div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </>
               )}
