@@ -18,9 +18,10 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
   const [copied, setCopied] = useState(false);
   const { testConnection, isTestingConnection } = useTestPluginConnection();
   
+  const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
   const trackingUrl = trackingToken 
-    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${trackingToken}`
-    : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion`;
+    ? `${appUrl}/functions/v1/api-track?token=${trackingToken}`
+    : `${appUrl}/functions/v1/api-track`;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(trackingUrl);

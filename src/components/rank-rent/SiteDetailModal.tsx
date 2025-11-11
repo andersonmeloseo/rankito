@@ -75,7 +75,8 @@ export const SiteDetailModal = ({ siteId, open, onOpenChange }: SiteDetailModalP
   const generatePixelCode = () => {
     if (!site) return "";
 
-    const trackingUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-rank-rent-conversion?token=${site.tracking_token}`;
+    const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+    const trackingUrl = `${appUrl}/functions/v1/api-track?token=${site.tracking_token}`;
 
     return `<script>
 (function() {
