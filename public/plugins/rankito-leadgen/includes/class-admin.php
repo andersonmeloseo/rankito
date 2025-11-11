@@ -21,7 +21,34 @@ class Rankito_LeadGen_Admin {
     }
     
     public function register_settings() {
-        register_setting('rankito_leadgen_settings_group', 'rankito_leadgen_settings');
+        register_setting('rankito_leadgen_settings_group', 'rankito_leadgen_settings', [
+            'sanitize_callback' => [$this, 'sanitize_settings']
+        ]);
+    }
+    
+    public function sanitize_settings($input) {
+        $sanitized = $input;
+        
+        // Sanitize API URL
+        if (isset($input['api']['url'])) {
+            $sanitized['api']['url'] = esc_url_raw($input['api']['url']);
+        }
+        
+        // Sanitize colors
+        $color_fields = ['bg_color', 'text_color', 'bg_hover_color', 'overlay_color', 'label_color'];
+        foreach ($color_fields as $field) {
+            if (isset($input['trigger']['floating'][$field])) {
+                $sanitized['trigger']['floating'][$field] = sanitize_hex_color($input['trigger']['floating'][$field]);
+            }
+            if (isset($input['modal'][$field])) {
+                $sanitized['modal'][$field] = sanitize_hex_color($input['modal'][$field]);
+            }
+            if (isset($input['button'][$field])) {
+                $sanitized['button'][$field] = sanitize_hex_color($input['button'][$field]);
+            }
+        }
+        
+        return $sanitized;
     }
     
     public function enqueue_admin_assets($hook) {
@@ -51,6 +78,10 @@ class Rankito_LeadGen_Admin {
     public function test_connection() {
         check_ajax_referer('rankito_ajax', 'nonce');
         
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permissão negada']);
+        }
+        
         $settings = get_option('rankito_leadgen_settings');
         $api_url = $settings['api']['url'] ?? '';
         $token = $settings['api']['token'] ?? '';
@@ -59,25 +90,39 @@ class Rankito_LeadGen_Admin {
             wp_send_json_error(['message' => 'Configure URL e Token primeiro']);
         }
         
-        // Usar endpoint de teste específico
-        $test_url = str_replace('/api/external-leads', '/api/external-leads/test', $api_url) . '?token=' . urlencode($token);
+        // Usar GET para teste de conexão (adicionar token como query parameter)
+        $test_url = add_query_arg('token', $token, $api_url);
         
         $response = wp_remote_get($test_url, [
-            'timeout' => 10,
-            'headers' => ['x-api-token' => $token]
+            'timeout' => 15,
+            'headers' => [
+                'x-api-token' => $token
+            ]
         ]);
         
         if (is_wp_error($response)) {
-            wp_send_json_error(['message' => $response->get_error_message()]);
+            wp_send_json_error(['message' => 'Erro de conexão: ' . $response->get_error_message()]);
         }
         
+        $status_code = wp_remote_retrieve_response_code($response);
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
         
-        if ($data['success'] ?? false) {
-            $name = $data['integration']['name'] ?? 'integração';
-            $leads = $data['integration']['stats']['total_leads'] ?? 0;
-            wp_send_json_success(['message' => "✅ {$name} conectado! {$leads} leads capturados"]);
+        // Parse da resposta do endpoint de teste
+        if ($status_code === 200 && ($data['success'] ?? false)) {
+            $integration_name = $data['integration']['name'] ?? 'integração';
+            $total_leads = $data['integration']['stats']['total_leads'] ?? 0;
+            
+            $message = sprintf(
+                '✅ %s conectado! %d leads capturados',
+                $integration_name,
+                $total_leads
+            );
+            
+            wp_send_json_success([
+                'message' => $message,
+                'integration' => $data['integration'] ?? null
+            ]);
         } else {
             wp_send_json_error(['message' => $data['message'] ?? 'Falha na conexão']);
         }
