@@ -140,6 +140,229 @@ O sistema continuará funcionando normalmente com a nova URL.
 
 ---
 
+## 🎯 Captura de Leads vs Analytics
+
+### Entendendo a Diferença
+
+O sistema possui **duas funcionalidades independentes** que muitas vezes são confundidas:
+
+#### 1. **Tracking de Conversões (Sempre Ativo)**
+
+**O que faz:**
+- Registra **todos** os cliques e interações em seus sites
+- Armazena dados de localização, device, horário, página, etc.
+- Alimenta os relatórios de Analytics
+- Permite análise de comportamento dos visitantes
+
+**O que captura:**
+- ✅ Página visitada
+- ✅ Localização (cidade, estado, país)
+- ✅ Device (mobile/desktop)
+- ✅ Horário do evento
+- ✅ Tipo de ação (clique telefone, WhatsApp, email, etc.)
+- ❌ **NÃO captura:** nome, email, telefone do visitante
+
+**Onde ver os dados:**
+- Dashboard principal → Clique no site → **Analytics Avançado**
+- Gráficos, métricas, exportação CSV
+
+---
+
+#### 2. **Auto-Conversão de Leads (Opcional - Desabilitado por Padrão)**
+
+**O que faz:**
+- Cria automaticamente leads no CRM baseado em cliques
+- Verifica conversões a cada 5 minutos
+- Atribui score e qualificação (hot/warm/cold)
+
+**⚠️ Problema com Cliques:**
+Cliques em botões (telefone, WhatsApp, email) capturam apenas:
+- 📍 Localização
+- 📱 Device
+- ⏰ Horário
+- **Mas NÃO capturam dados de contato!**
+
+**Resultado:**
+Você acaba com leads "fantasma" no CRM:
+- ❌ Sem nome
+- ❌ Sem email
+- ❌ Sem telefone
+- ❌ Impossível fazer follow-up
+
+**✅ Solução Recomendada:**
+Use o **Plugin Rankito LeadGen** para capturar formulários completos com:
+- ✅ Nome completo
+- ✅ Email
+- ✅ Telefone
+- ✅ Empresa
+- ✅ Mensagem
+- ✅ Qualquer campo personalizado
+
+---
+
+#### 3. **Plugin Rankito LeadGen (Recomendado para Leads Reais)**
+
+**O que faz:**
+- Cria formulários customizáveis no WordPress
+- Captura dados completos do lead
+- Cria automaticamente leads no CRM **com informações de contato**
+- Integra perfeitamente com o sistema de tracking
+
+**Workflow Ideal:**
+
+```mermaid
+graph TD
+    A[Visitante acessa site] --> B[Tracking registra page_view]
+    B --> C{Visitante preenche formulário?}
+    C -->|SIM| D[Plugin Rankito LeadGen captura dados]
+    D --> E[CRM recebe lead COMPLETO]
+    E --> F[✅ Nome, email, telefone disponíveis]
+    C -->|NÃO| G[Visitante clica em botão]
+    G --> H[Tracking registra clique]
+    H --> I[📊 Analytics mostra conversão]
+    I --> J[Você decide se vale criar lead manual]
+```
+
+---
+
+### Comparação Direta
+
+| Funcionalidade | Tracking | Auto-Conversão (Cliques) | Plugin Rankito LeadGen |
+|---|---|---|---|
+| **Sempre ativo?** | ✅ Sim | ❌ Não (opcional) | ✅ Sim (quando instalado) |
+| **Captura localização?** | ✅ Sim | ✅ Sim | ✅ Sim |
+| **Captura device?** | ✅ Sim | ✅ Sim | ✅ Sim |
+| **Captura nome?** | ❌ Não | ❌ Não | ✅ Sim |
+| **Captura email?** | ❌ Não | ❌ Não | ✅ Sim |
+| **Captura telefone?** | ❌ Não | ❌ Não | ✅ Sim |
+| **Cria leads CRM?** | ❌ Não | ✅ Sim (sem contato) | ✅ Sim (completo) |
+| **Aparece em Analytics?** | ✅ Sim | ✅ Sim | ✅ Sim |
+| **Útil para follow-up?** | ⚠️ Apenas análise | ❌ Não | ✅ Sim |
+
+---
+
+### Workflow Recomendado
+
+#### **Etapa 1: Instalar Tracking**
+1. Instalar plugin Rank & Rent Tracker em todos os sites
+2. Configurar nome do site e URL de rastreamento
+3. Testar conexão
+
+**Resultado:**
+✅ Analytics completo funcionando  
+✅ Todas as conversões sendo registradas  
+
+#### **Etapa 2: Desabilitar Auto-Conversão de Cliques**
+1. Ir em **Configurações > Auto-Conversão**
+2. Deixar switch principal **DESLIGADO**
+3. Ler os avisos sobre leads sem contato
+
+**Resultado:**
+✅ CRM limpo, sem leads "fantasma"  
+✅ Você controla quando criar leads  
+
+#### **Etapa 3: Instalar Plugin Rankito LeadGen**
+1. Baixar plugin Rankito LeadGen
+2. Instalar no WordPress
+3. Configurar token de integração
+4. Criar formulários customizados
+
+**Resultado:**
+✅ Formulários capturam dados completos  
+✅ Leads automaticamente no CRM com contato  
+✅ Follow-up possível  
+
+#### **Etapa 4: Analisar e Agir**
+1. Monitorar Analytics diariamente
+2. Ver quais páginas geram mais cliques
+3. Quando ver atividade interessante, criar lead manual
+4. Acompanhar leads de formulários automaticamente
+
+**Resultado:**
+✅ Decisões baseadas em dados  
+✅ CRM organizado  
+✅ Leads qualificados  
+
+---
+
+### Quando Usar Cada Funcionalidade?
+
+#### **Use Tracking (sempre):**
+- ✅ Análise de tráfego
+- ✅ Identificar páginas populares
+- ✅ Entender comportamento de visitantes
+- ✅ Relatórios para clientes
+- ✅ Otimização de SEO
+
+#### **Use Auto-Conversão (raramente):**
+- ⚠️ **Apenas** para formulários (não cliques)
+- ⚠️ Quando você quer leads automáticos mesmo sem dados completos
+- ⚠️ Para testes/experimentos específicos
+
+#### **Use Plugin Rankito LeadGen (sempre que possível):**
+- ✅ Captura de leads qualificados
+- ✅ Formulários de contato
+- ✅ Landing pages
+- ✅ Páginas de serviço
+- ✅ Qualquer lugar onde você quer dados completos
+
+---
+
+### Configuração Recomendada
+
+**No sistema Rankito:**
+
+```
+Auto-Conversão: DESABILITADO
+├─ enabled: false
+├─ whatsapp_click_enabled: false
+├─ phone_click_enabled: false
+├─ email_click_enabled: false
+└─ form_submit_enabled: true (somente se usar Plugin Rankito LeadGen)
+```
+
+**Tracking: SEMPRE ATIVO**
+- Não há configuração, está sempre funcionando
+- Todos os eventos são registrados automaticamente
+
+**Plugin Rankito LeadGen: ATIVO**
+- Instalado em todos os sites WordPress
+- Configurado com token correto
+- Formulários criados nas páginas estratégicas
+
+---
+
+### FAQ - Perguntas Frequentes
+
+**Q: Se eu desabilitar auto-conversão, vou perder dados?**  
+A: Não! O tracking continua registrando tudo. Você só não criará leads automaticamente.
+
+**Q: Posso habilitar auto-conversão depois?**  
+A: Sim! É só ir em Configurações > Auto-Conversão e ativar. Há também um "Modo Expert" para configurações avançadas.
+
+**Q: O Plugin Rankito LeadGen substitui o Rank & Rent Tracker?**  
+A: Não! São complementares:
+- **Rank & Rent Tracker:** Rastreia todos os eventos (tracking)
+- **Rankito LeadGen:** Captura formulários com dados completos
+
+**Q: Preciso dos dois plugins instalados?**  
+A: Idealmente sim:
+- Rank & Rent Tracker para analytics
+- Rankito LeadGen para captura de leads
+
+**Q: Posso usar só um plugin?**  
+A: Sim, mas você perde funcionalidades:
+- **Só Rank & Rent Tracker:** Analytics completo, mas sem captura de formulários
+- **Só Rankito LeadGen:** Captura formulários, mas sem analytics de cliques
+
+**Q: Por que não criar leads de cliques automaticamente?**  
+A: Porque cliques não têm dados de contato. Você acaba com leads "fantasma" no CRM que não pode contactar.
+
+**Q: Quando eu deveria usar auto-conversão?**  
+A: Apenas para formulários (form_submit_enabled: true). Nunca para cliques simples.
+
+---
+
 ## 🔧 Configuração Técnica
 
 ### Variáveis de Ambiente

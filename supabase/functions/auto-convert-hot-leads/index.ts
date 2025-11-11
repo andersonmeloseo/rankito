@@ -128,10 +128,10 @@ Deno.serve(async (req) => {
       
       // Se usuário não tem configurações, usar defaults
       const config: AutoConversionSettings = userSettings || {
-        enabled: true,
-        whatsapp_click_enabled: true,
-        phone_click_enabled: true,
-        form_submit_enabled: true,
+        enabled: false, // Desabilitado por padrão - cliques não têm dados de contato
+        whatsapp_click_enabled: false,
+        phone_click_enabled: false,
+        form_submit_enabled: true, // Apenas formulários com dados completos
         email_click_enabled: false,
         whatsapp_score: 80,
         phone_score: 70,
