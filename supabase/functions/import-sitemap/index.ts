@@ -69,7 +69,8 @@ async function processSitemap(
               console.log(`  ✅ ${childSitemapUrl}: ${urls.length} URLs`);
               return urls;
             } catch (error) {
-              console.error(`  ⚠️ Attempt ${attempt}/3 failed for ${childSitemapUrl}:`, error.message);
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              console.error(`  ⚠️ Attempt ${attempt}/3 failed for ${childSitemapUrl}:`, errorMsg);
               if (attempt === 3) {
                 console.error(`  ❌ Failed permanently: ${childSitemapUrl}`);
                 return [];
@@ -160,21 +161,19 @@ serve(async (req) => {
       urls = await processSitemap(sitemap_url, 0, max_sitemaps, sitemap_offset);
     }
     
+    // ✅ CORREÇÃO 1: Capturar URLs ANTES de qualquer limite
+    const allRawUrlsBeforeLimits = [...urls];
+    console.log(`📊 TOTAL de URLs encontradas no sitemap: ${allRawUrlsBeforeLimits.length}`);
+    
     // Extract sitemap statistics
     const totalSitemapsFound = (urls as any).totalSitemapsFound || 1;
     const sitemapsProcessed = (urls as any).sitemapsProcessed || 1;
 
-    // Aplicar limite de URLs
-    const limitedUrls = urls.slice(0, max_urls);
-    
-    // Add warning if URL limit reached
-    if (urls.length > max_urls) {
-      console.warn(`⚠️ URL LIMIT REACHED: Sitemap has ${urls.length} URLs, but will only process ${max_urls}`);
-      console.warn(`⚠️ ${urls.length - max_urls} URLs will be DISCARDED!`);
-    }
+    // ✅ CORREÇÃO 2: Remover limite max_urls oculto - processar TODAS as URLs
+    const limitedUrls = urls; // Sem limite artificial
     
     // Safety limit to prevent CPU timeout during database operations
-    const SAFE_URL_LIMIT = 100000; // Aumentado de 10k para 100k
+    const SAFE_URL_LIMIT = 100000;
     const safeUrls = limitedUrls.slice(0, SAFE_URL_LIMIT);
     
     if (limitedUrls.length > SAFE_URL_LIMIT) {
@@ -182,7 +181,7 @@ serve(async (req) => {
       console.warn(`⚠️ ${limitedUrls.length - SAFE_URL_LIMIT} URLs will be IGNORED for safety!`);
     }
     
-    console.log(`Processing ${safeUrls.length} URLs (limit: ${max_urls}, safety: ${SAFE_URL_LIMIT})`);
+    console.log(`Processing ${safeUrls.length} URLs (safety limit: ${SAFE_URL_LIMIT})`);
 
     // Gerenciar job de importação
     let jobId = import_job_id;
@@ -213,6 +212,7 @@ serve(async (req) => {
     let newPages = 0;
     let updatedPages = 0;
     let errors = 0;
+    const failedUrls: Array<{ url: string; error: string }> = []; // ✅ Rastrear URLs com erro
 
     // Buscar apenas IDs e URLs das páginas existentes (otimizado)
     const { data: existingPages } = await supabase
@@ -255,8 +255,12 @@ serve(async (req) => {
         pagesMap.set(pageUrl, pageData);
 
       } catch (pageError) {
-        console.error(`Error processing ${pageUrl}:`, pageError);
+        // ✅ CORREÇÃO 3: Logging detalhado de erros
+        const errorMsg = pageError instanceof Error ? pageError.message : String(pageError);
+        console.error(`❌ ERRO ao processar URL: ${pageUrl}`);
+        console.error(`   Motivo: ${errorMsg}`);
         errors++;
+        failedUrls.push({ url: pageUrl, error: errorMsg });
       }
     }
 
@@ -282,6 +286,7 @@ serve(async (req) => {
 
     // Processar TODAS as páginas com UPSERT (não separa INSERT/UPDATE)
     console.log(`Upserting ${pagesToUpsert.length} pages in batches of ${batch_size}`);
+    const failedBatches: any[] = []; // ✅ Rastrear batches que falharam
 
     for (let i = 0; i < pagesToUpsert.length; i += batch_size) {
       const batch = pagesToUpsert.slice(i, i + batch_size);
@@ -298,8 +303,17 @@ serve(async (req) => {
         .select('id');
 
       if (error) {
-        console.error('Batch upsert error:', error);
+        // ✅ CORREÇÃO 4: Logging detalhado no UPSERT
+        console.error(`❌ BATCH UPSERT FALHOU!`);
+        console.error(`   Tentando inserir: ${batch.length} URLs`);
+        console.error(`   Erro: ${error.message}`);
+        console.error(`   Primeira URL do batch: ${batch[0]?.page_url}`);
+        batch.forEach((p, idx) => {
+          console.error(`     [${idx}] ${p.page_url}`);
+          failedUrls.push({ url: p.page_url, error: error.message });
+        });
         errors += batch.length;
+        failedBatches.push({ batch, error: error.message });
       } else {
         // Todos os upserts bem-sucedidos
         const upsertedCount = data?.length || batch.length;
@@ -390,6 +404,7 @@ serve(async (req) => {
 
     console.log('Import complete:', { newPages, updatedPages, errors, deactivated: deactivatedCount });
 
+    // ✅ CORREÇÃO 5: Response com transparência total
     return new Response(
       JSON.stringify({
         success: true,
@@ -399,29 +414,42 @@ serve(async (req) => {
         totalSitemapsFound,
         sitemapsProcessed,
         
-        // Estatísticas de URLs
-        totalUrlsFound: urls.length,
-        urlsDiscarded: Math.max(0, urls.length - safeUrls.length), // NOVO
-        urlsImported: safeUrls.length,
-        uniqueUrls: pagesToUpsert.length,
+        // ✅ URLs REAIS antes de qualquer processamento
+        totalUrlsFoundInSitemap: allRawUrlsBeforeLimits.length,
+        
+        // URLs após limites de segurança
+        urlsAfterSafetyLimit: safeUrls.length,
+        urlsDiscardedBySafetyLimit: Math.max(0, allRawUrlsBeforeLimits.length - safeUrls.length),
+        
+        // URLs únicas após deduplicação
+        uniqueUrlsToImport: pagesToUpsert.length,
         duplicatesRemoved: duplicateUrls.length,
         
-        // Listas completas
-        allRawUrls: allRawUrls,
-        duplicateUrlsList: duplicateUrls,
-        
-        // Resultados da importação
-        newPages,
-        updatedPages,
+        // Resultados da importação no banco
+        pagesInsertedInDB: newPages,
+        pagesUpdatedInDB: updatedPages,
+        pagesFailedToInsert: errors,
         deactivatedPages: deactivatedCount,
         
-        // Flags e avisos
-        limited: urls.length > max_urls || safeUrls.length < limitedUrls.length,
-        limitReached: limitedUrls.length > SAFE_URL_LIMIT, // NOVO
+        // Listas para debug
+        allRawUrls: allRawUrlsBeforeLimits,
+        duplicateUrlsList: duplicateUrls,
+        failedUrlsList: failedUrls, // ✅ NOVO: URLs que falharam com motivo
+        
+        // Compatibilidade com código antigo
+        totalUrlsFound: allRawUrlsBeforeLimits.length,
+        urlsImported: safeUrls.length,
+        uniqueUrls: pagesToUpsert.length,
+        newPages,
+        updatedPages,
         errors,
-        warnings: limitedUrls.length > SAFE_URL_LIMIT  // NOVO
-          ? [`${limitedUrls.length - SAFE_URL_LIMIT} URLs foram descartadas devido ao limite de segurança de ${SAFE_URL_LIMIT}`]
-          : []
+        
+        // Avisos
+        warnings: [
+          ...(errors > 0 ? [`${errors} URLs falharam ao inserir no banco`] : []),
+          ...(duplicateUrls.length > 0 ? [`${duplicateUrls.length} URLs duplicadas foram removidas`] : []),
+          ...(allRawUrlsBeforeLimits.length > safeUrls.length ? [`${allRawUrlsBeforeLimits.length - safeUrls.length} URLs descartadas pelo limite de segurança`] : [])
+        ]
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

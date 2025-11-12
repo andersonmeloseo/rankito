@@ -411,6 +411,35 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
                 </Alert>
               )}
 
+              {/* ✅ CORREÇÃO 6: Mostrar URLs que falharam */}
+              {result.failedUrlsList && result.failedUrlsList.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-5 w-5" />
+                  <AlertDescription>
+                    <div className="font-semibold">
+                      ⚠️ {result.failedUrlsList.length} URLs falharam ao importar
+                    </div>
+                    <Collapsible>
+                      <CollapsibleTrigger className="text-sm underline mt-2 hover:opacity-80">
+                        Ver URLs com erro
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <ScrollArea className="h-48 mt-2 rounded-md border">
+                          <div className="p-2 space-y-2">
+                            {result.failedUrlsList.map((fail: any, idx: number) => (
+                              <div key={idx} className="text-xs font-mono p-2 rounded bg-background/50 border">
+                                <div className="text-destructive font-semibold break-all">{fail.url}</div>
+                                <div className="text-muted-foreground mt-1">{fail.error}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Detalhes Adicionais (colapsável) */}
               <Collapsible>
                 <CollapsibleTrigger asChild>
@@ -436,6 +465,12 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Páginas Desativadas:</span>
                         <span className="font-medium text-orange-600">⚠️ {result.deactivatedPages}</span>
+                      </div>
+                    )}
+                    {result.pagesFailedToInsert > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">URLs com Erro:</span>
+                        <span className="font-medium text-destructive">❌ {result.pagesFailedToInsert}</span>
                       </div>
                     )}
                   </div>
