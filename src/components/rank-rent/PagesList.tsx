@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -12,8 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ExternalLink, Edit } from "lucide-react";
-import { useState } from "react";
+import { ExternalLink, Edit, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import { EditPageDialog } from "./EditPageDialog";
 
 interface PagesListProps {
@@ -26,6 +27,10 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPage, setSelectedPage] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [sortColumn, setSortColumn] = useState<string>("total_page_views");
+  const [sortAscending, setSortAscending] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
 
   const { data: pages, isLoading } = useQuery({
     queryKey: ["rank-rent-pages", userId, siteId, clientId],
@@ -50,15 +55,75 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
     refetchInterval: 30000,
   });
 
+  const handleEditPage = (page: any) => {
+    setSelectedPage(page);
+    setShowEditDialog(true);
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortAscending(!sortAscending);
+    } else {
+      setSortColumn(column);
+      setSortAscending(false);
+    }
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />;
+    }
+    return sortAscending ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
+  };
+
+  const handlePageSizeChange = (newSize: string) => {
+    const size = Number(newSize);
+    setPageSize(size);
+    setCurrentPage(1);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Filtrar páginas
   const filteredPages = pages?.filter((page) =>
     page.page_url?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     page.page_title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEditPage = (page: any) => {
-    setSelectedPage(page);
-    setShowEditDialog(true);
-  };
+  // Ordenar páginas
+  const sortedPages = useMemo(() => {
+    if (!filteredPages) return [];
+    
+    return [...filteredPages].sort((a, b) => {
+      let aVal = a[sortColumn];
+      let bVal = b[sortColumn];
+      
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+      
+      if (aVal < bVal) return sortAscending ? -1 : 1;
+      if (aVal > bVal) return sortAscending ? 1 : -1;
+      return 0;
+    });
+  }, [filteredPages, sortColumn, sortAscending]);
+
+  // Paginar páginas
+  const paginatedPages = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    
+    if (pageSize === 99999) return sortedPages;
+    
+    return sortedPages.slice(startIndex, startIndex + pageSize);
+  }, [sortedPages, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(sortedPages.length / pageSize);
 
   if (isLoading) {
     return (
@@ -79,7 +144,7 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
           className="max-w-md"
         />
         <div className="text-sm text-muted-foreground">
-          {filteredPages?.length || 0} páginas encontradas
+          {sortedPages?.length || 0} páginas encontradas
         </div>
       </div>
 
@@ -88,21 +153,93 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
           <Table className="table-auto">
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[280px]">Página</TableHead>
-                <TableHead className="min-w-[150px]">Site</TableHead>
-                <TableHead className="min-w-[120px]">Cliente</TableHead>
-                <TableHead className="text-right min-w-[100px]">Page Views</TableHead>
-                <TableHead className="text-right min-w-[100px]">Conversões</TableHead>
-                <TableHead className="text-right min-w-[90px]">Taxa Conv.</TableHead>
-                <TableHead className="text-right min-w-[100px]">Tempo Médio</TableHead>
-                <TableHead className="text-right min-w-[120px]">Valor Mensal</TableHead>
-                <TableHead className="text-center min-w-[90px]">Status</TableHead>
+                <TableHead 
+                  className="min-w-[280px] cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("page_title")}
+                >
+                  <div className="flex items-center gap-2">
+                    Página
+                    <SortIcon column="page_title" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="min-w-[150px] cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("site_name")}
+                >
+                  <div className="flex items-center gap-2">
+                    Site
+                    <SortIcon column="site_name" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="min-w-[120px] cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("client_name")}
+                >
+                  <div className="flex items-center gap-2">
+                    Cliente
+                    <SortIcon column="client_name" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-right min-w-[100px] cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("total_page_views")}
+                >
+                  <div className="flex items-center justify-end gap-2">
+                    Page Views
+                    <SortIcon column="total_page_views" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-right min-w-[100px] cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("total_conversions")}
+                >
+                  <div className="flex items-center justify-end gap-2">
+                    Conversões
+                    <SortIcon column="total_conversions" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-right min-w-[90px] cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("conversion_rate")}
+                >
+                  <div className="flex items-center justify-end gap-2">
+                    Taxa Conv.
+                    <SortIcon column="conversion_rate" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-right min-w-[100px] cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("avg_time_on_page")}
+                >
+                  <div className="flex items-center justify-end gap-2">
+                    Tempo Médio
+                    <SortIcon column="avg_time_on_page" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-right min-w-[120px] cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("monthly_rent_value")}
+                >
+                  <div className="flex items-center justify-end gap-2">
+                    Valor Mensal
+                    <SortIcon column="monthly_rent_value" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-center min-w-[90px] cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort("status")}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    Status
+                    <SortIcon column="status" />
+                  </div>
+                </TableHead>
                 <TableHead className="text-center min-w-[120px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
-          <TableBody>
-            {filteredPages && filteredPages.length > 0 ? (
-              filteredPages.map((page) => (
+            <TableBody>
+              {paginatedPages && paginatedPages.length > 0 ? (
+                paginatedPages.map((page) => (
                 <TableRow key={page.page_id}>
                   <TableCell className="px-4 py-3">
                     <div className="max-w-xs">
@@ -175,9 +312,74 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
                 </TableCell>
               </TableRow>
             )}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
         </div>
+
+        {/* Pagination Controls */}
+        {sortedPages.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {pageSize === 99999 ? sortedPages.length : Math.min(((currentPage - 1) * pageSize) + 1, sortedPages.length)}-{pageSize === 99999 ? sortedPages.length : Math.min(currentPage * pageSize, sortedPages.length)} de {sortedPages.length} páginas
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 por página</SelectItem>
+                  <SelectItem value="50">50 por página</SelectItem>
+                  <SelectItem value="100">100 por página</SelectItem>
+                  <SelectItem value="200">200 por página</SelectItem>
+                  <SelectItem value="500">500 por página</SelectItem>
+                  <SelectItem value="99999">Mostrar Tudo</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {pageSize !== 99999 && (
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(1)}
+                  >
+                    Primeira
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => p - 1)}
+                  >
+                    Anterior
+                  </Button>
+                  <span className="px-3 py-1 text-sm">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => p + 1)}
+                  >
+                    Próxima
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(totalPages)}
+                  >
+                    Última
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {selectedPage && (
