@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, Download } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ImportSitemapDialogProps {
   siteId: string;
@@ -31,6 +33,10 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
   const [discoveredSitemaps, setDiscoveredSitemaps] = useState<any[]>([]);
   const [selectedSitemaps, setSelectedSitemaps] = useState<string[]>([]);
   const [discovering, setDiscovering] = useState(false);
+  
+  // URL visualization state
+  const [showAllUrls, setShowAllUrls] = useState(false);
+  const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
 
   const resetState = () => {
     setResult(null);
@@ -40,6 +46,21 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
     setDiscoverMode(true);
     setDiscoveredSitemaps([]);
     setSelectedSitemaps([]);
+    setShowAllUrls(false);
+    setShowDuplicatesOnly(false);
+  };
+
+  const handleDownloadUrls = (urlsToExport: string[], filename: string) => {
+    const content = urlsToExport.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleDiscoverSitemaps = async () => {
@@ -342,49 +363,155 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
           )}
 
           {result && (
-            <div className="space-y-3 rounded-lg border p-4 bg-muted/50">
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="font-semibold">✅ Importação Concluída!</span>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Sitemaps Selecionados:</span>
-                  <span className="font-medium">{result.selectedSitemapsCount}/{discoveredSitemaps.length}</span>
+            <div className="space-y-4">
+              <div className="space-y-3 rounded-lg border p-4 bg-muted/50">
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="font-semibold">✅ Importação Concluída!</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">URLs Esperadas:</span>
-                  <span className="font-medium">{result.expectedUrls?.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">URLs Importadas:</span>
-                  <span className="font-medium text-blue-600">
-                    {(result.newPages + result.updatedPages).toLocaleString()}
-                    {result.expectedUrls && ` (${Math.round(((result.newPages + result.updatedPages) / result.expectedUrls) * 100)}%)`}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Páginas Novas:</span>
-                  <span className="font-medium text-green-600">✨ {result.newPages}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Páginas Atualizadas:</span>
-                  <span className="font-medium text-blue-600">🔄 {result.updatedPages}</span>
-                </div>
-                {result.deactivatedPages > 0 && (
+                
+                <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Páginas Desativadas:</span>
-                    <span className="font-medium text-orange-600">⚠️ {result.deactivatedPages}</span>
+                    <span className="text-muted-foreground">Sitemaps Selecionados:</span>
+                    <span className="font-medium">{result.selectedSitemapsCount}/{discoveredSitemaps.length}</span>
                   </div>
-                )}
-                {result.errorCount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Erros:</span>
-                    <span className="font-medium text-red-600">{result.errorCount}</span>
+                    <span className="text-muted-foreground">URLs Encontradas:</span>
+                    <span className="font-medium">{result.allRawUrls?.length?.toLocaleString()}</span>
                   </div>
-                )}
+                  {result.duplicatesRemoved > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-orange-600">Duplicatas Removidas:</span>
+                      <span className="font-medium text-orange-600">-{result.duplicatesRemoved}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-green-600 font-semibold">URLs Únicas Importadas:</span>
+                    <span className="font-semibold text-green-600">{result.uniqueUrls?.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Páginas Novas:</span>
+                    <span className="font-medium text-green-600">✨ {result.newPages}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Páginas Atualizadas:</span>
+                    <span className="font-medium text-blue-600">🔄 {result.updatedPages}</span>
+                  </div>
+                  {result.deactivatedPages > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Páginas Desativadas:</span>
+                      <span className="font-medium text-orange-600">⚠️ {result.deactivatedPages}</span>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* URL Visualization Section */}
+              {result.allRawUrls && result.allRawUrls.length > 0 && (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant={showAllUrls && !showDuplicatesOnly ? "default" : "outline"}
+                      onClick={() => {
+                        setShowAllUrls(true);
+                        setShowDuplicatesOnly(false);
+                      }}
+                    >
+                      📋 Ver Todas ({result.allRawUrls.length})
+                    </Button>
+                    
+                    {result.duplicatesRemoved > 0 && (
+                      <Button
+                        size="sm"
+                        variant={showDuplicatesOnly ? "default" : "outline"}
+                        onClick={() => {
+                          setShowAllUrls(true);
+                          setShowDuplicatesOnly(true);
+                        }}
+                      >
+                        🔍 Ver Apenas Duplicatas ({result.duplicatesRemoved})
+                      </Button>
+                    )}
+                    
+                    {showAllUrls && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setShowAllUrls(false)}
+                      >
+                        ✕ Fechar
+                      </Button>
+                    )}
+                    
+                    <div className="ml-auto flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDownloadUrls(
+                          result.allRawUrls, 
+                          'todas-urls.txt'
+                        )}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download Todas
+                      </Button>
+                      
+                      {result.duplicatesRemoved > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadUrls(
+                            result.duplicateUrlsList, 
+                            'duplicatas.txt'
+                          )}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download Duplicatas
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {showAllUrls && (
+                    <>
+                      <ScrollArea className="h-[400px] w-full border rounded-md">
+                        <div className="p-4 space-y-1">
+                          {(showDuplicatesOnly 
+                            ? result.duplicateUrlsList 
+                            : result.allRawUrls
+                          ).map((url: string, index: number) => {
+                            const isDuplicate = result.duplicateUrlsList?.includes(url);
+                            return (
+                              <div
+                                key={index}
+                                className={cn(
+                                  "text-xs p-2 rounded font-mono break-all",
+                                  isDuplicate && !showDuplicatesOnly 
+                                    ? "bg-orange-50 text-orange-700 border-l-2 border-orange-400 dark:bg-orange-950/30 dark:text-orange-300" 
+                                    : "bg-muted"
+                                )}
+                              >
+                                {isDuplicate && !showDuplicatesOnly && (
+                                  <span className="text-orange-500 mr-2">⚠️ DUPLICATA</span>
+                                )}
+                                {url}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                      
+                      <p className="text-xs text-muted-foreground">
+                        {showDuplicatesOnly 
+                          ? `Mostrando ${result.duplicatesRemoved} URLs duplicadas que foram removidas`
+                          : `Mostrando todas as ${result.allRawUrls.length} URLs encontradas ${result.duplicatesRemoved > 0 ? '(duplicatas marcadas em laranja)' : ''}`
+                        }
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </form>

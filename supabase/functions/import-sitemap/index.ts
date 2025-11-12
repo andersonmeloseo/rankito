@@ -192,6 +192,9 @@ serve(async (req) => {
       (existingPages || []).map(p => [p.page_url, p])
     );
 
+    // Capturar TODAS as URLs brutas antes de deduplicação
+    const allRawUrls = [...safeUrls];
+    
     // Usar Map para deduplicate URLs (evita erro "cannot affect row a second time")
     const pagesMap = new Map();
 
@@ -228,6 +231,22 @@ serve(async (req) => {
     // Converter Map para array (apenas URLs únicas)
     const pagesToUpsert = Array.from(pagesMap.values());
     console.log(`Deduplicated: ${safeUrls.length} URLs -> ${pagesToUpsert.length} unique URLs`);
+    
+    // Identificar quais URLs foram removidas como duplicadas
+    const uniqueUrlsSet = new Set(pagesToUpsert.map(p => p.page_url));
+    const duplicateUrls: string[] = [];
+    const seenUrls = new Set<string>();
+    
+    for (const url of allRawUrls) {
+      if (seenUrls.has(url)) {
+        // Esta é uma duplicata
+        duplicateUrls.push(url);
+      } else {
+        seenUrls.add(url);
+      }
+    }
+    
+    console.log(`Found ${duplicateUrls.length} duplicate URLs`);
 
     // Processar TODAS as páginas com UPSERT (não separa INSERT/UPDATE)
     console.log(`Upserting ${pagesToUpsert.length} pages in batches of ${batch_size}`);
@@ -347,6 +366,10 @@ serve(async (req) => {
         sitemapsProcessed,
         totalUrlsFound: urls.length,
         urlsImported: safeUrls.length,
+        uniqueUrls: pagesToUpsert.length,
+        duplicatesRemoved: duplicateUrls.length,
+        allRawUrls: allRawUrls,
+        duplicateUrlsList: duplicateUrls,
         newPages,
         updatedPages,
         deactivatedPages: deactivatedCount,
