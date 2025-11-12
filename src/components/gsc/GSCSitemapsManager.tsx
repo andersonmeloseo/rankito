@@ -26,6 +26,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useGSCSitemaps } from "@/hooks/useGSCSitemaps";
 import { useDiscoverSitemaps } from "@/hooks/useDiscoverSitemaps";
 import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
@@ -35,6 +41,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface GSCSitemapsManagerProps {
   siteId: string;
@@ -42,11 +49,15 @@ interface GSCSitemapsManagerProps {
 }
 
 export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) {
+  const { toast } = useToast();
   const [newSitemapUrl, setNewSitemapUrl] = useState("");
   const [showDiscovery, setShowDiscovery] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sitemapToDelete, setSitemapToDelete] = useState<string | null>(null);
   const [expandedSitemapUrls, setExpandedSitemapUrls] = useState<Set<string>>(new Set());
+  const [selectedSubmittedSitemaps, setSelectedSubmittedSitemaps] = useState<Set<string>>(new Set());
+  const [isResubmittingBatch, setIsResubmittingBatch] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const {
     sitemaps,
@@ -139,6 +150,97 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
     setSitemapToDelete(null);
   };
 
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await refetch();
+      toast({
+        title: "✅ Sincronizado com GSC",
+        description: `${sitemaps.length} sitemap${sitemaps.length !== 1 ? 's' : ''} ativo${sitemaps.length !== 1 ? 's' : ''} encontrado${sitemaps.length !== 1 ? 's' : ''}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao sincronizar",
+        description: "Não foi possível buscar dados do Google Search Console",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleResubmitSitemap = async (sitemapUrl: string) => {
+    try {
+      await submitSitemap.mutateAsync({ sitemap_url: sitemapUrl });
+      toast({
+        title: "✅ Sitemap reenviado",
+        description: "O sitemap foi enviado novamente ao Google Search Console",
+      });
+      await refetch();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao reenviar sitemap",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleSelectSubmittedSitemap = (sitemapUrl: string) => {
+    const newSelected = new Set(selectedSubmittedSitemaps);
+    if (newSelected.has(sitemapUrl)) {
+      newSelected.delete(sitemapUrl);
+    } else {
+      newSelected.add(sitemapUrl);
+    }
+    setSelectedSubmittedSitemaps(newSelected);
+  };
+
+  const toggleSelectAllSubmitted = () => {
+    if (selectedSubmittedSitemaps.size === sitemaps.length) {
+      setSelectedSubmittedSitemaps(new Set());
+    } else {
+      setSelectedSubmittedSitemaps(new Set(sitemaps.map(s => s.sitemap_url)));
+    }
+  };
+
+  const handleResubmitSelectedSitemaps = async () => {
+    setIsResubmittingBatch(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const sitemapUrl of selectedSubmittedSitemaps) {
+        try {
+          await submitSitemap.mutateAsync({ sitemap_url: sitemapUrl });
+          successCount++;
+        } catch (error) {
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast({
+          title: "✅ Sitemaps reenviados",
+          description: `${successCount} sitemap${successCount !== 1 ? 's foram' : ' foi'} reenviado${successCount !== 1 ? 's' : ''} com sucesso${errorCount > 0 ? `. ${errorCount} falharam.` : ''}`,
+        });
+      }
+
+      if (errorCount > 0 && successCount === 0) {
+        toast({
+          title: "Erro ao reenviar sitemaps",
+          description: `${errorCount} sitemap${errorCount !== 1 ? 's' : ''} falharam`,
+          variant: "destructive",
+        });
+      }
+
+      setSelectedSubmittedSitemaps(new Set());
+      await refetch();
+    } finally {
+      setIsResubmittingBatch(false);
+    }
+  };
+
   const getStatusBadge = (sitemap: any) => {
     if (sitemap.possibly_deleted) {
       return <Badge variant="outline" className="bg-gray-50"><XCircle className="h-3 w-3 mr-1" />Removido do GSC</Badge>;
@@ -194,15 +296,24 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
                 Descubra, selecione e envie sitemaps ao Google Search Console
               </CardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSync}
+                    disabled={isSyncing || isLoading}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Sincronizando...' : 'Sincronizar com GSC'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Busca sitemaps atualizados do Google Search Console</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
@@ -377,10 +488,27 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
 
           {/* Seção de Sitemaps Submetidos */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              Sitemaps Submetidos ao GSC
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                Sitemaps Submetidos ao GSC
+              </h3>
+              {selectedSubmittedSitemaps.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    {selectedSubmittedSitemaps.size} sitemap{selectedSubmittedSitemaps.size > 1 ? 's' : ''} selecionado{selectedSubmittedSitemaps.size > 1 ? 's' : ''}
+                  </Badge>
+                  <Button
+                    onClick={handleResubmitSelectedSitemaps}
+                    disabled={isResubmittingBatch}
+                    size="sm"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isResubmittingBatch ? 'animate-spin' : ''}`} />
+                    {isResubmittingBatch ? 'Reenviando...' : `Reenviar ${selectedSubmittedSitemaps.size} ao GSC`}
+                  </Button>
+                </div>
+              )}
+            </div>
 
           {sitemaps.length === 0 ? (
             <div className="text-center py-12 border rounded-lg bg-muted/50">
@@ -395,6 +523,12 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedSubmittedSitemaps.size === sitemaps.length && sitemaps.length > 0}
+                        onCheckedChange={toggleSelectAllSubmitted}
+                      />
+                    </TableHead>
                     <TableHead className="min-w-[300px]">URL do Sitemap</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Status</TableHead>
@@ -407,6 +541,12 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
                 <TableBody>
                   {sitemaps.map((sitemap) => (
                     <TableRow key={sitemap.sitemap_url}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedSubmittedSitemaps.has(sitemap.sitemap_url)}
+                          onCheckedChange={() => toggleSelectSubmittedSitemap(sitemap.sitemap_url)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <a
@@ -438,7 +578,25 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
                         {formatDate(sitemap.gsc_last_submitted)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
+                        <div className="flex items-center justify-end gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleResubmitSitemap(sitemap.sitemap_url)}
+                                  disabled={isSubmitting}
+                                >
+                                  <RefreshCw className={`h-3 w-3 ${isSubmitting ? 'animate-spin' : ''}`} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Reenviar sitemap ao GSC</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteClick(sitemap.sitemap_url)}
@@ -446,6 +604,7 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
