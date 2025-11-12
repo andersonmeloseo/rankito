@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
 
   try {
     console.log('🚀 GSC Get Sitemaps - Request received');
+    console.log('📦 Request method:', req.method);
 
     // Verificar autenticação
     const authHeader = req.headers.get('Authorization');
@@ -34,10 +35,13 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
+    console.log('📝 Parsing request body...');
     const body = await req.json();
+    console.log('📦 Body received:', body);
     const integration_id = body.integration_id;
 
     if (!integration_id) {
+      console.error('❌ Missing integration_id in body:', body);
       return new Response(
         JSON.stringify({ error: 'Missing required parameter: integration_id' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
