@@ -102,7 +102,8 @@ serve(async (req) => {
       sitemap_offset = 0,
       is_final_batch = false,
       import_job_id = null,
-      user_id = null
+      user_id = null,
+      selected_sitemaps = null // NEW: Array of specific sitemap URLs to import
     } = await req.json();
 
     if (!site_id || !sitemap_url) {
@@ -115,8 +116,24 @@ serve(async (req) => {
     console.log('Importing sitemap from:', sitemap_url, 'for site:', site_id);
     console.log('Processing with limits:', { max_urls, batch_size, max_sitemaps, sitemap_offset });
 
-    // Process sitemap with limits using regex
-    const urls = await processSitemap(sitemap_url, 0, max_sitemaps, sitemap_offset);
+    let urls: string[];
+    
+    // If specific sitemaps are selected, process only those
+    if (selected_sitemaps && selected_sitemaps.length > 0) {
+      console.log(`Processing ${selected_sitemaps.length} selected sitemaps`);
+      urls = [];
+      
+      for (const selectedSitemapUrl of selected_sitemaps) {
+        console.log(`Processing selected sitemap: ${selectedSitemapUrl}`);
+        const sitemapUrls = await processSitemap(selectedSitemapUrl, 0, 1, 0);
+        urls.push(...sitemapUrls);
+      }
+      
+      console.log(`Total URLs from selected sitemaps: ${urls.length}`);
+    } else {
+      // Process sitemap recursively (normal flow)
+      urls = await processSitemap(sitemap_url, 0, max_sitemaps, sitemap_offset);
+    }
     
     // Extract sitemap statistics
     const totalSitemapsFound = (urls as any).totalSitemapsFound || 1;
