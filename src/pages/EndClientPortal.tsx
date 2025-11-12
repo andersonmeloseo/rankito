@@ -167,7 +167,7 @@ const EndClientPortal = () => {
       <div className="flex-1">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-b">
-          <div className="container mx-auto px-6 py-8">
+          <div className="container mx-auto py-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">
@@ -235,7 +235,7 @@ const EndClientPortal = () => {
         </div>
 
         {/* Main Content */}
-        <div className="container mx-auto px-6 py-8 space-y-8">
+        <div className="container mx-auto py-8 space-y-8">
           {/* Metrics Cards */}
           {analytics && (
             <MetricsCards

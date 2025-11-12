@@ -60,8 +60,8 @@ export const EnhancedClientPortal = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl container mx-auto py-6 space-y-6">
           <Skeleton className="h-48 w-full" />
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-32" />)}
@@ -101,7 +101,7 @@ export const EnhancedClientPortal = () => {
   if (analytics?.isEmpty) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div className="max-w-7xl container mx-auto py-6 space-y-6">
           <EpicPortalHeader
             clientName={clientData?.name || 'Portal'}
             clientCompany={clientData?.company}
@@ -129,7 +129,7 @@ export const EnhancedClientPortal = () => {
     <div className="min-h-screen bg-background">
       <ConversionToast conversion={realtimeConversions[0]} soundEnabled={true} />
       
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="max-w-7xl container mx-auto py-6 space-y-6">
         <EpicPortalHeader
           clientName={clientData?.name || 'Portal'}
           clientCompany={clientData?.company}

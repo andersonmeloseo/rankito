@@ -544,7 +544,7 @@ const SiteDetails = () => {
       <Header showSubtitle={false} />
       {/* Site Header */}
       <header className="bg-card border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="gap-2">
@@ -591,7 +591,7 @@ const SiteDetails = () => {
       </header>
 
       {/* KPI Cards */}
-      <div className="container mx-auto px-4 py-6 pb-20">
+      <div className="container mx-auto py-6 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
           <Card className="shadow-card">
             <CardContent className="pt-6">

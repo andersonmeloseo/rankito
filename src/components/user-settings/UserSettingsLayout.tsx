@@ -45,7 +45,7 @@ export const UserSettingsLayout = ({ children, activeTab, onTabChange, userRole 
 
         {/* Conteúdo principal */}
         <main className="flex-1 overflow-auto">
-          <div className="container max-w-4xl mx-auto p-8">
+          <div className="container max-w-5xl mx-auto py-8">
             {children}
           </div>
         </main>
