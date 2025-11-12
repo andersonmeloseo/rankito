@@ -95,7 +95,7 @@ export const CreateEndClientDialog = ({
   const handleCopyCredentials = () => {
     if (!createdCredentials) return;
 
-    const text = `Credenciais de Acesso - ${clientName}\n\nEmail: ${createdCredentials.email}\nSenha: ${createdCredentials.password}\n\nAcesse: ${window.location.origin}/end-client-portal`;
+    const text = `Credenciais de Acesso - ${clientName}\n\nEmail: ${createdCredentials.email}\nSenha: ${createdCredentials.password}\n\nAcesse: ${import.meta.env.VITE_APP_URL}/end-client-portal`;
 
     navigator.clipboard.writeText(text);
     toast({
@@ -137,7 +137,7 @@ export const CreateEndClientDialog = ({
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Portal de Acesso</p>
-                <p className="font-mono text-sm break-all">{window.location.origin}/end-client-portal</p>
+                <p className="font-mono text-sm break-all">{import.meta.env.VITE_APP_URL}/end-client-portal</p>
               </div>
             </div>
 

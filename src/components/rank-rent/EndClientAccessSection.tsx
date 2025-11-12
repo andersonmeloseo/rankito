@@ -79,7 +79,7 @@ export const EndClientAccessSection = ({
   const handleCopyResetCredentials = () => {
     if (!resetCredentials) return;
 
-    const text = `Nova Senha - ${clientName}\n\nEmail: ${resetCredentials.email}\nNova Senha: ${resetCredentials.password}\n\nAcesse: ${window.location.origin}/end-client-portal`;
+    const text = `Nova Senha - ${clientName}\n\nEmail: ${resetCredentials.email}\nNova Senha: ${resetCredentials.password}\n\nAcesse: ${import.meta.env.VITE_APP_URL}/end-client-portal`;
 
     navigator.clipboard.writeText(text);
     toast({

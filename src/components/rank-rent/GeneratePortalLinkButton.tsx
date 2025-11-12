@@ -39,7 +39,7 @@ export const GeneratePortalLinkButton = ({ clientId, clientName }: GeneratePorta
 
   const handleCopy = () => {
     if (!portal) return;
-    const link = `${window.location.origin}/client-portal/${portal.portal_token}`;
+    const link = `${import.meta.env.VITE_APP_URL}/client-portal/${portal.portal_token}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     toast({
@@ -66,7 +66,7 @@ export const GeneratePortalLinkButton = ({ clientId, clientName }: GeneratePorta
     setPortal(data);
   };
 
-  const portalLink = portal ? `${window.location.origin}/client-portal/${portal.portal_token}` : '';
+  const portalLink = portal ? `${import.meta.env.VITE_APP_URL}/client-portal/${portal.portal_token}` : '';
 
   return (
     <Card>

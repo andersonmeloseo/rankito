@@ -112,7 +112,7 @@ export const useClientIntegration = (userId: string) => {
       return;
     }
 
-    const url = `${window.location.origin}/client-portal/${client.portal_token}`;
+    const url = `${import.meta.env.VITE_APP_URL}/client-portal/${client.portal_token}`;
     navigator.clipboard.writeText(url);
 
     toast({

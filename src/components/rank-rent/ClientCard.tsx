@@ -19,8 +19,12 @@ import {
   Eye,
   Copy,
   FileText,
+  Globe,
 } from "lucide-react";
 import { ClientWithPortalStatus } from "@/hooks/useClientIntegration";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ClientCardProps {
   client: ClientWithPortalStatus;
@@ -56,6 +60,22 @@ export const ClientCard = ({
     client.page_views_30d > 0
       ? ((client.conversions_30d / client.page_views_30d) * 100).toFixed(2)
       : "0.00";
+
+  // Fetch client sites
+  const { data: clientSites, isLoading: sitesLoading } = useQuery({
+    queryKey: ["client-sites-card", client.client_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_sites")
+        .select("id, site_name, site_url, monthly_rent_value")
+        .eq("client_id", client.client_id)
+        .eq("is_rented", true)
+        .order("site_name");
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   return (
     <Card className="hover:shadow-lg transition-all">
@@ -107,7 +127,7 @@ export const ClientCard = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {/* Empresa e Nicho */}
         {(client.company || client.niche) && (
           <div className="flex items-center gap-2 text-sm">
@@ -120,7 +140,7 @@ export const ClientCard = ({
         )}
 
         {/* Analytics Summary */}
-        <div className="bg-muted/50 rounded-lg p-3">
+        <div className="bg-muted/50 rounded-lg p-4">
           <h4 className="text-xs font-medium mb-2 flex items-center gap-2">
             <BarChart className="w-4 h-4" />
             Analytics (30 dias)
@@ -141,8 +161,32 @@ export const ClientCard = ({
           </div>
         </div>
 
+        {/* Sites Alugados */}
+        <div className="space-y-3 pt-2">
+          <h4 className="text-sm font-medium flex items-center gap-2">
+            <Globe className="w-4 h-4" />
+            Sites Alugados ({client.total_sites})
+          </h4>
+          {sitesLoading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : clientSites && clientSites.length > 0 ? (
+            <div className="space-y-2">
+              {clientSites.map((site) => (
+                <div key={site.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+                  <span className="text-sm font-medium truncate flex-1">{site.site_name}</span>
+                  <Badge variant="secondary" className="ml-2">
+                    R$ {site.monthly_rent_value?.toLocaleString("pt-BR") || "0"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Nenhum site alugado</p>
+          )}
+        </div>
+
         {/* Financial Info */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pt-2">
           <span className="text-2xl font-bold text-primary">
             R$ {client.total_monthly_value.toLocaleString("pt-BR")}
           </span>

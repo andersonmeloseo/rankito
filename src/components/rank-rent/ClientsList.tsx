@@ -130,7 +130,7 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
   });
 
   const copyReportLink = (token: string) => {
-    const reportUrl = `${window.location.origin}/report/${token}`;
+    const reportUrl = `${import.meta.env.VITE_APP_URL}/report/${token}`;
     navigator.clipboard.writeText(reportUrl);
     toast({
       title: "Link copiado!",
@@ -143,7 +143,7 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
       const existingPortal = await getPortalByClient(clientId);
       
       if (existingPortal) {
-        const portalUrl = `${window.location.origin}/client-portal/${existingPortal.portal_token}`;
+        const portalUrl = `${import.meta.env.VITE_APP_URL}/client-portal/${existingPortal.portal_token}`;
         navigator.clipboard.writeText(portalUrl);
         toast({
           title: "Link do portal copiado!",
@@ -151,7 +151,7 @@ export const ClientsList = ({ userId }: ClientsListProps) => {
         });
       } else {
         const portal = await generatePortalLink(clientId);
-        const portalUrl = `${window.location.origin}/client-portal/${portal.portal_token}`;
+        const portalUrl = `${import.meta.env.VITE_APP_URL}/client-portal/${portal.portal_token}`;
         navigator.clipboard.writeText(portalUrl);
         toast({
           title: "Portal criado e link copiado!",

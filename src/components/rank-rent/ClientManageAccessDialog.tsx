@@ -10,11 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Copy, ExternalLink, Users, BarChart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Copy, ExternalLink, Users, BarChart, Globe } from "lucide-react";
 import { ClientWithPortalStatus } from "@/hooks/useClientIntegration";
 import { EndClientAccessSection } from "./EndClientAccessSection";
 import { ClientPortalPreview } from "./ClientPortalPreview";
 import { toast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ClientManageAccessDialogProps {
   open: boolean;
@@ -32,8 +36,25 @@ export const ClientManageAccessDialog = ({
   if (!client) return null;
 
   const portalUrl = client.portal_token
-    ? `${window.location.origin}/client-portal/${client.portal_token}`
+    ? `${import.meta.env.VITE_APP_URL}/client-portal/${client.portal_token}`
     : "";
+
+  // Fetch client sites
+  const { data: clientSites, isLoading: sitesLoading } = useQuery({
+    queryKey: ["client-sites-dialog", client.client_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_sites")
+        .select("id, site_name, site_url, monthly_rent_value")
+        .eq("client_id", client.client_id)
+        .eq("is_rented", true)
+        .order("site_name");
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -45,7 +66,7 @@ export const ClientManageAccessDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Gerenciar Acesso - {client.client_name}</DialogTitle>
         </DialogHeader>
@@ -63,7 +84,7 @@ export const ClientManageAccessDialog = ({
           </TabsList>
 
           {/* Tab 1: Portal Analítico */}
-          <TabsContent value="portal" className="space-y-4">
+          <TabsContent value="portal" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Status do Portal</CardTitle>
@@ -138,6 +159,50 @@ export const ClientManageAccessDialog = ({
                       Ative o portal para permitir que seu cliente acesse o dashboard de analytics
                     </p>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Sites Alugados */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Globe className="w-5 h-5" />
+                  Sites Alugados
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {sitesLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ) : clientSites && clientSites.length > 0 ? (
+                  <div className="space-y-3">
+                    {clientSites.map((site) => (
+                      <div key={site.id} className="flex items-start justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{site.site_name}</p>
+                          <a 
+                            href={site.site_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 mt-1 truncate"
+                          >
+                            <span className="truncate">{site.site_url}</span>
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                          </a>
+                        </div>
+                        <Badge variant="secondary" className="ml-3 flex-shrink-0">
+                          R$ {site.monthly_rent_value?.toLocaleString("pt-BR") || "0"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhum site alugado
+                  </p>
                 )}
               </CardContent>
             </Card>
