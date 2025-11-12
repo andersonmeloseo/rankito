@@ -1,13 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, DollarSign, Globe, TrendingUp, HelpCircle } from "lucide-react";
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { BarChart3, DollarSign, Globe, TrendingUp } from "lucide-react";
 
 interface OverviewCardsProps {
   userId: string;
@@ -83,29 +77,6 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
     return gradients[color] || 'icon-gradient-blue';
   };
 
-  const tooltipContent = {
-    "Projetos Alugados": {
-      title: "Projetos Alugados",
-      description: "Quantidade de projetos atualmente sendo alugados para clientes.",
-      calculation: "Contagem de sites onde is_rented = true. O número de disponíveis representa sites não alugados (is_rented = false)."
-    },
-    "Receita Mensal Total": {
-      title: "Receita Mensal Total",
-      description: "Soma de todos os valores mensais de aluguel dos projetos ativos.",
-      calculation: "Σ(monthly_rent_value) de todos os sites com is_rented = true. Representa o MRR (Monthly Recurring Revenue) do seu portfólio."
-    },
-    "Contratos Vencendo": {
-      title: "Contratos Vencendo",
-      description: "Número de contratos que expiram nos próximos 30 dias.",
-      calculation: "Contagem de sites onde contract_end_date está entre hoje e daqui 30 dias. Use esta métrica para planejar renovações e evitar perda de receita."
-    },
-    "Taxa de Ocupação": {
-      title: "Taxa de Ocupação",
-      description: "Percentual de projetos que estão atualmente alugados em relação ao total disponível.",
-      calculation: "(Projetos Alugados / Total de Projetos) × 100. Uma taxa alta indica boa performance do portfólio."
-    }
-  };
-
   const cards = [
     {
       title: "Projetos Alugados",
@@ -168,47 +139,9 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground tracking-wide uppercase">
-                  {card.title}
-                </CardTitle>
-                
-                {/* Tooltip with Help Icon */}
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button 
-                        className="inline-flex items-center justify-center rounded-full p-1 hover:bg-muted/50 transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent 
-                      side="top" 
-                      align="start"
-                      className="max-w-xs p-4 space-y-2 bg-white border-border/50 shadow-elevated"
-                    >
-                      <div>
-                        <p className="font-semibold text-sm mb-1">
-                          {tooltipContent[card.title as keyof typeof tooltipContent].title}
-                        </p>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          {tooltipContent[card.title as keyof typeof tooltipContent].description}
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-border">
-                        <p className="text-[0.625rem] font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                          Como é calculado
-                        </p>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          {tooltipContent[card.title as keyof typeof tooltipContent].calculation}
-                        </p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+              <CardTitle className="text-sm font-semibold text-muted-foreground tracking-wide uppercase">
+                {card.title}
+              </CardTitle>
               
               {/* Icon with Colored Background */}
               <div className={`p-2.5 rounded-xl ${getIconGradient(card.color)} shadow-sm transition-transform duration-200 group-hover:scale-110`}>
