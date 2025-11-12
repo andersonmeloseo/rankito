@@ -21,10 +21,12 @@ serve(async (req) => {
     // Verificar se houve erro do Google
     if (error) {
       console.error('❌ Google OAuth error:', error);
+      const baseUrl = Deno.env.get('SUPABASE_URL') || '';
+      const dashboardUrl = baseUrl.replace('/functions/v1', '') + '/dashboard';
       return new Response(null, {
         status: 302,
         headers: {
-          'Location': `${Deno.env.get('SUPABASE_URL')?.replace('/functions/v1', '')}/dashboard?gsc_error=${error}`,
+          'Location': `${dashboardUrl}?gsc_error=${error}`,
         },
       });
     }
@@ -32,10 +34,12 @@ serve(async (req) => {
     // Validar parâmetros
     if (!code || !state) {
       console.error('❌ Missing code or state');
+      const baseUrl = Deno.env.get('SUPABASE_URL') || '';
+      const dashboardUrl = baseUrl.replace('/functions/v1', '') + '/dashboard';
       return new Response(null, {
         status: 302,
         headers: {
-          'Location': `${Deno.env.get('SUPABASE_URL')?.replace('/functions/v1', '')}/dashboard?gsc_error=missing_params`,
+          'Location': `${dashboardUrl}?gsc_error=missing_params`,
         },
       });
     }
@@ -54,10 +58,12 @@ serve(async (req) => {
 
     if (stateError || !oauthState) {
       console.error('❌ Invalid or expired state:', stateError);
+      const baseUrl = Deno.env.get('SUPABASE_URL') || '';
+      const dashboardUrl = baseUrl.replace('/functions/v1', '') + '/dashboard';
       return new Response(null, {
         status: 302,
         headers: {
-          'Location': `${Deno.env.get('SUPABASE_URL')?.replace('/functions/v1', '')}/dashboard?gsc_error=invalid_state`,
+          'Location': `${dashboardUrl}?gsc_error=invalid_state`,
         },
       });
     }
@@ -67,10 +73,12 @@ serve(async (req) => {
     const expiresAt = new Date(oauthState.expires_at);
     if (now >= expiresAt) {
       console.error('❌ State expired');
+      const baseUrl = Deno.env.get('SUPABASE_URL') || '';
+      const dashboardUrl = baseUrl.replace('/functions/v1', '') + '/dashboard';
       return new Response(null, {
         status: 302,
         headers: {
-          'Location': `${Deno.env.get('SUPABASE_URL')?.replace('/functions/v1', '')}/dashboard?gsc_error=state_expired`,
+          'Location': `${dashboardUrl}?gsc_error=state_expired`,
         },
       });
     }
@@ -86,10 +94,12 @@ serve(async (req) => {
 
     if (integrationError || !integration) {
       console.error('❌ Integration not found:', integrationError);
+      const baseUrl = Deno.env.get('SUPABASE_URL') || '';
+      const dashboardUrl = baseUrl.replace('/functions/v1', '') + '/dashboard';
       return new Response(null, {
         status: 302,
         headers: {
-          'Location': `${Deno.env.get('SUPABASE_URL')?.replace('/functions/v1', '')}/dashboard?gsc_error=integration_not_found`,
+          'Location': `${dashboardUrl}?gsc_error=integration_not_found`,
         },
       });
     }
@@ -147,10 +157,12 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('❌ Failed to update integration:', updateError);
+      const baseUrl = Deno.env.get('SUPABASE_URL') || '';
+      const dashboardUrl = baseUrl.replace('/functions/v1', '') + '/dashboard';
       return new Response(null, {
         status: 302,
         headers: {
-          'Location': `${Deno.env.get('SUPABASE_URL')?.replace('/functions/v1', '')}/dashboard?gsc_error=update_failed`,
+          'Location': `${dashboardUrl}?gsc_error=update_failed`,
         },
       });
     }
@@ -166,7 +178,8 @@ serve(async (req) => {
     console.log('🗑️ State deleted');
 
     // Redirecionar para dashboard com sucesso
-    const dashboardUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/functions/v1', '')}/dashboard?gsc_success=true&integration_id=${oauthState.integration_id}`;
+    const baseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const dashboardUrl = `${baseUrl.replace('/functions/v1', '')}/dashboard?gsc_success=true&integration_id=${oauthState.integration_id}`;
     
     console.log('✅ Redirecting to dashboard');
 
@@ -179,10 +192,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Error in gsc-oauth-callback:', error);
+    const baseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const dashboardUrl = baseUrl.replace('/functions/v1', '') + '/dashboard';
     return new Response(null, {
       status: 302,
       headers: {
-        'Location': `${Deno.env.get('SUPABASE_URL')?.replace('/functions/v1', '')}/dashboard?gsc_error=unknown`,
+        'Location': `${dashboardUrl}?gsc_error=unknown`,
       },
     });
   }
