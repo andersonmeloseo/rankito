@@ -33,9 +33,9 @@ Deno.serve(async (req) => {
       throw new Error('Invalid authentication');
     }
 
-    // Parse request
-    const url = new URL(req.url);
-    const integration_id = url.searchParams.get('integration_id');
+    // Parse request body
+    const body = await req.json();
+    const integration_id = body.integration_id;
 
     if (!integration_id) {
       return new Response(
