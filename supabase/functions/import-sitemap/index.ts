@@ -98,7 +98,7 @@ serve(async (req) => {
       sitemap_url,
       max_urls = 50000,
       batch_size = 1000,
-      max_sitemaps = 20,
+      max_sitemaps = 30,
       sitemap_offset = 0,
       is_final_batch = false,
       import_job_id = null,

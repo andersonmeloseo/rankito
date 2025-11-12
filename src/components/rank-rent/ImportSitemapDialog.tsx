@@ -31,7 +31,7 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
   const [progress, setProgress] = useState(0);
   const [sitemapUrl, setSitemapUrl] = useState("");
   const [result, setResult] = useState<any>(null);
-  const [sitemapsPerBatch, setSitemapsPerBatch] = useState(20);
+  const sitemapsPerBatch = 30; // Fixo: processar 30 sitemaps de uma vez
   const [currentOffset, setCurrentOffset] = useState(0);
   const [totalSitemapsFound, setTotalSitemapsFound] = useState(0);
   const [importJobId, setImportJobId] = useState<string | null>(null);
@@ -243,22 +243,6 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
             </p>
           </div>
 
-          <div>
-            <Label htmlFor="sitemaps_per_batch">Sitemaps por lote</Label>
-            <Input
-              id="sitemaps_per_batch"
-              type="number"
-              value={sitemapsPerBatch}
-              onChange={(e) => setSitemapsPerBatch(Number(e.target.value))}
-              min={5}
-              max={8}
-              disabled={loading}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Recomendado: 4-6 sitemaps por vez para evitar timeout
-            </p>
-          </div>
-
           {totalSitemapsFound > 0 && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
               <p className="font-semibold text-blue-900">
@@ -281,24 +265,30 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
           )}
 
           {result && (
-            <div className="p-4 rounded-lg bg-success/10 border border-success/20 space-y-2">
+            <div className="p-4 rounded-lg bg-success/10 border border-success/20 space-y-3">
               <div className="flex items-center gap-2 text-success font-semibold">
                 <FileText className="w-4 h-4" />
-                Importação concluída!
+                {(currentOffset + result.sitemapsProcessed) >= result.totalSitemapsFound 
+                  ? "✅ Importação 100% Completa!" 
+                  : "Lote Processado"}
               </div>
               <div className="text-sm space-y-1">
-                <p>📊 {result.sitemapsProcessed} de {result.totalSitemapsFound} sitemaps processados</p>
-                <p>🔗 {result.totalUrlsFound} URLs encontradas</p>
-                <p>✨ {result.newPages} páginas novas</p>
-                <p>🔄 {result.updatedPages} páginas atualizadas</p>
+                <p className="font-semibold">📊 Progresso do Sitemap:</p>
+                <p>• {result.sitemapsProcessed} de {result.totalSitemapsFound} sitemaps processados neste lote</p>
+                <p>• Total processado: {currentOffset + result.sitemapsProcessed}/{result.totalSitemapsFound} ({Math.round(((currentOffset + result.sitemapsProcessed) / result.totalSitemapsFound) * 100)}%)</p>
+                
+                <p className="font-semibold mt-2">🔗 URLs Encontradas:</p>
+                <p>• {result.totalUrlsFound} URLs encontradas neste lote</p>
+                <p>• {result.urlsImported} URLs importadas ({result.newPages} novas + {result.updatedPages} atualizadas)</p>
+                
                 {result.deactivatedPages > 0 && (
-                  <p>⚠️ {result.deactivatedPages} páginas desativadas</p>
+                  <p className="text-warning">⚠️ {result.deactivatedPages} páginas desativadas</p>
                 )}
                 {result.limited && (
                   <p className="text-warning">⚡ Limite de {result.urlsImported} URLs aplicado</p>
                 )}
                 {result.errors > 0 && (
-                  <p className="text-destructive">⚠️ {result.errors} erros</p>
+                  <p className="text-destructive">⚠️ {result.errors} erros encontrados</p>
                 )}
               </div>
             </div>
