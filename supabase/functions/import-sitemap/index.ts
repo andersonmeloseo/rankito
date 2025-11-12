@@ -54,13 +54,38 @@ async function processSitemap(
       (allUrls as any).totalSitemapsFound = allSitemaps.length;
       (allUrls as any).sitemapsProcessed = limitedSitemaps.length;
       
-      // Process all sitemaps in parallel
-      const sitemapPromises = limitedSitemaps.map(async (childSitemapUrl) => {
-        return await processSitemap(childSitemapUrl, depth + 1, maxSitemaps, 0);
-      });
+      // Process sitemaps in batches of 10 to avoid timeout
+      const BATCH_SIZE = 10;
+      
+      for (let i = 0; i < limitedSitemaps.length; i += BATCH_SIZE) {
+        const batch = limitedSitemaps.slice(i, i + BATCH_SIZE);
+        console.log(`📦 Processing sitemap batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(limitedSitemaps.length/BATCH_SIZE)}: ${batch.length} sitemaps`);
+        
+        const batchPromises = batch.map(async (childSitemapUrl) => {
+          // Retry logic: 3 tentativas com backoff exponencial
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              const urls = await processSitemap(childSitemapUrl, depth + 1, maxSitemaps, 0);
+              console.log(`  ✅ ${childSitemapUrl}: ${urls.length} URLs`);
+              return urls;
+            } catch (error) {
+              console.error(`  ⚠️ Attempt ${attempt}/3 failed for ${childSitemapUrl}:`, error.message);
+              if (attempt === 3) {
+                console.error(`  ❌ Failed permanently: ${childSitemapUrl}`);
+                return [];
+              }
+              // Backoff exponencial: 1s, 2s, 4s
+              await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+            }
+          }
+          return [];
+        });
 
-      const results = await Promise.all(sitemapPromises);
-      allUrls.push(...results.flat());
+        const batchResults = await Promise.all(batchPromises);
+        allUrls.push(...batchResults.flat());
+        
+        console.log(`✅ Batch ${Math.floor(i/BATCH_SIZE) + 1} completed. Total URLs so far: ${allUrls.length}`);
+      }
       
       console.log(`Sitemap index processed: ${allUrls.length} URLs found from ${limitedSitemaps.length} sitemaps`);
       return allUrls;
@@ -98,7 +123,7 @@ serve(async (req) => {
       sitemap_url,
       max_urls = 50000,
       batch_size = 1000,
-      max_sitemaps = 30,
+      max_sitemaps = 100, // Aumentado de 30 para 100
       sitemap_offset = 0,
       is_final_batch = false,
       import_job_id = null,
@@ -142,12 +167,19 @@ serve(async (req) => {
     // Aplicar limite de URLs
     const limitedUrls = urls.slice(0, max_urls);
     
+    // Add warning if URL limit reached
+    if (urls.length > max_urls) {
+      console.warn(`⚠️ URL LIMIT REACHED: Sitemap has ${urls.length} URLs, but will only process ${max_urls}`);
+      console.warn(`⚠️ ${urls.length - max_urls} URLs will be DISCARDED!`);
+    }
+    
     // Safety limit to prevent CPU timeout during database operations
-    const SAFE_URL_LIMIT = 10000; // Aumentado de 5000 para reduzir número de lotes
+    const SAFE_URL_LIMIT = 100000; // Aumentado de 10k para 100k
     const safeUrls = limitedUrls.slice(0, SAFE_URL_LIMIT);
     
     if (limitedUrls.length > SAFE_URL_LIMIT) {
-      console.log(`Safety limit applied: ${limitedUrls.length} URLs → ${SAFE_URL_LIMIT} URLs`);
+      console.warn(`⚠️ SAFETY LIMIT REACHED: ${limitedUrls.length} URLs found, but processing only ${SAFE_URL_LIMIT}`);
+      console.warn(`⚠️ ${limitedUrls.length - SAFE_URL_LIMIT} URLs will be IGNORED for safety!`);
     }
     
     console.log(`Processing ${safeUrls.length} URLs (limit: ${max_urls}, safety: ${SAFE_URL_LIMIT})`);
@@ -362,19 +394,34 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         import_job_id: jobId,
+        
+        // Estatísticas de sitemaps
         totalSitemapsFound,
         sitemapsProcessed,
+        
+        // Estatísticas de URLs
         totalUrlsFound: urls.length,
+        urlsDiscarded: Math.max(0, urls.length - safeUrls.length), // NOVO
         urlsImported: safeUrls.length,
         uniqueUrls: pagesToUpsert.length,
         duplicatesRemoved: duplicateUrls.length,
+        
+        // Listas completas
         allRawUrls: allRawUrls,
         duplicateUrlsList: duplicateUrls,
+        
+        // Resultados da importação
         newPages,
         updatedPages,
         deactivatedPages: deactivatedCount,
+        
+        // Flags e avisos
         limited: urls.length > max_urls || safeUrls.length < limitedUrls.length,
-        errors
+        limitReached: limitedUrls.length > SAFE_URL_LIMIT, // NOVO
+        errors,
+        warnings: limitedUrls.length > SAFE_URL_LIMIT  // NOVO
+          ? [`${limitedUrls.length - SAFE_URL_LIMIT} URLs foram descartadas devido ao limite de segurança de ${SAFE_URL_LIMIT}`]
+          : []
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
