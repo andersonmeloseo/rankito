@@ -56,6 +56,7 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(null);
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
   const [selectedIntegrationName, setSelectedIntegrationName] = useState<string>("");
+  const [activeTab, setActiveTab] = useState("overview");
 
   const handleAdd = (data: any) => {
     createIntegration.mutate({
@@ -94,7 +95,7 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
 
   return (
     <>
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5 max-w-4xl">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -201,7 +202,7 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold">{integration.connection_name}</h4>
                           {integration.is_active ? (
-                            <Badge variant="default" className="gap-1">
+                            <Badge className="gap-1 bg-green-600 hover:bg-green-700 text-white">
                               <CheckCircle2 className="h-3 w-3" />
                               Conectada
                             </Badge>
@@ -245,6 +246,7 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
                           onClick={() => {
                             setSelectedIntegrationId(integration.id);
                             setSelectedIntegrationName(integration.connection_name);
+                            setActiveTab("sitemaps");
                           }}
                           disabled={!integration.is_active}
                         >
