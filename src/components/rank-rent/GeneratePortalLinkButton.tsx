@@ -51,7 +51,8 @@ export const GeneratePortalLinkButton = ({ clientId, clientName }: GeneratePorta
 
   const handlePreview = () => {
     if (!portal) return;
-    window.open(`/client-portal/${portal.portal_token}`, '_blank');
+    const url = `${import.meta.env.VITE_APP_URL}/client-portal/${portal.portal_token}`;
+    window.open(url, '_blank');
   };
 
   const handleToggle = async () => {

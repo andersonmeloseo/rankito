@@ -132,7 +132,8 @@ export const useClientIntegration = (userId: string) => {
       return;
     }
 
-    window.open(`/client-portal/${client.portal_token}`, '_blank');
+    const url = `${import.meta.env.VITE_APP_URL}/client-portal/${client.portal_token}`;
+    window.open(url, '_blank');
   };
 
   return {

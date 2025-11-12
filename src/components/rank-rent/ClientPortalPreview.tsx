@@ -7,7 +7,7 @@ interface ClientPortalPreviewProps {
 }
 
 export const ClientPortalPreview = ({ portalToken }: ClientPortalPreviewProps) => {
-  const portalUrl = `/client-portal/${portalToken}`;
+  const portalUrl = `${import.meta.env.VITE_APP_URL}/client-portal/${portalToken}`;
 
   return (
     <Card className="mt-6">
