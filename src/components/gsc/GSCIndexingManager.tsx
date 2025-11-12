@@ -307,40 +307,6 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         </CardContent>
       </Card>
 
-      {/* Alerta de APIs não configuradas */}
-      {recentRequests.some(r => r.status === 'error' && 
-        (r.error_message?.includes('API') || 
-         r.error_message?.includes('PERMISSION_DENIED') ||
-         r.error_message?.includes('403') ||
-         r.error_message?.includes('SERVICE_DISABLED'))) && (
-        <Alert variant="destructive" className="border-red-500 bg-red-50">
-          <AlertTriangle className="h-5 w-5" />
-          <div className="flex-1">
-            <h4 className="text-lg font-semibold mb-2">APIs do Google não configuradas corretamente!</h4>
-            <p className="mb-3">Detectamos erros de permissão nas suas solicitações recentes. Verifique se você ativou <strong>AMBAS</strong> as APIs no Google Cloud:</p>
-            <ul className="list-disc pl-6 space-y-1 mb-3">
-              <li><strong>Search Console API</strong> - Para gerenciar sitemaps e propriedades</li>
-              <li><strong>Web Search Indexing API</strong> - OBRIGATÓRIA para indexação individual de URLs</li>
-            </ul>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.open('https://console.cloud.google.com/apis/library/indexing.googleapis.com', '_blank')}
-              >
-                Ativar Indexing API
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.open('https://console.cloud.google.com/apis/library/searchconsole.googleapis.com', '_blank')}
-              >
-                Ativar Search Console API
-              </Button>
-            </div>
-          </div>
-        </Alert>
-      )}
 
       {/* Quota Card */}
       <Card>
