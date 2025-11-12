@@ -816,6 +816,151 @@ export type Database = {
           },
         ]
       }
+      gsc_schedule_execution_logs: {
+        Row: {
+          error_message: string | null
+          executed_at: string
+          execution_duration_ms: number | null
+          id: string
+          integration_id: string | null
+          integration_name: string | null
+          schedule_id: string
+          sitemaps_attempted: string[]
+          sitemaps_failed: string[] | null
+          sitemaps_succeeded: string[] | null
+          status: string
+        }
+        Insert: {
+          error_message?: string | null
+          executed_at?: string
+          execution_duration_ms?: number | null
+          id?: string
+          integration_id?: string | null
+          integration_name?: string | null
+          schedule_id: string
+          sitemaps_attempted: string[]
+          sitemaps_failed?: string[] | null
+          sitemaps_succeeded?: string[] | null
+          status: string
+        }
+        Update: {
+          error_message?: string | null
+          executed_at?: string
+          execution_duration_ms?: number | null
+          id?: string
+          integration_id?: string | null
+          integration_name?: string | null
+          schedule_id?: string
+          sitemaps_attempted?: string[]
+          sitemaps_failed?: string[] | null
+          sitemaps_succeeded?: string[] | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_schedule_execution_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_schedule_execution_logs_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_sitemap_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_sitemap_schedules: {
+        Row: {
+          created_at: string
+          id: string
+          integration_id: string | null
+          interval_hours: number | null
+          is_active: boolean
+          last_run_at: string | null
+          next_run_at: string
+          schedule_name: string
+          schedule_type: string
+          site_id: string
+          sitemap_paths: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          integration_id?: string | null
+          interval_hours?: number | null
+          is_active?: boolean
+          last_run_at?: string | null
+          next_run_at: string
+          schedule_name: string
+          schedule_type: string
+          site_id: string
+          sitemap_paths?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          integration_id?: string | null
+          interval_hours?: number | null
+          is_active?: boolean
+          last_run_at?: string | null
+          next_run_at?: string
+          schedule_name?: string
+          schedule_type?: string
+          site_id?: string
+          sitemap_paths?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_sitemap_schedules_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_sitemap_schedules_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gsc_sitemap_schedules_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_sitemap_schedules_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gsc_sitemap_schedules_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_sitemap_schedules_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gsc_sitemap_submissions: {
         Row: {
           created_at: string | null
