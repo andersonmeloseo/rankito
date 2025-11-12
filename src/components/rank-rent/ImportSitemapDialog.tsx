@@ -7,10 +7,12 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, CheckCircle2, Download } from "lucide-react";
+import { Loader2, CheckCircle2, Download, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ImportSitemapDialogProps {
@@ -364,47 +366,81 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
 
           {result && (
             <div className="space-y-4">
-              <div className="space-y-3 rounded-lg border p-4 bg-muted/50">
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircle2 className="h-5 w-5" />
-                  <span className="font-semibold">✅ Importação Concluída!</span>
+              {/* CARDS PRINCIPAIS - DESTAQUE MÁXIMO */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Card: Total de URLs */}
+                <div className="p-6 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/20">
+                  <div className="text-sm text-blue-700 dark:text-blue-400 font-medium mb-2">
+                    🔍 Total de URLs Encontradas
+                  </div>
+                  <div className="text-4xl font-bold text-blue-900 dark:text-blue-100">
+                    {result.allRawUrls?.length?.toLocaleString() || 0}
+                  </div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    URLs brutas do sitemap
+                  </div>
                 </div>
-                
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Sitemaps Selecionados:</span>
-                    <span className="font-medium">{result.selectedSitemapsCount}/{discoveredSitemaps.length}</span>
+
+                {/* Card: Páginas Únicas */}
+                <div className="p-6 rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-950/20">
+                  <div className="text-sm text-green-700 dark:text-green-400 font-medium mb-2">
+                    ✅ Páginas Únicas Importadas
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">URLs Encontradas:</span>
-                    <span className="font-medium">{result.allRawUrls?.length?.toLocaleString()}</span>
+                  <div className="text-4xl font-bold text-green-900 dark:text-green-100">
+                    {result.uniqueUrls?.toLocaleString() || 0}
                   </div>
-                  {result.duplicatesRemoved > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-orange-600">Duplicatas Removidas:</span>
-                      <span className="font-medium text-orange-600">-{result.duplicatesRemoved}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-green-600 font-semibold">URLs Únicas Importadas:</span>
-                    <span className="font-semibold text-green-600">{result.uniqueUrls?.toLocaleString()}</span>
+                  <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    Após remoção de duplicatas
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Páginas Novas:</span>
-                    <span className="font-medium text-green-600">✨ {result.newPages}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Páginas Atualizadas:</span>
-                    <span className="font-medium text-blue-600">🔄 {result.updatedPages}</span>
-                  </div>
-                  {result.deactivatedPages > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Páginas Desativadas:</span>
-                      <span className="font-medium text-orange-600">⚠️ {result.deactivatedPages}</span>
-                    </div>
-                  )}
                 </div>
               </div>
+
+              {/* Card: Duplicatas (se houver) */}
+              {result.duplicatesRemoved > 0 && (
+                <Alert className="border-orange-400 bg-orange-50 dark:bg-orange-950/20">
+                  <AlertCircle className="h-5 w-5 text-orange-600" />
+                  <AlertDescription>
+                    <div className="font-semibold text-orange-900 dark:text-orange-100">
+                      {result.duplicatesRemoved} URLs duplicadas foram removidas
+                    </div>
+                    <div className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                      {result.allRawUrls?.length} URLs encontradas → {result.uniqueUrls} páginas únicas 
+                      = {result.duplicatesRemoved} duplicatas removidas
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Detalhes Adicionais (colapsável) */}
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    📊 Ver Detalhes Adicionais
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="mt-3 space-y-2 text-sm p-4 bg-muted/50 rounded-lg">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Sitemaps Selecionados:</span>
+                      <span className="font-medium">{result.selectedSitemapsCount}/{discoveredSitemaps.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Páginas Novas:</span>
+                      <span className="font-medium text-green-600">✨ {result.newPages}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Páginas Atualizadas:</span>
+                      <span className="font-medium text-blue-600">🔄 {result.updatedPages}</span>
+                    </div>
+                    {result.deactivatedPages > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Páginas Desativadas:</span>
+                        <span className="font-medium text-orange-600">⚠️ {result.deactivatedPages}</span>
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
 
               {/* URL Visualization Section */}
               {result.allRawUrls && result.allRawUrls.length > 0 && (
