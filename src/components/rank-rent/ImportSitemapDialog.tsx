@@ -374,7 +374,7 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
                     🔍 Total de URLs Encontradas
                   </div>
                   <div className="text-4xl font-bold text-blue-900 dark:text-blue-100">
-                    {result.allRawUrls?.length?.toLocaleString() || 0}
+                    {result.totalUrlsFoundInSitemap?.toLocaleString() || 0}
                   </div>
                   <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                     URLs brutas do sitemap
@@ -404,7 +404,7 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
                       {result.duplicatesRemoved} URLs duplicadas foram removidas
                     </div>
                     <div className="text-sm text-orange-700 dark:text-orange-300 mt-1">
-                      {result.allRawUrls?.length} URLs encontradas → {result.uniqueUrls} páginas únicas 
+                      {result.totalUrlsFoundInSitemap} URLs encontradas → {result.uniqueUrls} páginas únicas 
                       = {result.duplicatesRemoved} duplicatas removidas
                     </div>
                   </AlertDescription>
