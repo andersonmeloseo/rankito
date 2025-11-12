@@ -67,6 +67,16 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
+  const getIconGradient = (color: string) => {
+    const gradients: Record<string, string> = {
+      'text-primary': 'icon-gradient-blue',
+      'text-success': 'icon-gradient-green',
+      'text-warning': 'icon-gradient-orange',
+      'text-accent': 'icon-gradient-emerald',
+    };
+    return gradients[color] || 'icon-gradient-blue';
+  };
+
   const cards = [
     {
       title: "Projetos Alugados",
@@ -121,14 +131,31 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <Card key={card.title} className="shadow-card hover:shadow-card-hover transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
-              <Icon className={`w-5 h-5 ${card.color}`} />
+          <Card 
+            key={card.title} 
+            className="group relative overflow-hidden border border-border/50 shadow-card hover:shadow-card-hover transition-all duration-300 card-hover bg-gradient-to-br from-card to-muted/30"
+          >
+            {/* Subtle Gradient on Hover */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold text-muted-foreground tracking-wide uppercase">
+                {card.title}
+              </CardTitle>
+              
+              {/* Icon with Colored Background */}
+              <div className={`p-2.5 rounded-xl ${getIconGradient(card.color)} shadow-sm transition-transform duration-200 group-hover:scale-110`}>
+                <Icon className="w-4 h-4 text-white" />
+              </div>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-foreground mb-2">{card.value}</div>
-              <p className="text-xs text-muted-foreground">{card.description}</p>
+            
+            <CardContent className="relative pt-1">
+              <div className="text-3xl font-bold text-foreground tracking-tight mb-1">
+                {card.value}
+              </div>
+              <p className="text-xs font-medium text-muted-foreground">
+                {card.description}
+              </p>
             </CardContent>
           </Card>
         );

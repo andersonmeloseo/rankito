@@ -246,28 +246,50 @@ const Dashboard = () => {
             </div>
           </div>
         <Tabs defaultValue="overview" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-5 max-w-5xl">
-            <TabsTrigger value="overview" className="gap-2">
-              <LayoutDashboard className="w-4 h-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="sites" className="gap-2">
-              <Globe className="w-4 h-4" />
-              Sites
-            </TabsTrigger>
-            <TabsTrigger value="crm" className="gap-2">
-              <Briefcase className="w-4 h-4" />
-              CRM
-            </TabsTrigger>
-            <TabsTrigger value="financial" className="gap-2">
-              <DollarSign className="w-4 h-4" />
-              Financeiro
-            </TabsTrigger>
-            <TabsTrigger value="clients" className="gap-2">
-              <Users className="w-4 h-4" />
-              Clientes
-            </TabsTrigger>
-          </TabsList>
+          <div className="border-b border-border/50 bg-muted/30">
+            <TabsList className="h-12 bg-transparent w-full max-w-5xl justify-start gap-1">
+              <TabsTrigger 
+                value="overview" 
+                className="relative gap-2 px-6 py-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-colors"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span className="relative z-10">Overview</span>
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary scale-x-0 data-[state=active]:scale-x-100 transition-transform duration-200" />
+              </TabsTrigger>
+              <TabsTrigger 
+                value="sites"
+                className="relative gap-2 px-6 py-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-colors"
+              >
+                <Globe className="w-4 h-4" />
+                <span className="relative z-10">Sites</span>
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary scale-x-0 data-[state=active]:scale-x-100 transition-transform duration-200" />
+              </TabsTrigger>
+              <TabsTrigger 
+                value="crm"
+                className="relative gap-2 px-6 py-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-colors"
+              >
+                <Briefcase className="w-4 h-4" />
+                <span className="relative z-10">CRM</span>
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary scale-x-0 data-[state=active]:scale-x-100 transition-transform duration-200" />
+              </TabsTrigger>
+              <TabsTrigger 
+                value="financial"
+                className="relative gap-2 px-6 py-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-colors"
+              >
+                <DollarSign className="w-4 h-4" />
+                <span className="relative z-10">Financeiro</span>
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary scale-x-0 data-[state=active]:scale-x-100 transition-transform duration-200" />
+              </TabsTrigger>
+              <TabsTrigger 
+                value="clients"
+                className="relative gap-2 px-6 py-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-colors"
+              >
+                <Users className="w-4 h-4" />
+                <span className="relative z-10">Clientes</span>
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary scale-x-0 data-[state=active]:scale-x-100 transition-transform duration-200" />
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="space-y-8">
             <LimitWarningBanner />

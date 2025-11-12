@@ -59,22 +59,22 @@ export const SubscriptionStatusBar = ({ compact = false }: SubscriptionStatusBar
   };
 
   return (
-    <div className="flex items-center gap-6 p-3 bg-muted/30 rounded-lg border">
+    <div className="flex items-center gap-6 p-4 bg-gradient-to-r from-muted/40 to-muted/20 rounded-xl border border-border/50 shadow-sm">
       {/* Indicador de Sites */}
       <div className="flex items-center gap-3 min-w-[200px]">
         <Globe className={`w-4 h-4 ${getSitesColor()}`} />
         <div className="flex-1">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-xs font-medium">Sites</span>
-            <span className={`text-xs font-semibold ${getSitesColor()}`}>
+            <span className="text-xs font-semibold">Sites</span>
+            <span className={`text-xs font-bold ${getSitesColor()}`}>
               {sitesCount}/{maxSites}
             </span>
           </div>
-          <Progress value={sitesProgress} className="h-1.5" />
+          <Progress value={sitesProgress} className="h-2 bg-muted/50" />
           {limits.remainingSites === 0 && (
             <div className="flex items-center gap-1 mt-1">
               <AlertCircle className="w-3 h-3 text-destructive" />
-              <span className="text-xs text-destructive">Limite atingido</span>
+              <span className="text-xs font-semibold text-destructive">Limite atingido</span>
             </div>
           )}
         </div>
@@ -86,18 +86,18 @@ export const SubscriptionStatusBar = ({ compact = false }: SubscriptionStatusBar
           <FileText className={`w-4 h-4 ${getPagesColor()}`} />
           <div className="flex-1">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-medium">Páginas (média)</span>
-              <span className={`text-xs font-semibold ${getPagesColor()}`}>
+              <span className="text-xs font-semibold">Páginas (média)</span>
+              <span className={`text-xs font-bold ${getPagesColor()}`}>
                 {avgPages}/{maxPages}
               </span>
             </div>
-            <Progress value={pagesProgress} className="h-1.5" />
+            <Progress value={pagesProgress} className="h-2 bg-muted/50" />
           </div>
         </div>
       )}
 
       {/* Badge do Plano */}
-      <Badge variant="outline" className="ml-auto">
+      <Badge variant="outline" className="ml-auto px-3 py-1 text-xs font-semibold bg-white/80 border-border/50 shadow-sm">
         {limits.plan?.name}
       </Badge>
     </div>

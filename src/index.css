@@ -131,36 +131,36 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Professional SaaS Dashboard Colors */
+    /* Pure White Backgrounds */
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 220 15% 20%;
 
-    /* Cards with subtle elevation */
+    /* Cards - Pure White */
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 15% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 15% 20%;
 
-    /* Primary: Professional Blue */
+    /* Primary: Modern Professional Blue */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 217 91% 55%;
 
-    /* Secondary: Neutral */
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary: Subtle Gray */
+    --secondary: 220 13% 97%;
+    --secondary-foreground: 220 15% 20%;
 
-    /* Muted backgrounds */
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    /* Muted - Almost White */
+    --muted: 220 13% 97%;
+    --muted-foreground: 220 9% 46%;
 
-    /* Accent: Success Green */
-    --accent: 142 71% 45%;
+    /* Accent: Professional Green */
+    --accent: 142 76% 36%;
     --accent-foreground: 0 0% 100%;
 
     /* Success states */
-    --success: 142 71% 45%;
+    --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
 
     /* Warning states */
@@ -171,12 +171,12 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders and inputs */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    /* Borders - Nearly Invisible */
+    --border: 220 13% 92%;
+    --input: 220 13% 92%;
     --ring: 217 91% 60%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
     /* Sidebar */
     --sidebar-background: 222 47% 11%;
@@ -200,9 +200,10 @@ All colors MUST be HSL.
     --color-info: 217 91% 60%;
     --color-neutral: 215 16% 47%;
     
-    /* Shadows */
-    --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-    --shadow-card-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    /* Refined Shadows */
+    --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.06);
+    --shadow-card-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+    --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     
     /* Chart colors - Subtle Professional Palette */
     --chart-1: 217 70% 55%;  /* Blue suave */
@@ -280,5 +281,37 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Glassmorphism Effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  
+  /* Card Hover Effect */
+  .card-hover {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Icon Gradient Backgrounds */
+  .icon-gradient-blue {
+    @apply bg-gradient-to-br from-blue-500 to-blue-600;
+  }
+  .icon-gradient-green {
+    @apply bg-gradient-to-br from-green-500 to-green-600;
+  }
+  .icon-gradient-orange {
+    @apply bg-gradient-to-br from-amber-500 to-amber-600;
+  }
+  .icon-gradient-emerald {
+    @apply bg-gradient-to-br from-emerald-500 to-emerald-600;
   }
 }
