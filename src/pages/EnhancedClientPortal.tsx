@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,11 +23,37 @@ import { MetricsCards } from '@/components/analytics/MetricsCards';
 import { EmptyState } from '@/components/client-portal/EmptyState';
 import { SavedReportsSection } from '@/components/client-portal/SavedReportsSection';
 import { ProjectSelector } from '@/components/client-portal/ProjectSelector';
+import { PeriodSelector } from '@/components/analytics/PeriodSelector';
 
 export const EnhancedClientPortal = () => {
   const { token } = useParams();
-  const [periodDays, setPeriodDays] = useState(30);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+
+  // Initialize with last 30 days
+  React.useEffect(() => {
+    if (!startDate && !endDate) {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(start.getDate() - 30);
+      setStartDate(start.toISOString().split('T')[0]);
+      setEndDate(end.toISOString().split('T')[0]);
+    }
+  }, []);
+
+  // Calculate period days from dates
+  const periodDays = React.useMemo(() => {
+    if (!startDate || !endDate) return 30;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  }, [startDate, endDate]);
+
+  const handlePeriodChange = (start: string, end: string) => {
+    setStartDate(start);
+    setEndDate(end);
+  };
 
   const { data: authData, isLoading: authLoading, error: authError } = usePortalAuth(token);
   const clientId = authData?.clientId;
@@ -169,7 +195,7 @@ export const EnhancedClientPortal = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       <ConversionToast conversion={realtimeConversions[0]} soundEnabled={true} />
       
-      <div className="max-w-7xl container mx-auto py-12 space-y-10">
+      <div className="max-w-[1800px] container mx-auto py-16 space-y-12 px-8">
         <EpicPortalHeader
           clientName={clientData?.name || 'Portal'}
           clientCompany={clientData?.company}
@@ -188,6 +214,15 @@ export const EnhancedClientPortal = () => {
           showProjectSwitch={clientProjects && clientProjects.length > 1}
           onSwitchProject={() => setSelectedProjectId(null)}
         />
+
+        {/* Period Selector */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-foreground">Período de Análise</h2>
+          <PeriodSelector 
+            onPeriodChange={handlePeriodChange}
+            defaultPeriod={30}
+          />
+        </div>
 
         {/* Professional Metrics Cards */}
         <MetricsCards
@@ -209,7 +244,7 @@ export const EnhancedClientPortal = () => {
           isLoading={false}
         />
 
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs defaultValue="overview" className="space-y-10">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">📊 Visão Geral</TabsTrigger>
             <TabsTrigger value="conversions">🎯 Conversões</TabsTrigger>

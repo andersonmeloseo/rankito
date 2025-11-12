@@ -49,29 +49,29 @@ export const PageViewsTab = ({ analytics, siteIds }: PageViewsTabProps) => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Linha 1: Cards de Resumo */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-10">
             <p className="text-sm text-muted-foreground">Total de Views</p>
             <p className="text-2xl font-bold">{(analytics.pageViews || 0).toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-10">
             <p className="text-sm text-muted-foreground">Páginas Únicas</p>
             <p className="text-2xl font-bold">{analytics.uniquePages || 0}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-10">
             <p className="text-sm text-muted-foreground">Média por Página</p>
             <p className="text-2xl font-bold">{averageViewsPerPage}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-10">
             <p className="text-sm text-muted-foreground">Visitantes Únicos</p>
             <p className="text-2xl font-bold">{analytics.uniqueVisitors || 0}</p>
           </CardContent>
@@ -87,7 +87,7 @@ export const PageViewsTab = ({ analytics, siteIds }: PageViewsTabProps) => {
       )}
       
       {/* Linha 3: Grid 2 colunas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {topPageViewsData.length > 0 && (
           <TopPageViewsChart data={topPageViewsData} isLoading={false} />
         )}

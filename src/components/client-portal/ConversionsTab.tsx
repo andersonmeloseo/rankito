@@ -50,35 +50,35 @@ export const ConversionsTab = ({ analytics, siteIds }: ConversionsTabProps) => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Linha 1: Cards de Resumo */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-10">
             <p className="text-sm text-muted-foreground">Total</p>
             <p className="text-2xl font-bold">{analytics.totalConversions || 0}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-10">
             <p className="text-sm text-muted-foreground">WhatsApp</p>
             <p className="text-2xl font-bold">{analytics.conversionsByType?.whatsapp_click || 0}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-10">
             <p className="text-sm text-muted-foreground">Telefone</p>
             <p className="text-2xl font-bold">{analytics.conversionsByType?.phone_click || 0}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-10">
             <p className="text-sm text-muted-foreground">Email</p>
             <p className="text-2xl font-bold">{analytics.conversionsByType?.email_click || 0}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-10">
             <p className="text-sm text-muted-foreground">Formulário</p>
             <p className="text-2xl font-bold">{analytics.conversionsByType?.form_submit || 0}</p>
           </CardContent>
@@ -91,7 +91,7 @@ export const ConversionsTab = ({ analytics, siteIds }: ConversionsTabProps) => {
       )}
       
       {/* Linha 3: Grid 2 colunas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {topConversionPagesData.length > 0 && (
           <TopConversionPagesChart data={topConversionPagesData} isLoading={false} />
         )}
