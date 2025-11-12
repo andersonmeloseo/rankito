@@ -27,9 +27,6 @@ verify_jwt = false
 [functions.validate-portal-token]
 verify_jwt = false
 
-[functions.track-rank-rent-conversion]
-verify_jwt = false
-
 [functions.import-sitemap]
 verify_jwt = true
 
