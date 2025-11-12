@@ -179,6 +179,18 @@ export function AddGSCIntegrationDialog({
             <AlertDescription className="space-y-4">
               <p className="font-semibold text-base">📋 Como obter o JSON da Service Account e conectar no Search Console:</p>
               
+              {/* Alert sobre 2 APIs */}
+              <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+                <p className="text-sm font-semibold text-orange-800 flex items-center gap-2">
+                  <XCircle className="h-4 w-4" />
+                  Atenção: Você precisa ativar DUAS APIs diferentes no Google Cloud
+                </p>
+                <ul className="text-xs text-orange-700 mt-2 space-y-1 pl-5">
+                  <li>✅ <strong>Search Console API</strong> - Para gerenciar sitemaps</li>
+                  <li>✅ <strong>Web Search Indexing API</strong> - Para indexar URLs individuais</li>
+                </ul>
+              </div>
+              
               <div className="space-y-4 text-sm">
                 {/* Etapa 1 */}
                 <div className="space-y-1">
@@ -200,30 +212,54 @@ export function AddGSCIntegrationDialog({
                   </ul>
                 </div>
 
-                {/* Etapa 2 */}
-                <div className="space-y-1">
-                  <p className="font-semibold">2. ⚙️ Ativar Search Console API</p>
+                {/* Etapa 2 - PRIMEIRA API */}
+                <div className="space-y-1 border-l-4 border-blue-500 pl-3">
+                  <p className="font-semibold text-blue-600">2. 🔌 Ativar Search Console API (1ª API)</p>
                   <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
                     <li>
                       Acesse{" "}
                       <a
-                        href="https://console.cloud.google.com/marketplace/product/google/searchconsole.googleapis.com?q=search&referrer=search"
+                        href="https://console.cloud.google.com/marketplace/product/google/searchconsole.googleapis.com"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline inline-flex items-center gap-1"
                       >
-                        Search Console API
+                        Search Console API no Marketplace
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     </li>
-                    <li><strong>Selecione o projeto</strong> que você acabou de criar</li>
-                    <li>Clique em <strong>"Ativar"</strong></li>
+                    <li><strong>Selecione o projeto</strong> que você criou na etapa anterior</li>
+                    <li>Clique em <strong>"Ativar"</strong> e aguarde a confirmação</li>
+                    <li className="text-blue-600 font-medium">✅ Esta API é usada para gerenciar sitemaps e propriedades</li>
                   </ul>
                 </div>
 
-                {/* Etapa 3 */}
+                {/* Etapa 3 - SEGUNDA API (CRÍTICA) */}
+                <div className="space-y-1 border-l-4 border-red-500 pl-3">
+                  <p className="font-semibold text-red-600">3. 🚨 Ativar Web Search Indexing API (2ª API - OBRIGATÓRIA)</p>
+                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
+                    <li>
+                      Acesse{" "}
+                      <a
+                        href="https://console.cloud.google.com/apis/library/indexing.googleapis.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        Web Search Indexing API no Marketplace
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </li>
+                    <li><strong>Selecione o mesmo projeto</strong> da etapa anterior</li>
+                    <li>Clique em <strong>"Ativar"</strong> e aguarde a confirmação (pode levar alguns minutos)</li>
+                    <li className="text-red-600 font-bold">⚠️ Sem esta API, a indexação individual de URLs NÃO funcionará</li>
+                    <li className="text-orange-600">💡 Esta API é separada da Search Console API e ambas são necessárias</li>
+                  </ul>
+                </div>
+
+                {/* Etapa 4 */}
                 <div className="space-y-1">
-                  <p className="font-semibold">3. 👤 Criar Conta de Serviço</p>
+                  <p className="font-semibold">4. 👤 Criar Conta de Serviço</p>
                   <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
                     <li>No menu lateral, vá em <code className="bg-muted px-1 py-0.5 rounded text-xs">IAM e Admin</code> → <code className="bg-muted px-1 py-0.5 rounded text-xs">Contas de Serviço</code></li>
                     <li>Clique em <strong>"+ Criar Conta de Serviço"</strong></li>
@@ -233,9 +269,9 @@ export function AddGSCIntegrationDialog({
                   </ul>
                 </div>
 
-                {/* Etapa 4 */}
+                {/* Etapa 5 */}
                 <div className="space-y-1">
-                  <p className="font-semibold">4. 🔑 Gerar Chave JSON</p>
+                  <p className="font-semibold">5. 🔑 Gerar Chave JSON</p>
                   <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
                     <li>Na lista de contas de serviço, localize o email que você criou</li>
                     <li>Clique nos <strong>três pontos</strong> (Ações) e depois em <strong>"Gerenciar Chaves"</strong></li>
@@ -246,9 +282,9 @@ export function AddGSCIntegrationDialog({
                   </ul>
                 </div>
 
-                {/* Etapa 5 - CRÍTICA */}
+                {/* Etapa 6 - CRÍTICA */}
                 <div className="space-y-1 border-l-4 border-orange-500 pl-3">
-                  <p className="font-semibold text-orange-600">5. 🚨 Adicionar Permissões no Search Console (CRÍTICO)</p>
+                  <p className="font-semibold text-orange-600">6. 🚨 Adicionar Permissões no Search Console (CRÍTICO)</p>
                   <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
                     <li>
                       Acesse{" "}
