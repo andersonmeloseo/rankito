@@ -605,7 +605,11 @@ export type Database = {
           access_token: string
           auto_submit_new_pages: boolean | null
           auto_submit_sitemaps: boolean | null
+          connection_name: string
           created_at: string | null
+          google_client_id: string | null
+          google_client_secret: string | null
+          google_email: string | null
           gsc_permission_level: string | null
           gsc_property_url: string
           id: string
@@ -621,7 +625,11 @@ export type Database = {
           access_token: string
           auto_submit_new_pages?: boolean | null
           auto_submit_sitemaps?: boolean | null
+          connection_name?: string
           created_at?: string | null
+          google_client_id?: string | null
+          google_client_secret?: string | null
+          google_email?: string | null
           gsc_permission_level?: string | null
           gsc_property_url: string
           id?: string
@@ -637,7 +645,11 @@ export type Database = {
           access_token?: string
           auto_submit_new_pages?: boolean | null
           auto_submit_sitemaps?: boolean | null
+          connection_name?: string
           created_at?: string | null
+          google_client_id?: string | null
+          google_client_secret?: string | null
+          google_email?: string | null
           gsc_permission_level?: string | null
           gsc_property_url?: string
           id?: string
@@ -844,6 +856,72 @@ export type Database = {
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          integration_id: string
+          site_id: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          integration_id: string
+          site_id: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          integration_id?: string
+          site_id?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_states_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oauth_states_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oauth_states_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "oauth_states_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oauth_states_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
             referencedColumns: ["id"]
           },
         ]
@@ -1890,6 +1968,7 @@ export type Database = {
           features: Json | null
           id: string
           is_active: boolean | null
+          max_gsc_integrations: number | null
           max_pages_per_site: number | null
           max_sites: number | null
           name: string
@@ -1905,6 +1984,7 @@ export type Database = {
           features?: Json | null
           id?: string
           is_active?: boolean | null
+          max_gsc_integrations?: number | null
           max_pages_per_site?: number | null
           max_sites?: number | null
           name: string
@@ -1920,6 +2000,7 @@ export type Database = {
           features?: Json | null
           id?: string
           is_active?: boolean | null
+          max_gsc_integrations?: number | null
           max_pages_per_site?: number | null
           max_sites?: number | null
           name?: string
@@ -2417,6 +2498,7 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_expired_oauth_states: { Args: never; Returns: undefined }
       get_parent_user_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
