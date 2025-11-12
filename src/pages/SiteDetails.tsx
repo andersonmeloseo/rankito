@@ -860,12 +860,12 @@ const SiteDetails = () => {
                             </TableHead>
                             <TableHead 
                               className="text-right cursor-pointer hover:bg-muted/50 select-none"
-                              onClick={() => handleSort("avg_time_on_page")}
+                              onClick={() => handleSort("last_conversion_at")}
                             >
                               <div className="flex items-center justify-end gap-2">
-                                <Clock className="w-4 h-4" />
-                                Tempo Médio
-                                <SortIcon column="avg_time_on_page" />
+                                <Calendar className="w-4 h-4" />
+                                Última Conversão
+                                <SortIcon column="last_conversion_at" />
                               </div>
                             </TableHead>
                             <TableHead 
@@ -934,31 +934,19 @@ const SiteDetails = () => {
                                 {page.conversion_rate || 0}%
                               </TableCell>
                               <TableCell className="text-right">
-                                {page.avg_time_on_page ? (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div className="flex items-center justify-end gap-1 cursor-help text-foreground">
-                                          <Clock className="w-3 h-3 text-muted-foreground" />
-                                          <span>
-                                            {Math.floor(page.avg_time_on_page / 60)}:
-                                            {(page.avg_time_on_page % 60).toString().padStart(2, '0')}
-                                          </span>
-                                        </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <div className="text-xs space-y-1">
-                                          <div>⏱️ Tempo ativo: {Math.floor(page.avg_time_on_page / 60)}min {page.avg_time_on_page % 60}s</div>
-                                          {page.avg_engagement_score && (
-                                            <div>📊 Engagement: {page.avg_engagement_score}/100</div>
-                                          )}
-                                          {page.avg_scroll_depth && (
-                                            <div>📜 Scroll: {page.avg_scroll_depth}%</div>
-                                          )}
-                                        </div>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                {page.last_conversion_at ? (
+                                  <div className="flex items-center justify-end gap-1 text-foreground text-sm">
+                                    <Calendar className="w-3 h-3 text-muted-foreground" />
+                                    <span>
+                                      {new Date(page.last_conversion_at).toLocaleDateString('pt-BR', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </span>
+                                  </div>
                                 ) : (
                                   <span className="text-muted-foreground">-</span>
                                 )}
