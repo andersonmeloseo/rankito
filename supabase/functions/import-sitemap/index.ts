@@ -211,57 +211,38 @@ serve(async (req) => {
     // Converter Map para array (apenas URLs únicas)
     const pagesToUpsert = Array.from(pagesMap.values());
     console.log(`Deduplicated: ${safeUrls.length} URLs -> ${pagesToUpsert.length} unique URLs`);
-    
-    // Separar páginas novas de páginas existentes
-    const pagesToInsert = pagesToUpsert.filter(p => !p.id);
-    const pagesToUpdate = pagesToUpsert.filter(p => p.id);
-    
-    console.log(`Existing pages in DB: ${existingPagesMap.size}`);
-    console.log(`New pages to insert: ${pagesToInsert.length}`);
-    console.log(`Existing pages to update: ${pagesToUpdate.length}`);
 
-    // 1. INSERT de páginas novas (sem campo id, deixa banco gerar)
-    if (pagesToInsert.length > 0) {
-      console.log(`Inserting ${pagesToInsert.length} new pages in batches of ${batch_size}`);
-      for (let i = 0; i < pagesToInsert.length; i += batch_size) {
-        const batch = pagesToInsert.slice(i, i + batch_size);
-        
-        // Remover campo id completamente dos objetos novos
-        const cleanBatch = batch.map(({ id, ...rest }) => rest);
-        
-        const { error, data } = await supabase
-          .from('rank_rent_pages')
-          .insert(cleanBatch)
-          .select('id');
-        
-        if (error) {
-          console.error('Batch insert error:', error);
-          errors += batch.length;
-        } else {
-          newPages += data?.length || 0;
-        }
-      }
-    }
+    // Processar TODAS as páginas com UPSERT (não separa INSERT/UPDATE)
+    console.log(`Upserting ${pagesToUpsert.length} pages in batches of ${batch_size}`);
 
-    // 2. UPDATE de páginas existentes (com id)
-    if (pagesToUpdate.length > 0) {
-      console.log(`Updating ${pagesToUpdate.length} existing pages in batches of ${batch_size}`);
-      for (let i = 0; i < pagesToUpdate.length; i += batch_size) {
-        const batch = pagesToUpdate.slice(i, i + batch_size);
+    for (let i = 0; i < pagesToUpsert.length; i += batch_size) {
+      const batch = pagesToUpsert.slice(i, i + batch_size);
+      
+      // Remover campo id para deixar o banco decidir (novo ou existente)
+      const cleanBatch = batch.map(({ id, ...rest }) => rest);
+      
+      const { error, data } = await supabase
+        .from('rank_rent_pages')
+        .upsert(cleanBatch, { 
+          onConflict: 'site_id,page_url',
+          ignoreDuplicates: false 
+        })
+        .select('id');
+
+      if (error) {
+        console.error('Batch upsert error:', error);
+        errors += batch.length;
+      } else {
+        // Todos os upserts bem-sucedidos
+        const upsertedCount = data?.length || batch.length;
         
-        const { error } = await supabase
-          .from('rank_rent_pages')
-          .upsert(batch, {
-            onConflict: 'site_id,page_url',
-            ignoreDuplicates: false
-          });
+        // Contar quantos já existiam
+        const existingCount = batch.filter(p => 
+          existingPagesMap.has(p.page_url)
+        ).length;
         
-        if (error) {
-          console.error('Batch update error:', error);
-          errors += batch.length;
-        } else {
-          updatedPages += batch.length;
-        }
+        newPages += upsertedCount - existingCount;
+        updatedPages += existingCount;
       }
     }
 
