@@ -26,12 +26,10 @@ import { ptBR } from "date-fns/locale";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
 
 interface GSCIndexingManagerProps {
-  integrationId: string;
-  integrationName: string;
   siteId: string;
 }
 
-export function GSCIndexingManager({ integrationId, integrationName, siteId }: GSCIndexingManagerProps) {
+export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const [customUrl, setCustomUrl] = useState("");
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [showBatchDialog, setShowBatchDialog] = useState(false);
@@ -44,9 +42,9 @@ export function GSCIndexingManager({ integrationId, integrationName, siteId }: G
     requestIndexing,
     isRequesting,
     refetchQuota,
-  } = useGSCIndexing({ integrationId });
+  } = useGSCIndexing({ siteId });
 
-  const { addToQueue, isAddingToQueue } = useGSCIndexingQueue({ integrationId });
+  const { addToQueue, isAddingToQueue } = useGSCIndexingQueue({ siteId });
 
   // Fetch site pages
   const { data: pages, isLoading: isLoadingPages } = useQuery({
@@ -161,7 +159,7 @@ export function GSCIndexingManager({ integrationId, integrationName, siteId }: G
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Send className="h-5 w-5" />
-                Indexação Instantânea - {integrationName}
+                Indexação Instantânea
               </CardTitle>
               <CardDescription className="mt-2">
                 Solicite a indexação de URLs diretamente ao Google Search Console (limite: 200 URLs/dia)

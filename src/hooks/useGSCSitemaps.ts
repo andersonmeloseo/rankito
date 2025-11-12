@@ -21,23 +21,38 @@ interface GSCSitemap {
 }
 
 interface UseGSCSitemapsParams {
-  integrationId: string | null;
+  siteId: string | null;
 }
 
-export function useGSCSitemaps({ integrationId }: UseGSCSitemapsParams) {
+export function useGSCSitemaps({ siteId }: UseGSCSitemapsParams) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch sitemaps
+  // Fetch sitemaps (agregado de todas integrações)
   const { data: sitemaps, isLoading, error, refetch } = useQuery({
-    queryKey: ['gsc-sitemaps', integrationId],
+    queryKey: ['gsc-sitemaps', siteId],
     queryFn: async () => {
-      if (!integrationId) return [];
+      if (!siteId) return [];
 
-      console.log('🔍 Fetching GSC sitemaps for integration:', integrationId);
+      console.log('🔍 Fetching aggregated GSC sitemaps for site:', siteId);
+
+      // Buscar todas integrações ativas
+      const { data: integrations, error: intError } = await supabase
+        .from('google_search_console_integrations')
+        .select('id')
+        .eq('site_id', siteId)
+        .eq('is_active', true);
+
+      if (intError || !integrations || integrations.length === 0) {
+        console.log('⚠️ No active integrations found for site');
+        return [];
+      }
+
+      // Buscar sitemaps da primeira integração (ou agregar de todas)
+      const firstIntegrationId = integrations[0].id;
 
       const { data, error } = await supabase.functions.invoke('gsc-get-sitemaps', {
-        body: { integration_id: integrationId },
+        body: { integration_id: firstIntegrationId },
       });
 
       if (error) {
@@ -48,13 +63,27 @@ export function useGSCSitemaps({ integrationId }: UseGSCSitemapsParams) {
       console.log('✅ Sitemaps fetched:', data.sitemaps?.length);
       return data.sitemaps as GSCSitemap[];
     },
-    enabled: !!integrationId,
+    enabled: !!siteId,
   });
 
-  // Submit sitemap mutation
+  // Submit sitemap mutation (sistema escolhe integração automaticamente)
   const submitSitemap = useMutation({
     mutationFn: async ({ sitemap_url }: { sitemap_url: string }) => {
-      if (!integrationId) throw new Error('No integration selected');
+      if (!siteId) throw new Error('No site selected');
+
+      // Buscar primeira integração ativa
+      const { data: integrations, error: intError } = await supabase
+        .from('google_search_console_integrations')
+        .select('id')
+        .eq('site_id', siteId)
+        .eq('is_active', true)
+        .limit(1);
+
+      if (intError || !integrations || integrations.length === 0) {
+        throw new Error('Nenhuma integração ativa encontrada');
+      }
+
+      const integrationId = integrations[0].id;
 
       console.log('📤 Submitting sitemap:', sitemap_url);
 
@@ -77,7 +106,7 @@ export function useGSCSitemaps({ integrationId }: UseGSCSitemapsParams) {
         title: "Sitemap submetido!",
         description: "Sitemap foi enviado ao Google Search Console com sucesso.",
       });
-      queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps', integrationId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps', siteId] });
     },
     onError: (error: Error) => {
       toast({
@@ -91,7 +120,21 @@ export function useGSCSitemaps({ integrationId }: UseGSCSitemapsParams) {
   // Delete sitemap mutation
   const deleteSitemap = useMutation({
     mutationFn: async ({ sitemap_url }: { sitemap_url: string }) => {
-      if (!integrationId) throw new Error('No integration selected');
+      if (!siteId) throw new Error('No site selected');
+
+      // Buscar primeira integração ativa
+      const { data: integrations, error: intError } = await supabase
+        .from('google_search_console_integrations')
+        .select('id')
+        .eq('site_id', siteId)
+        .eq('is_active', true)
+        .limit(1);
+
+      if (intError || !integrations || integrations.length === 0) {
+        throw new Error('Nenhuma integração ativa encontrada');
+      }
+
+      const integrationId = integrations[0].id;
 
       console.log('🗑️ Deleting sitemap:', sitemap_url);
 
@@ -114,7 +157,7 @@ export function useGSCSitemaps({ integrationId }: UseGSCSitemapsParams) {
         title: "Sitemap removido!",
         description: "Sitemap foi removido do Google Search Console.",
       });
-      queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps', integrationId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps', siteId] });
     },
     onError: (error: Error) => {
       toast({

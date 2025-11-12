@@ -54,20 +54,7 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(null);
-  const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
-  const [selectedIntegrationName, setSelectedIntegrationName] = useState<string>("");
   const [activeTab, setActiveTab] = useState("overview");
-
-  // Auto-selecionar primeira integração ativa quando carregar
-  useEffect(() => {
-    if (integrations && integrations.length > 0 && !selectedIntegrationId) {
-      const firstActive = integrations.find(int => int.is_active);
-      if (firstActive) {
-        setSelectedIntegrationId(firstActive.id);
-        setSelectedIntegrationName(firstActive.connection_name);
-      }
-    }
-  }, [integrations, selectedIntegrationId]);
 
   const handleAdd = (data: any) => {
     createIntegration.mutate({
@@ -116,27 +103,15 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
             <LinkIcon className="h-4 w-4" />
             Integrações
           </TabsTrigger>
-          <TabsTrigger 
-            value="sitemaps" 
-            className="flex items-center gap-2"
-            disabled={!selectedIntegrationId}
-          >
+          <TabsTrigger value="sitemaps" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Sitemaps
           </TabsTrigger>
-          <TabsTrigger 
-            value="indexing" 
-            className="flex items-center gap-2"
-            disabled={!selectedIntegrationId}
-          >
+          <TabsTrigger value="indexing" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
             Indexação
           </TabsTrigger>
-          <TabsTrigger 
-            value="queue" 
-            className="flex items-center gap-2"
-            disabled={!selectedIntegrationId}
-          >
+          <TabsTrigger value="queue" className="flex items-center gap-2">
             <ListOrdered className="h-4 w-4" />
             Fila
           </TabsTrigger>
@@ -253,19 +228,6 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedIntegrationId(integration.id);
-                            setSelectedIntegrationName(integration.connection_name);
-                            setActiveTab("sitemaps");
-                          }}
-                          disabled={!integration.is_active}
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          Gerenciar
-                        </Button>
-                        <Button
-                          size="sm"
                           variant="ghost"
                           onClick={() => handleDeleteClick(integration.id)}
                           disabled={isDeleting}
@@ -292,30 +254,18 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
         </TabsContent>
 
         <TabsContent value="sitemaps">
-          {selectedIntegrationId && (
-            <GSCSitemapsManager
-              integrationId={selectedIntegrationId}
-              integrationName={selectedIntegrationName}
-              siteId={siteId}
-              userId={userId}
-            />
-          )}
+          <GSCSitemapsManager
+            siteId={siteId}
+            userId={userId}
+          />
         </TabsContent>
 
         <TabsContent value="indexing">
-          {selectedIntegrationId && (
-            <GSCIndexingManager
-              integrationId={selectedIntegrationId}
-              integrationName={selectedIntegrationName}
-              siteId={siteId}
-            />
-          )}
+          <GSCIndexingManager siteId={siteId} />
         </TabsContent>
 
         <TabsContent value="queue">
-          {selectedIntegrationId && (
-            <GSCIndexingQueue integrationId={selectedIntegrationId} />
-          )}
+          <GSCIndexingQueue siteId={siteId} />
         </TabsContent>
       </Tabs>
 

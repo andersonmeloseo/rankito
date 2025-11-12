@@ -36,68 +36,102 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { integration_id, url, page_id, request_type = 'URL_UPDATED' } = await req.json();
+    const { site_id, url, page_id, request_type = 'URL_UPDATED' } = await req.json();
 
-    if (!integration_id || !url) {
+    if (!site_id || !url) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: integration_id, url' }),
+        JSON.stringify({ error: 'Missing required fields: site_id, url' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('📋 Params:', { integration_id, url, request_type });
+    console.log('📋 Params:', { site_id, url, request_type });
+
+    // Buscar todas integrações ativas do site
+    const { data: integrations, error: integrationsError } = await supabase
+      .from('google_search_console_integrations')
+      .select('*')
+      .eq('site_id', site_id)
+      .eq('is_active', true);
+
+    if (integrationsError || !integrations || integrations.length === 0) {
+      throw new Error('Nenhuma integração ativa encontrada para este site');
+    }
+
+    console.log(`🔍 Found ${integrations.length} active integrations`);
+
+    // Verificar quota de cada integração e escolher a com mais quota disponível
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const integrationsWithQuota = await Promise.all(
+      integrations.map(async (integration) => {
+        const { count, error: countError } = await supabase
+          .from('gsc_url_indexing_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('integration_id', integration.id)
+          .gte('submitted_at', today.toISOString());
+
+        if (countError) {
+          console.error('❌ Error checking quota:', countError);
+        }
+
+        const usedQuota = count || 0;
+        const remainingQuota = DAILY_QUOTA_LIMIT - usedQuota;
+
+        return {
+          ...integration,
+          used_quota: usedQuota,
+          remaining_quota: remainingQuota,
+        };
+      })
+    );
+
+    // Filtrar integrações com quota disponível e escolher a com mais quota
+    const availableIntegrations = integrationsWithQuota.filter(int => int.remaining_quota > 0);
+
+    if (availableIntegrations.length === 0) {
+      return new Response(
+        JSON.stringify({
+          error: 'Daily quota exceeded',
+          message: `Limite diário de ${DAILY_QUOTA_LIMIT} URLs atingido em todas as integrações. Tente novamente amanhã.`,
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Ordenar por quota restante (maior primeiro) e escolher a primeira
+    availableIntegrations.sort((a, b) => b.remaining_quota - a.remaining_quota);
+    const selectedIntegration = availableIntegrations[0];
+    const integration_id = selectedIntegration.id;
+
+    console.log(`✅ Selected integration ${selectedIntegration.connection_name} with ${selectedIntegration.remaining_quota} remaining quota`);
 
     // Buscar integração com token válido
     const integration = await getIntegrationWithValidToken(integration_id);
 
     console.log('🔐 Integration found:', integration.connection_name);
 
-    // Verificar quota diária
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const { count, error: countError } = await supabase
-      .from('gsc_url_indexing_requests')
-      .select('*', { count: 'exact', head: true })
-      .eq('integration_id', integration_id)
-      .gte('submitted_at', today.toISOString());
+    // Buscar site_id da integração para atualizar páginas depois
+    const integrationSiteId = selectedIntegration.site_id;
 
-    if (countError) {
-      console.error('❌ Error checking quota:', countError);
-      throw new Error('Failed to check daily quota');
-    }
-
-    const usedQuota = count || 0;
-    const remainingQuota = DAILY_QUOTA_LIMIT - usedQuota;
+    const usedQuota = selectedIntegration.used_quota;
+    const remainingQuota = selectedIntegration.remaining_quota;
 
     console.log('📊 Quota status:', {
+      integration: selectedIntegration.connection_name,
       used: usedQuota,
       limit: DAILY_QUOTA_LIMIT,
       remaining: remainingQuota,
     });
 
-    if (usedQuota >= DAILY_QUOTA_LIMIT) {
-      return new Response(
-        JSON.stringify({
-          error: 'Daily quota exceeded',
-          message: `Limite diário de ${DAILY_QUOTA_LIMIT} URLs atingido. Tente novamente amanhã.`,
-          quota: {
-            used: usedQuota,
-            limit: DAILY_QUOTA_LIMIT,
-            remaining: 0,
-          },
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verificar se URL já foi indexada nas últimas 24h
+    // Verificar se URL já foi indexada nas últimas 24h (em qualquer integração do site)
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     
     const { data: recentRequest, error: recentError } = await supabase
       .from('gsc_url_indexing_requests')
-      .select('*')
-      .eq('integration_id', integration_id)
+      .select('*, google_search_console_integrations!inner(site_id)')
+      .eq('google_search_console_integrations.site_id', site_id)
       .eq('url', url)
       .gte('submitted_at', twentyFourHoursAgo.toISOString())
       .order('submitted_at', { ascending: false })
@@ -183,6 +217,18 @@ Deno.serve(async (req) => {
     if (dbError) {
       console.error('❌ Database error:', dbError);
       throw new Error('Failed to save indexing request');
+    }
+
+    // Atualizar status GSC na página se page_id foi fornecido
+    if (page_id) {
+      await supabase
+        .from('rank_rent_pages')
+        .update({
+          gsc_indexation_status: 'submitted',
+          gsc_integration_used: selectedIntegration.connection_name,
+          gsc_last_checked_at: new Date().toISOString(),
+        })
+        .eq('id', page_id);
     }
 
     console.log('✅ Request saved to database');

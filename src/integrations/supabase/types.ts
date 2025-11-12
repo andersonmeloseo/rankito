@@ -289,6 +289,13 @@ export type Database = {
             foreignKeyName: "crm_deals_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "crm_deals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_contract_status"
             referencedColumns: ["id"]
           },
@@ -654,6 +661,13 @@ export type Database = {
             foreignKeyName: "google_search_console_integrations_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "google_search_console_integrations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_contract_status"
             referencedColumns: ["id"]
           },
@@ -858,6 +872,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "google_search_console_integrations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_sitemap_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "gsc_sitemap_submissions_site_id_fkey"
@@ -1178,6 +1199,13 @@ export type Database = {
             foreignKeyName: "rank_rent_conversions_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_conversions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_contract_status"
             referencedColumns: ["id"]
           },
@@ -1277,6 +1305,13 @@ export type Database = {
             foreignKeyName: "rank_rent_financial_config_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: true
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_financial_config_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
             referencedRelation: "rank_rent_contract_status"
             referencedColumns: ["id"]
           },
@@ -1308,6 +1343,11 @@ export type Database = {
           client_id: string | null
           created_at: string
           cta_config: Json | null
+          gsc_indexation_status: string | null
+          gsc_indexed_at: string | null
+          gsc_integration_used: string | null
+          gsc_last_checked_at: string | null
+          gsc_last_crawled_at: string | null
           id: string
           is_rented: boolean | null
           last_scraped_at: string | null
@@ -1324,6 +1364,11 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           cta_config?: Json | null
+          gsc_indexation_status?: string | null
+          gsc_indexed_at?: string | null
+          gsc_integration_used?: string | null
+          gsc_last_checked_at?: string | null
+          gsc_last_crawled_at?: string | null
           id?: string
           is_rented?: boolean | null
           last_scraped_at?: string | null
@@ -1340,6 +1385,11 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           cta_config?: Json | null
+          gsc_indexation_status?: string | null
+          gsc_indexed_at?: string | null
+          gsc_integration_used?: string | null
+          gsc_last_checked_at?: string | null
+          gsc_last_crawled_at?: string | null
           id?: string
           is_rented?: boolean | null
           last_scraped_at?: string | null
@@ -1366,6 +1416,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "rank_rent_pages_site_id_fkey"
@@ -1457,6 +1514,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_payments_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "rank_rent_payments_site_id_fkey"
@@ -1653,6 +1717,13 @@ export type Database = {
             foreignKeyName: "report_shares_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "report_shares_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_contract_status"
             referencedColumns: ["id"]
           },
@@ -1738,6 +1809,13 @@ export type Database = {
             foreignKeyName: "saved_reports_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "saved_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_contract_status"
             referencedColumns: ["id"]
           },
@@ -1799,6 +1877,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "scheduled_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
           {
             foreignKeyName: "scheduled_reports_site_id_fkey"
             columns: ["site_id"]
@@ -1876,6 +1961,13 @@ export type Database = {
           urls_imported?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sitemap_import_jobs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
           {
             foreignKeyName: "sitemap_import_jobs_site_id_fkey"
             columns: ["site_id"]
@@ -2208,6 +2300,18 @@ export type Database = {
           },
         ]
       }
+      gsc_aggregated_quota_status: {
+        Row: {
+          site_id: string | null
+          site_name: string | null
+          total_daily_limit: number | null
+          total_integrations: number | null
+          total_remaining_today: number | null
+          total_used_today: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       rank_rent_contract_status: {
         Row: {
           auto_renew: boolean | null
@@ -2266,6 +2370,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "rank_rent_pages_site_id_fkey"
@@ -2338,6 +2449,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "rank_rent_pages_site_id_fkey"
@@ -2447,6 +2565,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rank_rent_clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "rank_rent_pages_site_id_fkey"

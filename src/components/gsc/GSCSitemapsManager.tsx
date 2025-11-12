@@ -37,13 +37,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 interface GSCSitemapsManagerProps {
-  integrationId: string;
-  integrationName: string;
   siteId: string;
   userId: string;
 }
 
-export function GSCSitemapsManager({ integrationId, integrationName, siteId, userId }: GSCSitemapsManagerProps) {
+export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) {
   const [newSitemapUrl, setNewSitemapUrl] = useState("");
   const [showDiscovery, setShowDiscovery] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -58,7 +56,7 @@ export function GSCSitemapsManager({ integrationId, integrationName, siteId, use
     deleteSitemap,
     isSubmitting,
     isDeleting,
-  } = useGSCSitemaps({ integrationId });
+  } = useGSCSitemaps({ siteId });
 
   const {
     discoveredSitemaps,
@@ -75,7 +73,7 @@ export function GSCSitemapsManager({ integrationId, integrationName, siteId, use
     reset,
   } = useDiscoverSitemaps({ siteId, userId });
 
-  const { addToQueue } = useGSCIndexingQueue({ integrationId });
+  const { addToQueue } = useGSCIndexingQueue({ siteId });
 
   // Fetch site URL for auto-discovery
   const { data: siteData } = useQuery({
@@ -190,7 +188,7 @@ export function GSCSitemapsManager({ integrationId, integrationName, siteId, use
             <div>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Sitemaps do {integrationName}
+                Sitemaps
               </CardTitle>
               <CardDescription className="mt-2">
                 Descubra, selecione e envie sitemaps ao Google Search Console

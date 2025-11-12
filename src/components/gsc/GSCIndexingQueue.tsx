@@ -19,11 +19,11 @@ import {
 import { useState } from "react";
 
 interface GSCIndexingQueueProps {
-  integrationId: string;
+  siteId: string;
 }
 
-export const GSCIndexingQueue = ({ integrationId }: GSCIndexingQueueProps) => {
-  const { queueItems, batches, queueStats, isLoadingQueue, cancelBatch, removeFromQueue } = useGSCIndexingQueue({ integrationId });
+export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
+  const { queueItems, batches, queueStats, isLoadingQueue, cancelBatch, removeFromQueue } = useGSCIndexingQueue({ siteId });
   const [batchToCancel, setBatchToCancel] = useState<string | null>(null);
 
   const getStatusBadge = (status: string) => {

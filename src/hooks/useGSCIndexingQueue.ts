@@ -29,23 +29,23 @@ interface Batch {
 }
 
 interface UseGSCIndexingQueueParams {
-  integrationId: string | null;
+  siteId: string | null;
 }
 
-export function useGSCIndexingQueue({ integrationId }: UseGSCIndexingQueueParams) {
+export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch queue items
+  // Fetch queue items (agregado de todas integrações do site)
   const { data: queueData, isLoading: isLoadingQueue } = useQuery({
-    queryKey: ['gsc-indexing-queue', integrationId],
+    queryKey: ['gsc-indexing-queue', siteId],
     queryFn: async () => {
-      if (!integrationId) return null;
+      if (!siteId) return null;
 
       const { data, error } = await supabase
         .from('gsc_indexing_queue')
-        .select('*')
-        .eq('integration_id', integrationId)
+        .select('*, google_search_console_integrations!inner(site_id, connection_name)')
+        .eq('google_search_console_integrations.site_id', siteId)
         .order('scheduled_for', { ascending: true })
         .order('created_at', { ascending: true });
 
@@ -53,32 +53,32 @@ export function useGSCIndexingQueue({ integrationId }: UseGSCIndexingQueueParams
 
       return data as QueueItem[];
     },
-    enabled: !!integrationId,
+    enabled: !!siteId,
     refetchInterval: 10000, // Refetch a cada 10 segundos
   });
 
-  // Fetch batches
+  // Fetch batches (agregado de todas integrações do site)
   const { data: batchesData, isLoading: isLoadingBatches } = useQuery({
-    queryKey: ['gsc-indexing-batches', integrationId],
+    queryKey: ['gsc-indexing-batches', siteId],
     queryFn: async () => {
-      if (!integrationId) return null;
+      if (!siteId) return null;
 
       const { data, error } = await supabase
         .from('gsc_indexing_batches')
-        .select('*')
-        .eq('integration_id', integrationId)
+        .select('*, google_search_console_integrations!inner(site_id, connection_name)')
+        .eq('google_search_console_integrations.site_id', siteId)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
       if (error) throw new Error(error.message);
 
       return data as Batch[];
     },
-    enabled: !!integrationId,
+    enabled: !!siteId,
     refetchInterval: 10000,
   });
 
-  // Add URLs to queue mutation
+  // Add URLs to queue mutation (agora usa site_id e distribui entre integrações automaticamente)
   const addToQueue = useMutation({
     mutationFn: async ({
       urls,
@@ -87,7 +87,21 @@ export function useGSCIndexingQueue({ integrationId }: UseGSCIndexingQueueParams
       urls: { url: string; page_id?: string }[];
       distribution: 'fast' | 'even';
     }) => {
-      if (!integrationId) throw new Error('No integration selected');
+      if (!siteId) throw new Error('No site selected');
+
+      // Buscar todas integrações ativas do site
+      const { data: integrations, error: intError } = await supabase
+        .from('google_search_console_integrations')
+        .select('id')
+        .eq('site_id', siteId)
+        .eq('is_active', true);
+
+      if (intError || !integrations || integrations.length === 0) {
+        throw new Error('Nenhuma integração ativa encontrada para este site');
+      }
+
+      // Escolher primeira integração (ou implementar round-robin)
+      const integrationId = integrations[0].id;
 
       // Criar batch
       const { data: batch, error: batchError } = await supabase
@@ -138,8 +152,9 @@ export function useGSCIndexingQueue({ integrationId }: UseGSCIndexingQueueParams
         title: "URLs adicionadas à fila!",
         description: `${data.totalUrls} URLs foram agendadas para indexação.`,
       });
-      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', integrationId] });
-      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-batches', integrationId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-batches', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota', siteId] });
     },
     onError: (error: Error) => {
       toast({
@@ -175,8 +190,8 @@ export function useGSCIndexingQueue({ integrationId }: UseGSCIndexingQueueParams
         title: "Batch cancelado",
         description: "As URLs pendentes foram removidas da fila.",
       });
-      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', integrationId] });
-      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-batches', integrationId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-batches', siteId] });
     },
     onError: (error: Error) => {
       toast({
@@ -202,7 +217,7 @@ export function useGSCIndexingQueue({ integrationId }: UseGSCIndexingQueueParams
       toast({
         title: "URL removida da fila",
       });
-      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', integrationId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', siteId] });
     },
     onError: (error: Error) => {
       toast({

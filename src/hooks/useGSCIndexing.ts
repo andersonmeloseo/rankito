@@ -25,42 +25,60 @@ interface IndexingRequest {
 }
 
 interface UseGSCIndexingParams {
-  integrationId: string | null;
+  siteId: string | null;
 }
 
-export function useGSCIndexing({ integrationId }: UseGSCIndexingParams) {
+export function useGSCIndexing({ siteId }: UseGSCIndexingParams) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch quota
+  // Fetch aggregated quota
   const { data: quotaData, isLoading: isLoadingQuota, refetch: refetchQuota } = useQuery({
-    queryKey: ['gsc-quota', integrationId],
+    queryKey: ['gsc-aggregated-quota', siteId],
     queryFn: async () => {
-      if (!integrationId) return null;
+      if (!siteId) return null;
 
-      console.log('🔍 Fetching GSC quota for integration:', integrationId);
+      console.log('🔍 Fetching aggregated GSC quota for site:', siteId);
 
-      const { data, error } = await supabase.functions.invoke('gsc-get-quota', {
-        body: { integration_id: integrationId },
+      const { data, error } = await supabase.functions.invoke('gsc-get-aggregated-quota', {
+        body: { site_id: siteId },
       });
 
       if (error) {
-        console.error('❌ Error fetching quota:', error);
-        throw new Error(error.message || 'Failed to fetch quota');
+        console.error('❌ Error fetching aggregated quota:', error);
+        throw new Error(error.message || 'Failed to fetch aggregated quota');
       }
 
-      console.log('✅ Quota fetched:', data.quota);
+      // Buscar histórico recente de todas integrações
+      const { data: requests, error: requestsError } = await supabase
+        .from('gsc_url_indexing_requests')
+        .select('*, google_search_console_integrations!inner(site_id)')
+        .eq('google_search_console_integrations.site_id', siteId)
+        .order('submitted_at', { ascending: false })
+        .limit(20);
+
+      if (requestsError) {
+        console.error('❌ Error fetching requests:', requestsError);
+      }
+
+      console.log('✅ Aggregated quota fetched:', data.aggregated_quota);
       return {
-        quota: data.quota as IndexingQuota,
-        recent_requests: data.recent_requests as IndexingRequest[],
-        reset_at: data.reset_at as string,
+        quota: {
+          used: data.aggregated_quota.total_used,
+          limit: data.aggregated_quota.total_limit,
+          remaining: data.aggregated_quota.total_remaining,
+          percentage: data.aggregated_quota.percentage,
+        } as IndexingQuota,
+        recent_requests: (requests || []) as IndexingRequest[],
+        reset_at: new Date().toISOString(),
+        breakdown: data.aggregated_quota.breakdown,
       };
     },
-    enabled: !!integrationId,
+    enabled: !!siteId,
     refetchInterval: 30000, // Refetch a cada 30 segundos
   });
 
-  // Request indexing mutation
+  // Request indexing mutation (agora sem integration_id - sistema escolhe automaticamente)
   const requestIndexing = useMutation({
     mutationFn: async ({ 
       url, 
@@ -71,13 +89,13 @@ export function useGSCIndexing({ integrationId }: UseGSCIndexingParams) {
       page_id?: string;
       request_type?: 'URL_UPDATED' | 'URL_DELETED';
     }) => {
-      if (!integrationId) throw new Error('No integration selected');
+      if (!siteId) throw new Error('No site selected');
 
       console.log('📤 Requesting indexing for URL:', url);
 
       const { data, error } = await supabase.functions.invoke('gsc-request-indexing', {
         body: {
-          integration_id: integrationId,
+          site_id: siteId,
           url,
           page_id,
           request_type,
@@ -96,7 +114,8 @@ export function useGSCIndexing({ integrationId }: UseGSCIndexingParams) {
         title: "URL enviada para indexação!",
         description: `Google Search Console receberá a solicitação em breve. Quota restante: ${data.quota.remaining}/${data.quota.limit}`,
       });
-      queryClient.invalidateQueries({ queryKey: ['gsc-quota', integrationId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['site-pages', siteId] });
       refetchQuota();
     },
     onError: (error: Error) => {
