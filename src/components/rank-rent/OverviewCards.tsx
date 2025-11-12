@@ -100,13 +100,13 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <div className="h-4 w-24 bg-muted animate-pulse rounded" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <div className="h-8 w-32 bg-muted animate-pulse rounded mb-2" />
               <div className="h-3 w-40 bg-muted animate-pulse rounded" />
             </CardContent>
@@ -117,18 +117,18 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
           <Card key={card.title} className="shadow-card hover:shadow-card-hover transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
               <Icon className={`w-5 h-5 ${card.color}`} />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">{card.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold text-foreground mb-2">{card.value}</div>
+              <p className="text-xs text-muted-foreground">{card.description}</p>
             </CardContent>
           </Card>
         );
