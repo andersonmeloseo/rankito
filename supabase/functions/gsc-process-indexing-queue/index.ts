@@ -14,11 +14,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const startTime = Date.now();
+    console.log('🔄 GSC Queue Processor - Started at', new Date().toISOString());
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('🔄 Starting indexing queue processor...');
+    console.log('🔄 Fetching active integrations...');
 
     // Buscar todas as integrações ativas
     const { data: integrations, error: integrationsError } = await supabase
@@ -33,12 +36,18 @@ Deno.serve(async (req) => {
 
     if (!integrations || integrations.length === 0) {
       console.log('ℹ️ No active integrations found');
+      const duration = Date.now() - startTime;
       return new Response(
-        JSON.stringify({ success: true, message: 'No active integrations' }),
+        JSON.stringify({ 
+          success: true, 
+          message: 'No active integrations',
+          duration_ms: duration,
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log(`✅ Found ${integrations.length} active integrations`);
     const results = [];
 
     // Processar cada integração
@@ -249,10 +258,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    const duration = Date.now() - startTime;
+    const totalProcessed = results.reduce((sum, r) => sum + (r.processed || 0), 0);
+    const totalFailed = results.reduce((sum, r) => sum + (r.failed || 0), 0);
+
+    console.log(`✅ Queue processing complete in ${duration}ms`);
+    console.log('📊 Final stats:', {
+      total_integrations: integrations.length,
+      total_processed: totalProcessed,
+      total_failed: totalFailed,
+      duration_ms: duration,
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
         processed_integrations: integrations.length,
+        total_processed: totalProcessed,
+        total_failed: totalFailed,
+        duration_ms: duration,
         results,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

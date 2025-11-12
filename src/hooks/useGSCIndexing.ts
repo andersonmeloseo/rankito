@@ -121,17 +121,27 @@ export function useGSCIndexing({ siteId }: UseGSCIndexingParams) {
     onError: (error: Error) => {
       const errorMessage = error.message;
       
-      if (errorMessage.includes('Daily quota exceeded')) {
+      // Detectar erro de API desabilitada
+      if (errorMessage.includes('Web Search Indexing API has not been used') || 
+          errorMessage.includes('SERVICE_DISABLED') ||
+          errorMessage.includes('API not enabled') ||
+          errorMessage.includes('PERMISSION_DENIED')) {
         toast({
-          title: "Limite diário atingido",
-          description: "Você atingiu o limite de 200 URLs por dia. Tente novamente amanhã.",
+          title: "⚠️ API do Google não habilitada",
+          description: "Você precisa ativar a Web Search Indexing API no Google Cloud Console. Acesse: APIs & Serviços → Biblioteca → Web Search Indexing API",
+          variant: "destructive",
+          duration: 10000,
+        });
+      } else if (errorMessage.includes('Daily quota exceeded')) {
+        toast({
+          title: "❌ Quota diária excedida",
+          description: "Você atingiu o limite de 200 URLs por integração hoje. Tente novamente amanhã ou adicione mais integrações GSC.",
           variant: "destructive",
         });
-      } else if (errorMessage.includes('recently indexed')) {
+      } else if (errorMessage.includes('recently indexed') || errorMessage.includes('already indexed in the last 24 hours')) {
         toast({
-          title: "URL já indexada recentemente",
-          description: "Esta URL já foi indexada nas últimas 24 horas.",
-          variant: "destructive",
+          title: "ℹ️ URL já foi indexada recentemente",
+          description: "Esta URL foi submetida para indexação nas últimas 24 horas. Aguarde antes de tentar novamente.",
         });
       } else {
         toast({

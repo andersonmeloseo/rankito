@@ -6,6 +6,12 @@ verify_jwt = false
 [functions.gsc-process-indexing-queue]
 verify_jwt = false
 
+[functions.gsc-check-indexation-status]
+verify_jwt = false
+
+[functions.gsc-validate-apis]
+verify_jwt = false
+
 
 [functions.api-external-leads]
 verify_jwt = false

@@ -15,11 +15,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('🚀 GSC Request Indexing - Request received');
+    const startTime = Date.now();
+    console.log('🚀 GSC Request Indexing - Request received at', new Date().toISOString());
 
     // Verificar autenticação
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('❌ Missing authorization header');
       throw new Error('Missing authorization header');
     }
 
@@ -32,20 +34,30 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
     
     if (authError || !user) {
+      console.error('❌ Invalid authentication:', authError);
       throw new Error('Invalid authentication');
     }
+
+    console.log('✅ User authenticated:', user.id);
 
     // Parse request body
     const { site_id, url, page_id, request_type = 'URL_UPDATED' } = await req.json();
 
     if (!site_id || !url) {
+      console.error('❌ Missing required fields');
       return new Response(
         JSON.stringify({ error: 'Missing required fields: site_id, url' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('📋 Params:', { site_id, url, request_type });
+    console.log('📋 Request params:', { 
+      site_id, 
+      url, 
+      page_id: page_id || 'none',
+      request_type,
+      user_id: user.id,
+    });
 
     // Buscar todas integrações ativas do site
     const { data: integrations, error: integrationsError } = await supabase
@@ -233,6 +245,15 @@ Deno.serve(async (req) => {
 
     console.log('✅ Request saved to database');
 
+    const duration = Date.now() - startTime;
+    console.log(`✅ Request completed successfully in ${duration}ms`);
+    console.log('📊 Final stats:', {
+      integration: selectedIntegration.connection_name,
+      quota_used: usedQuota + 1,
+      quota_remaining: remainingQuota - 1,
+      duration_ms: duration,
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -242,6 +263,9 @@ Deno.serve(async (req) => {
           used: usedQuota + 1,
           limit: DAILY_QUOTA_LIMIT,
           remaining: remainingQuota - 1,
+        },
+        performance: {
+          duration_ms: duration,
         },
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
