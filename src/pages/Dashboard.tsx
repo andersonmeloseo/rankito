@@ -271,14 +271,7 @@ const Dashboard = () => {
 
           <TabsContent value="overview" className="space-y-8">
             <LimitWarningBanner />
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <div className="lg:col-span-1">
-                <PlanUsageCard />
-              </div>
-              <div className="lg:col-span-3">
-                <OverviewCards userId={user.id} />
-              </div>
-            </div>
+            <OverviewCards userId={user.id} />
             <SitesList userId={user.id} />
           </TabsContent>
 
