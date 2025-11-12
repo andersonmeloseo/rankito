@@ -250,7 +250,7 @@ const Dashboard = () => {
             <TabsList className="h-12 bg-transparent w-full max-w-5xl justify-start gap-1">
               <TabsTrigger 
                 value="overview" 
-                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-foreground data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/10 data-[state=active]:to-transparent data-[state=active]:shadow-md data-[state=active]:shadow-none transition-all duration-300 ease-out group"
+                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/70 data-[state=active]:to-primary/50 data-[state=active]:shadow-lg transition-all duration-300 ease-out group"
               >
                 <LayoutDashboard className="w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
                 <span className="relative z-10">Overview</span>
@@ -258,7 +258,7 @@ const Dashboard = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="sites"
-                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-foreground data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/10 data-[state=active]:to-transparent data-[state=active]:shadow-md data-[state=active]:shadow-none transition-all duration-300 ease-out group"
+                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/70 data-[state=active]:to-primary/50 data-[state=active]:shadow-lg transition-all duration-300 ease-out group"
               >
                 <Globe className="w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
                 <span className="relative z-10">Sites</span>
@@ -266,7 +266,7 @@ const Dashboard = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="crm"
-                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-foreground data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/10 data-[state=active]:to-transparent data-[state=active]:shadow-md data-[state=active]:shadow-none transition-all duration-300 ease-out group"
+                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/70 data-[state=active]:to-primary/50 data-[state=active]:shadow-lg transition-all duration-300 ease-out group"
               >
                 <Briefcase className="w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
                 <span className="relative z-10">CRM</span>
@@ -274,7 +274,7 @@ const Dashboard = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="financial"
-                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-foreground data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/10 data-[state=active]:to-transparent data-[state=active]:shadow-md data-[state=active]:shadow-none transition-all duration-300 ease-out group"
+                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/70 data-[state=active]:to-primary/50 data-[state=active]:shadow-lg transition-all duration-300 ease-out group"
               >
                 <DollarSign className="w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
                 <span className="relative z-10">Financeiro</span>
@@ -282,7 +282,7 @@ const Dashboard = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="clients"
-                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-foreground data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/10 data-[state=active]:to-transparent data-[state=active]:shadow-md data-[state=active]:shadow-none transition-all duration-300 ease-out group"
+                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/70 data-[state=active]:to-primary/50 data-[state=active]:shadow-lg transition-all duration-300 ease-out group"
               >
                 <Users className="w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
                 <span className="relative z-10">Clientes</span>
