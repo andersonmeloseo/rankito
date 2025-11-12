@@ -138,8 +138,8 @@ export const SitesList = ({ userId }: SitesListProps) => {
     });
 
     return (
-      <tr className="border-b hover:bg-muted/50 transition-colors">
-        <td className="p-3">
+          <tr className="border-b hover:bg-muted/50 transition-colors h-16">
+            <td className="p-4">
           <div>
             <button
               onClick={() => navigate(`/dashboard/site/${site.id}`)}
@@ -158,42 +158,42 @@ export const SitesList = ({ userId }: SitesListProps) => {
             </a>
           </div>
         </td>
-        <td className="p-3 text-foreground">
+            <td className="p-4 text-foreground">
           {site.client_name || <span className="text-muted-foreground italic">-</span>}
         </td>
-        <td className="p-3 text-right font-medium text-success">
+        <td className="p-4 text-right font-medium text-success">
           R$ {Number(site.monthly_rent_value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
         </td>
-        <td className="p-3">
+        <td className="p-4">
           <ContractStatusBadge status={contractStatus} daysRemaining={daysRemaining} />
         </td>
-        <td className="p-3 text-center">
+        <td className="p-4 text-center">
           <div className="flex items-center justify-center gap-1">
             <FileText className="h-4 w-4 text-muted-foreground" />
             <span className="text-foreground font-medium">{site.total_pages || 0}</span>
           </div>
         </td>
-        <td className="p-3 text-center">
+        <td className="p-4 text-center">
           <div className="flex items-center justify-center gap-1">
             <Eye className="h-4 w-4 text-muted-foreground" />
             <span className="text-foreground">{site.total_page_views?.toLocaleString("pt-BR") || 0}</span>
           </div>
         </td>
-        <td className="p-3 text-center">
+        <td className="p-4 text-center">
           <div className="flex items-center justify-center gap-1">
             <Phone className="h-4 w-4 text-muted-foreground" />
             <span className="text-foreground">{site.total_conversions?.toLocaleString("pt-BR") || 0}</span>
           </div>
         </td>
-        <td className="p-3 text-center">
+        <td className="p-4 text-center">
           <div className="flex items-center justify-center gap-1">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             <span className="text-foreground font-medium">{site.conversion_rate || 0}%</span>
           </div>
         </td>
-        <td className="p-3 text-foreground">{site.niche}</td>
-        <td className="p-3 text-foreground">{site.location}</td>
-        <td className="p-3 text-center">
+        <td className="p-4 text-foreground">{site.niche}</td>
+        <td className="p-4 text-foreground">{site.location}</td>
+        <td className="p-4 text-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm">
@@ -247,7 +247,7 @@ export const SitesList = ({ userId }: SitesListProps) => {
             <CardTitle>Meus Projetos ({filteredSites.length})</CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           {/* Filters */}
           <div className="flex gap-4 mb-6">
             <div className="flex-1 relative">

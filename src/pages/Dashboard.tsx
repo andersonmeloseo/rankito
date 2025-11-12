@@ -145,7 +145,7 @@ const Dashboard = () => {
       <LeadNotificationBanner leads={newLeads} onDismiss={clearNewLeads} />
       <Header showSubtitle={false} />
       <div className="flex-1">
-        <div className="container mx-auto py-6 pb-64 space-y-6">
+        <div className="container mx-auto py-8 pb-64 space-y-8">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold">
@@ -210,7 +210,7 @@ const Dashboard = () => {
               </DropdownMenu>
             </div>
           </div>
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs defaultValue="overview" className="space-y-8">
           <TabsList className="grid w-full grid-cols-5 max-w-5xl">
             <TabsTrigger value="overview" className="gap-2">
               <LayoutDashboard className="w-4 h-4" />
@@ -234,9 +234,9 @@ const Dashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-8">
             <LimitWarningBanner />
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <div className="lg:col-span-1">
                 <PlanUsageCard />
               </div>
