@@ -34,10 +34,33 @@ try {
     console.log(`\n🔄 Processing schedule: ${schedule.schedule_name}`);
 
     try {
-      // Buscar integração
-      const integration = await getIntegrationWithValidToken(schedule.integration_id);
+      // Buscar integração(ões) - suporte para modo automático
+      let integrationsToUse = [];
 
-      console.log(`🔐 Using integration: ${integration.connection_name}`);
+      if (schedule.integration_id) {
+        // Modo manual: usar integração específica
+        const integration = await getIntegrationWithValidToken(schedule.integration_id);
+        integrationsToUse = [integration];
+        console.log(`🔐 Using specific integration: ${integration.connection_name}`);
+      } else {
+        // Modo automático: buscar todas as integrações ativas
+        const { data: allIntegrations, error: intError } = await supabaseAdmin
+          .from('google_search_console_integrations')
+          .select('*')
+          .eq('site_id', schedule.site_id)
+          .eq('is_active', true);
+        
+        if (intError || !allIntegrations || allIntegrations.length === 0) {
+          throw new Error('No active integrations found for automatic distribution');
+        }
+        
+        // Gerar tokens para todas
+        integrationsToUse = await Promise.all(
+          allIntegrations.map(int => getIntegrationWithValidToken(int.id))
+        );
+        
+        console.log(`🔄 Using ${integrationsToUse.length} active integrations (automatic mode)`);
+      }
 
       // Buscar sitemaps
       const { data: sitemaps } = await supabaseAdmin
@@ -57,10 +80,21 @@ try {
 
       const succeeded: string[] = [];
       const failed: string[] = [];
+      const integrationUsage: Record<string, { succeeded: number; failed: number }> = {};
 
-      // Enviar sitemaps
-      for (const sitemapUrl of sitemapsToSubmit) {
+      // Inicializar contadores
+      integrationsToUse.forEach(int => {
+        integrationUsage[int.connection_name] = { succeeded: 0, failed: 0 };
+      });
+
+      // Distribuir sitemaps entre integrações (round-robin)
+      for (let i = 0; i < sitemapsToSubmit.length; i++) {
+        const sitemapUrl = sitemapsToSubmit[i];
+        const integration = integrationsToUse[i % integrationsToUse.length]; // Round-robin
+        
         try {
+          console.log(`📤 [${integration.connection_name}] Submitting: ${sitemapUrl}`);
+          
           const response = await fetch(
             `https://indexing.googleapis.com/v3/${encodeURIComponent(integration.gsc_property_url)}/sitemaps/${encodeURIComponent(sitemapUrl)}:submit`,
             {
@@ -74,14 +108,22 @@ try {
 
           if (response.ok) {
             succeeded.push(sitemapUrl);
+            integrationUsage[integration.connection_name].succeeded++;
+            console.log(`✅ Success via ${integration.connection_name}`);
           } else {
+            const error = await response.text();
             failed.push(sitemapUrl);
+            integrationUsage[integration.connection_name].failed++;
+            console.error(`❌ Failed via ${integration.connection_name}: ${error}`);
           }
         } catch (error) {
           failed.push(sitemapUrl);
-          console.error(`❌ Error submitting ${sitemapUrl}:`, error);
+          integrationUsage[integration.connection_name].failed++;
+          console.error(`❌ Error via ${integration.connection_name}:`, error);
         }
       }
+
+      console.log('📊 Distribution summary:', integrationUsage);
 
       const executionTime = Date.now() - startTime;
       const status = failed.length === 0 ? 'success' : 
@@ -97,10 +139,12 @@ try {
           sitemaps_succeeded: succeeded,
           sitemaps_failed: failed,
           execution_duration_ms: executionTime,
-          integration_id: integration.id,
-          integration_name: integration.connection_name,
+          integration_id: schedule.integration_id, // NULL se automático
+          integration_name: schedule.integration_id 
+            ? integrationsToUse[0].connection_name 
+            : `${integrationsToUse.length} integrações (automático)`,
           error_message: failed.length > 0 ? 
-            `Failed to submit ${failed.length} sitemaps` : null,
+            `Failed: ${failed.length} | Distribution: ${JSON.stringify(integrationUsage)}` : null,
         });
 
       // Atualizar próxima execução

@@ -35,7 +35,7 @@ export function GSCSitemapScheduler({ siteId, userId }: GSCSitemapSchedulerProps
     schedule_name: '',
     schedule_type: 'daily' as 'daily' | 'weekly' | 'monthly' | 'custom',
     interval_hours: 24,
-    integration_id: '',
+    integration_id: null as string | null,
     sitemap_paths: [] as string[],
     selectAllSitemaps: true,
   });
@@ -86,7 +86,7 @@ export function GSCSitemapScheduler({ siteId, userId }: GSCSitemapSchedulerProps
       schedule_name: '',
       schedule_type: 'daily',
       interval_hours: 24,
-      integration_id: '',
+      integration_id: null,
       sitemap_paths: [],
       selectAllSitemaps: true,
     });
@@ -98,7 +98,7 @@ export function GSCSitemapScheduler({ siteId, userId }: GSCSitemapSchedulerProps
       schedule_name: schedule.schedule_name,
       schedule_type: schedule.schedule_type,
       interval_hours: schedule.interval_hours || 24,
-      integration_id: schedule.integration_id || '',
+      integration_id: schedule.integration_id || null,
       sitemap_paths: schedule.sitemap_paths || [],
       selectAllSitemaps: !schedule.sitemap_paths || schedule.sitemap_paths.length === 0,
     });
@@ -197,16 +197,23 @@ export function GSCSitemapScheduler({ siteId, userId }: GSCSitemapSchedulerProps
           </div>
         )}
 
-        <div>
-          <Label htmlFor="integration_id">Integração GSC</Label>
+        <div className="space-y-2">
+          <Label htmlFor="integration">Modo de Distribuição *</Label>
           <Select
-            value={formData.integration_id}
-            onValueChange={(value) => setFormData({ ...formData, integration_id: value })}
+            value={formData.integration_id || 'auto'}
+            onValueChange={(value) => setFormData(prev => ({ 
+              ...prev, 
+              integration_id: value === 'auto' ? null : value 
+            }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecionar integração..." />
+              <SelectValue placeholder="Selecionar modo..." />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="auto">
+                🔄 Automático (usar todas as {integrations?.filter(i => i.is_active).length || 0} integrações ativas)
+              </SelectItem>
+              <Separator className="my-2" />
               {integrations?.map((integration) => (
                 <SelectItem key={integration.id} value={integration.id}>
                   {integration.connection_name}
@@ -215,9 +222,12 @@ export function GSCSitemapScheduler({ siteId, userId }: GSCSitemapSchedulerProps
               ))}
             </SelectContent>
           </Select>
-          <p className="text-sm text-muted-foreground mt-1">
-            Deixe vazio para usar a primeira integração ativa
-          </p>
+          
+          {(!formData.integration_id || formData.integration_id === 'auto') && (
+            <p className="text-xs text-muted-foreground mt-1">
+              ℹ️ Os sitemaps serão distribuídos automaticamente entre todas as integrações ativas
+            </p>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -326,6 +336,15 @@ export function GSCSitemapScheduler({ siteId, userId }: GSCSitemapSchedulerProps
                     <div className="flex items-center gap-3 mb-2">
                       <CardTitle className="text-lg">{schedule.schedule_name}</CardTitle>
                       {getStatusBadge(schedule)}
+                      {schedule.integration_id ? (
+                        <Badge variant="outline" className="text-xs">
+                          Integração específica
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          🔄 Distribuição automática
+                        </Badge>
+                      )}
                     </div>
                     <CardDescription className="flex items-center gap-4">
                       <span className="flex items-center gap-1">
