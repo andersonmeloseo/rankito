@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Palette, Type, Settings2, Loader2 } from 'lucide-react';
-import { usePortalCustomization, PortalSettings } from '@/hooks/usePortalCustomization';
+import { usePortalCustomization, PortalSettings, getDefaultPortalSettings } from '@/hooks/usePortalCustomization';
 import { LogoUploader } from './LogoUploader';
 import { ColorPicker } from './ColorPicker';
 import { PortalPreviewCard } from './PortalPreviewCard';
@@ -33,22 +33,27 @@ export const PortalSettingsDialog = ({
   const { settings, isLoading, updateSettings, uploadLogo, isUpdating, isUploading } = 
     usePortalCustomization(clientId);
 
-  const [localSettings, setLocalSettings] = useState<PortalSettings | null>(null);
+  const [localSettings, setLocalSettings] = useState<PortalSettings>(getDefaultPortalSettings());
 
   useEffect(() => {
     if (settings && open) {
-      setLocalSettings(settings);
+      // Merge with defaults to ensure all properties exist
+      setLocalSettings({
+        branding: { ...getDefaultPortalSettings().branding, ...(settings.branding || {}) },
+        texts: { ...getDefaultPortalSettings().texts, ...(settings.texts || {}) },
+        features: { ...getDefaultPortalSettings().features, ...(settings.features || {}) },
+      });
     }
   }, [settings, open]);
 
-  // Reset when dialog closes
+  // Reset to defaults when dialog closes
   useEffect(() => {
     if (!open) {
-      setLocalSettings(null);
+      setLocalSettings(getDefaultPortalSettings());
     }
   }, [open]);
 
-  if (isLoading || !localSettings) {
+  if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl max-h-[90vh]">
@@ -61,12 +66,10 @@ export const PortalSettingsDialog = ({
   }
 
   const handleSave = () => {
-    if (!localSettings) return;
     updateSettings(localSettings);
   };
 
   const handleLogoUpload = async (file: File) => {
-    if (!localSettings) return '';
     const publicUrl = await uploadLogo(file);
     setLocalSettings({
       ...localSettings,
@@ -79,7 +82,6 @@ export const PortalSettingsDialog = ({
   };
 
   const handleLogoRemove = () => {
-    if (!localSettings) return;
     setLocalSettings({
       ...localSettings,
       branding: {
