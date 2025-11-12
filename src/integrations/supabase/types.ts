@@ -600,6 +600,254 @@ export type Database = {
         }
         Relationships: []
       }
+      google_search_console_integrations: {
+        Row: {
+          access_token: string
+          auto_submit_new_pages: boolean | null
+          auto_submit_sitemaps: boolean | null
+          created_at: string | null
+          gsc_permission_level: string | null
+          gsc_property_url: string
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          refresh_token: string
+          site_id: string
+          token_expires_at: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          auto_submit_new_pages?: boolean | null
+          auto_submit_sitemaps?: boolean | null
+          created_at?: string | null
+          gsc_permission_level?: string | null
+          gsc_property_url: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          refresh_token: string
+          site_id: string
+          token_expires_at: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          auto_submit_new_pages?: boolean | null
+          auto_submit_sitemaps?: boolean | null
+          created_at?: string | null
+          gsc_permission_level?: string | null
+          gsc_property_url?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          refresh_token?: string
+          site_id?: string
+          token_expires_at?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_search_console_integrations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "google_search_console_integrations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "google_search_console_integrations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "google_search_console_integrations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_sitemap_submissions: {
+        Row: {
+          created_at: string | null
+          gsc_errors_count: number | null
+          gsc_last_downloaded: string | null
+          gsc_last_submitted: string | null
+          gsc_status: string | null
+          gsc_warnings_count: number | null
+          id: string
+          integration_id: string
+          site_id: string
+          sitemap_type: string | null
+          sitemap_url: string
+          updated_at: string | null
+          urls_indexed: number | null
+          urls_submitted: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          gsc_errors_count?: number | null
+          gsc_last_downloaded?: string | null
+          gsc_last_submitted?: string | null
+          gsc_status?: string | null
+          gsc_warnings_count?: number | null
+          id?: string
+          integration_id: string
+          site_id: string
+          sitemap_type?: string | null
+          sitemap_url: string
+          updated_at?: string | null
+          urls_indexed?: number | null
+          urls_submitted?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          gsc_errors_count?: number | null
+          gsc_last_downloaded?: string | null
+          gsc_last_submitted?: string | null
+          gsc_status?: string | null
+          gsc_warnings_count?: number | null
+          id?: string
+          integration_id?: string
+          site_id?: string
+          sitemap_type?: string | null
+          sitemap_url?: string
+          updated_at?: string | null
+          urls_indexed?: number | null
+          urls_submitted?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_sitemap_submissions_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_sitemap_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_sitemap_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gsc_sitemap_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_sitemap_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_url_indexing_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          gsc_notification_id: string | null
+          gsc_response: Json | null
+          id: string
+          integration_id: string
+          page_id: string | null
+          request_type: string
+          status: string | null
+          submitted_at: string | null
+          url: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          gsc_notification_id?: string | null
+          gsc_response?: Json | null
+          id?: string
+          integration_id: string
+          page_id?: string | null
+          request_type?: string
+          status?: string | null
+          submitted_at?: string | null
+          url: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          gsc_notification_id?: string | null
+          gsc_response?: Json | null
+          id?: string
+          integration_id?: string
+          page_id?: string | null
+          request_type?: string
+          status?: string | null
+          submitted_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_url_indexing_requests_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_url_indexing_requests_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_daily_stats"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "gsc_url_indexing_requests_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_financial_metrics"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "gsc_url_indexing_requests_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_page_metrics"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "gsc_url_indexing_requests_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
