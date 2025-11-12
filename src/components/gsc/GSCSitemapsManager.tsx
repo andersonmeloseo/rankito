@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -24,20 +27,28 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useGSCSitemaps } from "@/hooks/useGSCSitemaps";
-import { Plus, RefreshCw, Trash2, FileText, CheckCircle2, AlertTriangle, XCircle, ExternalLink } from "lucide-react";
+import { useDiscoverSitemaps } from "@/hooks/useDiscoverSitemaps";
+import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
+import { SitemapUrlsList } from "./SitemapUrlsList";
+import { Plus, RefreshCw, Trash2, FileText, CheckCircle2, AlertTriangle, XCircle, ExternalLink, Search, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GSCSitemapsManagerProps {
   integrationId: string;
   integrationName: string;
+  siteId: string;
+  userId: string;
 }
 
-export function GSCSitemapsManager({ integrationId, integrationName }: GSCSitemapsManagerProps) {
+export function GSCSitemapsManager({ integrationId, integrationName, siteId, userId }: GSCSitemapsManagerProps) {
   const [newSitemapUrl, setNewSitemapUrl] = useState("");
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showDiscovery, setShowDiscovery] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sitemapToDelete, setSitemapToDelete] = useState<string | null>(null);
+  const [expandedSitemapUrls, setExpandedSitemapUrls] = useState<Set<string>>(new Set());
 
   const {
     sitemaps,
@@ -49,13 +60,73 @@ export function GSCSitemapsManager({ integrationId, integrationName }: GSCSitema
     isDeleting,
   } = useGSCSitemaps({ integrationId });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSitemapUrl.trim()) return;
+  const {
+    discoveredSitemaps,
+    selectedSitemaps,
+    expandedSitemaps,
+    isDiscovering,
+    isExpanding,
+    isAutoDiscovering,
+    discover,
+    expandSitemap,
+    autoDiscover,
+    toggleSitemapSelection,
+    toggleSelectAll,
+    reset,
+  } = useDiscoverSitemaps({ siteId, userId });
 
-    await submitSitemap.mutateAsync({ sitemap_url: newSitemapUrl.trim() });
-    setNewSitemapUrl("");
-    setShowAddForm(false);
+  const { addToQueue } = useGSCIndexingQueue({ integrationId });
+
+  // Fetch site URL for auto-discovery
+  const { data: siteData } = useQuery({
+    queryKey: ['site-url', siteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rank_rent_sites')
+        .select('site_url')
+        .eq('id', siteId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleDiscover = () => {
+    if (!newSitemapUrl.trim()) return;
+    discover(newSitemapUrl.trim());
+  };
+
+  const handleAutoDiscover = () => {
+    if (!siteData?.site_url) return;
+    autoDiscover(siteData.site_url);
+  };
+
+  const handleSubmitSelected = async () => {
+    for (const sitemap of selectedSitemaps) {
+      await submitSitemap.mutateAsync({ sitemap_url: sitemap.url });
+    }
+    reset();
+  };
+
+  const toggleExpandSitemap = (sitemapUrl: string) => {
+    const newExpanded = new Set(expandedSitemapUrls);
+    if (newExpanded.has(sitemapUrl)) {
+      newExpanded.delete(sitemapUrl);
+    } else {
+      newExpanded.add(sitemapUrl);
+      if (!expandedSitemaps[sitemapUrl]) {
+        expandSitemap(sitemapUrl);
+      }
+    }
+    setExpandedSitemapUrls(newExpanded);
+  };
+
+  const handleAddUrlsToQueue = (urls: string[]) => {
+    addToQueue.mutate({
+      urls: urls.map(url => ({ url })),
+      distribution: urls.length > 200 ? 'even' : 'fast',
+    });
   };
 
   const handleDeleteClick = (sitemapUrl: string) => {
@@ -122,75 +193,204 @@ export function GSCSitemapsManager({ integrationId, integrationName }: GSCSitema
                 Sitemaps do {integrationName}
               </CardTitle>
               <CardDescription className="mt-2">
-                Gerencie os sitemaps submetidos ao Google Search Console para esta integração
+                Descubra, selecione e envie sitemaps ao Google Search Console
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {/* Seção de Descoberta */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                Descobrir Sitemaps
+              </h3>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => refetch()}
-                disabled={isLoading}
+                onClick={() => setShowDiscovery(!showDiscovery)}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Atualizar
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => setShowAddForm(!showAddForm)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Sitemap
+                {showDiscovery ? 'Ocultar' : 'Mostrar'}
               </Button>
             </div>
+
+            {showDiscovery && (
+              <div className="space-y-4 p-6 border rounded-lg bg-gradient-to-br from-primary/5 to-primary/10">
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="https://exemplo.com/sitemap.xml"
+                      value={newSitemapUrl}
+                      onChange={(e) => setNewSitemapUrl(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleDiscover()}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleDiscover}
+                    disabled={!newSitemapUrl.trim() || isDiscovering}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    {isDiscovering ? 'Descobrindo...' : 'Descobrir'}
+                  </Button>
+                  {siteData?.site_url && (
+                    <Button
+                      variant="outline"
+                      onClick={handleAutoDiscover}
+                      disabled={isAutoDiscovering}
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      {isAutoDiscovering ? 'Buscando...' : 'Auto-Descobrir'}
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    Sugestões: /sitemap.xml
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    /sitemap_index.xml
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    /wp-sitemap.xml
+                  </Badge>
+                </div>
+
+                {discoveredSitemaps.length > 0 && (
+                  <div className="space-y-4 mt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <h4 className="font-semibold">
+                          {discoveredSitemaps.length} sitemap{discoveredSitemaps.length > 1 ? 's' : ''} descoberto{discoveredSitemaps.length > 1 ? 's' : ''}
+                        </h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={toggleSelectAll}
+                        >
+                          <Checkbox
+                            checked={selectedSitemaps.length === discoveredSitemaps.length && discoveredSitemaps.length > 0}
+                            className="mr-2"
+                          />
+                          {selectedSitemaps.length === discoveredSitemaps.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                        </Button>
+                      </div>
+                      {selectedSitemaps.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">
+                            {selectedSitemaps.length} de {discoveredSitemaps.length} selecionados
+                          </Badge>
+                          <Button
+                            onClick={handleSubmitSelected}
+                            disabled={isSubmitting}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            {isSubmitting ? 'Enviando...' : `Enviar ${selectedSitemaps.length} ao GSC`}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border rounded-lg overflow-hidden bg-background">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12"></TableHead>
+                            <TableHead>Nome</TableHead>
+                            <TableHead>URL</TableHead>
+                            <TableHead className="text-right">URLs</TableHead>
+                            <TableHead className="w-12"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {discoveredSitemaps.map((sitemap) => (
+                            <>
+                              <TableRow key={sitemap.url}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={sitemap.selected || false}
+                                    onCheckedChange={() => toggleSitemapSelection(sitemap.url)}
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {sitemap.name}
+                                </TableCell>
+                                <TableCell>
+                                  <a
+                                    href={sitemap.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline flex items-center gap-1 text-sm"
+                                  >
+                                    {sitemap.url.length > 60 ? sitemap.url.substring(0, 60) + '...' : sitemap.url}
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </TableCell>
+                                <TableCell className="text-right font-semibold">
+                                  {sitemap.urlCount.toLocaleString()}
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleExpandSitemap(sitemap.url)}
+                                  >
+                                    {expandedSitemapUrls.has(sitemap.url) ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                              {expandedSitemapUrls.has(sitemap.url) && expandedSitemaps[sitemap.url] && (
+                                <TableRow>
+                                  <TableCell colSpan={5} className="p-0">
+                                    <SitemapUrlsList
+                                      urls={expandedSitemaps[sitemap.url]}
+                                      sitemapName={sitemap.name}
+                                      onAddToQueue={handleAddUrlsToQueue}
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {showAddForm && (
-            <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg bg-muted/50">
-              <div className="space-y-2">
-                <Label htmlFor="sitemap-url">URL do Sitemap</Label>
-                <Input
-                  id="sitemap-url"
-                  type="url"
-                  placeholder="https://exemplo.com/sitemap.xml"
-                  value={newSitemapUrl}
-                  onChange={(e) => setNewSitemapUrl(e.target.value)}
-                  required
-                />
-                <p className="text-sm text-muted-foreground">
-                  Cole a URL completa do sitemap (XML, RSS, Atom ou sitemap index)
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" disabled={isSubmitting || !newSitemapUrl.trim()}>
-                  {isSubmitting ? "Submetendo..." : "Submeter Sitemap"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setNewSitemapUrl("");
-                  }}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          )}
+
+          <Separator />
+
+          {/* Seção de Sitemaps Submetidos */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Sitemaps Submetidos ao GSC
+            </h3>
 
           {sitemaps.length === 0 ? (
             <div className="text-center py-12 border rounded-lg bg-muted/50">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Nenhum sitemap encontrado</h3>
+              <h3 className="text-lg font-semibold mb-2">Nenhum sitemap submetido ainda</h3>
               <p className="text-muted-foreground mb-4">
-                Adicione seu primeiro sitemap para começar a monitorar a indexação
+                Use a ferramenta de descoberta acima para encontrar e enviar sitemaps ao GSC
               </p>
-              <Button onClick={() => setShowAddForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Sitemap
-              </Button>
             </div>
           ) : (
             <div className="border rounded-lg overflow-hidden">
@@ -255,6 +455,7 @@ export function GSCSitemapsManager({ integrationId, integrationName }: GSCSitema
               </Table>
             </div>
           )}
+          </div>
         </CardContent>
       </Card>
 

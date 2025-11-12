@@ -285,6 +285,8 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
             <GSCSitemapsManager
               integrationId={selectedIntegrationId}
               integrationName={selectedIntegrationName}
+              siteId={siteId}
+              userId={userId}
             />
           )}
         </TabsContent>
