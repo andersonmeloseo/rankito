@@ -33,6 +33,9 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const [customUrl, setCustomUrl] = useState("");
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const PAGES_PER_PAGE = 50;
 
   const {
     quota,
@@ -46,21 +49,49 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
 
   const { addToQueue, isAddingToQueue } = useGSCIndexingQueue({ siteId });
 
-  // Fetch site pages
-  const { data: pages, isLoading: isLoadingPages } = useQuery({
-    queryKey: ['site-pages', siteId],
+  // Fetch site pages with pagination and search
+  const { data: pagesData, isLoading: isLoadingPages } = useQuery({
+    queryKey: ['site-pages', siteId, currentPage, searchTerm],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = (currentPage - 1) * PAGES_PER_PAGE;
+      const to = from + PAGES_PER_PAGE - 1;
+
+      // Build query
+      let countQuery = supabase
+        .from('rank_rent_pages')
+        .select('*', { count: 'exact', head: true })
+        .eq('site_id', siteId)
+        .eq('status', 'active');
+
+      let dataQuery = supabase
         .from('rank_rent_pages')
         .select('*')
         .eq('site_id', siteId)
         .eq('status', 'active')
-        .order('page_path');
+        .order('page_path')
+        .range(from, to);
+
+      // Add search filter if present
+      if (searchTerm) {
+        countQuery = countQuery.ilike('page_path', `%${searchTerm}%`);
+        dataQuery = dataQuery.ilike('page_path', `%${searchTerm}%`);
+      }
+
+      const { count } = await countQuery;
+      const { data, error } = await dataQuery;
 
       if (error) throw error;
-      return data || [];
+      
+      return { 
+        pages: data || [], 
+        totalCount: count || 0,
+        totalPages: Math.ceil((count || 0) / PAGES_PER_PAGE)
+      };
     },
+    enabled: !!siteId,
   });
+
+  const pages = pagesData?.pages || [];
 
   const handleIndexCustomUrl = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,16 +168,17 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
 
   if (isLoadingQuota) {
     return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-96 mt-2" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-40 w-full" />
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Skeleton className="h-32 w-full" />
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full max-w-md" />
+          <Skeleton className="h-[400px] w-full" />
+          <div className="flex justify-between">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -268,72 +300,128 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
             )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Search and Filter */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="Buscar por URL ou título..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page on search
+              }}
+              className="max-w-md"
+            />
+            {searchTerm && (
+              <Button
+                variant="ghost"
+                onClick={() => setSearchTerm("")}
+              >
+                Limpar
+              </Button>
+            )}
+          </div>
           {isLoadingPages ? (
             <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
             </div>
-          ) : pages && pages.length > 0 ? (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={pages.length > 0 && selectedPages.size === pages.length}
-                        onCheckedChange={handleToggleAll}
-                      />
-                    </TableHead>
-                    <TableHead className="min-w-[300px]">Página</TableHead>
-                    <TableHead>URL</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pages.map((page) => (
-                    <TableRow key={page.id}>
-                      <TableCell>
+          ) : pages.length > 0 ? (
+            <>
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
                         <Checkbox
-                          checked={selectedPages.has(page.id)}
-                          onCheckedChange={() => handleTogglePage(page.id)}
+                          checked={pages.length > 0 && selectedPages.size === pages.length}
+                          onCheckedChange={handleToggleAll}
                         />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {page.page_title || page.page_path}
-                      </TableCell>
-                      <TableCell>
-                        <a
-                          href={page.page_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1 text-sm"
-                        >
-                          {page.page_path}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleIndexPage(page.id, page.page_url)}
-                          disabled={isRequesting || quota?.remaining === 0}
-                        >
-                          <Send className="h-4 w-4 mr-2" />
-                          Indexar
-                        </Button>
-                      </TableCell>
+                      </TableHead>
+                      <TableHead className="min-w-[300px]">Página</TableHead>
+                      <TableHead>URL</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {pages.map((page) => (
+                      <TableRow key={page.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedPages.has(page.id)}
+                            onCheckedChange={() => handleTogglePage(page.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {page.page_title || page.page_path}
+                        </TableCell>
+                        <TableCell>
+                          <a
+                            href={page.page_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline flex items-center gap-1 text-sm"
+                          >
+                            {page.page_path}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleIndexPage(page.id, page.page_url)}
+                            disabled={isRequesting || quota?.remaining === 0}
+                          >
+                            <Send className="h-4 w-4 mr-2" />
+                            Indexar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination Controls */}
+              {pagesData && (
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando {((currentPage - 1) * PAGES_PER_PAGE) + 1} a {Math.min(currentPage * PAGES_PER_PAGE, pagesData.totalCount)} de {pagesData.totalCount.toLocaleString()} páginas
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Anterior
+                    </Button>
+                    <div className="flex items-center gap-2 px-3">
+                      <span className="text-sm text-muted-foreground">
+                        Página {currentPage} de {pagesData.totalPages}
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(pagesData.totalPages, p + 1))}
+                      disabled={currentPage === pagesData.totalPages}
+                    >
+                      Próxima
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <Alert>
               <AlertDescription>
-                Nenhuma página ativa encontrada neste site. Importe o sitemap primeiro.
+                {searchTerm ? "Nenhuma página encontrada para esta busca" : "Nenhuma página ativa encontrada neste site. Importe o sitemap primeiro."}
               </AlertDescription>
             </Alert>
           )}

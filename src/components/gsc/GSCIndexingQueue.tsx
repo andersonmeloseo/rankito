@@ -2,7 +2,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Clock, AlertCircle, CheckCircle2, XCircle, Loader2, Trash2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Calendar, Clock, AlertCircle, CheckCircle2, XCircle, Loader2, Trash2, Info } from "lucide-react";
 import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -62,19 +64,33 @@ export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
 
   if (isLoadingQueue) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <div className="flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Carregando fila...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div className="grid grid-cols-5 gap-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+        <Skeleton className="h-[300px] w-full" />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Performance Alert */}
+      {queueStats.total > 100 && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Exibição Limitada</AlertTitle>
+          <AlertDescription>
+            Exibindo os 100 itens mais recentes de {queueStats.total.toLocaleString()} na fila para melhor performance.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>

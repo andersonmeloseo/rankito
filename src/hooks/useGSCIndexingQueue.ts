@@ -36,7 +36,7 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch queue items (agregado de todas integrações do site)
+  // Fetch queue items (agregado de todas integrações do site) - Limitado a 100 para performance
   const { data: queueData, isLoading: isLoadingQueue } = useQuery({
     queryKey: ['gsc-indexing-queue', siteId],
     queryFn: async () => {
@@ -47,7 +47,8 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
         .select('*, google_search_console_integrations!inner(site_id, connection_name)')
         .eq('google_search_console_integrations.site_id', siteId)
         .order('scheduled_for', { ascending: true })
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(100); // Limit to 100 most recent items for performance
 
       if (error) throw new Error(error.message);
 
