@@ -175,6 +175,12 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         .sort((a: any, b: any) => b.conversions - a.conversions)
         .slice(0, 10);
 
+      console.log('[Analytics] 📊 Top Pages calculadas:', {
+        topPagesCount: topPages.length,
+        sample: topPages[0],
+        allPaths: topPages.map(p => p.path).slice(0, 5)
+      });
+
       // NEW: Conversions by type
       const conversionsByType = conversions?.reduce((acc: any, conv) => {
         if (conv.event_type !== 'page_view') {

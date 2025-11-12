@@ -30,6 +30,12 @@ export const OverviewTab = ({ analytics }: OverviewTabProps) => {
     count: p.conversions,
   })) || [];
 
+  console.log('[OverviewTab] 📊 Dados preparados:', {
+    topPagesDataLength: topPagesData.length,
+    sample: topPagesData[0],
+    analyticsTopPages: analytics.topPages?.length
+  });
+
   return (
     <div className="space-y-6">
       {/* Linha 1: Gráfico Principal + Card Lateral */}

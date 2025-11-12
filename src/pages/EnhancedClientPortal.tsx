@@ -61,7 +61,10 @@ export const EnhancedClientPortal = () => {
     periodDays,
     selectedProjectId || undefined
   );
-  const { data: projectData, isLoading: projectLoading } = useProjectData(clientId || '');
+  const { data: projectData, isLoading: projectLoading } = useProjectData(
+    clientId || '', 
+    selectedProjectId || undefined
+  );
 
   const { 
     newConversions: realtimeConversions, 

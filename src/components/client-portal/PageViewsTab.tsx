@@ -31,6 +31,12 @@ export const PageViewsTab = ({ analytics, siteIds }: PageViewsTabProps) => {
     views: p.pageViews,
   }));
 
+  console.log('[PageViewsTab] 📊 Top page views:', {
+    topPageViewsDataLength: topPageViewsData.length,
+    sample: topPageViewsData[0],
+    analyticsTopPageViews: analytics.topPageViews?.length
+  });
+
   // Prepare data for device distribution
   const deviceDistributionData = (analytics.deviceStats || []).map((d: any) => ({
     device: d.device,

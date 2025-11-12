@@ -78,7 +78,7 @@ export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
             />
             <YAxis 
-              dataKey="path" 
+              dataKey="page" 
               type="category" 
               width={220}
               className="text-xs text-muted-foreground"
@@ -95,7 +95,7 @@ export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
               formatter={(value: number, name: string, props: any) => [
                 <>
                   <div><strong>{value}</strong> eventos</div>
-                  <div className="text-xs text-muted-foreground mt-1">{props.payload.path}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{props.payload.page}</div>
                 </>,
                 ""
               ]}
