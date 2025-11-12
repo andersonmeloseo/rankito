@@ -52,9 +52,13 @@ export const EditPageDialog = ({ page, open, onOpenChange }: EditPageDialogProps
   const { data: clients } = useQuery({
     queryKey: ["rank-rent-clients-select"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       const { data, error } = await supabase
         .from("rank_rent_clients")
         .select("id, name")
+        .eq("user_id", user.id)
         .order("name");
 
       if (error) throw error;

@@ -232,9 +232,13 @@ const SiteDetails = () => {
   const { data: clients } = useQuery({
     queryKey: ["rank-rent-clients-bulk"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       const { data, error } = await supabase
         .from("rank_rent_clients")
         .select("id, name")
+        .eq("user_id", user.id)
         .order("name");
       if (error) throw error;
       return data;
