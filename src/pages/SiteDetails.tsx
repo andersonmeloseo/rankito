@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,8 @@ import { GSCIntegrationsManager } from "@/components/gsc/GSCIntegrationsManager"
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'pages';
   const queryClient = useQueryClient();
   
   // UI States
@@ -715,7 +717,7 @@ const SiteDetails = () => {
         </div>
 
         {/* Tabs Section */}
-        <Tabs defaultValue="pages" className="space-y-6">
+        <Tabs defaultValue={defaultTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5 max-w-5xl">
             <TabsTrigger value="pages">📄 Páginas</TabsTrigger>
             <TabsTrigger value="advanced-analytics">📈 Analytics Avançado</TabsTrigger>

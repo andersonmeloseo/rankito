@@ -15,6 +15,7 @@ import UserSettings from "./pages/UserSettings";
 import NotFound from "./pages/NotFound";
 import ExternalLeadsAPI from "./pages/ExternalLeadsAPI";
 import ExternalLeadsTestAPI from "./pages/ExternalLeadsTestAPI";
+import GSCCallback from "./pages/GSCCallback";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/settings" element={<UserSettings />} />
             <Route path="/api/external-leads" element={<ExternalLeadsAPI />} />
             <Route path="/api/external-leads/test" element={<ExternalLeadsTestAPI />} />
+            <Route path="/gsc-callback" element={<GSCCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
