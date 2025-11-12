@@ -35,6 +35,8 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const [showBatchDialog, setShowBatchDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("page_path");
   const PAGES_PER_PAGE = 50;
 
   const {
@@ -49,9 +51,9 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
 
   const { addToQueue, isAddingToQueue } = useGSCIndexingQueue({ siteId });
 
-  // Fetch site pages with pagination and search
+  // Fetch site pages with pagination, search, and filters
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
-    queryKey: ['site-pages', siteId, currentPage, searchTerm],
+    queryKey: ['site-pages', siteId, currentPage, searchTerm, statusFilter, sortBy],
     queryFn: async () => {
       const from = (currentPage - 1) * PAGES_PER_PAGE;
       const to = from + PAGES_PER_PAGE - 1;
@@ -67,15 +69,31 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         .from('rank_rent_pages')
         .select('*')
         .eq('site_id', siteId)
-        .eq('status', 'active')
-        .order('page_path')
-        .range(from, to);
+        .eq('status', 'active');
 
       // Add search filter if present
       if (searchTerm) {
         countQuery = countQuery.ilike('page_path', `%${searchTerm}%`);
         dataQuery = dataQuery.ilike('page_path', `%${searchTerm}%`);
       }
+
+      // Add status filter if not "all"
+      if (statusFilter !== "all") {
+        countQuery = countQuery.eq('gsc_indexation_status', statusFilter);
+        dataQuery = dataQuery.eq('gsc_indexation_status', statusFilter);
+      }
+
+      // Add sorting
+      const sortOptions: Record<string, { column: string; ascending: boolean }> = {
+        'page_path': { column: 'page_path', ascending: true },
+        'indexed_at_desc': { column: 'gsc_indexed_at', ascending: false },
+        'indexed_at_asc': { column: 'gsc_indexed_at', ascending: true },
+        'submitted_at_desc': { column: 'gsc_last_checked_at', ascending: false },
+      };
+
+      const sort = sortOptions[sortBy] || sortOptions['page_path'];
+      dataQuery = dataQuery.order(sort.column, { ascending: sort.ascending, nullsFirst: false });
+      dataQuery = dataQuery.range(from, to);
 
       const { count } = await countQuery;
       const { data, error } = await dataQuery;
@@ -301,23 +319,58 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Search and Filter */}
-          <div className="flex gap-2">
+          {/* Search and Filters */}
+          <div className="flex flex-wrap gap-3">
             <Input
               placeholder="Buscar por URL ou título..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page on search
+                setCurrentPage(1);
               }}
-              className="max-w-md"
+              className="max-w-md flex-1"
             />
-            {searchTerm && (
+            
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="all">Todos os Status</option>
+              <option value="not_submitted">Não Enviado</option>
+              <option value="submitted">Enviado</option>
+              <option value="indexed">Indexado</option>
+              <option value="error">Erro</option>
+            </select>
+
+            <select
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="page_path">URL (A-Z)</option>
+              <option value="indexed_at_desc">Indexado (Mais Recente)</option>
+              <option value="indexed_at_asc">Indexado (Mais Antigo)</option>
+              <option value="submitted_at_desc">Enviado (Mais Recente)</option>
+            </select>
+
+            {(searchTerm || statusFilter !== "all" || sortBy !== "page_path") && (
               <Button
                 variant="ghost"
-                onClick={() => setSearchTerm("")}
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                  setSortBy("page_path");
+                  setCurrentPage(1);
+                }}
               >
-                Limpar
+                Limpar Filtros
               </Button>
             )}
           </div>
