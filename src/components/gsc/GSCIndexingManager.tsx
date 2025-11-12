@@ -318,7 +318,8 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                 Indexação Instantânea
               </CardTitle>
               <CardDescription className="mt-2">
-                Solicite a indexação de URLs diretamente ao Google Search Console (limite: 200 URLs/dia)
+                Solicite a indexação de URLs diretamente ao Google Search Console
+                {quota && ` (quota agregada: ${quota.limit} URLs/dia)`}
               </CardDescription>
             </div>
             <Button

@@ -75,7 +75,7 @@ export function useGSCIndexing({ siteId }: UseGSCIndexingParams) {
       };
     },
     enabled: !!siteId,
-    refetchInterval: 30000, // Refetch a cada 30 segundos
+    refetchInterval: 10000, // Refetch a cada 10 segundos para updates mais rápidos
   });
 
   // Request indexing mutation (agora sem integration_id - sistema escolhe automaticamente)

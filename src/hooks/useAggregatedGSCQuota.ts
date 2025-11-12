@@ -44,6 +44,6 @@ export function useAggregatedGSCQuota({ siteId }: UseAggregatedGSCQuotaParams) {
       return data.aggregated_quota as AggregatedQuota;
     },
     enabled: !!siteId,
-    refetchInterval: 30000, // Atualizar a cada 30s
+    refetchInterval: 10000, // Atualizar a cada 10s (mesmo que useGSCIndexing)
   });
 }
