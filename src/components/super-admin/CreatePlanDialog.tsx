@@ -20,6 +20,7 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
     price: "",
     max_sites: "",
     max_pages_per_site: "",
+    max_gsc_integrations: "",
     billing_period: "monthly",
     features: [] as string[],
     display_order: 0,
@@ -52,6 +53,7 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
       price: Number(formData.price),
       max_sites: formData.max_sites ? Number(formData.max_sites) : null,
       max_pages_per_site: formData.max_pages_per_site ? Number(formData.max_pages_per_site) : null,
+      max_gsc_integrations: formData.max_gsc_integrations ? Number(formData.max_gsc_integrations) : null,
       billing_period: formData.billing_period,
       features: formData.features,
       display_order: formData.display_order,
@@ -66,6 +68,7 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
       price: "",
       max_sites: "",
       max_pages_per_site: "",
+      max_gsc_integrations: "",
       billing_period: "monthly",
       features: [],
       display_order: 0,
@@ -136,7 +139,7 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="max_sites">Máx. Sites</Label>
               <Input
@@ -157,6 +160,18 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
                 min="1"
                 value={formData.max_pages_per_site}
                 onChange={(e) => setFormData({ ...formData, max_pages_per_site: e.target.value })}
+                placeholder="Ilimitado"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="max_gsc">Máx. GSC</Label>
+              <Input
+                id="max_gsc"
+                type="number"
+                min="0"
+                value={formData.max_gsc_integrations}
+                onChange={(e) => setFormData({ ...formData, max_gsc_integrations: e.target.value })}
                 placeholder="Ilimitado"
               />
             </div>

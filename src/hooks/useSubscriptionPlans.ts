@@ -12,6 +12,7 @@ export interface SubscriptionPlan {
   features: string[];
   max_sites: number | null;
   max_pages_per_site: number | null;
+  max_gsc_integrations: number | null;
   is_active: boolean;
   display_order: number;
   created_at: string;
