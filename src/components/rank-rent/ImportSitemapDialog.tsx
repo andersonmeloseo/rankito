@@ -45,6 +45,89 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
     setImportJobId(null);
   };
 
+  const handleFullReimport = async () => {
+    if (!sitemapUrl) {
+      toast({
+        title: "URL necessária",
+        description: "Por favor, insira a URL do sitemap primeiro",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    setProgress(10);
+    setResult(null);
+    setCurrentOffset(0);
+    setImportJobId(null);
+
+    try {
+      setProgress(30);
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Forçar importação completa: processar TUDO e desativar antigas
+      const { data, error } = await supabase.functions.invoke("import-sitemap", {
+        body: {
+          site_id: siteId,
+          sitemap_url: sitemapUrl,
+          max_sitemaps: 100, // Processar até 100 sitemaps de uma vez
+          sitemap_offset: 0,
+          is_final_batch: true, // SEMPRE desativar páginas antigas
+          import_job_id: null, // Nova importação
+          user_id: user?.id,
+        },
+      });
+
+      setProgress(90);
+
+      if (error) throw error;
+
+      setResult(data);
+      setProgress(100);
+
+      const stats = [
+        `📊 ${data.sitemapsProcessed}/${data.totalSitemapsFound} sitemaps processados`,
+        `🔗 ${data.totalUrlsFound} URLs encontradas`,
+        `✨ ${data.newPages} novas`,
+        `🔄 ${data.updatedPages} atualizadas`,
+      ];
+
+      if (data.deactivatedPages > 0) {
+        stats.push(`⚠️ ${data.deactivatedPages} desativadas`);
+      }
+
+      toast({
+        title: "✅ Reimportação Completa!",
+        description: stats.join(' • '),
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["rank-rent-pages"] });
+
+      setTimeout(() => {
+        onOpenChange(false);
+        resetState();
+      }, 3000);
+    } catch (error: any) {
+      console.error("Erro ao reimportar:", error);
+      
+      let errorMessage = error instanceof Error ? error.message : "Não foi possível reimportar o sitemap";
+      
+      if (error.message?.includes('Limite de')) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Erro na Reimportação",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      setProgress(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -295,9 +378,25 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
           )}
 
           {!result && (
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? "Importando..." : "Importar Sitemap"}
-            </Button>
+            <div className="space-y-2">
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? "Importando..." : "Importar Sitemap"}
+              </Button>
+              
+              <Button 
+                type="button"
+                onClick={handleFullReimport}
+                disabled={loading || !sitemapUrl}
+                variant="outline"
+                className="w-full"
+              >
+                🔄 Reimportar Tudo (Atualizar + Desativar Antigas)
+              </Button>
+              
+              <p className="text-xs text-muted-foreground text-center">
+                Use "Reimportar Tudo" para processar 100% do sitemap e desativar páginas removidas
+              </p>
+            </div>
           )}
 
           {result && result.sitemapsProcessed < result.totalSitemapsFound && (
