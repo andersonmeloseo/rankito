@@ -1,4 +1,4 @@
-import { importPKCS8, SignJWT } from "https://deno.land/x/jose@v5.9.6/index.ts";
+import { importPKCS8, SignJWT } from "https://esm.sh/jose@v5.9.6";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 interface ServiceAccountCredentials {
