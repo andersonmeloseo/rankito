@@ -1,9 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Copy, Check, FileCode, AlertCircle, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { Copy, Check, FileCode, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
-import { useTestPluginConnection } from "@/hooks/useTestPluginConnection";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PluginDownloadCardProps {
@@ -16,7 +15,6 @@ interface PluginDownloadCardProps {
 
 export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackingPixelInstalled, siteName }: PluginDownloadCardProps) {
   const [copied, setCopied] = useState(false);
-  const { testConnection, isTestingConnection } = useTestPluginConnection();
   
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const trackingUrl = trackingToken 
@@ -31,18 +29,6 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
       description: "Cole esta URL nas configurações do plugin.",
     });
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleTestConnection = async () => {
-    if (!siteId || !siteName) {
-      toast({
-        title: "Erro",
-        description: "Informações do site não disponíveis",
-        variant: "destructive",
-      });
-      return;
-    }
-    await testConnection(siteId, siteName);
   };
 
   return (
@@ -60,7 +46,7 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
         {/* Connection Status Card */}
         <Card className={trackingPixelInstalled ? "border-green-500/50 bg-green-500/5" : "border-yellow-500/50 bg-yellow-500/5"}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center justify-between">
+            <CardTitle className="text-base">
               <div className="flex items-center gap-2">
                 {trackingPixelInstalled ? (
                   <>
@@ -74,14 +60,6 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
                   </>
                 )}
               </div>
-              <Button
-                onClick={handleTestConnection}
-                disabled={isTestingConnection || !siteId}
-                variant="ghost"
-                size="sm"
-              >
-                <RefreshCw className={`w-4 h-4 ${isTestingConnection ? 'animate-spin' : ''}`} />
-              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -137,25 +115,14 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
           </div>
         </div>
 
-        {/* Installation Guide and Test Connection Buttons */}
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            variant="outline"
-            onClick={onOpenGuide}
-            className="gap-2"
-          >
-            📖 Guia de Instalação
-          </Button>
-          <Button
-            onClick={handleTestConnection}
-            disabled={isTestingConnection || !siteId}
-            variant="default"
-            className="gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${isTestingConnection ? 'animate-spin' : ''}`} />
-            {isTestingConnection ? 'Testando...' : 'Testar Conexão'}
-          </Button>
-        </div>
+        {/* Installation Guide Button */}
+        <Button
+          variant="outline"
+          onClick={onOpenGuide}
+          className="gap-2 w-full"
+        >
+          📖 Guia de Instalação
+        </Button>
 
         {/* Quick Tips */}
         <div className="bg-muted/50 rounded-lg p-4 space-y-2">
@@ -163,7 +130,7 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
           <ul className="text-sm space-y-1 text-muted-foreground">
             <li>• O plugin rastreia automaticamente cliques e pageviews</li>
             <li>• Configure o nome do site no admin do WordPress</li>
-            <li>• O status de conexão é atualizado automaticamente quando o plugin envia dados</li>
+            <li>• O status de conexão é atualizado automaticamente em tempo real</li>
             <li>• Verifique os dados na aba "Analytics Avançado"</li>
           </ul>
         </div>
