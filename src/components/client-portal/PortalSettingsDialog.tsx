@@ -30,10 +30,11 @@ export const PortalSettingsDialog = ({
   onOpenChange,
   clientId,
 }: PortalSettingsDialogProps) => {
-  const { settings, isLoading, updateSettings, uploadLogo, isUpdating, isUploading } = 
+  const { settings, isLoading, updateSettings, uploadLogo, isUpdating, isUploading, isSuccess, resetMutation } = 
     usePortalCustomization(clientId);
 
   const [localSettings, setLocalSettings] = useState<PortalSettings>(getDefaultPortalSettings());
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     if (settings && open) {
@@ -50,8 +51,17 @@ export const PortalSettingsDialog = ({
   useEffect(() => {
     if (!open) {
       setLocalSettings(getDefaultPortalSettings());
+      setIsSaved(false);
+      resetMutation();
     }
-  }, [open]);
+  }, [open, resetMutation]);
+
+  // Track save success
+  useEffect(() => {
+    if (isSuccess) {
+      setIsSaved(true);
+    }
+  }, [isSuccess]);
 
   if (isLoading) {
     return (
@@ -65,8 +75,12 @@ export const PortalSettingsDialog = ({
     );
   }
 
-  const handleSave = () => {
-    updateSettings(localSettings);
+  const handleSave = async () => {
+    try {
+      await updateSettings(localSettings);
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+    }
   };
 
   const handleLogoUpload = async (file: File) => {
@@ -404,19 +418,27 @@ export const PortalSettingsDialog = ({
 
         {/* Save Button */}
         <div className="flex justify-end gap-3 mt-6 pt-6 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={isUpdating}>
-            {isUpdating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              'Salvar Configurações'
-            )}
-          </Button>
+          {!isSaved ? (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSave} disabled={isUpdating}>
+                {isUpdating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Configurações'
+                )}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => onOpenChange(false)} className="w-full">
+              Fechar
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

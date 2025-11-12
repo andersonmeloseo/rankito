@@ -84,6 +84,7 @@ export const usePortalCustomization = (clientId: string) => {
         .eq('client_id', clientId);
       
       if (error) throw error;
+      return newSettings;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portal-settings', clientId] });
@@ -135,9 +136,11 @@ export const usePortalCustomization = (clientId: string) => {
     settings: data?.settings,
     portalId: data?.portalId,
     isLoading,
-    updateSettings: updateSettings.mutate,
+    updateSettings: updateSettings.mutateAsync,
     uploadLogo: uploadLogo.mutateAsync,
     isUpdating: updateSettings.isPending,
     isUploading: uploadLogo.isPending,
+    isSuccess: updateSettings.isSuccess,
+    resetMutation: updateSettings.reset,
   };
 };
