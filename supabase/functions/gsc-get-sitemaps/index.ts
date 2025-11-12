@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('🚀 GSC Get Sitemaps - Request received');
+    console.log('🚀 GSC Get Sitemaps - Request received [v2.0 - body parsing]');
     console.log('📦 Request method:', req.method);
 
     // Verificar autenticação

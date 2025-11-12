@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('🚀 GSC Get Quota - Request received');
+    console.log('🚀 GSC Get Quota - Request received [v2.0 - body parsing]');
     console.log('📦 Request method:', req.method);
     console.log('📦 Request headers:', Object.fromEntries(req.headers.entries()));
 
