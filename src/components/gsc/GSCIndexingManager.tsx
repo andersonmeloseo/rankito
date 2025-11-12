@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -16,11 +17,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useGSCIndexing } from "@/hooks/useGSCIndexing";
+import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Send, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, ExternalLink } from "lucide-react";
+import { Send, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, ExternalLink, List } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
 
 interface GSCIndexingManagerProps {
   integrationId: string;
@@ -30,6 +33,8 @@ interface GSCIndexingManagerProps {
 
 export function GSCIndexingManager({ integrationId, integrationName, siteId }: GSCIndexingManagerProps) {
   const [customUrl, setCustomUrl] = useState("");
+  const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
 
   const {
     quota,
@@ -40,6 +45,8 @@ export function GSCIndexingManager({ integrationId, integrationName, siteId }: G
     isRequesting,
     refetchQuota,
   } = useGSCIndexing({ integrationId });
+
+  const { addToQueue, isAddingToQueue } = useGSCIndexingQueue({ integrationId });
 
   // Fetch site pages
   const { data: pages, isLoading: isLoadingPages } = useQuery({
@@ -67,6 +74,38 @@ export function GSCIndexingManager({ integrationId, integrationName, siteId }: G
 
   const handleIndexPage = async (pageId: string, pageUrl: string) => {
     await requestIndexing.mutateAsync({ url: pageUrl, page_id: pageId });
+  };
+
+  const handleToggleAll = () => {
+    if (!pages) return;
+    
+    if (selectedPages.size === pages.length) {
+      setSelectedPages(new Set());
+    } else {
+      setSelectedPages(new Set(pages.map(p => p.id)));
+    }
+  };
+
+  const handleTogglePage = (pageId: string) => {
+    const newSelected = new Set(selectedPages);
+    if (newSelected.has(pageId)) {
+      newSelected.delete(pageId);
+    } else {
+      newSelected.add(pageId);
+    }
+    setSelectedPages(newSelected);
+  };
+
+  const handleBatchIndexing = async (distribution: 'fast' | 'even') => {
+    if (!pages) return;
+
+    const selectedUrls = pages
+      .filter(p => selectedPages.has(p.id))
+      .map(p => ({ url: p.page_url, page_id: p.id }));
+
+    await addToQueue.mutateAsync({ urls: selectedUrls, distribution });
+    setSelectedPages(new Set());
+    setShowBatchDialog(false);
   };
 
   const getStatusBadge = (status: string, errorMessage: string | null) => {
@@ -213,10 +252,23 @@ export function GSCIndexingManager({ integrationId, integrationName, siteId }: G
       {/* Site Pages */}
       <Card>
         <CardHeader>
-          <CardTitle>Páginas do Site</CardTitle>
-          <CardDescription>
-            Selecione páginas para solicitar indexação no Google
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Páginas do Site</CardTitle>
+              <CardDescription>
+                Selecione páginas para indexação em lote ou individual
+              </CardDescription>
+            </div>
+            {selectedPages.size > 0 && (
+              <Button
+                onClick={() => setShowBatchDialog(true)}
+                disabled={quota?.remaining === 0}
+              >
+                <List className="h-4 w-4 mr-2" />
+                Indexar {selectedPages.size} Selecionadas
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {isLoadingPages ? (
@@ -230,6 +282,12 @@ export function GSCIndexingManager({ integrationId, integrationName, siteId }: G
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={pages.length > 0 && selectedPages.size === pages.length}
+                        onCheckedChange={handleToggleAll}
+                      />
+                    </TableHead>
                     <TableHead className="min-w-[300px]">Página</TableHead>
                     <TableHead>URL</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -238,6 +296,12 @@ export function GSCIndexingManager({ integrationId, integrationName, siteId }: G
                 <TableBody>
                   {pages.map((page) => (
                     <TableRow key={page.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedPages.has(page.id)}
+                          onCheckedChange={() => handleTogglePage(page.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         {page.page_title || page.page_path}
                       </TableCell>
@@ -325,6 +389,16 @@ export function GSCIndexingManager({ integrationId, integrationName, siteId }: G
           </CardContent>
         </Card>
       )}
+
+      {/* Batch Indexing Dialog */}
+      <GSCBatchIndexingDialog
+        open={showBatchDialog}
+        onOpenChange={setShowBatchDialog}
+        selectedUrls={pages?.filter(p => selectedPages.has(p.id)).map(p => ({ url: p.page_url, page_id: p.id })) || []}
+        remainingQuota={quota?.remaining || 0}
+        onConfirm={handleBatchIndexing}
+        isSubmitting={isAddingToQueue}
+      />
     </div>
   );
 }

@@ -680,6 +680,128 @@ export type Database = {
           },
         ]
       }
+      gsc_indexing_batches: {
+        Row: {
+          completed_at: string | null
+          completed_urls: number
+          created_at: string
+          failed_urls: number
+          id: string
+          integration_id: string
+          started_at: string | null
+          status: string
+          total_urls: number
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_urls?: number
+          created_at?: string
+          failed_urls?: number
+          id?: string
+          integration_id: string
+          started_at?: string | null
+          status?: string
+          total_urls?: number
+        }
+        Update: {
+          completed_at?: string | null
+          completed_urls?: number
+          created_at?: string
+          failed_urls?: number
+          id?: string
+          integration_id?: string
+          started_at?: string | null
+          status?: string
+          total_urls?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_indexing_batches_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_indexing_queue: {
+        Row: {
+          attempts: number
+          batch_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          integration_id: string
+          page_id: string | null
+          processed_at: string | null
+          scheduled_for: string
+          status: string
+          url: string
+        }
+        Insert: {
+          attempts?: number
+          batch_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          page_id?: string | null
+          processed_at?: string | null
+          scheduled_for?: string
+          status?: string
+          url: string
+        }
+        Update: {
+          attempts?: number
+          batch_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          page_id?: string | null
+          processed_at?: string | null
+          scheduled_for?: string
+          status?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_indexing_queue_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_indexing_queue_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_daily_stats"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "gsc_indexing_queue_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_financial_metrics"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "gsc_indexing_queue_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_page_metrics"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "gsc_indexing_queue_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gsc_sitemap_submissions: {
         Row: {
           created_at: string | null

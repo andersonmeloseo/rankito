@@ -9,6 +9,7 @@ import { AddGSCIntegrationDialog } from './AddGSCIntegrationDialog';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
 import { GSCIndexingManager } from './GSCIndexingManager';
 import { GSCMonitoringDashboard } from './GSCMonitoringDashboard';
+import { GSCIndexingQueue } from './GSCIndexingQueue';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ import {
   FileText,
   Send,
   BarChart3,
+  ListOrdered,
 } from 'lucide-react';
 
 interface GSCIntegrationsManagerProps {
@@ -93,7 +95,7 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
   return (
     <>
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 max-w-3xl">
+        <TabsList className="grid w-full grid-cols-5 max-w-4xl">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Visão Geral
@@ -117,6 +119,14 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
           >
             <Send className="h-4 w-4" />
             Indexação
+          </TabsTrigger>
+          <TabsTrigger 
+            value="queue" 
+            className="flex items-center gap-2"
+            disabled={!selectedIntegrationId}
+          >
+            <ListOrdered className="h-4 w-4" />
+            Fila
           </TabsTrigger>
         </TabsList>
 
@@ -284,6 +294,12 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
               integrationName={selectedIntegrationName}
               siteId={siteId}
             />
+          )}
+        </TabsContent>
+
+        <TabsContent value="queue">
+          {selectedIntegrationId && (
+            <GSCIndexingQueue integrationId={selectedIntegrationId} />
           )}
         </TabsContent>
       </Tabs>
