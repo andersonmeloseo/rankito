@@ -73,18 +73,18 @@ export const AutoConversionSettings = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Alert de Info */}
-        <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950/20">
-          <Info className="h-4 w-4 text-blue-600 dark:text-blue-500" />
-          <AlertTitle className="text-blue-800 dark:text-blue-400">
-            ℹ️ Auto-Conversão de Leads Ativa
+        {/* Alert de Desabilitado */}
+        <Alert className="border-orange-500 bg-orange-50 dark:bg-orange-950/20">
+          <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-500" />
+          <AlertTitle className="text-orange-800 dark:text-orange-400">
+            🚫 Auto-Conversão Desabilitada
           </AlertTitle>
-          <AlertDescription className="text-blue-700 dark:text-blue-300">
-            O sistema está criando leads automaticamente no CRM quando detectar conversões (cliques em WhatsApp, telefone, formulários).
+          <AlertDescription className="text-orange-700 dark:text-orange-300">
+            <strong>Cliques NÃO criam leads automaticamente.</strong> O sistema rastreia todos os eventos para analytics, mas você deve criar leads manualmente quando julgar apropriado.
             <br/><br/>
-            <strong>Importante:</strong> Cliques capturam dados técnicos (localização, device, página). Use o <strong>Plugin Rankito LeadGen</strong> para capturar informações completas de contato.
+            <strong>✅ Recomendado:</strong> Use o <strong>Plugin Rankito LeadGen</strong> para capturar formulários com dados completos de contato (nome, email, telefone, mensagem). Esses leads SIM são criados automaticamente no CRM.
             <br/><br/>
-            <strong>📊 Analytics:</strong> Todos os eventos são rastreados nos relatórios, independente desta configuração.
+            <strong>📊 Analytics:</strong> Todos os cliques e conversões continuam sendo rastreados normalmente nos relatórios.
           </AlertDescription>
         </Alert>
 
@@ -92,41 +92,44 @@ export const AutoConversionSettings = () => {
         <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950/20">
           <Info className="h-4 w-4 text-blue-600 dark:text-blue-500" />
           <AlertTitle className="text-blue-800 dark:text-blue-400">
-            Como Funciona?
+            Como Funciona Agora?
           </AlertTitle>
           <AlertDescription className="text-blue-700 dark:text-blue-300 space-y-2">
             <div>
               🔍 <strong>Tracking (sempre ativo):</strong> Registra todos os cliques e conversões para analytics
             </div>
             <div>
-              🤖 <strong>Auto-Conversão (opcional):</strong> Cria leads automaticamente no CRM
+              ❌ <strong>Cliques Simples:</strong> NÃO criam leads automaticamente (desabilitado)
             </div>
             <div>
-              📝 <strong>Plugin Rankito LeadGen:</strong> Captura formulários com dados completos
+              ✅ <strong>Plugin Rankito LeadGen:</strong> Formulários completos CRIAM leads automaticamente
+            </div>
+            <div>
+              ✋ <strong>Criação Manual:</strong> Você decide quando criar leads baseado nos analytics
             </div>
             <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
-              <strong>Quando Usar Auto-Conversão?</strong>
+              <strong>Fluxo Recomendado:</strong>
               <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>❌ <strong>Cliques:</strong> Gera leads sem contato (não recomendado)</li>
-                <li>✅ <strong>Formulários:</strong> Captura dados completos (recomendado via plugin)</li>
-                <li>⚠️ <strong>Manual:</strong> Você decide quando criar um lead baseado nos analytics</li>
+                <li>📊 Monitore analytics de cliques e conversões</li>
+                <li>🎯 Identifique oportunidades qualificadas</li>
+                <li>✍️ Crie leads manualmente no CRM quando apropriado</li>
+                <li>🚀 Ou use o Plugin Rankito LeadGen para captura automática com dados completos</li>
               </ul>
             </div>
           </AlertDescription>
         </Alert>
 
-        {/* Switch Principal */}
-        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+        {/* Switch Principal - DESABILITADO */}
+        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30 opacity-60">
           <div className="space-y-0.5">
-            <Label className="text-base font-semibold">Ativar Auto-Conversão</Label>
+            <Label className="text-base font-semibold text-muted-foreground">Auto-Conversão de Cliques</Label>
             <p className="text-sm text-muted-foreground">
-              Criar leads automaticamente quando conversões forem detectadas
+              Funcionalidade desabilitada permanentemente. Cliques não criam leads.
             </p>
           </div>
           <Switch
-            checked={localSettings?.enabled}
-            onCheckedChange={(value) => handleToggle('enabled', value)}
-            disabled={isUpdating}
+            checked={false}
+            disabled={true}
           />
         </div>
 
