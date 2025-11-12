@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ import { useGSCIndexing } from "@/hooks/useGSCIndexing";
 import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Send, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, ExternalLink, List } from "lucide-react";
+import { Send, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, ExternalLink, List, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
@@ -39,7 +39,27 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("page_path");
+  const [sortColumn, setSortColumn] = useState<string>("page_path");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const PAGES_PER_PAGE = 50;
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />;
+    }
+    return sortDirection === "asc" 
+      ? <ChevronUp className="w-4 h-4" /> 
+      : <ChevronDown className="w-4 h-4" />;
+  };
 
   const {
     quota,
@@ -113,6 +133,22 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
 
   const pages = pagesData?.pages || [];
 
+  // Apply client-side sorting
+  const sortedPages = useMemo(() => {
+    if (!pages || pages.length === 0) return [];
+    
+    return [...pages].sort((a, b) => {
+      const aVal = a[sortColumn as keyof typeof a];
+      const bVal = b[sortColumn as keyof typeof b];
+      
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      
+      const comparison = String(aVal).localeCompare(String(bVal));
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [pages, sortColumn, sortDirection]);
+
   // Fetch GSC status distribution
   const { data: statusDistribution, isLoading: isLoadingDistribution } = useQuery({
     queryKey: ['gsc-status-distribution', siteId],
@@ -165,12 +201,12 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   };
 
   const handleToggleAll = () => {
-    if (!pages) return;
+    if (!sortedPages) return;
     
-    if (selectedPages.size === pages.length) {
+    if (selectedPages.size === sortedPages.length) {
       setSelectedPages(new Set());
     } else {
-      setSelectedPages(new Set(pages.map(p => p.id)));
+      setSelectedPages(new Set(sortedPages.map(p => p.id)));
     }
   };
 
@@ -185,9 +221,9 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   };
 
   const handleBatchIndexing = async (distribution: 'fast' | 'even') => {
-    if (!pages) return;
+    if (!sortedPages) return;
 
-    const selectedUrls = pages
+    const selectedUrls = sortedPages
       .filter(p => selectedPages.has(p.id))
       .map(p => ({ url: p.page_url, page_id: p.id }));
 
@@ -439,7 +475,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
               {selectedPages.size > 0 && (
                 <>
                   <Badge variant="secondary" className="text-sm px-3 py-1.5">
-                    {selectedPages.size} de {pages.length} páginas selecionadas
+                    {selectedPages.size} de {sortedPages.length} páginas selecionadas
                   </Badge>
                   <Button
                     onClick={() => setShowBatchDialog(true)}
@@ -525,7 +561,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
             </div>
-          ) : pages.length > 0 ? (
+          ) : sortedPages.length > 0 ? (
             <>
               <div className="border rounded-lg overflow-hidden">
                 <Table>
@@ -534,20 +570,44 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                       <TableHead className="w-12">
                         <div className="flex items-center gap-2">
                           <Checkbox
-                            checked={pages.length > 0 && selectedPages.size === pages.length}
+                            checked={sortedPages.length > 0 && selectedPages.size === sortedPages.length}
                             onCheckedChange={handleToggleAll}
-                            title={`${selectedPages.size === pages.length ? 'Desmarcar' : 'Selecionar'} todas as ${pages.length} páginas`}
+                            title={`${selectedPages.size === sortedPages.length ? 'Desmarcar' : 'Selecionar'} todas as ${sortedPages.length} páginas`}
                           />
                         </div>
                       </TableHead>
-                      <TableHead className="min-w-[300px]">Página</TableHead>
-                      <TableHead>URL</TableHead>
-                      <TableHead className="min-w-[140px]">Status GSC</TableHead>
+                      <TableHead 
+                        className="min-w-[300px] cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort("page_path")}
+                      >
+                        <div className="flex items-center gap-2">
+                          Página
+                          <SortIcon column="page_path" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort("page_url")}
+                      >
+                        <div className="flex items-center gap-2">
+                          URL
+                          <SortIcon column="page_url" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="min-w-[140px] cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort("gsc_indexation_status")}
+                      >
+                        <div className="flex items-center gap-2">
+                          Status GSC
+                          <SortIcon column="gsc_indexation_status" />
+                        </div>
+                      </TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pages.map((page) => (
+                    {sortedPages.map((page) => (
                       <TableRow key={page.id}>
                         <TableCell>
                           <Checkbox
@@ -683,7 +743,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
       <GSCBatchIndexingDialog
         open={showBatchDialog}
         onOpenChange={setShowBatchDialog}
-        selectedUrls={pages?.filter(p => selectedPages.has(p.id)).map(p => ({ url: p.page_url, page_id: p.id })) || []}
+        selectedUrls={sortedPages?.filter(p => selectedPages.has(p.id)).map(p => ({ url: p.page_url, page_id: p.id })) || []}
         remainingQuota={quota?.remaining || 0}
         totalLimit={quota?.limit || 200}
         onConfirm={handleBatchIndexing}

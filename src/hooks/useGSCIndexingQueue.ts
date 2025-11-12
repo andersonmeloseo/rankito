@@ -104,12 +104,38 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
       // Escolher primeira integração (ou implementar round-robin)
       const integrationId = integrations[0].id;
 
+      // Verificar URLs duplicadas já na fila
+      const { data: existingQueue } = await supabase
+        .from('gsc_indexing_queue')
+        .select('url, integration_id, scheduled_for')
+        .in('url', urls.map(u => u.url))
+        .eq('integration_id', integrationId)
+        .in('status', ['pending', 'processing']);
+
+      // Calcular data de agendamento para comparação
+      const today = new Date();
+      const scheduledDate = today.toISOString().split('T')[0];
+
+      // Filtrar URLs que já existem na fila
+      const uniqueUrls = urls.filter(u => 
+        !existingQueue?.some(eq => 
+          eq.url === u.url && 
+          eq.integration_id === integrationId &&
+          (distribution === 'fast' ? eq.scheduled_for === scheduledDate : true)
+        )
+      );
+
+      // Se todas as URLs foram filtradas
+      if (uniqueUrls.length === 0) {
+        throw new Error('Todas as URLs já estão na fila de indexação');
+      }
+
       // Criar batch
       const { data: batch, error: batchError } = await supabase
         .from('gsc_indexing_batches')
         .insert({
           integration_id: integrationId,
-          total_urls: urls.length,
+          total_urls: uniqueUrls.length,
           status: 'pending',
         })
         .select()
@@ -118,8 +144,7 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
       if (batchError) throw new Error(batchError.message);
 
       // Calcular datas de agendamento
-      const today = new Date();
-      const queueItems = urls.map((item, index) => {
+      const queueItems = uniqueUrls.map((item, index) => {
         let scheduledDate = new Date(today);
 
         if (distribution === 'even') {
@@ -146,12 +171,22 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
 
       if (queueError) throw new Error(queueError.message);
 
-      return { batch, totalUrls: urls.length };
+      return { 
+        batch, 
+        totalUrls: uniqueUrls.length,
+        duplicateCount: urls.length - uniqueUrls.length,
+        originalCount: urls.length
+      };
     },
     onSuccess: (data) => {
+      const hasWarnings = data.duplicateCount > 0;
+      
       toast({
-        title: "URLs adicionadas à fila!",
-        description: `${data.totalUrls} URLs foram agendadas para indexação.`,
+        title: hasWarnings ? "URLs adicionadas com avisos" : "URLs adicionadas à fila!",
+        description: hasWarnings
+          ? `${data.totalUrls} URLs adicionadas, ${data.duplicateCount} já estavam na fila`
+          : `${data.totalUrls} URLs foram agendadas para indexação.`,
+        variant: hasWarnings ? "default" : "default",
       });
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', siteId] });
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-batches', siteId] });
