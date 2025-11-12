@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Rank & Rent Tracker
+ * Plugin Name: RankIto LeadGen
  * Description: Rastreamento automático de conversões (cliques, page views, formulários) para Rankito CRM
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Anderson Melo SEO
  * Author URI: https://andersonmeloseo.com.br
  */
@@ -26,17 +26,19 @@ class RankRentTracker {
     }
 
     public function add_admin_menu() {
-        add_options_page(
-            'Rank & Rent Tracker',
-            'Rank & Rent Tracker',
+        add_menu_page(
+            'RankIto LeadGen',
+            'RankIto LeadGen',
             'manage_options',
             'rank-rent-tracker',
-            [$this, 'settings_page']
+            [$this, 'settings_page'],
+            'dashicons-clipboard',
+            30
         );
     }
 
     public function enqueue_admin_assets($hook) {
-        if ($hook !== 'settings_page_rank-rent-tracker') {
+        if ($hook !== 'toplevel_page_rank-rent-tracker') {
             return;
         }
         wp_enqueue_style('rank-rent-tracker-admin', plugins_url('assets/admin.css', __FILE__));
@@ -144,15 +146,10 @@ class RankRentTracker {
             wp_send_json_error(['message' => 'URL de rastreamento não configurada']);
         }
         
-        // Enviar evento de teste
-        $response = wp_remote_post($tracking_url, [
+        // Enviar evento de teste via GET
+        $response = wp_remote_get($tracking_url, [
             'timeout' => 15,
-            'headers' => ['Content-Type' => 'application/json'],
-            'body' => json_encode([
-                'page_url' => home_url(),
-                'page_title' => get_bloginfo('name'),
-                'event_type' => 'test'
-            ])
+            'headers' => ['Accept' => 'application/json']
         ]);
         
         if (is_wp_error($response)) {
@@ -187,7 +184,7 @@ class RankRentTracker {
         $nonce = wp_create_nonce('rank_rent_tracker_nonce');
         ?>
         <div class="wrap">
-            <h1>🎯 Rank & Rent Tracker</h1>
+            <h1>⚡ RankIto LeadGen</h1>
             
             <div class="card" style="max-width: 800px; margin-top: 20px;">
                 <h2>⚙️ Configuração</h2>
@@ -204,7 +201,7 @@ class RankRentTracker {
                                        name="tracking_url" 
                                        value="<?php echo $tracking_url; ?>" 
                                        class="regular-text"
-                                       placeholder="https://app.rankitocrm.com/functions/v1/api-track?token=..."
+                                       placeholder="https://jhzmgexprjnpgadkxjup.supabase.co/functions/v1/api-track?token=..."
                                        required>
                                 <p class="description">
                                     Cole aqui a URL de rastreamento fornecida pelo Rankito CRM (inclui o token)
