@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddGSCIntegrationDialog } from './AddGSCIntegrationDialog';
+import { GSCSitemapsManager } from './GSCSitemapsManager';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +26,7 @@ import {
   AlertCircle,
   Info,
   Crown,
+  FileText,
 } from 'lucide-react';
 
 interface GSCIntegrationsManagerProps {
@@ -47,6 +50,8 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(null);
+  const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
+  const [selectedIntegrationName, setSelectedIntegrationName] = useState<string>("");
 
   const handleAdd = (data: any) => {
     createIntegration(data, {
@@ -91,8 +96,25 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
 
   return (
     <>
-      <Card>
-        <CardHeader>
+      <Tabs defaultValue="connections" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="connections" className="flex items-center gap-2">
+            <LinkIcon className="h-4 w-4" />
+            Integrações
+          </TabsTrigger>
+          <TabsTrigger 
+            value="sitemaps" 
+            className="flex items-center gap-2"
+            disabled={!selectedIntegrationId}
+          >
+            <FileText className="h-4 w-4" />
+            Sitemaps
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="connections">
+          <Card>
+            <CardHeader>
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <CardTitle>Integrações Google Search Console</CardTitle>
@@ -230,7 +252,18 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
             </Alert>
           )}
         </CardContent>
-      </Card>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sitemaps">
+          {selectedIntegrationId && (
+            <GSCSitemapsManager
+              integrationId={selectedIntegrationId}
+              integrationName={selectedIntegrationName}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Add Integration Dialog */}
       <AddGSCIntegrationDialog
