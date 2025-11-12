@@ -35,6 +35,9 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PlanUsageCard } from "@/components/subscription/PlanUsageCard";
 import { LimitWarningBanner } from "@/components/subscription/LimitWarningBanner";
+import { SubscriptionStatusBar } from "@/components/subscription/SubscriptionStatusBar";
+import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
+import { Badge } from "@/components/ui/badge";
 
 import { LeadNotificationBanner } from "@/components/crm/LeadNotificationBanner";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
@@ -49,6 +52,9 @@ const Dashboard = () => {
 
   // Realtime leads
   const { newLeads, clearNewLeads } = useRealtimeLeads(user?.id);
+
+  // Subscription limits
+  const { data: limits, isLoading: limitsLoading } = useSubscriptionLimits();
 
   const { sitesMetrics, summary, isLoading: financialLoading } = useGlobalFinancialMetrics(user?.id || "");
 
@@ -154,11 +160,40 @@ const Dashboard = () => {
               <p className="text-muted-foreground mt-1">
                 {isReturningUser ? "Seja bem-vindo de volta" : "Seja bem-vindo"} {userName} ({user?.email})
               </p>
+              
+              {/* Barra de status de limites */}
+              <div className="mt-3">
+                <SubscriptionStatusBar compact />
+              </div>
             </div>
             <div className="flex gap-2 items-center">
-              <Button onClick={() => setShowAddSite(true)} className="gap-2">
+              <Button 
+                onClick={() => setShowAddSite(true)} 
+                className="gap-2 relative"
+                disabled={!limits?.canCreateSite}
+              >
                 <Plus className="w-4 h-4" />
                 Adicionar Site
+                
+                {/* Badge com sites disponíveis */}
+                {limits && !limits.isUnlimited && limits.remainingSites !== null && (
+                  <Badge 
+                    variant={limits.remainingSites <= 2 ? "destructive" : "secondary"}
+                    className="ml-2 text-xs"
+                  >
+                    {limits.remainingSites > 0 
+                      ? `+${limits.remainingSites}` 
+                      : '0'
+                    }
+                  </Badge>
+                )}
+                
+                {/* Badge para planos ilimitados */}
+                {limits?.isUnlimited && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    ∞
+                  </Badge>
+                )}
               </Button>
               
               <DropdownMenu>
