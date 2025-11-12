@@ -183,6 +183,74 @@ serve(async (req) => {
     
     console.log(`Processing ${safeUrls.length} URLs (safety limit: ${SAFE_URL_LIMIT})`);
 
+    // ============= BUSCAR LIMITE DO PLANO =============
+    console.log(`🔍 Verificando limite do plano para user_id: ${user_id}`);
+
+    const { data: userSubscription, error: subError } = await supabase
+      .from('user_subscriptions')
+      .select(`
+        plan_id,
+        subscription_plans (
+          name,
+          max_pages_per_site
+        )
+      `)
+      .eq('user_id', user_id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (subError) {
+      console.error('❌ Erro ao buscar plano:', subError);
+    }
+
+    const planName = userSubscription?.subscription_plans?.[0]?.name || 'Desconhecido';
+    const maxPages = userSubscription?.subscription_plans?.[0]?.max_pages_per_site;
+    const isUnlimited = maxPages === null;
+
+    console.log(`📊 Plano: ${planName} | Limite: ${isUnlimited ? '∞ ILIMITADO' : maxPages}`);
+
+    // CONTAR PÁGINAS ATUAIS DO SITE
+    const { count: currentPages, error: countError } = await supabase
+      .from('rank_rent_pages')
+      .select('*', { count: 'exact', head: true })
+      .eq('site_id', site_id);
+
+    if (countError) {
+      console.error('❌ Erro ao contar páginas:', countError);
+    }
+
+    const currentCount = currentPages || 0;
+    console.log(`📄 Páginas atuais no site: ${currentCount}`);
+
+    // CALCULAR ESPAÇO DISPONÍVEL
+    let spaceAvailable = Infinity;
+    let limitReached = false;
+    let pagesBlocked = 0;
+
+    if (!isUnlimited) {
+      spaceAvailable = maxPages! - currentCount;
+      limitReached = spaceAvailable <= 0;
+      
+      console.log(`📦 Espaço disponível: ${spaceAvailable} páginas`);
+      
+      if (limitReached) {
+        console.error(`🚫 LIMITE ATINGIDO! ${currentCount}/${maxPages} páginas`);
+        
+        return new Response(JSON.stringify({
+          success: false,
+          limitReached: true,
+          planName,
+          maxPages,
+          currentPages: currentCount,
+          spaceAvailable: 0,
+          pagesBlocked: safeUrls.length,
+          message: `Limite de ${maxPages} páginas atingido. Seu site já tem ${currentCount} páginas cadastradas. Faça upgrade para o plano Enterprise e tenha páginas ilimitadas!`
+        }), { status: 400, headers: corsHeaders });
+      }
+    }
+
     // Gerenciar job de importação
     let jobId = import_job_id;
     
@@ -284,12 +352,23 @@ serve(async (req) => {
     
     console.log(`Found ${duplicateUrls.length} duplicate URLs`);
 
+    // ============= LIMITAR PÁGINAS AO ESPAÇO DISPONÍVEL =============
+    let pagesToImport = pagesToUpsert;
+
+    if (!isUnlimited && spaceAvailable < pagesToUpsert.length) {
+      pagesToImport = pagesToUpsert.slice(0, Math.max(0, spaceAvailable));
+      pagesBlocked = pagesToUpsert.length - pagesToImport.length;
+      
+      console.log(`⚠️ LIMITANDO IMPORT: ${pagesToImport.length}/${pagesToUpsert.length} páginas`);
+      console.log(`🚫 ${pagesBlocked} páginas bloqueadas pelo limite do plano`);
+    }
+
     // Processar TODAS as páginas com UPSERT (não separa INSERT/UPDATE)
-    console.log(`Upserting ${pagesToUpsert.length} pages in batches of ${batch_size}`);
+    console.log(`Upserting ${pagesToImport.length} pages in batches of ${batch_size}`);
     const failedBatches: any[] = []; // ✅ Rastrear batches que falharam
 
-    for (let i = 0; i < pagesToUpsert.length; i += batch_size) {
-      const batch = pagesToUpsert.slice(i, i + batch_size);
+    for (let i = 0; i < pagesToImport.length; i += batch_size) {
+      const batch = pagesToImport.slice(i, i + batch_size);
       
       // Remover campo id para deixar o banco decidir (novo ou existente)
       const cleanBatch = batch.map(({ id, ...rest }) => rest);
@@ -444,8 +523,20 @@ serve(async (req) => {
         updatedPages,
         errors,
         
+        // Informações do plano (será preenchido abaixo)
+        planInfo: {
+          name: planName,
+          maxPages: isUnlimited ? null : maxPages,
+          currentPages: currentCount + newPages,
+          spaceAvailable: isUnlimited ? null : Math.max(0, spaceAvailable - newPages),
+          isUnlimited,
+          limitReached: pagesBlocked > 0
+        },
+        pagesBlocked,
+        
         // Avisos
         warnings: [
+          ...(pagesBlocked > 0 ? [`⚠️ ${pagesBlocked} URLs não foram importadas (limite de ${maxPages} páginas atingido)`] : []),
           ...(errors > 0 ? [`${errors} URLs falharam ao inserir no banco`] : []),
           ...(duplicateUrls.length > 0 ? [`${duplicateUrls.length} URLs duplicadas foram removidas`] : []),
           ...(allRawUrlsBeforeLimits.length > safeUrls.length ? [`${allRawUrlsBeforeLimits.length - safeUrls.length} URLs descartadas pelo limite de segurança`] : [])
