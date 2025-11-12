@@ -6,11 +6,9 @@ import type { Database } from "@/integrations/supabase/types";
 type GSCIntegration = Database['public']['Tables']['google_search_console_integrations']['Row'];
 
 interface CreateGSCIntegrationInput {
-  site_id: string;
-  connection_name: string;
-  google_email: string;
-  google_client_id: string;
-  google_client_secret: string;
+  siteId: string;
+  connectionName: string;
+  serviceAccountJson: any;
 }
 
 export const useGSCIntegrations = (siteId: string, userId: string) => {
@@ -52,7 +50,7 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const plan = subscription?.subscription_plans as any;
 
@@ -84,31 +82,35 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
     enabled: !!siteId && !!userId,
   });
 
-  // Criar nova integração
+  // Criar nova integração com Service Account
   const createIntegration = useMutation({
     mutationFn: async (input: CreateGSCIntegrationInput) => {
       // Verificar limite antes de criar
       if (planLimits && !planLimits.canAddIntegration) {
         throw new Error(
-          `Limite de ${planLimits.maxIntegrations} integrações GSC atingido para o plano ${planLimits.planName}. ` +
-          `Faça upgrade para adicionar mais integrações.`
+          planLimits.isUnlimited
+            ? "Erro ao verificar limite do plano"
+            : `Limite atingido: seu plano permite ${planLimits.maxIntegrations} integração(ões)`
         );
       }
 
+      // Extrair client_email do JSON da Service Account
+      const clientEmail = input.serviceAccountJson.client_email;
+      if (!clientEmail) {
+        throw new Error("Service Account JSON inválido: client_email não encontrado");
+      }
+
+      // Inserir integração
       const { data, error } = await supabase
         .from('google_search_console_integrations')
         .insert([{
           user_id: userId,
-          site_id: input.site_id,
-          connection_name: input.connection_name,
-          google_email: input.google_email,
-          google_client_id: input.google_client_id,
-          google_client_secret: input.google_client_secret,
-          is_active: false,
-          access_token: '',
-          refresh_token: '',
-          gsc_property_url: '',
-          token_expires_at: null,
+          site_id: input.siteId,
+          connection_name: input.connectionName,
+          google_email: clientEmail,
+          service_account_json: input.serviceAccountJson,
+          is_active: true, // Service Account é imediatamente ativa
+          gsc_property_url: '', // Será preenchido quando o usuário selecionar uma propriedade
         }])
         .select()
         .single();
@@ -116,33 +118,13 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gsc-integrations', siteId] });
       queryClient.invalidateQueries({ queryKey: ['gsc-plan-limits', userId] });
-      toast.success('Integração GSC criada! Agora conclua a autenticação OAuth.');
-      return data;
+      toast.success('✅ Integração criada com sucesso! Service Account conectada e pronta para uso.');
     },
     onError: (error: any) => {
       toast.error(`Erro ao criar integração: ${error.message}`);
-    },
-  });
-
-  // Iniciar fluxo OAuth
-  const startOAuth = useMutation({
-    mutationFn: async (integrationId: string) => {
-      // Chamar edge function para gerar URL de autorização
-      const { data, error } = await supabase.functions.invoke('gsc-oauth-init', {
-        body: { integration_id: integrationId, site_id: siteId },
-      });
-
-      if (error) throw error;
-      if (!data?.authUrl) throw new Error('URL de autorização não recebida');
-
-      // Redirecionar para Google OAuth
-      window.location.href = data.authUrl;
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao iniciar OAuth: ${error.message}`);
     },
   });
 
@@ -194,20 +176,13 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
   });
 
   return {
-    // Data
-    integrations,
-    isLoading,
+    integrations: integrations || [],
     planLimits,
-
-    // Mutations
-    createIntegration: createIntegration.mutate,
-    startOAuth: startOAuth.mutate,
-    deleteIntegration: deleteIntegration.mutate,
-    updateIntegration: updateIntegration.mutate,
-
-    // Loading states
+    isLoading,
+    createIntegration,
+    deleteIntegration,
+    updateIntegration,
     isCreating: createIntegration.isPending,
-    isStartingOAuth: startOAuth.isPending,
     isDeleting: deleteIntegration.isPending,
     isUpdating: updateIntegration.isPending,
   };

@@ -602,62 +602,50 @@ export type Database = {
       }
       google_search_console_integrations: {
         Row: {
-          access_token: string
           auto_submit_new_pages: boolean | null
           auto_submit_sitemaps: boolean | null
           connection_name: string
           created_at: string | null
-          google_client_id: string | null
-          google_client_secret: string | null
           google_email: string | null
           gsc_permission_level: string | null
-          gsc_property_url: string
+          gsc_property_url: string | null
           id: string
           is_active: boolean | null
           last_sync_at: string | null
-          refresh_token: string
+          service_account_json: Json | null
           site_id: string
-          token_expires_at: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          access_token: string
           auto_submit_new_pages?: boolean | null
           auto_submit_sitemaps?: boolean | null
           connection_name?: string
           created_at?: string | null
-          google_client_id?: string | null
-          google_client_secret?: string | null
           google_email?: string | null
           gsc_permission_level?: string | null
-          gsc_property_url: string
+          gsc_property_url?: string | null
           id?: string
           is_active?: boolean | null
           last_sync_at?: string | null
-          refresh_token: string
+          service_account_json?: Json | null
           site_id: string
-          token_expires_at: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          access_token?: string
           auto_submit_new_pages?: boolean | null
           auto_submit_sitemaps?: boolean | null
           connection_name?: string
           created_at?: string | null
-          google_client_id?: string | null
-          google_client_secret?: string | null
           google_email?: string | null
           gsc_permission_level?: string | null
-          gsc_property_url?: string
+          gsc_property_url?: string | null
           id?: string
           is_active?: boolean | null
           last_sync_at?: string | null
-          refresh_token?: string
+          service_account_json?: Json | null
           site_id?: string
-          token_expires_at?: string
           updated_at?: string | null
           user_id?: string
         }
@@ -856,72 +844,6 @@ export type Database = {
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_pages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      oauth_states: {
-        Row: {
-          created_at: string
-          expires_at: string
-          id: string
-          integration_id: string
-          site_id: string
-          state: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          integration_id: string
-          site_id: string
-          state: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          integration_id?: string
-          site_id?: string
-          state?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "oauth_states_integration_id_fkey"
-            columns: ["integration_id"]
-            isOneToOne: false
-            referencedRelation: "google_search_console_integrations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "oauth_states_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_contract_status"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "oauth_states_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_metrics"
-            referencedColumns: ["site_id"]
-          },
-          {
-            foreignKeyName: "oauth_states_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_site_metrics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "oauth_states_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_sites"
             referencedColumns: ["id"]
           },
         ]

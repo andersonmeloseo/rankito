@@ -44,10 +44,8 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
     isLoading,
     planLimits,
     createIntegration,
-    startOAuth,
     deleteIntegration,
     isCreating,
-    isStartingOAuth,
     isDeleting,
   } = useGSCIntegrations(siteId, userId);
 
@@ -58,15 +56,12 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
   const [selectedIntegrationName, setSelectedIntegrationName] = useState<string>("");
 
   const handleAdd = (data: any) => {
-    createIntegration(data, {
-      onSuccess: () => {
-        setShowAddDialog(false);
-      },
+    createIntegration.mutate({
+      siteId,
+      connectionName: data.connectionName,
+      serviceAccountJson: data.serviceAccountJson,
     });
-  };
-
-  const handleConnect = (integrationId: string) => {
-    startOAuth(integrationId);
+    setShowAddDialog(false);
   };
 
   const handleDeleteClick = (integrationId: string) => {
@@ -76,12 +71,9 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
 
   const handleDeleteConfirm = () => {
     if (integrationToDelete) {
-      deleteIntegration(integrationToDelete, {
-        onSuccess: () => {
-          setDeleteDialogOpen(false);
-          setIntegrationToDelete(null);
-        },
-      });
+      deleteIntegration.mutate(integrationToDelete);
+      setDeleteDialogOpen(false);
+      setIntegrationToDelete(null);
     }
   };
 
@@ -237,30 +229,18 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
                       </div>
 
                       <div className="flex gap-2">
-                        {!integration.is_active && (
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() => handleConnect(integration.id)}
-                            disabled={isStartingOAuth}
-                          >
-                            <LinkIcon className="h-4 w-4 mr-2" />
-                            Conectar
-                          </Button>
-                        )}
-                        {integration.is_active && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedIntegrationId(integration.id);
-                              setSelectedIntegrationName(integration.connection_name);
-                            }}
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Gerenciar
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedIntegrationId(integration.id);
+                            setSelectedIntegrationName(integration.connection_name);
+                          }}
+                          disabled={!integration.is_active}
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Gerenciar
+                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"

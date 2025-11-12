@@ -3,11 +3,6 @@ project_id = "jhzmgexprjnpgadkxjup"
 [functions.api-track]
 verify_jwt = false
 
-[functions.gsc-oauth-init]
-verify_jwt = true
-
-[functions.gsc-oauth-callback]
-verify_jwt = false
 
 [functions.api-external-leads]
 verify_jwt = false

@@ -1,188 +1,230 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info, ExternalLink } from 'lucide-react';
+import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle2, XCircle, Info, ExternalLink } from "lucide-react";
 
 interface AddGSCIntegrationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   siteId: string;
-  onAdd: (data: {
-    site_id: string;
-    connection_name: string;
-    google_email: string;
-    google_client_id: string;
-    google_client_secret: string;
-  }) => void;
+  onAdd: (data: { connectionName: string; serviceAccountJson: any }) => void;
   isLoading?: boolean;
 }
 
-export const AddGSCIntegrationDialog = ({
+export function AddGSCIntegrationDialog({
   open,
   onOpenChange,
   siteId,
   onAdd,
   isLoading = false,
-}: AddGSCIntegrationDialogProps) => {
-  const [formData, setFormData] = useState({
-    connection_name: '',
-    google_email: '',
-    google_client_id: '',
-    google_client_secret: '',
-  });
+}: AddGSCIntegrationDialogProps) {
+  const [connectionName, setConnectionName] = useState("");
+  const [jsonInput, setJsonInput] = useState("");
+  const [jsonValidation, setJsonValidation] = useState<{
+    valid: boolean;
+    error?: string;
+    clientEmail?: string;
+  }>({ valid: false });
+
+  const validateJSON = (input: string) => {
+    if (!input.trim()) {
+      setJsonValidation({ valid: false });
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(input);
+      
+      if (parsed.type !== "service_account") {
+        setJsonValidation({
+          valid: false,
+          error: 'O campo "type" deve ser "service_account"',
+        });
+        return;
+      }
+
+      const requiredFields = [
+        "project_id",
+        "private_key_id",
+        "private_key",
+        "client_email",
+        "client_id",
+        "auth_uri",
+        "token_uri",
+      ];
+
+      for (const field of requiredFields) {
+        if (!parsed[field]) {
+          setJsonValidation({
+            valid: false,
+            error: `Campo obrigatório ausente: ${field}`,
+          });
+          return;
+        }
+      }
+
+      setJsonValidation({
+        valid: true,
+        clientEmail: parsed.client_email,
+      });
+    } catch (err) {
+      setJsonValidation({
+        valid: false,
+        error: "JSON inválido. Verifique a formatação.",
+      });
+    }
+  };
+
+  const handleJSONChange = (value: string) => {
+    setJsonInput(value);
+    validateJSON(value);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!connectionName.trim()) {
+      return;
+    }
+
+    if (!jsonValidation.valid) {
+      return;
+    }
+
+    const parsedJson = JSON.parse(jsonInput);
     onAdd({
-      site_id: siteId,
-      ...formData,
+      connectionName: connectionName.trim(),
+      serviceAccountJson: parsedJson,
     });
   };
 
   const handleClose = () => {
-    setFormData({
-      connection_name: '',
-      google_email: '',
-      google_client_id: '',
-      google_client_secret: '',
-    });
+    setConnectionName("");
+    setJsonInput("");
+    setJsonValidation({ valid: false });
     onOpenChange(false);
   };
 
-  const redirectUri = `${import.meta.env.VITE_APP_URL}/gsc-callback`;
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar Integração Google Search Console</DialogTitle>
           <DialogDescription>
-            Configure uma nova conexão com o Google Search Console para gerenciar indexação
+            Configure uma Service Account do Google Cloud para conectar ao Search Console
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Connection Name */}
+          <div className="space-y-2">
+            <Label htmlFor="connection-name">
+              Nome da Conexão <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="connection-name"
+              placeholder="Ex: Conta Principal, Backup, etc."
+              value={connectionName}
+              onChange={(e) => setConnectionName(e.target.value)}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Um nome amigável para identificar esta integração
+            </p>
+          </div>
+
+          {/* Service Account JSON */}
+          <div className="space-y-2">
+            <Label htmlFor="service-account-json">
+              JSON da Service Account <span className="text-red-500">*</span>
+            </Label>
+            <Textarea
+              id="service-account-json"
+              placeholder='Cole aqui o JSON completo da Service Account...'
+              value={jsonInput}
+              onChange={(e) => handleJSONChange(e.target.value)}
+              className="font-mono text-sm min-h-[300px]"
+              required
+            />
+            
+            {/* Validation Badge */}
+            {jsonInput && (
+              <div className="flex items-center gap-2 mt-2">
+                {jsonValidation.valid ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span className="text-sm text-green-600 font-medium">
+                      JSON válido • {jsonValidation.clientEmail}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 text-red-600" />
+                    <span className="text-sm text-red-600 font-medium">
+                      {jsonValidation.error || "JSON inválido"}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Tutorial Alert */}
           <Alert>
             <Info className="h-4 w-4" />
-            <AlertDescription className="space-y-2">
-              <p className="font-semibold">Antes de começar, você precisa:</p>
-              <ol className="list-decimal list-inside space-y-1 text-sm">
-                <li>Ter um projeto no Google Cloud Console</li>
-                <li>Ativar as APIs: "Google Search Console API" e "Indexing API"</li>
-                <li>Criar credenciais OAuth 2.0 (tipo "Aplicativo da Web")</li>
-                <li>Adicionar a URI de redirecionamento autorizada abaixo</li>
+            <AlertDescription className="space-y-3">
+              <p className="font-semibold">Como obter o JSON da Service Account:</p>
+              <ol className="list-decimal list-inside space-y-2 text-sm">
+                <li>
+                  Acesse o{" "}
+                  <a
+                    href="https://console.cloud.google.com/apis/credentials"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Google Cloud Console
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </li>
+                <li>Crie um novo projeto ou selecione um existente</li>
+                <li>
+                  Ative as APIs:{" "}
+                  <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                    Google Search Console API
+                  </code>{" "}
+                  e{" "}
+                  <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                    Web Search Indexing API
+                  </code>
+                </li>
+                <li>Vá em "Credenciais" → "Criar credenciais" → "Conta de serviço"</li>
+                <li>Após criar, clique na conta criada e vá em "Chaves"</li>
+                <li>Clique em "Adicionar chave" → "Criar nova chave" → "JSON"</li>
+                <li>O arquivo JSON será baixado automaticamente - cole o conteúdo acima</li>
+                <li>
+                  <strong className="text-orange-600">IMPORTANTE:</strong> Adicione o email da Service Account
+                  (client_email) como <strong>proprietário ou delegado</strong> no{" "}
+                  <a
+                    href="https://search.google.com/search-console"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Google Search Console
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </li>
               </ol>
-              <a
-                href="https://console.cloud.google.com/apis/credentials"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline text-sm mt-2"
-              >
-                Abrir Google Cloud Console <ExternalLink className="h-3 w-3" />
-              </a>
             </AlertDescription>
           </Alert>
 
-          {/* Redirect URI */}
-          <div className="space-y-2">
-            <Label>URI de Redirecionamento Autorizada</Label>
-            <div className="flex gap-2">
-              <Input
-                value={redirectUri}
-                readOnly
-                className="font-mono text-sm bg-muted"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => navigator.clipboard.writeText(redirectUri)}
-              >
-                Copiar
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Cole esta URI nas configurações do seu projeto OAuth no Google Cloud Console
-            </p>
-          </div>
-
-          {/* Connection Name */}
-          <div className="space-y-2">
-            <Label htmlFor="connection_name">
-              Nome da Conexão <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="connection_name"
-              placeholder="Ex: Conta Principal, Conta Cliente, etc."
-              value={formData.connection_name}
-              onChange={(e) => setFormData({ ...formData, connection_name: e.target.value })}
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Um nome para identificar esta integração
-            </p>
-          </div>
-
-          {/* Google Email */}
-          <div className="space-y-2">
-            <Label htmlFor="google_email">
-              E-mail Google <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="google_email"
-              type="email"
-              placeholder="exemplo@gmail.com"
-              value={formData.google_email}
-              onChange={(e) => setFormData({ ...formData, google_email: e.target.value })}
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              O e-mail da conta Google que tem acesso ao Search Console
-            </p>
-          </div>
-
-          {/* Client ID */}
-          <div className="space-y-2">
-            <Label htmlFor="google_client_id">
-              Client ID <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="google_client_id"
-              placeholder="123456789012-abc...xyz.apps.googleusercontent.com"
-              value={formData.google_client_id}
-              onChange={(e) => setFormData({ ...formData, google_client_id: e.target.value })}
-              required
-              className="font-mono text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
-              Obtido nas credenciais OAuth 2.0 do Google Cloud Console
-            </p>
-          </div>
-
-          {/* Client Secret */}
-          <div className="space-y-2">
-            <Label htmlFor="google_client_secret">
-              Client Secret <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="google_client_secret"
-              type="password"
-              placeholder="GOCSPX-..."
-              value={formData.google_client_secret}
-              onChange={(e) => setFormData({ ...formData, google_client_secret: e.target.value })}
-              required
-              className="font-mono text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
-              Obtido nas credenciais OAuth 2.0 do Google Cloud Console
-            </p>
-          </div>
-
-          <DialogFooter>
+          {/* Actions */}
+          <div className="flex gap-3 justify-end">
             <Button
               type="button"
               variant="outline"
@@ -191,12 +233,15 @@ export const AddGSCIntegrationDialog = ({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Salvando...' : 'Salvar e Conectar'}
+            <Button
+              type="submit"
+              disabled={isLoading || !connectionName.trim() || !jsonValidation.valid}
+            >
+              {isLoading ? "Salvando..." : "Salvar e Conectar"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
   );
-};
+}
