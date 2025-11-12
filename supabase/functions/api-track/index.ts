@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-token',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 serve(async (req) => {
@@ -12,6 +12,16 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  console.log('📥 Request received:', {
+    method: req.method,
+    url: req.url,
+    headers: {
+      'user-agent': req.headers.get('user-agent'),
+      'x-forwarded-for': req.headers.get('x-forwarded-for'),
+      'origin': req.headers.get('origin')
+    }
+  });
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -22,13 +32,58 @@ serve(async (req) => {
     const url = new URL(req.url);
     const token = url.searchParams.get('token');
 
+    console.log('🔑 Token extracted:', token ? `${token.substring(0, 10)}...` : 'MISSING');
+
     if (!token) {
-      console.error('Missing tracking token');
+      console.error('❌ Missing tracking token');
       return new Response(
         JSON.stringify({ error: 'Missing tracking token' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Handle GET requests (connection tests)
+    if (req.method === 'GET') {
+      console.log('🧪 Processing GET request - connection test');
+      
+      const { data: site, error: siteError } = await supabase
+        .from('rank_rent_sites')
+        .select('id, site_name')
+        .eq('tracking_token', token)
+        .single();
+
+      if (siteError || !site) {
+        console.error('❌ Invalid token for GET request:', token);
+        return new Response(
+          JSON.stringify({ error: 'Invalid tracking token' }), 
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Update plugin installation status
+      const { error: updateError } = await supabase
+        .from('rank_rent_sites')
+        .update({ tracking_pixel_installed: true })
+        .eq('id', site.id);
+
+      if (updateError) {
+        console.error('⚠️ Error updating plugin status:', updateError);
+      } else {
+        console.log('✅ Plugin status updated to installed');
+      }
+
+      console.log('✅ Connection test successful for site:', site.site_name);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Conexão estabelecida com sucesso!', 
+          site_name: site.site_name 
+        }), 
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle POST requests (tracking events)
 
     const { 
       site_name, 
