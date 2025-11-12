@@ -97,7 +97,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
 
       // Group conversions by day
       const dailyStats = conversions?.reduce((acc: any, conv) => {
-        const date = new Date(conv.created_at).toLocaleDateString('pt-BR');
+        const date = new Date(conv.created_at).toISOString().split('T')[0]; // YYYY-MM-DD format
         if (!acc[date]) {
           acc[date] = { date, conversions: 0, pageViews: 0 };
         }
@@ -197,7 +197,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
       // NEW: Conversions by day with types
       const conversionsByDay = conversions?.reduce((acc: any, conv) => {
         if (conv.event_type !== 'page_view') {
-          const date = new Date(conv.created_at).toLocaleDateString('pt-BR');
+          const date = new Date(conv.created_at).toISOString().split('T')[0]; // YYYY-MM-DD format
           if (!acc[date]) {
             acc[date] = { date, whatsapp_click: 0, phone_click: 0, email_click: 0, form_submit: 0, total: 0 };
           }

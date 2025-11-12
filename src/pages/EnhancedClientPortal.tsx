@@ -166,10 +166,10 @@ export const EnhancedClientPortal = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       <ConversionToast conversion={realtimeConversions[0]} soundEnabled={true} />
       
-      <div className="max-w-7xl container mx-auto py-6 space-y-6">
+      <div className="max-w-7xl container mx-auto py-12 space-y-10">
         <EpicPortalHeader
           clientName={clientData?.name || 'Portal'}
           clientCompany={clientData?.company}

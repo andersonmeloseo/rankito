@@ -43,13 +43,13 @@ export const TimelineChart = ({ data, isLoading }: TimelineChartProps) => {
 
   return (
     <Card className="shadow-lg border-border/50 animate-fade-in hover:shadow-xl transition-all">
-      <CardHeader>
+      <CardHeader className="pb-6">
         <CardTitle className="flex items-center gap-2">
           📊 Linha do Tempo
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={400}>
+      <CardContent className="pt-2">
+        <ResponsiveContainer width="100%" height={450}>
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorPageViews" x1="0" y1="0" x2="0" y2="1">
@@ -70,7 +70,7 @@ export const TimelineChart = ({ data, isLoading }: TimelineChartProps) => {
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
               tickFormatter={(value) => {
                 const date = new Date(value);
-                return `${date.getDate()}/${date.getMonth() + 1}`;
+                return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
               }}
             />
             <YAxis 

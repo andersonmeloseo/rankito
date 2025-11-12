@@ -87,7 +87,7 @@ export const PageViewsTab = ({ analytics, siteIds }: PageViewsTabProps) => {
       )}
       
       {/* Linha 3: Grid 2 colunas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {topPageViewsData.length > 0 && (
           <TopPageViewsChart data={topPageViewsData} isLoading={false} />
         )}

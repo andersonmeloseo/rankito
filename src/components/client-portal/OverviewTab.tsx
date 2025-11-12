@@ -37,20 +37,20 @@ export const OverviewTab = ({ analytics }: OverviewTabProps) => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Linha 1: Gráfico Principal + Card Lateral */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <TimelineChart 
             data={analytics.dailyStats || []}
             isLoading={false}
           />
         </div>
-        <Card>
-          <CardHeader>
+        <Card className="p-2">
+          <CardHeader className="pb-4">
             <CardTitle className="text-lg">Resumo do Período</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div>
               <p className="text-sm text-muted-foreground">Total de Conversões</p>
               <p className="text-3xl font-bold">{analytics.totalConversions || 0}</p>
@@ -75,7 +75,7 @@ export const OverviewTab = ({ analytics }: OverviewTabProps) => {
       </div>
       
       {/* Linha 2: Grid 2 colunas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {topPagesData.length > 0 && (
           <TopPagesChart data={topPagesData} isLoading={false} />
         )}
@@ -85,7 +85,7 @@ export const OverviewTab = ({ analytics }: OverviewTabProps) => {
       </div>
       
       {/* Linha 3: Grid 3 colunas */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <ConversionRateChart data={analytics.dailyStats || []} isLoading={false} />
         <HourlyHeatmap data={analytics.hourlyStats || []} isLoading={false} />
         {analytics.topReferrers && analytics.topReferrers.length > 0 && (

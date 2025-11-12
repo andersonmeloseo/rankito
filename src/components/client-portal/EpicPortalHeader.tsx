@@ -53,9 +53,9 @@ export const EpicPortalHeader = ({
     .slice(0, 2);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Header Info */}
-      <div className="bg-card border border-border rounded-xl p-8">
+      <div className="bg-card border border-border rounded-xl p-10">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
@@ -120,10 +120,10 @@ export const EpicPortalHeader = ({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Conversões */}
         <Card className="bg-card border border-border hover:shadow-lg transition-shadow duration-200">
-          <div className="p-8">
+          <div className="p-10">
             <div className="flex items-center justify-between mb-2">
               <Target className="h-5 w-5 text-muted-foreground" />
               {conversionTrend === 'up' ? (
@@ -142,7 +142,7 @@ export const EpicPortalHeader = ({
 
         {/* Visualizações */}
         <Card className="bg-card border border-border hover:shadow-lg transition-shadow duration-200">
-          <div className="p-8">
+          <div className="p-10">
             <div className="flex items-center justify-between mb-2">
               <Eye className="h-5 w-5 text-muted-foreground" />
               {viewsTrend === 'up' ? (
@@ -159,7 +159,7 @@ export const EpicPortalHeader = ({
 
         {/* Receita */}
         <Card className="bg-card border border-border hover:shadow-lg transition-shadow duration-200">
-          <div className="p-8">
+          <div className="p-10">
             <div className="flex items-center justify-between mb-2">
               <DollarSign className="h-5 w-5 text-muted-foreground" />
             </div>
@@ -175,7 +175,7 @@ export const EpicPortalHeader = ({
 
         {/* Tempo Real */}
         <Card className="bg-card border border-border hover:shadow-lg transition-shadow duration-200">
-          <div className="p-8">
+          <div className="p-10">
             <div className="flex items-center justify-between mb-2">
               <Activity className="h-5 w-5 text-muted-foreground" />
             </div>
