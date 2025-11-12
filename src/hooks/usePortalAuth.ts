@@ -46,7 +46,7 @@ export const usePortalAuth = (token: string | undefined) => {
       };
     },
     enabled: !!token,
-    staleTime: 60000, // 1 minuto
+    staleTime: 5000, // 5 segundos - permite revalidação rápida após customizações
     retry: 2,
   });
 };

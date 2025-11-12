@@ -87,9 +87,11 @@ export const usePortalCustomization = (clientId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portal-settings', clientId] });
+      // Invalida também portal-auth para forçar revalidação das customizações
+      queryClient.invalidateQueries({ queryKey: ['portal-auth'] });
       toast({
-        title: "Configurações salvas!",
-        description: "As customizações do portal foram atualizadas com sucesso.",
+        title: "✅ Configurações salvas!",
+        description: "As customizações foram atualizadas. O portal será atualizado automaticamente.",
       });
     },
     onError: (error) => {

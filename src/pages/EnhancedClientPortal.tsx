@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,12 +60,19 @@ export const EnhancedClientPortal = () => {
   const clientData = authData?.clientData;
   const customization = authData?.customization || {};
 
-  // Apply customizations via CSS variables
+  // Track previous customization to detect changes
+  const prevCustomizationRef = useRef(customization);
+
+  // Apply customizations via CSS variables with auto-reload detection
   useEffect(() => {
-    if (customization.branding) {
-      document.documentElement.style.setProperty('--portal-primary', customization.branding.primary_color);
-      document.documentElement.style.setProperty('--portal-secondary', customization.branding.secondary_color);
-      document.documentElement.style.setProperty('--portal-accent', customization.branding.accent_color);
+    if (customization && prevCustomizationRef.current !== customization) {
+      // Customização mudou - aplicar CSS variables imediatamente
+      if (customization.branding) {
+        document.documentElement.style.setProperty('--portal-primary', customization.branding.primary_color);
+        document.documentElement.style.setProperty('--portal-secondary', customization.branding.secondary_color);
+        document.documentElement.style.setProperty('--portal-accent', customization.branding.accent_color);
+      }
+      prevCustomizationRef.current = customization;
     }
   }, [customization]);
 
