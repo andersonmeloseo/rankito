@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddGSCIntegrationDialog } from './AddGSCIntegrationDialog';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
+import { GSCIndexingManager } from './GSCIndexingManager';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +28,7 @@ import {
   Info,
   Crown,
   FileText,
+  Send,
 } from 'lucide-react';
 
 interface GSCIntegrationsManagerProps {
@@ -97,7 +99,7 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
   return (
     <>
       <Tabs defaultValue="connections" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-2xl">
           <TabsTrigger value="connections" className="flex items-center gap-2">
             <LinkIcon className="h-4 w-4" />
             Integrações
@@ -109,6 +111,14 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
           >
             <FileText className="h-4 w-4" />
             Sitemaps
+          </TabsTrigger>
+          <TabsTrigger 
+            value="indexing" 
+            className="flex items-center gap-2"
+            disabled={!selectedIntegrationId}
+          >
+            <Send className="h-4 w-4" />
+            Indexação
           </TabsTrigger>
         </TabsList>
 
@@ -228,6 +238,19 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
                             Conectar
                           </Button>
                         )}
+                        {integration.is_active && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedIntegrationId(integration.id);
+                              setSelectedIntegrationName(integration.connection_name);
+                            }}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Gerenciar
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
@@ -260,6 +283,16 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
             <GSCSitemapsManager
               integrationId={selectedIntegrationId}
               integrationName={selectedIntegrationName}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="indexing">
+          {selectedIntegrationId && (
+            <GSCIndexingManager
+              integrationId={selectedIntegrationId}
+              integrationName={selectedIntegrationName}
+              siteId={siteId}
             />
           )}
         </TabsContent>
