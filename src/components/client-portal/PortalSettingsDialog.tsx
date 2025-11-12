@@ -36,12 +36,19 @@ export const PortalSettingsDialog = ({
   const [localSettings, setLocalSettings] = useState<PortalSettings | null>(null);
 
   useEffect(() => {
-    if (settings) {
+    if (settings && open) {
       setLocalSettings(settings);
     }
-  }, [settings]);
+  }, [settings, open]);
 
-  if (!localSettings || isLoading) {
+  // Reset when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setLocalSettings(null);
+    }
+  }, [open]);
+
+  if (isLoading || !localSettings) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl max-h-[90vh]">
@@ -54,10 +61,12 @@ export const PortalSettingsDialog = ({
   }
 
   const handleSave = () => {
+    if (!localSettings) return;
     updateSettings(localSettings);
   };
 
   const handleLogoUpload = async (file: File) => {
+    if (!localSettings) return '';
     const publicUrl = await uploadLogo(file);
     setLocalSettings({
       ...localSettings,
@@ -70,6 +79,7 @@ export const PortalSettingsDialog = ({
   };
 
   const handleLogoRemove = () => {
+    if (!localSettings) return;
     setLocalSettings({
       ...localSettings,
       branding: {

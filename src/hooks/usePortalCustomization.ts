@@ -58,9 +58,15 @@ export const usePortalCustomization = (clientId: string) => {
         .from('client_portal_analytics')
         .select('id, report_config')
         .eq('client_id', clientId)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
+      if (!data) {
+        return {
+          portalId: null,
+          settings: getDefaultPortalSettings()
+        };
+      }
       
       return {
         portalId: data.id,
