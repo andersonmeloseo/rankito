@@ -33,7 +33,7 @@ async function processSitemap(
     }
 
     const xml = await response.text();
-    const doc = parser.parseFromString(xml, "text/html");
+    const doc = parser.parseFromString(xml, "text/xml");
     
     if (!doc) {
       console.error(`Failed to parse sitemap: ${sitemapUrl}`);
