@@ -40,7 +40,7 @@ export function GSCSitemapScheduler({ siteId, userId }: GSCSitemapSchedulerProps
     selectAllSitemaps: true,
   });
 
-  const activeIntegrations = integrations?.filter(i => i.is_active) || [];
+  
 
   const handleCreateSchedule = () => {
     const nextRun = calculateNextRun(formData.schedule_type, formData.interval_hours);
@@ -207,9 +207,10 @@ export function GSCSitemapScheduler({ siteId, userId }: GSCSitemapSchedulerProps
               <SelectValue placeholder="Selecionar integração..." />
             </SelectTrigger>
             <SelectContent>
-              {activeIntegrations.map((integration) => (
+              {integrations?.map((integration) => (
                 <SelectItem key={integration.id} value={integration.id}>
                   {integration.connection_name}
+                  {!integration.is_active && " (Inativa)"}
                 </SelectItem>
               ))}
             </SelectContent>
