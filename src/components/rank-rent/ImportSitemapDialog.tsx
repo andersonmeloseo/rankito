@@ -34,6 +34,7 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
   const [sitemapsPerBatch, setSitemapsPerBatch] = useState(6);
   const [currentOffset, setCurrentOffset] = useState(0);
   const [totalSitemapsFound, setTotalSitemapsFound] = useState(0);
+  const [importJobId, setImportJobId] = useState<string | null>(null);
 
   const resetState = () => {
     setSitemapUrl("");
@@ -41,6 +42,7 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
     setResult(null);
     setCurrentOffset(0);
     setTotalSitemapsFound(0);
+    setImportJobId(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,6 +65,9 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
     try {
       setProgress(30);
 
+      // Buscar user_id
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const isFinalBatch = totalSitemapsFound === 0 || (currentOffset + sitemapsPerBatch) >= totalSitemapsFound;
 
       const { data, error } = await supabase.functions.invoke("import-sitemap", {
@@ -72,6 +77,8 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
           max_sitemaps: sitemapsPerBatch,
           sitemap_offset: currentOffset,
           is_final_batch: isFinalBatch,
+          import_job_id: importJobId,
+          user_id: user?.id,
         },
       });
 
@@ -80,6 +87,9 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
       if (error) throw error;
 
       setResult(data);
+      if (data.import_job_id && !importJobId) {
+        setImportJobId(data.import_job_id);
+      }
       if (data.totalSitemapsFound) {
         setTotalSitemapsFound(data.totalSitemapsFound);
       }
@@ -154,6 +164,7 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
           max_sitemaps: sitemapsPerBatch,
           sitemap_offset: newOffset,
           is_final_batch: isFinalBatch,
+          import_job_id: importJobId,
         },
       });
 

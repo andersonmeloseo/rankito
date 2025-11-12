@@ -1459,6 +1459,83 @@ export type Database = {
           },
         ]
       }
+      sitemap_import_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by_user_id: string
+          id: string
+          is_complete: boolean | null
+          site_id: string
+          sitemap_url: string
+          sitemaps_processed: number | null
+          started_at: string | null
+          total_sitemaps_found: number | null
+          total_urls_expected: number | null
+          updated_at: string | null
+          urls_imported: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_user_id: string
+          id?: string
+          is_complete?: boolean | null
+          site_id: string
+          sitemap_url: string
+          sitemaps_processed?: number | null
+          started_at?: string | null
+          total_sitemaps_found?: number | null
+          total_urls_expected?: number | null
+          updated_at?: string | null
+          urls_imported?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_user_id?: string
+          id?: string
+          is_complete?: boolean | null
+          site_id?: string
+          sitemap_url?: string
+          sitemaps_processed?: number | null
+          started_at?: string | null
+          total_sitemaps_found?: number | null
+          total_urls_expected?: number | null
+          updated_at?: string | null
+          urls_imported?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sitemap_import_jobs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sitemap_import_jobs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "sitemap_import_jobs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sitemap_import_jobs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_history: {
         Row: {
           action: string

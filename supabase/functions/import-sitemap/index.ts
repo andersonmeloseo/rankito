@@ -100,9 +100,11 @@ serve(async (req) => {
       sitemap_url,
       max_urls = 50000,
       batch_size = 1000,
-      max_sitemaps = 20, // Default: 20 sitemaps per batch
+      max_sitemaps = 20,
       sitemap_offset = 0,
-      is_final_batch = false
+      is_final_batch = false,
+      import_job_id = null,
+      user_id = null
     } = await req.json();
 
     if (!site_id || !sitemap_url) {
@@ -127,7 +129,7 @@ serve(async (req) => {
     const limitedUrls = urls.slice(0, max_urls);
     
     // Safety limit to prevent CPU timeout during database operations
-    const SAFE_URL_LIMIT = 5000;
+    const SAFE_URL_LIMIT = 10000; // Aumentado de 5000 para reduzir número de lotes
     const safeUrls = limitedUrls.slice(0, SAFE_URL_LIMIT);
     
     if (limitedUrls.length > SAFE_URL_LIMIT) {
@@ -135,6 +137,32 @@ serve(async (req) => {
     }
     
     console.log(`Processing ${safeUrls.length} URLs (limit: ${max_urls}, safety: ${SAFE_URL_LIMIT})`);
+
+    // Gerenciar job de importação
+    let jobId = import_job_id;
+    
+    if (!jobId && user_id) {
+      // Primeira chamada: criar novo job
+      const { data: newJob, error: jobError } = await supabase
+        .from('sitemap_import_jobs')
+        .insert({
+          site_id,
+          sitemap_url,
+          total_sitemaps_found: totalSitemapsFound,
+          sitemaps_processed: 0,
+          total_urls_expected: urls.length,
+          urls_imported: 0,
+          created_by_user_id: user_id
+        })
+        .select('id')
+        .single();
+      
+      if (newJob) {
+        jobId = newJob.id;
+        console.log(`Created import job ${jobId}`);
+      }
+      if (jobError) console.error('Error creating job:', jobError);
+    }
 
     let newPages = 0;
     let updatedPages = 0;
@@ -213,20 +241,77 @@ serve(async (req) => {
       }
     }
 
-    // Only mark pages as inactive on final batch to avoid premature deactivation
-    let deactivatedCount = 0;
-    if (is_final_batch) {
-      const sitemapUrlsSet = new Set(safeUrls);
-      const pagesToDeactivate = (existingPages || [])
-        .filter(p => !sitemapUrlsSet.has(p.page_url))
-        .map(p => p.id);
+    // Atualizar progresso do job
+    if (jobId) {
+      const totalProcessedSoFar = sitemap_offset + sitemapsProcessed;
+      const isJobComplete = totalProcessedSoFar >= totalSitemapsFound;
       
-      if (pagesToDeactivate.length > 0) {
-        await supabase
+      const { count } = await supabase
+        .from('rank_rent_pages')
+        .select('*', { count: 'exact', head: true })
+        .eq('site_id', site_id);
+      
+      await supabase
+        .from('sitemap_import_jobs')
+        .update({
+          sitemaps_processed: totalProcessedSoFar,
+          urls_imported: count || 0,
+          is_complete: isJobComplete,
+          completed_at: isJobComplete ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', jobId);
+      
+      console.log(`Job progress: ${totalProcessedSoFar}/${totalSitemapsFound} sitemaps, complete: ${isJobComplete}`);
+    }
+
+    // Desativação inteligente: só desativa se job está 100% completo
+    let deactivatedCount = 0;
+    
+    if (jobId) {
+      // Verificar se job está realmente completo
+      const { data: job } = await supabase
+        .from('sitemap_import_jobs')
+        .select('is_complete, total_sitemaps_found, sitemaps_processed, started_at')
+        .eq('id', jobId)
+        .single();
+      
+      // Só desativa se job está 100% completo
+      if (job?.is_complete && job.sitemaps_processed >= job.total_sitemaps_found) {
+        console.log('Job 100% completo. Iniciando desativação de páginas não encontradas...');
+        
+        // Buscar TODAS as páginas do site
+        const { data: allSitePages } = await supabase
           .from('rank_rent_pages')
-          .update({ status: 'inactive' })
-          .in('id', pagesToDeactivate);
-        deactivatedCount = pagesToDeactivate.length;
+          .select('id, page_url')
+          .eq('site_id', site_id);
+        
+        // Buscar TODAS as URLs que foram importadas durante este job
+        const { data: allImportedUrls } = await supabase
+          .from('rank_rent_pages')
+          .select('page_url')
+          .eq('site_id', site_id)
+          .gte('last_scraped_at', job.started_at);
+        
+        const importedUrlsSet = new Set((allImportedUrls || []).map(p => p.page_url));
+        
+        const pagesToDeactivate = (allSitePages || [])
+          .filter(p => !importedUrlsSet.has(p.page_url))
+          .map(p => p.id);
+        
+        if (pagesToDeactivate.length > 0) {
+          const { error: deactivateError } = await supabase
+            .from('rank_rent_pages')
+            .update({ status: 'inactive' })
+            .in('id', pagesToDeactivate);
+          
+          if (!deactivateError) {
+            deactivatedCount = pagesToDeactivate.length;
+            console.log(`${deactivatedCount} páginas desativadas (não encontradas no sitemap)`);
+          }
+        }
+      } else {
+        console.log(`Job ainda não completo. Desativação pulada. (${job?.sitemaps_processed}/${job?.total_sitemaps_found} sitemaps processados)`);
       }
     }
 
@@ -235,6 +320,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        import_job_id: jobId,
         totalSitemapsFound,
         sitemapsProcessed,
         totalUrlsFound: urls.length,
