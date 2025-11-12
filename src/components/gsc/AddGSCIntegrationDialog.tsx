@@ -176,50 +176,102 @@ export function AddGSCIntegrationDialog({
           {/* Tutorial Alert */}
           <Alert>
             <Info className="h-4 w-4" />
-            <AlertDescription className="space-y-3">
-              <p className="font-semibold">Como obter o JSON da Service Account:</p>
-              <ol className="list-decimal list-inside space-y-2 text-sm">
-                <li>
-                  Acesse o{" "}
-                  <a
-                    href="https://console.cloud.google.com/apis/credentials"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
-                  >
-                    Google Cloud Console
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </li>
-                <li>Crie um novo projeto ou selecione um existente</li>
-                <li>
-                  Ative as APIs:{" "}
-                  <code className="bg-muted px-1 py-0.5 rounded text-xs">
-                    Google Search Console API
-                  </code>{" "}
-                  e{" "}
-                  <code className="bg-muted px-1 py-0.5 rounded text-xs">
-                    Web Search Indexing API
-                  </code>
-                </li>
-                <li>Vá em "Credenciais" → "Criar credenciais" → "Conta de serviço"</li>
-                <li>Após criar, clique na conta criada e vá em "Chaves"</li>
-                <li>Clique em "Adicionar chave" → "Criar nova chave" → "JSON"</li>
-                <li>O arquivo JSON será baixado automaticamente - cole o conteúdo acima</li>
-                <li>
-                  <strong className="text-orange-600">IMPORTANTE:</strong> Adicione o email da Service Account
-                  (client_email) como <strong>proprietário ou delegado</strong> no{" "}
-                  <a
-                    href="https://search.google.com/search-console"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
-                  >
-                    Google Search Console
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </li>
-              </ol>
+            <AlertDescription className="space-y-4">
+              <p className="font-semibold text-base">📋 Como obter o JSON da Service Account e conectar no Search Console:</p>
+              
+              <div className="space-y-4 text-sm">
+                {/* Etapa 1 */}
+                <div className="space-y-1">
+                  <p className="font-semibold">1. Criar Projeto no Google Cloud</p>
+                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
+                    <li>
+                      Acesse{" "}
+                      <a
+                        href="https://console.cloud.google.com/projectcreate?previousPage=%2Fiam-admin%2Fserviceaccounts%2Fdetails%2F109369789572842041989%2Fkeys%3Fproject%3Dgen-lang-client-0310873852&organizationId=0"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        Google Cloud Console
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </li>
+                    <li><strong>Crie um novo projeto</strong> (dê um nome ao seu projeto)</li>
+                  </ul>
+                </div>
+
+                {/* Etapa 2 */}
+                <div className="space-y-1">
+                  <p className="font-semibold">2. ⚙️ Ativar Search Console API</p>
+                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
+                    <li>
+                      Acesse{" "}
+                      <a
+                        href="https://console.cloud.google.com/marketplace/product/google/searchconsole.googleapis.com?q=search&referrer=search"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        Search Console API
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </li>
+                    <li><strong>Selecione o projeto</strong> que você acabou de criar</li>
+                    <li>Clique em <strong>"Ativar"</strong></li>
+                  </ul>
+                </div>
+
+                {/* Etapa 3 */}
+                <div className="space-y-1">
+                  <p className="font-semibold">3. 👤 Criar Conta de Serviço</p>
+                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
+                    <li>No menu lateral, vá em <code className="bg-muted px-1 py-0.5 rounded text-xs">IAM e Admin</code> → <code className="bg-muted px-1 py-0.5 rounded text-xs">Contas de Serviço</code></li>
+                    <li>Clique em <strong>"+ Criar Conta de Serviço"</strong></li>
+                    <li>Dê um nome (normalmente o nome do seu site)</li>
+                    <li>Clique em <strong>"Criar e Continuar"</strong> e depois <strong>"Concluir"</strong></li>
+                    <li>Verifique que o email foi criado e o status está <strong>ativado</strong></li>
+                  </ul>
+                </div>
+
+                {/* Etapa 4 */}
+                <div className="space-y-1">
+                  <p className="font-semibold">4. 🔑 Gerar Chave JSON</p>
+                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
+                    <li>Na lista de contas de serviço, localize o email que você criou</li>
+                    <li>Clique nos <strong>três pontos</strong> (Ações) e depois em <strong>"Gerenciar Chaves"</strong></li>
+                    <li>Clique em <strong>"Adicionar Chave"</strong> → <strong>"Criar Nova Chave"</strong></li>
+                    <li>Escolha o formato <strong>"JSON"</strong></li>
+                    <li><strong>Salve o arquivo JSON</strong> que será baixado automaticamente</li>
+                    <li>Cole o conteúdo completo do arquivo JSON no campo acima</li>
+                  </ul>
+                </div>
+
+                {/* Etapa 5 - CRÍTICA */}
+                <div className="space-y-1 border-l-4 border-orange-500 pl-3">
+                  <p className="font-semibold text-orange-600">5. 🚨 Adicionar Permissões no Search Console (CRÍTICO)</p>
+                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
+                    <li>
+                      Acesse{" "}
+                      <a
+                        href="https://search.google.com/search-console"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        Google Search Console
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </li>
+                    <li><strong>Busque pelo seu domínio</strong> na lista de propriedades</li>
+                    <li>No menu lateral (final da página), clique em <strong>"Configurações"</strong></li>
+                    <li>Clique em <strong>"Usuários e Permissões"</strong></li>
+                    <li>Clique em <strong>"Adicionar Usuário"</strong></li>
+                    <li>Cole o <strong>email da Service Account</strong> (client_email do JSON) no campo "Endereço de Email"</li>
+                    <li>Selecione a permissão <strong>"Proprietário"</strong></li>
+                    <li>Clique em <strong>"Adicionar"</strong></li>
+                  </ul>
+                </div>
+              </div>
             </AlertDescription>
           </Alert>
 
