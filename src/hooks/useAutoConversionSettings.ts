@@ -38,7 +38,7 @@ export const useAutoConversionSettings = () => {
       // Se não existe, retornar defaults
       if (!data) {
         return {
-          enabled: true,
+          enabled: false,
           whatsapp_click_enabled: true,
           phone_click_enabled: true,
           form_submit_enabled: true,
