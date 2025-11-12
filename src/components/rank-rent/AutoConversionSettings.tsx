@@ -73,19 +73,18 @@ export const AutoConversionSettings = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Alert de Aviso */}
-        <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
-          <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
-          <AlertTitle className="text-yellow-800 dark:text-yellow-400">
-            ⚠️ Auto-Conversão Desabilitada (Recomendado)
+        {/* Alert de Info */}
+        <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950/20">
+          <Info className="h-4 w-4 text-blue-600 dark:text-blue-500" />
+          <AlertTitle className="text-blue-800 dark:text-blue-400">
+            ℹ️ Auto-Conversão de Leads Ativa
           </AlertTitle>
-          <AlertDescription className="text-yellow-700 dark:text-yellow-300">
-            Cliques em botões capturam apenas dados técnicos (localização, device) <strong>sem informações de contato</strong>.
+          <AlertDescription className="text-blue-700 dark:text-blue-300">
+            O sistema está criando leads automaticamente no CRM quando detectar conversões (cliques em WhatsApp, telefone, formulários).
             <br/><br/>
-            <strong>✅ Recomendado:</strong> Use o <strong>Plugin Rankito LeadGen</strong> para capturar leads 
-            com formulários completos (nome, email, telefone, etc.)
+            <strong>Importante:</strong> Cliques capturam dados técnicos (localização, device, página). Use o <strong>Plugin Rankito LeadGen</strong> para capturar informações completas de contato.
             <br/><br/>
-            <strong>📊 Analytics:</strong> Todos os cliques continuam sendo rastreados e aparecem nos relatórios.
+            <strong>📊 Analytics:</strong> Todos os eventos são rastreados nos relatórios, independente desta configuração.
           </AlertDescription>
         </Alert>
 
