@@ -10,6 +10,7 @@ import { GSCSitemapsManager } from './GSCSitemapsManager';
 import { GSCIndexingManager } from './GSCIndexingManager';
 import { GSCMonitoringDashboard } from './GSCMonitoringDashboard';
 import { GSCIndexingQueue } from './GSCIndexingQueue';
+import { GSCSitemapScheduler } from './GSCSitemapScheduler';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,7 @@ import {
   Send,
   BarChart3,
   ListOrdered,
+  Clock,
 } from 'lucide-react';
 
 interface GSCIntegrationsManagerProps {
@@ -94,7 +96,7 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
   return (
     <>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 max-w-4xl">
+        <TabsList className="grid w-full grid-cols-6 max-w-5xl">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Visão Geral
@@ -114,6 +116,10 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
           <TabsTrigger value="queue" className="flex items-center gap-2">
             <ListOrdered className="h-4 w-4" />
             Fila
+          </TabsTrigger>
+          <TabsTrigger value="schedules" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Agendamentos
           </TabsTrigger>
         </TabsList>
 
@@ -266,6 +272,10 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
 
         <TabsContent value="queue">
           <GSCIndexingQueue siteId={siteId} />
+        </TabsContent>
+
+        <TabsContent value="schedules">
+          <GSCSitemapScheduler siteId={siteId} userId={userId} />
         </TabsContent>
       </Tabs>
 
