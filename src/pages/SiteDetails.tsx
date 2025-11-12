@@ -161,6 +161,21 @@ const SiteDetails = () => {
   const pages = pagesData?.pages || [];
   const totalPages = Math.ceil((pagesData?.total || 0) / pageSize);
   
+  // Get total count of ALL pages for this site (without filters)
+  const { data: totalPagesCount } = useQuery({
+    queryKey: ["site-total-pages-count", siteId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("rank_rent_pages")
+        .select("*", { count: 'exact', head: true })
+        .eq("site_id", siteId);
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!siteId,
+  });
+  
   // Get unique clients for filter dropdown
   const { data: allClientsData } = useQuery({
     queryKey: ["all-clients-for-filter", siteId],
@@ -642,7 +657,7 @@ const SiteDetails = () => {
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    <strong className="text-lg text-foreground">{pagesData?.total || 0}</strong> páginas cadastradas
+                    <strong className="text-lg text-foreground">{totalPagesCount || 0}</strong> páginas cadastradas
                   </div>
                   <Button onClick={() => setShowImportDialog(true)} variant="outline" size="sm">
                     <Upload className="w-4 h-4 mr-2" />
