@@ -45,6 +45,7 @@ import { format, subDays } from "date-fns";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ReportsTab } from "@/components/reports/ReportsTab";
+import { GSCIntegrationsManager } from "@/components/gsc/GSCIntegrationsManager";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -206,6 +207,15 @@ const SiteDetails = () => {
         maxPages: data?.subscription_plans?.max_pages_per_site,
         isUnlimited: data?.subscription_plans?.max_pages_per_site === null
       };
+    },
+  });
+  
+  // Fetch authenticated user ID for GSC
+  const { data: userData } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
     },
   });
   
@@ -706,10 +716,11 @@ const SiteDetails = () => {
 
         {/* Tabs Section */}
         <Tabs defaultValue="pages" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-4xl">
+          <TabsList className="grid w-full grid-cols-5 max-w-5xl">
             <TabsTrigger value="pages">📄 Páginas</TabsTrigger>
             <TabsTrigger value="advanced-analytics">📈 Analytics Avançado</TabsTrigger>
             <TabsTrigger value="reports">📊 Relatórios</TabsTrigger>
+            <TabsTrigger value="gsc">🔍 Google Search Console</TabsTrigger>
             <TabsTrigger value="plugin">🔌 Plugin WordPress</TabsTrigger>
           </TabsList>
 
@@ -1298,6 +1309,24 @@ const SiteDetails = () => {
           {/* Relatórios Tab */}
           <TabsContent value="reports">
             <ReportsTab siteId={siteId || ""} siteName={site.site_name} />
+          </TabsContent>
+
+          {/* Google Search Console Tab */}
+          <TabsContent value="gsc" className="space-y-6">
+            {userData?.id && siteId ? (
+              <GSCIntegrationsManager 
+                siteId={siteId} 
+                userId={userData.id} 
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">
+                    Carregando informações de autenticação...
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Plugin WordPress Tab */}
