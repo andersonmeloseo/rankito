@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGSCIntegrations } from '@/hooks/useGSCIntegrations';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,6 +57,17 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
   const [selectedIntegrationName, setSelectedIntegrationName] = useState<string>("");
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Auto-selecionar primeira integração ativa quando carregar
+  useEffect(() => {
+    if (integrations && integrations.length > 0 && !selectedIntegrationId) {
+      const firstActive = integrations.find(int => int.is_active);
+      if (firstActive) {
+        setSelectedIntegrationId(firstActive.id);
+        setSelectedIntegrationName(firstActive.connection_name);
+      }
+    }
+  }, [integrations, selectedIntegrationId]);
 
   const handleAdd = (data: any) => {
     createIntegration.mutate({
