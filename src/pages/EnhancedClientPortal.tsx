@@ -63,16 +63,38 @@ export const EnhancedClientPortal = () => {
   // Track previous customization to detect changes
   const prevCustomizationRef = useRef(customization);
 
-  // Apply customizations via CSS variables with auto-reload detection
+  // Apply branding on initial load
   useEffect(() => {
-    if (customization && prevCustomizationRef.current !== customization) {
-      // Customização mudou - aplicar CSS variables imediatamente
-      if (customization.branding) {
+    if (customization?.branding) {
+      console.log('🎨 [Portal] Aplicando customizações iniciais:', customization.branding);
+      
+      document.documentElement.style.setProperty('--portal-primary', customization.branding.primary_color);
+      document.documentElement.style.setProperty('--portal-secondary', customization.branding.secondary_color);
+      document.documentElement.style.setProperty('--portal-accent', customization.branding.accent_color);
+    }
+  }, [customization?.branding?.primary_color, customization?.branding?.secondary_color, customization?.branding?.accent_color]);
+
+  // Detect and apply branding changes
+  useEffect(() => {
+    if (customization?.branding) {
+      const currentCustomization = JSON.stringify(customization);
+      const previousCustomization = JSON.stringify(prevCustomizationRef.current);
+      
+      // Only apply if really changed (compare by value)
+      if (currentCustomization !== previousCustomization) {
+        console.log('🎨 [Portal] Aplicando novas customizações:', customization.branding);
+        console.log('🎨 [Portal] Cores aplicadas:', {
+          primary: customization.branding.primary_color,
+          secondary: customization.branding.secondary_color,
+          accent: customization.branding.accent_color
+        });
+        
         document.documentElement.style.setProperty('--portal-primary', customization.branding.primary_color);
         document.documentElement.style.setProperty('--portal-secondary', customization.branding.secondary_color);
         document.documentElement.style.setProperty('--portal-accent', customization.branding.accent_color);
+        
+        prevCustomizationRef.current = customization;
       }
-      prevCustomizationRef.current = customization;
     }
   }, [customization]);
 

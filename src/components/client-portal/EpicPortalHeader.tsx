@@ -67,7 +67,13 @@ export const EpicPortalHeader = ({
                 className="h-16 w-auto max-w-[200px] object-contain"
               />
             ) : (
-              <div className="w-16 h-16 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
+              <div 
+                className="w-16 h-16 rounded-lg flex items-center justify-center font-bold text-xl"
+                style={{ 
+                  backgroundColor: 'var(--portal-primary)', 
+                  color: 'white' 
+                }}
+              >
                 {initials}
               </div>
             )}
@@ -85,7 +91,8 @@ export const EpicPortalHeader = ({
                   href={projectUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline text-sm mt-1 inline-block"
+                  className="hover:underline text-sm mt-1 inline-block"
+                  style={{ color: 'var(--portal-primary)' }}
                 >
                   {projectUrl}
                 </a>
@@ -105,7 +112,13 @@ export const EpicPortalHeader = ({
               </Button>
             )}
             {liveConversionsCount > 0 && (
-              <Badge className="bg-red-500 text-white px-3 py-1.5 text-xs">
+              <Badge 
+                className="px-3 py-1.5 text-xs"
+                style={{ 
+                  backgroundColor: 'var(--portal-accent)', 
+                  color: 'white' 
+                }}
+              >
                 <span className="relative flex h-2 w-2 mr-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
@@ -114,7 +127,15 @@ export const EpicPortalHeader = ({
               </Badge>
             )}
             {contractStatus && daysRemaining !== null && (
-              <Badge variant={contractStatus === 'active' ? 'default' : 'secondary'} className="text-xs">
+              <Badge 
+                variant={contractStatus === 'active' ? 'default' : 'secondary'} 
+                className="text-xs"
+                style={contractStatus === 'active' ? { 
+                  backgroundColor: 'var(--portal-primary)', 
+                  color: 'white',
+                  borderColor: 'var(--portal-primary)'
+                } : undefined}
+              >
                 {daysRemaining > 0 ? `${daysRemaining} dias restantes` : 'Contrato expirado'}
               </Badge>
             )}
@@ -194,7 +215,12 @@ export const EpicPortalHeader = ({
               <Activity className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Agora</p>
-            <p className="text-4xl font-bold text-primary mb-1">{liveConversionsCount}</p>
+            <p 
+              className="text-4xl font-bold mb-1"
+              style={{ color: 'var(--portal-accent)' }}
+            >
+              {liveConversionsCount}
+            </p>
             <p className="text-xs text-muted-foreground">Conversões ativas</p>
           </div>
         </Card>

@@ -36,6 +36,12 @@ export const usePortalAuth = (token: string | undefined) => {
       }
 
       console.log('[Portal Auth] ✅ Token válido para cliente:', data.clientData?.name);
+      console.log('🔄 [Portal Auth] Dados customizados:', data.portalData?.report_config);
+      console.log('🔄 [Portal Auth] Cores recebidas:', {
+        primary: data.portalData?.report_config?.branding?.primary_color,
+        secondary: data.portalData?.report_config?.branding?.secondary_color,
+        accent: data.portalData?.report_config?.branding?.accent_color
+      });
 
       return {
         portalData: data.portalData,
