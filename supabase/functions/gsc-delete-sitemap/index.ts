@@ -50,8 +50,31 @@ Deno.serve(async (req) => {
 
     console.log('🔐 Integration found:', integration.connection_name);
 
+    // If no gsc_property_url, get from site
+    let propertyUrl = integration.gsc_property_url;
+    if (!propertyUrl || propertyUrl === 'http://') {
+      console.log('⚠️ Missing gsc_property_url, fetching from site...');
+      const { data: site } = await supabase
+        .from('rank_rent_sites')
+        .select('site_url')
+        .eq('id', integration.site_id)
+        .single();
+      
+      propertyUrl = site?.site_url || '';
+      console.log('📍 Site URL fetched:', propertyUrl);
+      
+      // Update integration with correct property URL
+      if (propertyUrl) {
+        await supabase
+          .from('google_search_console_integrations')
+          .update({ gsc_property_url: propertyUrl })
+          .eq('id', integration_id);
+        console.log('✅ Integration updated with property URL');
+      }
+    }
+
     // Encodar siteUrl e feedpath para usar na URL
-    const encodedSiteUrl = encodeURIComponent(integration.gsc_property_url);
+    const encodedSiteUrl = encodeURIComponent(propertyUrl);
     const encodedFeedpath = encodeURIComponent(sitemap_url);
 
     // Deletar sitemap via GSC API
