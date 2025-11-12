@@ -24,6 +24,7 @@ interface EpicPortalHeaderProps {
   paymentStatus?: 'current' | 'overdue' | 'due_soon';
   showProjectSwitch?: boolean;
   onSwitchProject?: () => void;
+  customization?: any;
 }
 
 export const EpicPortalHeader = ({
@@ -44,6 +45,7 @@ export const EpicPortalHeader = ({
   paymentStatus,
   showProjectSwitch = false,
   onSwitchProject,
+  customization,
 }: EpicPortalHeaderProps) => {
   const initials = clientName
     .split(' ')
@@ -58,13 +60,25 @@ export const EpicPortalHeader = ({
       <div className="bg-card border border-border rounded-xl p-10">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
-              {initials}
-            </div>
+            {customization?.branding?.logo_url ? (
+              <img 
+                src={customization.branding.logo_url} 
+                alt="Logo" 
+                className="h-16 w-auto max-w-[200px] object-contain"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
+                {initials}
+              </div>
+            )}
             <div>
-              <h1 className="text-3xl font-bold text-foreground">{clientName}</h1>
-              {clientCompany && (
-                <p className="text-muted-foreground text-base mt-1">{clientCompany}</p>
+              <h1 className="text-3xl font-bold text-foreground">
+                {customization?.texts?.welcome_title || clientName}
+              </h1>
+              {(customization?.texts?.welcome_description || clientCompany) && (
+                <p className="text-muted-foreground text-base mt-1">
+                  {customization?.texts?.welcome_description || clientCompany}
+                </p>
               )}
               {projectUrl && (
                 <a

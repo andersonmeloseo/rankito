@@ -58,6 +58,16 @@ export const EnhancedClientPortal = () => {
   const { data: authData, isLoading: authLoading, error: authError } = usePortalAuth(token);
   const clientId = authData?.clientId;
   const clientData = authData?.clientData;
+  const customization = authData?.customization || {};
+
+  // Apply customizations via CSS variables
+  useEffect(() => {
+    if (customization.branding) {
+      document.documentElement.style.setProperty('--portal-primary', customization.branding.primary_color);
+      document.documentElement.style.setProperty('--portal-secondary', customization.branding.secondary_color);
+      document.documentElement.style.setProperty('--portal-accent', customization.branding.accent_color);
+    }
+  }, [customization]);
 
   // Fetch all client projects
   const { data: clientProjects, isLoading: projectsLoading } = useQuery({
@@ -168,19 +178,20 @@ export const EnhancedClientPortal = () => {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl container mx-auto py-6 space-y-6">
-          <EpicPortalHeader
-            clientName={clientData?.name || 'Portal'}
-            clientCompany={clientData?.company}
-            projectUrl={projectData?.projectUrl}
-            liveConversionsCount={0}
-            totalConversions={0}
-            totalPageViews={0}
-            monthlyRevenue={projectData?.monthlyValue || 0}
-            conversionRate={0}
-            sparklineData={[]}
-            daysRemaining={projectData?.daysRemaining}
-            contractStatus={projectData?.contractStatus}
-          />
+        <EpicPortalHeader
+          clientName={clientData?.name || 'Portal'}
+          clientCompany={clientData?.company}
+          projectUrl={projectData?.projectUrl}
+          liveConversionsCount={0}
+          totalConversions={0}
+          totalPageViews={0}
+          monthlyRevenue={projectData?.monthlyValue || 0}
+          conversionRate={0}
+          sparklineData={[]}
+          daysRemaining={projectData?.daysRemaining}
+          contractStatus={projectData?.contractStatus}
+          customization={customization}
+        />
           <EmptyState 
             title="Nenhum dado disponível ainda"
             description="Aguardando as primeiras conversões e visualizações do seu site. Instale o plugin de rastreamento para começar a coletar dados."
@@ -213,6 +224,7 @@ export const EnhancedClientPortal = () => {
           paymentStatus={projectData?.paymentStatus}
           showProjectSwitch={clientProjects && clientProjects.length > 1}
           onSwitchProject={() => setSelectedProjectId(null)}
+          customization={customization}
         />
 
         {/* Period Selector */}

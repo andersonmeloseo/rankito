@@ -11,14 +11,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Copy, ExternalLink, Users, BarChart, Globe } from "lucide-react";
+import { Copy, ExternalLink, Users, BarChart, Globe, Settings } from "lucide-react";
 import { ClientWithPortalStatus } from "@/hooks/useClientIntegration";
 import { EndClientAccessSection } from "./EndClientAccessSection";
 import { ClientPortalPreview } from "./ClientPortalPreview";
+import { PortalSettingsDialog } from "@/components/client-portal/PortalSettingsDialog";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 
 interface ClientManageAccessDialogProps {
   open: boolean;
@@ -33,6 +35,8 @@ export const ClientManageAccessDialog = ({
   client,
   onTogglePortal,
 }: ClientManageAccessDialogProps) => {
+  const [showSettings, setShowSettings] = useState(false);
+  
   if (!client) return null;
 
   const portalUrl = client.portal_token
@@ -160,6 +164,18 @@ export const ClientManageAccessDialog = ({
                     </p>
                   </div>
                 )}
+
+                {/* Customization Button */}
+                {client.portal_enabled && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowSettings(true)}
+                    className="w-full"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Customizar Aparência do Portal
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -221,6 +237,13 @@ export const ClientManageAccessDialog = ({
             />
           </TabsContent>
         </Tabs>
+
+        {/* Portal Settings Dialog */}
+        <PortalSettingsDialog
+          open={showSettings}
+          onOpenChange={setShowSettings}
+          clientId={client.client_id}
+        />
       </DialogContent>
     </Dialog>
   );

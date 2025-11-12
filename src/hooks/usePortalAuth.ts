@@ -41,6 +41,7 @@ export const usePortalAuth = (token: string | undefined) => {
         portalData: data.portalData,
         clientData: data.clientData,
         clientId: data.clientId,
+        customization: data.portalData?.report_config || {},
         isValid: true,
       };
     },
