@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Eye, DollarSign, Target, Activity, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Eye, DollarSign, Target, Activity, Calendar, Repeat2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -21,6 +22,8 @@ interface EpicPortalHeaderProps {
   nextPaymentDate?: string | null;
   nextPaymentAmount?: number;
   paymentStatus?: 'current' | 'overdue' | 'due_soon';
+  showProjectSwitch?: boolean;
+  onSwitchProject?: () => void;
 }
 
 export const EpicPortalHeader = ({
@@ -39,6 +42,8 @@ export const EpicPortalHeader = ({
   nextPaymentDate,
   nextPaymentAmount,
   paymentStatus,
+  showProjectSwitch = false,
+  onSwitchProject,
 }: EpicPortalHeaderProps) => {
   const initials = clientName
     .split(' ')
@@ -74,6 +79,17 @@ export const EpicPortalHeader = ({
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
+            {showProjectSwitch && onSwitchProject && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onSwitchProject}
+                className="text-xs"
+              >
+                <Repeat2 className="h-3 w-3 mr-1.5" />
+                Trocar de Projeto
+              </Button>
+            )}
             {liveConversionsCount > 0 && (
               <Badge className="bg-red-500 text-white px-3 py-1.5 text-xs">
                 <span className="relative flex h-2 w-2 mr-2">

@@ -3,15 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
 import React from 'react';
 
-export const useClientPortalAnalytics = (clientId: string, periodDays: number = 30) => {
+export const useClientPortalAnalytics = (clientId: string, periodDays: number = 30, siteId?: string) => {
   console.log('[Analytics] 🚀 Iniciando query com:', {
     clientId,
+    siteId,
     isEnabled: !!clientId && clientId !== 'undefined' && clientId !== 'null',
     periodDays
   });
   
   const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery({
-    queryKey: ['client-portal-analytics', clientId, periodDays],
+    queryKey: ['client-portal-analytics', clientId, periodDays, siteId],
     queryFn: async () => {
       // Validação crítica do clientId
       if (!clientId || clientId === 'undefined' || clientId === 'null') {
@@ -19,10 +20,10 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         throw new Error('Client ID inválido');
       }
 
-      console.log('[Analytics] 🚀 Fetching data for client:', clientId, 'period:', periodDays);
+      console.log('[Analytics] 🚀 Fetching data for client:', clientId, 'period:', periodDays, 'siteId:', siteId);
 
-      // Fetch client sites
-      const { data: sites, error: sitesError } = await supabase
+      // Fetch client sites with optional filtering by siteId
+      let sitesQuery = supabase
         .from('rank_rent_sites')
         .select(`
           *,
@@ -30,12 +31,19 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         `)
         .eq('client_id', clientId);
 
+      // If siteId is provided, filter by it
+      if (siteId) {
+        sitesQuery = sitesQuery.eq('id', siteId);
+      }
+
+      const { data: sites, error: sitesError } = await sitesQuery;
+
       if (sitesError) {
         console.error('[Analytics] Error fetching sites:', sitesError);
         throw sitesError;
       }
 
-      console.log('[Analytics] Sites found:', sites?.length || 0);
+      console.log('[Analytics] Sites found:', sites?.length || 0, 'filtered by siteId:', !!siteId);
 
       const siteIds = sites?.map(s => s.id) || [];
       

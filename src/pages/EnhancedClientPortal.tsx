@@ -1,5 +1,8 @@
 import { useParams } from 'react-router-dom';
 import { useState } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -19,16 +22,45 @@ import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
 import { MetricsCards } from '@/components/analytics/MetricsCards';
 import { EmptyState } from '@/components/client-portal/EmptyState';
 import { SavedReportsSection } from '@/components/client-portal/SavedReportsSection';
+import { ProjectSelector } from '@/components/client-portal/ProjectSelector';
 
 export const EnhancedClientPortal = () => {
   const { token } = useParams();
   const [periodDays, setPeriodDays] = useState(30);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const { data: authData, isLoading: authLoading, error: authError } = usePortalAuth(token);
   const clientId = authData?.clientId;
   const clientData = authData?.clientData;
 
-  const { analytics, reports, isLoading: analyticsLoading } = useClientPortalAnalytics(clientId || '', periodDays);
+  // Fetch all client projects
+  const { data: clientProjects, isLoading: projectsLoading } = useQuery({
+    queryKey: ['client-projects', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rank_rent_sites')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('is_rented', true);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!clientId,
+  });
+
+  // Auto-select project if only one exists
+  React.useEffect(() => {
+    if (clientProjects && clientProjects.length === 1 && !selectedProjectId) {
+      setSelectedProjectId(clientProjects[0].id);
+    }
+  }, [clientProjects, selectedProjectId]);
+
+  const { analytics, reports, isLoading: analyticsLoading } = useClientPortalAnalytics(
+    clientId || '', 
+    periodDays,
+    selectedProjectId || undefined
+  );
   const { data: projectData, isLoading: projectLoading } = useProjectData(clientId || '');
 
   const { 
@@ -47,8 +79,13 @@ export const EnhancedClientPortal = () => {
   
   const liveMetrics = useRealtimeMetrics(analyticsData, realtimeConversions);
 
-  const isLoading = authLoading || (clientId && analyticsLoading) || (clientId && projectLoading);
+  const isLoading = authLoading || projectsLoading || (clientId && analyticsLoading) || (clientId && projectLoading);
   const sparklineData = analytics?.dailyStats?.slice(-7).map((d: any) => d.conversions) || [];
+
+  // Show project selector if multiple projects and none selected
+  if (!isLoading && clientProjects && clientProjects.length > 1 && !selectedProjectId) {
+    return <ProjectSelector projects={clientProjects} onSelectProject={setSelectedProjectId} />;
+  }
 
   console.log('[Portal] 📊 Estado do Analytics:', {
     hasAnalytics: !!analytics,
@@ -145,6 +182,8 @@ export const EnhancedClientPortal = () => {
           nextPaymentDate={projectData?.nextPaymentDate}
           nextPaymentAmount={projectData?.nextPaymentAmount}
           paymentStatus={projectData?.paymentStatus}
+          showProjectSwitch={clientProjects && clientProjects.length > 1}
+          onSwitchProject={() => setSelectedProjectId(null)}
         />
 
         {/* Professional Metrics Cards */}
