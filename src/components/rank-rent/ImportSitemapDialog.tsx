@@ -8,11 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, CheckCircle2, Download, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, Download, AlertCircle, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ImportSitemapDialogProps {
@@ -166,6 +167,16 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
       // Add expected URLs to result
       data.expectedUrls = totalExpectedUrls;
       data.selectedSitemapsCount = selectedSitemaps.length;
+
+      // Verificar se limite foi atingido
+      if (data?.limitReached || data?.planInfo?.limitReached) {
+        toast({
+          variant: "destructive",
+          title: "🚫 Limite de Páginas Atingido",
+          description: data?.message || `Seu plano ${data?.planName || ''} permite ${data?.maxPages || 0} páginas. Você já tem ${data?.currentPages || 0} cadastradas.`,
+          duration: 8000,
+        });
+      }
 
       setResult(data);
       setProgress(90);
@@ -366,6 +377,51 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
 
           {result && (
             <div className="space-y-4">
+              {/* ALERT: Limite de Páginas Atingido */}
+              {(result.limitReached || result.planInfo?.limitReached) && (
+                <Alert variant="destructive" className="mb-6 border-2 border-destructive">
+                  <AlertCircle className="h-6 w-6" />
+                  <AlertTitle className="text-lg font-bold">
+                    🚫 Limite de Páginas Atingido
+                  </AlertTitle>
+                  <AlertDescription className="space-y-3">
+                    <div className="text-sm mt-2 space-y-2">
+                      <div className="grid grid-cols-2 gap-3 p-3 bg-destructive/10 rounded-md">
+                        <div>
+                          <span className="font-semibold text-xs text-muted-foreground">Plano Atual:</span>
+                          <div className="font-bold text-lg">{result.planInfo?.name || result.planName || 'Desconhecido'}</div>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-xs text-muted-foreground">Limite:</span>
+                          <div className="font-bold text-lg">
+                            {result.planInfo?.isUnlimited ? '∞ Ilimitado' : `${result.planInfo?.maxPages || result.maxPages || 0} páginas`}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-xs text-muted-foreground">Páginas Cadastradas:</span>
+                          <div className="font-bold text-lg text-destructive">
+                            {result.planInfo?.currentPages || result.currentPages || 0}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-xs text-muted-foreground">URLs Bloqueadas:</span>
+                          <div className="font-bold text-lg text-orange-600 dark:text-orange-400">
+                            {result.pagesBlocked || 0}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-lg border-2 border-amber-400">
+                      <p className="text-sm font-semibold text-amber-900 dark:text-amber-100 flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        💡 Faça upgrade para o plano <strong>Enterprise</strong> e tenha páginas ilimitadas!
+                      </p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* CARDS PRINCIPAIS - DESTAQUE MÁXIMO */}
               <div className="grid grid-cols-2 gap-4">
                 {/* Card: Total de URLs */}
@@ -382,18 +438,65 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
                 </div>
 
                 {/* Card: Páginas Únicas */}
-                <div className="p-6 rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-950/20">
-                  <div className="text-sm text-green-700 dark:text-green-400 font-medium mb-2">
-                    ✅ Páginas Únicas Importadas
+                <div className={`p-6 rounded-lg border-2 ${
+                  result.pagesBlocked > 0 
+                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20' 
+                    : 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                }`}>
+                  <div className={`text-sm font-medium mb-2 ${
+                    result.pagesBlocked > 0 
+                      ? 'text-orange-700 dark:text-orange-400' 
+                      : 'text-green-700 dark:text-green-400'
+                  }`}>
+                    {result.pagesBlocked > 0 ? '⚠️' : '✅'} Páginas Únicas Importadas
                   </div>
-                  <div className="text-4xl font-bold text-green-900 dark:text-green-100">
+                  <div className={`text-4xl font-bold ${
+                    result.pagesBlocked > 0 
+                      ? 'text-orange-900 dark:text-orange-100' 
+                      : 'text-green-900 dark:text-green-100'
+                  }`}>
                     {result.uniqueUrls?.toLocaleString() || 0}
                   </div>
-                  <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                    Após remoção de duplicatas
+                  <div className={`text-xs mt-1 ${
+                    result.pagesBlocked > 0 
+                      ? 'text-orange-600 dark:text-orange-400' 
+                      : 'text-green-600 dark:text-green-400'
+                  }`}>
+                    {result.pagesBlocked > 0 
+                      ? `⚠️ ${result.pagesBlocked} bloqueadas pelo limite do plano` 
+                      : 'Após remoção de duplicatas'
+                    }
                   </div>
                 </div>
               </div>
+
+              {/* Card: Informações do Plano */}
+              {result.planInfo && (
+                <div className={`p-4 rounded-lg border-2 ${
+                  result.planInfo.limitReached 
+                    ? 'bg-destructive/10 border-destructive' 
+                    : 'bg-blue-50 dark:bg-blue-950/20 border-blue-400'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground">Plano Atual</div>
+                      <div className="text-lg font-bold">{result.planInfo.name}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-medium text-muted-foreground">Páginas</div>
+                      <div className={`text-lg font-bold ${result.planInfo.limitReached ? 'text-destructive' : 'text-blue-900 dark:text-blue-100'}`}>
+                        {result.planInfo.currentPages} / {result.planInfo.isUnlimited ? '∞' : result.planInfo.maxPages}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {result.planInfo.limitReached && (
+                    <Badge variant="destructive" className="mt-2 w-full justify-center py-1">
+                      🚫 LIMITE ATINGIDO
+                    </Badge>
+                  )}
+                </div>
+              )}
 
               {/* Card: Duplicatas (se houver) */}
               {result.duplicatesRemoved > 0 && (

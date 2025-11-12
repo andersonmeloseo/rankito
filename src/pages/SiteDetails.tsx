@@ -176,6 +176,37 @@ const SiteDetails = () => {
     enabled: !!siteId,
   });
   
+  // Fetch user's plan limit
+  const { data: userPlanLimit } = useQuery({
+    queryKey: ["user-plan-limit"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select(`
+          subscription_plans (
+            name,
+            max_pages_per_site
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error) return null;
+      
+      return {
+        name: data?.subscription_plans?.name,
+        maxPages: data?.subscription_plans?.max_pages_per_site,
+        isUnlimited: data?.subscription_plans?.max_pages_per_site === null
+      };
+    },
+  });
+  
   // Get unique clients for filter dropdown
   const { data: allClientsData } = useQuery({
     queryKey: ["all-clients-for-filter", siteId],
@@ -567,7 +598,24 @@ const SiteDetails = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Páginas Únicas</p>
-                  <p className="text-2xl font-bold text-foreground">{site.unique_pages_with_traffic || 0}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold text-foreground">{site.unique_pages_with_traffic || 0}</p>
+                    {userPlanLimit && totalPagesCount !== undefined && (
+                      <Badge 
+                        variant={
+                          totalPagesCount >= (userPlanLimit.maxPages || Infinity) 
+                            ? "destructive" 
+                            : totalPagesCount >= (userPlanLimit.maxPages || Infinity) * 0.8
+                            ? "secondary"
+                            : "outline"
+                        }
+                        className="text-xs"
+                      >
+                        {totalPagesCount} / {userPlanLimit.isUnlimited ? '∞' : userPlanLimit.maxPages}
+                        {totalPagesCount >= (userPlanLimit.maxPages || Infinity) && ' 🚫'}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <Target className="w-8 h-8 text-primary opacity-60" />
               </div>
