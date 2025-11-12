@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ExternalLink, FolderOpen, Pencil, MoreVertical, Play, RefreshCw, Search, Eye, Phone, FileText, TrendingUp, XCircle } from "lucide-react";
+import { ExternalLink, FolderOpen, Pencil, MoreVertical, Play, RefreshCw, Search, Eye, Phone, FileText, TrendingUp, XCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EditSiteWithRentalDialog } from "./EditSiteWithRentalDialog";
 import { RentSiteDialog } from "./RentSiteDialog";
 import { RenewContractDialog } from "./RenewContractDialog";
 import { UnrentSiteDialog } from "./UnrentSiteDialog";
+import { DeleteSiteDialog } from "./DeleteSiteDialog";
 import { ContractStatusBadge } from "./ContractStatusBadge";
 import { useContractStatus } from "@/hooks/useContractStatus";
 
@@ -26,6 +27,7 @@ export const SitesList = ({ userId }: SitesListProps) => {
   const [showRentDialog, setShowRentDialog] = useState(false);
   const [showRenewDialog, setShowRenewDialog] = useState(false);
   const [showUnrentDialog, setShowUnrentDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedSite, setSelectedSite] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -49,6 +51,11 @@ export const SitesList = ({ userId }: SitesListProps) => {
   const handleUnrent = (site: any) => {
     setSelectedSite(site);
     setShowUnrentDialog(true);
+  };
+
+  const handleDelete = (site: any) => {
+    setSelectedSite(site);
+    setShowDeleteDialog(true);
   };
 
   const { data: sites, isLoading } = useQuery({
@@ -232,6 +239,14 @@ export const SitesList = ({ userId }: SitesListProps) => {
                   </DropdownMenuItem>
                 </>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => handleDelete(site)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Excluir Projeto
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </td>
@@ -345,6 +360,14 @@ export const SitesList = ({ userId }: SitesListProps) => {
             open={showUnrentDialog}
             onOpenChange={setShowUnrentDialog}
             site={selectedSite}
+          />
+          <DeleteSiteDialog
+            open={showDeleteDialog}
+            onOpenChange={setShowDeleteDialog}
+            siteId={selectedSite.id}
+            siteName={selectedSite.site_name}
+            totalPages={selectedSite.total_pages || 0}
+            isRented={selectedSite.is_rented}
           />
         </>
       )}

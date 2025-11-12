@@ -10,13 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { EditPageDialog } from "@/components/rank-rent/EditPageDialog";
 import { ImportSitemapDialog } from "@/components/rank-rent/ImportSitemapDialog";
+import { DeleteSiteDialog } from "@/components/rank-rent/DeleteSiteDialog";
 import { PluginDownloadCard } from "@/components/rank-rent/PluginDownloadCard";
 import { PluginInstallationGuide } from "@/components/rank-rent/PluginInstallationGuide";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
@@ -55,6 +56,7 @@ const SiteDetails = () => {
   const [selectedPage, setSelectedPage] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPluginGuide, setShowPluginGuide] = useState(false);
   
   // Pagination States
@@ -590,6 +592,15 @@ const SiteDetails = () => {
                 </div>
               </div>
             </div>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Excluir Projeto
+            </Button>
           </div>
         </div>
       </header>
@@ -1309,6 +1320,14 @@ const SiteDetails = () => {
       )}
       <ImportSitemapDialog siteId={siteId || ""} open={showImportDialog} onOpenChange={setShowImportDialog} />
       <PluginInstallationGuide open={showPluginGuide} onOpenChange={setShowPluginGuide} />
+      <DeleteSiteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        siteId={siteId || ""}
+        siteName={site?.site_name || ""}
+        totalPages={totalPagesCount || 0}
+        isRented={site?.is_rented || false}
+      />
       
       <Footer />
     </div>
