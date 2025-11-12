@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddGSCIntegrationDialog } from './AddGSCIntegrationDialog';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
 import { GSCIndexingManager } from './GSCIndexingManager';
+import { GSCMonitoringDashboard } from './GSCMonitoringDashboard';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ import {
   Crown,
   FileText,
   Send,
+  BarChart3,
 } from 'lucide-react';
 
 interface GSCIntegrationsManagerProps {
@@ -98,8 +100,12 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
 
   return (
     <>
-      <Tabs defaultValue="connections" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4 max-w-3xl">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Visão Geral
+          </TabsTrigger>
           <TabsTrigger value="connections" className="flex items-center gap-2">
             <LinkIcon className="h-4 w-4" />
             Integrações
@@ -121,6 +127,10 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
             Indexação
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="overview">
+          <GSCMonitoringDashboard siteId={siteId} userId={userId} />
+        </TabsContent>
 
         <TabsContent value="connections">
           <Card>
