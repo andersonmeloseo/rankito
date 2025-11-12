@@ -196,6 +196,27 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
     setShowBatchDialog(false);
   };
 
+  const getGSCStatusBadge = (status: string | null) => {
+    if (status === 'indexed') {
+      return <Badge variant="outline" className="border-green-500 text-green-700 bg-green-50">
+        <CheckCircle2 className="h-3 w-3 mr-1" />Indexado
+      </Badge>;
+    }
+    if (status === 'submitted') {
+      return <Badge variant="outline" className="border-yellow-500 text-yellow-700 bg-yellow-50">
+        <Clock className="h-3 w-3 mr-1" />Enviado
+      </Badge>;
+    }
+    if (status === 'error') {
+      return <Badge variant="outline" className="border-red-500 text-red-700 bg-red-50">
+        <XCircle className="h-3 w-3 mr-1" />Erro
+      </Badge>;
+    }
+    return <Badge variant="outline" className="border-gray-300 text-gray-600">
+      <AlertTriangle className="h-3 w-3 mr-1" />Não Enviado
+    </Badge>;
+  };
+
   const getStatusBadge = (status: string, errorMessage: string | null) => {
     if (status === 'success') {
       return <Badge variant="outline" className="border-green-500 text-green-700"><CheckCircle2 className="h-3 w-3 mr-1" />Sucesso</Badge>;
@@ -414,15 +435,30 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                 Selecione páginas para indexação em lote ou individual
               </CardDescription>
             </div>
-            {selectedPages.size > 0 && (
-              <Button
-                onClick={() => setShowBatchDialog(true)}
-                disabled={quota?.remaining === 0}
-              >
-                <List className="h-4 w-4 mr-2" />
-                Indexar {selectedPages.size} Selecionadas
-              </Button>
-            )}
+            <div className="flex items-center gap-3">
+              {selectedPages.size > 0 && (
+                <>
+                  <Badge variant="secondary" className="text-sm px-3 py-1.5">
+                    {selectedPages.size} de {pages.length} páginas selecionadas
+                  </Badge>
+                  <Button
+                    onClick={() => setShowBatchDialog(true)}
+                    disabled={quota?.remaining === 0}
+                    size="sm"
+                  >
+                    <List className="h-4 w-4 mr-2" />
+                    Indexar Selecionadas
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedPages(new Set())}
+                  >
+                    Limpar Seleção
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -496,13 +532,17 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12">
-                        <Checkbox
-                          checked={pages.length > 0 && selectedPages.size === pages.length}
-                          onCheckedChange={handleToggleAll}
-                        />
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={pages.length > 0 && selectedPages.size === pages.length}
+                            onCheckedChange={handleToggleAll}
+                            title={`${selectedPages.size === pages.length ? 'Desmarcar' : 'Selecionar'} todas as ${pages.length} páginas`}
+                          />
+                        </div>
                       </TableHead>
                       <TableHead className="min-w-[300px]">Página</TableHead>
                       <TableHead>URL</TableHead>
+                      <TableHead className="min-w-[140px]">Status GSC</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -528,6 +568,9 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                             {page.page_path}
                             <ExternalLink className="h-3 w-3" />
                           </a>
+                        </TableCell>
+                        <TableCell>
+                          {getGSCStatusBadge(page.gsc_indexation_status)}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -642,6 +685,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         onOpenChange={setShowBatchDialog}
         selectedUrls={pages?.filter(p => selectedPages.has(p.id)).map(p => ({ url: p.page_url, page_id: p.id })) || []}
         remainingQuota={quota?.remaining || 0}
+        totalLimit={quota?.limit || 200}
         onConfirm={handleBatchIndexing}
         isSubmitting={isAddingToQueue}
       />

@@ -11,6 +11,7 @@ interface GSCBatchIndexingDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedUrls: { url: string; page_id?: string }[];
   remainingQuota: number;
+  totalLimit: number;
   onConfirm: (distribution: 'fast' | 'even') => void;
   isSubmitting: boolean;
 }
@@ -20,6 +21,7 @@ export const GSCBatchIndexingDialog = ({
   onOpenChange,
   selectedUrls,
   remainingQuota,
+  totalLimit,
   onConfirm,
   isSubmitting,
 }: GSCBatchIndexingDialogProps) => {
@@ -28,10 +30,10 @@ export const GSCBatchIndexingDialog = ({
   const totalUrls = selectedUrls.length;
   const urlsToday = distribution === 'fast' 
     ? Math.min(totalUrls, remainingQuota)
-    : Math.min(200, remainingQuota, totalUrls);
+    : Math.min(totalLimit, remainingQuota, totalUrls);
   
-  const daysNeeded = Math.ceil(totalUrls / 200);
-  const urlsPerDay = distribution === 'even' ? Math.min(200, Math.ceil(totalUrls / daysNeeded)) : 0;
+  const daysNeeded = Math.ceil(totalUrls / totalLimit);
+  const urlsPerDay = distribution === 'even' ? Math.min(totalLimit, Math.ceil(totalUrls / daysNeeded)) : 0;
 
   const handleConfirm = () => {
     onConfirm(distribution);
@@ -56,7 +58,7 @@ export const GSCBatchIndexingDialog = ({
             </div>
             <div className="rounded-lg border bg-card p-4">
               <div className="text-sm text-muted-foreground">Quota Disponível Hoje</div>
-              <div className="mt-1 text-2xl font-bold">{remainingQuota}/200</div>
+              <div className="mt-1 text-2xl font-bold">{remainingQuota}/{totalLimit}</div>
             </div>
             <div className="rounded-lg border bg-card p-4">
               <div className="text-sm text-muted-foreground">Dias Necessários</div>
@@ -81,6 +83,7 @@ export const GSCBatchIndexingDialog = ({
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Indexar até {urlsPerDay} URLs por dia, distribuindo igualmente ao longo de {daysNeeded} dias.
+                    {totalLimit > 200 && <span className="text-primary font-medium"> (usando {Math.floor(totalLimit / 200)} integrações)</span>}
                   </p>
                   <div className="mt-2 text-xs text-muted-foreground">
                     📅 Previsão: {urlsToday} hoje, {Math.max(0, totalUrls - urlsToday)} nos próximos {daysNeeded - 1} dias
