@@ -124,6 +124,20 @@ serve(async (req) => {
     const leadData: LeadData = await req.json();
     console.log('Received lead data:', leadData);
 
+    // BLOQUEIO: Rejeitar cliques simples sem dados de contato
+    const clickTypes = ['wordpress_whatsapp_click', 'wordpress_phone_click', 'wordpress_email_click', 'wordpress_button_click', 'chrome_whatsapp'];
+    if (clickTypes.includes(leadData.source_type || '')) {
+      console.log(`⚠️ Blocked click-only lead: ${leadData.source_type}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Click events are tracked for analytics but do not create leads automatically. Use forms (Rankito LeadGen plugin) to capture complete contact data.', 
+          code: 'CLICK_BLOCKED',
+          hint: 'Install the Rankito LeadGen plugin to capture leads with complete contact information.'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Validate required fields
     if (!leadData.name || leadData.name.trim().length < 2) {
       return new Response(
