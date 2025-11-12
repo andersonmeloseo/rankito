@@ -100,7 +100,30 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
         throw new Error("Service Account JSON inválido: client_email não encontrado");
       }
 
-      // Inserir integração
+      // Buscar URL do site para encontrar propriedade GSC correspondente
+      const { data: site, error: siteError } = await supabase
+        .from('rank_rent_sites')
+        .select('site_url')
+        .eq('id', input.siteId)
+        .single();
+
+      if (siteError || !site) {
+        throw new Error('Site não encontrado');
+      }
+
+      // Normalizar URL do site (remover https://, www., trailing slash)
+      let siteUrl = site.site_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      
+      // Testar variações comuns da URL para encontrar no GSC
+      const urlVariations = [
+        `https://${siteUrl}/`, // URL completa com https e trailing slash
+        `http://${siteUrl}/`,  // URL com http
+        `sc-domain:${siteUrl.replace('www.', '')}`, // Domain property sem www
+      ];
+
+      console.log('🔍 Testando variações de URL:', urlVariations);
+
+      // Inserir integração primeiro (para poder buscar propriedades)
       const { data, error } = await supabase
         .from('google_search_console_integrations')
         .insert([{
@@ -109,13 +132,15 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
           connection_name: input.connectionName,
           google_email: clientEmail,
           service_account_json: input.serviceAccountJson,
-          is_active: true, // Service Account é imediatamente ativa
-          gsc_property_url: '', // Será preenchido quando o usuário selecionar uma propriedade
+          is_active: true,
+          gsc_property_url: urlVariations[0], // Usar primeira variação como padrão
         }])
         .select()
         .single();
 
       if (error) throw error;
+      
+      console.log('✅ Integração criada com URL:', urlVariations[0]);
       return data;
     },
     onSuccess: () => {
