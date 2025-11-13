@@ -5,18 +5,8 @@ import { User, Session } from "@supabase/supabase-js";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Settings, ChevronDown, Home, FileText } from "lucide-react";
+import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getInitials } from "@/hooks/useUserProfile";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -276,241 +266,179 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-primary/10">
+    <div className="min-h-screen flex flex-col bg-background">
       {isSuperAdmin && <SuperAdminBanner currentView="client" />}
-      <LeadNotificationBanner leads={newLeads} onDismiss={clearNewLeads} />
+      
+      {/* Lead Notifications Banner */}
+      {newLeads.length > 0 && (
+        <div className="border-b border-warning/20 bg-warning/5">
+          <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-3">
+            <LeadNotificationBanner leads={newLeads} onDismiss={clearNewLeads} />
+          </div>
+        </div>
+      )}
+      
       <Header showSubtitle={false} />
-      <div className="flex-1">
-        <div className="container mx-auto py-8 pb-64 space-y-8">
-          <div className="flex justify-between items-center">
-            <div className="space-y-3">
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="/dashboard" className="flex items-center gap-1.5">
-                      <Home className="w-3.5 h-3.5" />
-                      Dashboard
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-              
-              <div>
-                <h1 className="text-2xl font-bold">
-                  Dashboard de Gestão de Rank & Rent
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  {isReturningUser ? "Seja bem-vindo de volta" : "Seja bem-vindo"} {userName} ({user?.email})
-                </p>
-              </div>
-              
-              {/* Barra de status de limites */}
-              <div className="mt-3">
-                <SubscriptionStatusBar compact />
-              </div>
+      
+      {/* Hero Section */}
+      <div className="border-b border-border/50 bg-gradient-to-r from-background via-muted/20 to-background">
+        <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-8">
+          {/* Breadcrumb */}
+          <Breadcrumb className="mb-6">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/dashboard" className="flex items-center gap-1.5">
+                  <Home className="w-4 h-4" />
+                  Dashboard
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+          
+          {/* Title + Action */}
+          <div className="flex items-start justify-between gap-6 mb-6">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-base text-muted-foreground">
+                Bem-vindo de volta, {userName} 👋
+              </p>
             </div>
-            <div className="flex gap-2 items-center">
-              <Button 
-                onClick={() => setShowAddSite(true)} 
-                className="gap-2 relative"
-                disabled={!limits?.canCreateSite}
-              >
-                <Plus className="w-4 h-4" />
-                Adicionar Site
-                
-                {/* Badge com sites disponíveis */}
-                {limits && !limits.isUnlimited && limits.remainingSites !== null && (
-                  <Badge 
-                    variant={limits.remainingSites <= 2 ? "destructive" : "secondary"}
-                    className="ml-2 text-xs"
-                  >
-                    {limits.remainingSites > 0 
-                      ? `+${limits.remainingSites}` 
-                      : '0'
-                    }
-                  </Badge>
-                )}
-                
-                {/* Badge para planos ilimitados */}
-                {limits?.isUnlimited && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    ∞
-                  </Badge>
-                )}
-              </Button>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="gap-2 h-auto py-2 px-3 hover:bg-muted hover:text-foreground"
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Avatar'} />
-                      <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                        {getInitials(profile?.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="hidden md:block font-medium">
-                      {profile?.full_name || userName}
-                    </span>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <div className="flex items-center gap-3 p-3 border-b">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Avatar'} />
-                      <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                        {getInitials(profile?.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{profile?.full_name || userName}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                    </div>
-                  </div>
-                  <div className="p-1">
-                    <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
-                      <Settings className="mr-3 h-4 w-4 text-muted-foreground" />
-                      <span>Configurações</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={handleSignOut} 
-                      className="cursor-pointer text-destructive focus:text-destructive"
-                    >
-                      <LogOut className="mr-3 h-4 w-4" />
-                      <span>Sair da conta</span>
-                    </DropdownMenuItem>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        <Tabs defaultValue="overview" className="space-y-8">
-          <div className="border-b border-border/50 bg-muted/30">
-            <TabsList className="h-12 bg-transparent w-full max-w-5xl justify-start gap-1">
-              <TabsTrigger 
-                value="overview" 
-                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/70 data-[state=active]:to-primary/50 data-[state=active]:shadow-lg transition-all duration-300 ease-out group"
-              >
-                <LayoutDashboard className="w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
-                <span className="relative z-10">Overview</span>
-                <span className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary to-primary/80 scale-x-0 group-data-[state=active]:scale-x-100 transition-transform duration-300 ease-out shadow-[0_2px_8px_hsl(var(--primary)/0.5)] group-data-[state=active]:shadow-[0_2px_12px_hsl(var(--primary)/0.8)]" />
-              </TabsTrigger>
-              <TabsTrigger 
-                value="sites"
-                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/70 data-[state=active]:to-primary/50 data-[state=active]:shadow-lg transition-all duration-300 ease-out group"
-              >
-                <Globe className="w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
-                <span className="relative z-10">Sites</span>
-                <span className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary to-primary/80 scale-x-0 group-data-[state=active]:scale-x-100 transition-transform duration-300 ease-out shadow-[0_2px_8px_hsl(var(--primary)/0.5)] group-data-[state=active]:shadow-[0_2px_12px_hsl(var(--primary)/0.8)]" />
-              </TabsTrigger>
-              <TabsTrigger 
-                value="crm"
-                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/70 data-[state=active]:to-primary/50 data-[state=active]:shadow-lg transition-all duration-300 ease-out group"
-              >
-                <Briefcase className="w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
-                <span className="relative z-10">CRM</span>
-                <span className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary to-primary/80 scale-x-0 group-data-[state=active]:scale-x-100 transition-transform duration-300 ease-out shadow-[0_2px_8px_hsl(var(--primary)/0.5)] group-data-[state=active]:shadow-[0_2px_12px_hsl(var(--primary)/0.8)]" />
-              </TabsTrigger>
-              <TabsTrigger 
-                value="financial"
-                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/70 data-[state=active]:to-primary/50 data-[state=active]:shadow-lg transition-all duration-300 ease-out group"
-              >
-                <DollarSign className="w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
-                <span className="relative z-10">Financeiro</span>
-                <span className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary to-primary/80 scale-x-0 group-data-[state=active]:scale-x-100 transition-transform duration-300 ease-out shadow-[0_2px_8px_hsl(var(--primary)/0.5)] group-data-[state=active]:shadow-[0_2px_12px_hsl(var(--primary)/0.8)]" />
-              </TabsTrigger>
-              <TabsTrigger 
-                value="clients"
-                className="relative gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 hover:shadow-sm hover:scale-105 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/70 data-[state=active]:to-primary/50 data-[state=active]:shadow-lg transition-all duration-300 ease-out group"
-              >
-                <Users className="w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5" />
-                <span className="relative z-10">Clientes</span>
-                <span className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary to-primary/80 scale-x-0 group-data-[state=active]:scale-x-100 transition-transform duration-300 ease-out shadow-[0_2px_8px_hsl(var(--primary)/0.5)] group-data-[state=active]:shadow-[0_2px_12px_hsl(var(--primary)/0.8)]" />
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="overview" className="space-y-8">
-            <LimitWarningBanner />
-            <OverviewCards userId={user.id} />
-            <SitesList userId={user.id} />
-          </TabsContent>
-
-          <TabsContent value="sites" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Meus Projetos</h2>
-              <ViewSwitcher value={viewMode} onValueChange={setViewMode} />
-            </div>
-            <SitesList 
-              userId={user.id} 
-              viewMode={viewMode}
-              selectedSites={selectedSites}
-              onSelectSite={handleSelectSite}
-            />
-          </TabsContent>
-
-          <BulkActionsBar
-            selectedCount={selectedSites.size}
-            totalCount={allSites?.length || 0}
-            onSelectAll={() => handleSelectAll(allSites?.map(s => s.id) || [])}
-            onClearSelection={handleClearSelection}
-            onRent={handleBulkRent}
-            onIndex={handleBulkIndex}
-            onArchive={handleBulkArchive}
-            onExport={handleBulkExport}
-            onDelete={handleBulkDelete}
-          />
-
-          <TabsContent value="crm">
-            <CRMHub userId={user.id} />
-          </TabsContent>
-
-
-          <TabsContent value="financial" className="space-y-6">
-            <PaymentAlerts userId={user.id} />
             
-            {financialLoading ? (
-              <div className="space-y-4">
-                {[...Array(6)].map((_, i) => (
-                  <Skeleton key={i} className="h-32" />
-                ))}
+            {/* Action Button */}
+            <Button 
+              size="lg"
+              onClick={() => setShowAddSite(true)} 
+              className="gap-2 transition-all hover:scale-105 hover:shadow-lg"
+              disabled={!limits?.canCreateSite}
+            >
+              <Plus className="w-5 h-5" />
+              <span className="font-medium">Adicionar Site</span>
+              
+              {/* Badge dinâmico com quota */}
+              {limits && !limits.isUnlimited && limits.remainingSites !== null && (
+                <Badge 
+                  variant={limits.remainingSites <= 2 ? "destructive" : "default"}
+                  className={limits.remainingSites <= 2 ? "animate-pulse" : ""}
+                >
+                  +{limits.remainingSites > 0 ? limits.remainingSites : 0}
+                </Badge>
+              )}
+              
+              {limits?.isUnlimited && (
+                <Badge variant="default">∞</Badge>
+              )}
+            </Button>
+          </div>
+          
+          {/* Subscription Status */}
+          <SubscriptionStatusBar compact />
+        </div>
+      </div>
+      
+      <div className="flex-1">
+        <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-8 space-y-8">{/* Content will continue... */}
+          <Tabs defaultValue="overview" className="space-y-8">
+            {/* Tabs Navigation - ClickUp Style */}
+            <div className="border-b border-border">
+              <TabsList className="h-14 bg-transparent w-full justify-start gap-8">
+                <TabsTrigger 
+                  value="overview" 
+                  className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  Overview
+                </TabsTrigger>
+                
+                <TabsTrigger 
+                  value="sites"
+                  className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
+                >
+                  <Globe className="w-4 h-4" />
+                  Sites
+                </TabsTrigger>
+                
+                <TabsTrigger 
+                  value="crm"
+                  className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
+                >
+                  <Briefcase className="w-4 h-4" />
+                  CRM
+                </TabsTrigger>
+                
+                <TabsTrigger 
+                  value="financial"
+                  className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Financeiro
+                </TabsTrigger>
+                
+                <TabsTrigger 
+                  value="clients"
+                  className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
+                >
+                  <Users className="w-4 h-4" />
+                  Clientes
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="overview" className="space-y-8">
+              {limitsLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className="h-32 rounded-lg" />
+                  ))}
+                </div>
+              ) : (
+                <OverviewCards userId={user.id} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="sites" className="space-y-8">
+              {/* View Switcher */}
+              <div className="flex justify-end">
+                <ViewSwitcher value={viewMode} onValueChange={setViewMode} />
               </div>
-            ) : (
-              <Tabs defaultValue="overview" className="space-y-6">
-                <TabsList className="w-full max-w-2xl">
-                  <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-                  <TabsTrigger value="payments">Pagamentos</TabsTrigger>
-                  <TabsTrigger value="projects">Projetos</TabsTrigger>
-                  <TabsTrigger value="settings">Configurações</TabsTrigger>
-                </TabsList>
 
-                <TabsContent value="overview" className="space-y-6">
-                  <GlobalFinancialOverview summary={summary} userId={user.id} />
-                  <GlobalFinancialTable sitesMetrics={sitesMetrics} />
-                </TabsContent>
+              {/* Bulk Actions Bar */}
+              {selectedSites.size > 0 && (
+                <BulkActionsBar
+                  selectedCount={selectedSites.size}
+                  totalCount={allSites?.length || 0}
+                  onSelectAll={() => handleSelectAll(allSites?.map(s => s.id) || [])}
+                  onClearSelection={handleClearSelection}
+                  onRent={handleBulkRent}
+                  onIndex={handleBulkIndex}
+                  onArchive={handleBulkArchive}
+                  onExport={handleBulkExport}
+                  onDelete={handleBulkDelete}
+                />
+              )}
 
-                <TabsContent value="payments">
-                  <PaymentsList userId={user.id} />
-                </TabsContent>
+              <SitesList 
+                userId={user.id} 
+                viewMode={viewMode}
+                selectedSites={selectedSites}
+                onSelectSite={handleSelectSite}
+              />
+            </TabsContent>
 
-                <TabsContent value="projects">
-                  <GlobalFinancialTable sitesMetrics={sitesMetrics} />
-                </TabsContent>
+            <TabsContent value="crm" className="space-y-8">
+              <CRMHub userId={user.id} />
+            </TabsContent>
 
-                <TabsContent value="settings">
-                  <GlobalCostSettings userId={user.id} />
-                </TabsContent>
-              </Tabs>
-            )}
-          </TabsContent>
+            <TabsContent value="financial" className="space-y-8">
+              <PaymentAlerts userId={user.id} />
+              <GlobalFinancialOverview summary={summary} userId={user.id} />
+              <GlobalFinancialTable sitesMetrics={sitesMetrics} />
+              <GlobalCostSettings userId={user.id} />
+              <PaymentsList userId={user.id} />
+            </TabsContent>
 
-          <TabsContent value="clients">
-            <ClientsListIntegrated userId={user.id} />
-          </TabsContent>
+            <TabsContent value="clients" className="space-y-8">
+              <ClientsListIntegrated userId={user.id} />
+            </TabsContent>
         </Tabs>
         </div>
       </div>

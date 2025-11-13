@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ExternalLink, FolderOpen, Pencil, MoreVertical, Play, RefreshCw, Search, Eye, Phone, FileText, TrendingUp, XCircle, Trash2 } from "lucide-react";
+import { ExternalLink, FolderOpen, Pencil, MoreVertical, Play, RefreshCw, Search, Eye, Phone, FileText, TrendingUp, XCircle, Trash2, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EditSiteWithRentalDialog } from "./EditSiteWithRentalDialog";
 import { RentSiteDialog } from "./RentSiteDialog";
@@ -134,15 +134,17 @@ export const SitesList = ({
 
   if (!sites || sites.length === 0) {
     return (
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle>Meus Projetos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">Você ainda não cadastrou nenhum projeto.</p>
-            <p className="text-sm text-muted-foreground">Clique em "Adicionar Site" para começar.</p>
+      <Card className="border-dashed shadow-card">
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <div className="rounded-full bg-muted p-6 mb-4">
+            <Globe className="w-12 h-12 text-muted-foreground" />
           </div>
+          <h3 className="text-xl font-semibold mb-2">
+            Nenhum projeto ainda
+          </h3>
+          <p className="text-muted-foreground text-center max-w-md mb-6">
+            Comece criando seu primeiro projeto de Rank & Rent
+          </p>
         </CardContent>
       </Card>
     );
