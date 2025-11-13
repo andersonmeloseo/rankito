@@ -2,6 +2,7 @@ import { Mountain, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCommandPalette } from "@/hooks/useCommandPalette";
 import { CommandPalette } from "./CommandPalette";
+import { NotificationsDropdown } from "./NotificationsDropdown";
 
 interface HeaderProps {
   showSubtitle?: boolean;
@@ -36,18 +37,24 @@ export const Header = ({ showSubtitle = true }: HeaderProps) => {
             </div>
           </div>
 
-          {/* Command Palette Trigger */}
-          <Button
-            variant="outline"
-            className="gap-2 min-w-[240px] justify-start text-muted-foreground hover:text-foreground"
-            onClick={() => setOpen(true)}
-          >
-            <Search className="w-4 h-4" />
-            <span className="hidden md:inline">Buscar...</span>
-            <kbd className="hidden md:inline-flex ml-auto px-1.5 py-0.5 text-xs bg-muted rounded font-mono">
-              ⌘K
-            </kbd>
-          </Button>
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            {/* Command Palette Trigger */}
+            <Button
+              variant="outline"
+              className="gap-2 min-w-[240px] justify-start text-muted-foreground hover:text-foreground"
+              onClick={() => setOpen(true)}
+            >
+              <Search className="w-4 h-4" />
+              <span className="hidden md:inline">Buscar...</span>
+              <kbd className="hidden md:inline-flex ml-auto px-1.5 py-0.5 text-xs bg-muted rounded font-mono">
+                ⌘K
+              </kbd>
+            </Button>
+
+            {/* Notifications */}
+            <NotificationsDropdown />
+          </div>
         </div>
       </div>
 
