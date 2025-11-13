@@ -155,7 +155,7 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
             return (
               <div
                 key={project.site_id}
-                onClick={() => navigate(`/site/${project.site_id}`)}
+                onClick={() => navigate(`/dashboard/site/${project.site_id}`)}
                 className="
                   relative overflow-hidden rounded-lg border border-gray-200 
                   bg-white p-4 transition-all cursor-pointer
