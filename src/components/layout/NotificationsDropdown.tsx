@@ -1,30 +1,41 @@
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, TrendingUp, AlertTriangle, Zap, CreditCard, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { useNotifications, NotificationType } from "@/hooks/useNotifications";
+import { useNotifications } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
-const notificationIcons: Record<NotificationType, string> = {
-  conversion: "🎯",
-  contract_expiry: "⏰",
-  gsc_quota: "📊",
-  gsc_indexed: "✅",
-  limit_reached: "⚠️",
-  payment_due: "💰",
-  system: "🔔",
+const notificationIcons = {
+  conversion: TrendingUp,
+  contract_expiry: AlertTriangle,
+  gsc_quota: Zap,
+  gsc_indexed: CheckCheck,
+  limit_reached: AlertTriangle,
+  payment_due: CreditCard,
+  system: Info,
+};
+
+const notificationColors = {
+  conversion: "text-green-600",
+  contract_expiry: "text-orange-600",
+  gsc_quota: "text-blue-600",
+  gsc_indexed: "text-green-600",
+  limit_reached: "text-red-600",
+  payment_due: "text-yellow-600",
+  system: "text-gray-600",
 };
 
 export const NotificationsDropdown = () => {
-  const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const navigate = useNavigate();
 
   const handleNotificationClick = (notification: any) => {
-    markAsRead(notification.id);
+    if (!notification.read) {
+      markAsRead.mutate(notification.id);
+    }
     if (notification.link) {
       navigate(notification.link);
     }
@@ -36,23 +47,22 @@ export const NotificationsDropdown = () => {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-semibold">
-              {unreadCount > 99 ? "99+" : unreadCount}
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-medium">
+              {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0 bg-background" align="end">
-        <div className="flex items-center justify-between p-4 border-b">
+      <PopoverContent className="w-[380px] p-0 bg-background border shadow-lg z-[100]" align="end" sideOffset={8}>
+        <div className="flex items-center justify-between p-4 border-b bg-muted/50">
           <h3 className="font-semibold text-foreground">Notificações</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => markAllAsRead()}
-              className="h-8 text-xs"
+              onClick={() => markAllAsRead.mutate()}
+              className="text-xs"
             >
-              <CheckCheck className="w-3.5 h-3.5 mr-1.5" />
               Marcar todas como lidas
             </Button>
           )}
@@ -60,50 +70,53 @@ export const NotificationsDropdown = () => {
 
         <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Bell className="w-12 h-12 text-muted-foreground mb-3 opacity-20" />
-              <p className="text-sm text-muted-foreground">Nenhuma notificação</p>
+            <div className="flex flex-col items-center justify-center h-40 text-center p-4">
+              <Bell className="h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Nenhuma notificação ainda
+              </p>
             </div>
           ) : (
-            <div>
-              {notifications.map((notification) => (
+            notifications.map((notif: any) => {
+              const Icon = notificationIcons[notif.type as keyof typeof notificationIcons] || Info;
+              const iconColor = notificationColors[notif.type as keyof typeof notificationColors] || "text-gray-600";
+
+              return (
                 <div
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
+                  key={notif.id}
                   className={cn(
                     "p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors",
-                    !notification.read && "bg-primary/5"
+                    !notif.read && "bg-blue-50/50 dark:bg-blue-950/20"
                   )}
+                  onClick={() => handleNotificationClick(notif)}
                 >
                   <div className="flex gap-3">
-                    <div className="text-2xl mt-0.5">
-                      {notificationIcons[notification.type]}
+                    <div className={cn("mt-1", iconColor)}>
+                      <Icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-medium text-sm text-foreground">
-                          {notification.title}
-                        </p>
-                        {!notification.read && (
-                          <div className="w-2 h-2 bg-primary rounded-full mt-1 flex-shrink-0" />
-                        )}
-                      </div>
-                      {notification.message && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {notification.message}
+                      <p className="font-medium text-sm text-foreground leading-tight">
+                        {notif.title}
+                      </p>
+                      {notif.message && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {notif.message}
                         </p>
                       )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {formatDistanceToNow(new Date(notification.created_at), {
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(notif.created_at), {
                           addSuffix: true,
                           locale: ptBR,
                         })}
                       </p>
                     </div>
+                    {!notif.read && (
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })
           )}
         </ScrollArea>
       </PopoverContent>

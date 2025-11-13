@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react";
-import { ViewMode } from "@/components/layout/ViewSwitcher";
+import { useState } from "react";
 
-export const useViewMode = (storageKey: string, defaultValue: ViewMode = "table") => {
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const stored = localStorage.getItem(storageKey);
-    return (stored as ViewMode) || defaultValue;
+type ViewMode = "list" | "grid" | "table";
+
+export const useViewMode = (storageKey: string, defaultMode: ViewMode = "table") => {
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem(storageKey);
+    return (saved as ViewMode) || defaultMode;
   });
 
-  useEffect(() => {
-    localStorage.setItem(storageKey, viewMode);
-  }, [viewMode, storageKey]);
+  const setViewMode = (mode: ViewMode) => {
+    setViewModeState(mode);
+    localStorage.setItem(storageKey, mode);
+  };
 
-  return [viewMode, setViewMode] as const;
+  return { viewMode, setViewMode };
 };

@@ -1,57 +1,35 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
-export type NotificationType = 
-  | "conversion" 
-  | "contract_expiry" 
-  | "gsc_quota" 
-  | "gsc_indexed" 
-  | "limit_reached" 
-  | "payment_due" 
-  | "system";
-
-export interface Notification {
-  id: string;
-  user_id: string;
-  type: NotificationType;
-  title: string;
-  message?: string;
-  link?: string;
-  metadata?: Record<string, any>;
-  read: boolean;
-  created_at: string;
-}
 
 export const useNotifications = () => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Buscar notificações do usuário
-  const { data: notifications, isLoading } = useQuery({
+  const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return [];
+
       const { data, error } = await supabase
         .from("user_notifications")
         .select("*")
+        .eq("user_id", user.user.id)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (error) throw error;
-      return data as Notification[];
+      return data || [];
     },
-    refetchInterval: 30000, // Refetch a cada 30 segundos
+    refetchInterval: 30000,
   });
 
-  // Contar não lidas
-  const unreadCount = notifications?.filter(n => !n.read).length || 0;
+  const unreadCount = notifications.filter((n: any) => !n.read).length;
 
-  // Marcar como lida
-  const markAsReadMutation = useMutation({
+  const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {
       const { error } = await supabase
         .from("user_notifications")
-        .update({ read: true })
+        .update({ read: true, updated_at: new Date().toISOString() })
         .eq("id", notificationId);
 
       if (error) throw error;
@@ -61,34 +39,29 @@ export const useNotifications = () => {
     },
   });
 
-  // Marcar todas como lidas
-  const markAllAsReadMutation = useMutation({
+  const markAllAsRead = useMutation({
     mutationFn: async () => {
       const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error("Not authenticated");
+      if (!user.user) return;
 
       const { error } = await supabase
         .from("user_notifications")
-        .update({ read: true })
+        .update({ read: true, updated_at: new Date().toISOString() })
         .eq("user_id", user.user.id)
         .eq("read", false);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({
-        title: "Notificações marcadas como lidas",
-        description: "Todas as notificações foram marcadas como lidas.",
-      });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 
   return {
-    notifications: notifications || [],
+    notifications,
     unreadCount,
     isLoading,
-    markAsRead: markAsReadMutation.mutate,
-    markAllAsRead: markAllAsReadMutation.mutate,
+    markAsRead,
+    markAllAsRead,
   };
 };

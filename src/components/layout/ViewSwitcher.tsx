@@ -1,34 +1,27 @@
-import { LayoutGrid, List, Table as TableIcon } from "lucide-react";
+import { LayoutGrid, List, Table2 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-export type ViewMode = "list" | "grid" | "table";
+type ViewMode = "list" | "grid" | "table";
 
 interface ViewSwitcherProps {
   value: ViewMode;
   onValueChange: (value: ViewMode) => void;
-  storageKey: string;
   className?: string;
 }
 
 export const ViewSwitcher = ({ value, onValueChange, className }: ViewSwitcherProps) => {
-  const handleChange = (newValue: string) => {
-    if (newValue) {
-      onValueChange(newValue as ViewMode);
-    }
-  };
-
   return (
     <TooltipProvider>
       <ToggleGroup
         type="single"
         value={value}
-        onValueChange={handleChange}
+        onValueChange={(val) => val && onValueChange(val as ViewMode)}
         className={className}
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="list" aria-label="Visualização em lista">
+            <ToggleGroupItem value="list" aria-label="Visualização em lista" className="h-9 w-9">
               <List className="h-4 w-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
@@ -39,7 +32,7 @@ export const ViewSwitcher = ({ value, onValueChange, className }: ViewSwitcherPr
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="grid" aria-label="Visualização em grade">
+            <ToggleGroupItem value="grid" aria-label="Visualização em grade" className="h-9 w-9">
               <LayoutGrid className="h-4 w-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
@@ -50,8 +43,8 @@ export const ViewSwitcher = ({ value, onValueChange, className }: ViewSwitcherPr
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="table" aria-label="Visualização em tabela">
-              <TableIcon className="h-4 w-4" />
+            <ToggleGroupItem value="table" aria-label="Visualização em tabela" className="h-9 w-9">
+              <Table2 className="h-4 w-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
           <TooltipContent>
