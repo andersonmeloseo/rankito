@@ -75,7 +75,8 @@ export const useAnalytics = ({
         .select("ip_address", { head: false })
         .match(baseFilters)
         .gte("created_at", startDate)
-        .lte("created_at", endDate);
+        .lte("created_at", endDate)
+        .limit(10000); // Aumentar limite para garantir todos os registros
 
       if (device !== "all") {
         uniqueVisitorsQuery = uniqueVisitorsQuery.filter('metadata->>device', 'eq', device);
@@ -91,7 +92,8 @@ export const useAnalytics = ({
         .select("page_path", { head: false })
         .match(baseFilters)
         .gte("created_at", startDate)
-        .lte("created_at", endDate);
+        .lte("created_at", endDate)
+        .limit(10000); // Aumentar limite para garantir todos os registros
 
       if (device !== "all") {
         uniquePagesQuery = uniquePagesQuery.filter('metadata->>device', 'eq', device);
