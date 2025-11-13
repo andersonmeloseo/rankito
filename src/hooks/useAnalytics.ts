@@ -61,46 +61,93 @@ export const useAnalytics = ({
 
   // Métricas principais
   const { data: metrics, isLoading: metricsLoading } = useQuery({
-    queryKey: ["analytics-metrics", siteId, startDate, endDate, eventType, device],
+    queryKey: ["analytics-metrics", siteId, startDate, endDate, eventType, device, period],
     queryFn: async () => {
-      let query = supabase
+      // Query base com filtros
+      const baseFilters = {
+        site_id: siteId,
+        ...(eventType !== "all" && { event_type: eventType }),
+      };
+
+      // 1. Visitantes únicos (buscar todos os IPs sem limite)
+      let uniqueVisitorsQuery = supabase
         .from("rank_rent_conversions")
-        .select("*", { count: "exact" })
-        .eq("site_id", siteId)
+        .select("ip_address", { head: false })
+        .match(baseFilters)
         .gte("created_at", startDate)
         .lte("created_at", endDate);
 
-      if (eventType !== "all") {
-        query = query.eq("event_type", eventType as any);
+      if (device !== "all") {
+        uniqueVisitorsQuery = uniqueVisitorsQuery.filter('metadata->>device', 'eq', device);
+      }
+
+      const { data: ipsData, error: ipsError } = await uniqueVisitorsQuery;
+      if (ipsError) throw ipsError;
+      const uniqueVisitors = new Set(ipsData?.map(d => d.ip_address)).size;
+
+      // 2. Páginas únicas (buscar todos os paths sem limite)
+      let uniquePagesQuery = supabase
+        .from("rank_rent_conversions")
+        .select("page_path", { head: false })
+        .match(baseFilters)
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (device !== "all") {
+        uniquePagesQuery = uniquePagesQuery.filter('metadata->>device', 'eq', device);
+      }
+
+      const { data: pagesData, error: pagesError } = await uniquePagesQuery;
+      if (pagesError) throw pagesError;
+      const uniquePages = new Set(pagesData?.map(d => d.page_path)).size;
+
+      // 3. Page views (usar count para melhor performance)
+      let pageViewsQuery = supabase
+        .from("rank_rent_conversions")
+        .select("*", { count: "exact", head: true })
+        .eq("site_id", siteId)
+        .eq("event_type", "page_view")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (device !== "all") {
+        pageViewsQuery = pageViewsQuery.filter('metadata->>device', 'eq', device);
+      }
+
+      const { count: pageViews, error: pvError } = await pageViewsQuery;
+      if (pvError) throw pvError;
+
+      // 4. Conversões (usar count para melhor performance)
+      let conversionsQuery = supabase
+        .from("rank_rent_conversions")
+        .select("*", { count: "exact", head: true })
+        .eq("site_id", siteId)
+        .neq("event_type", "page_view")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (eventType !== "all" && eventType !== "page_view") {
+        conversionsQuery = conversionsQuery.eq("event_type", eventType as any);
       }
 
       if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
+        conversionsQuery = conversionsQuery.filter('metadata->>device', 'eq', device);
       }
 
-      const { data, count, error } = await query;
-      if (error) throw error;
+      const { count: conversions, error: convError } = await conversionsQuery;
+      if (convError) throw convError;
 
-      const pageViews = data?.filter(d => d.event_type === "page_view").length || 0;
-      const conversions = data?.filter(d => d.event_type !== "page_view").length || 0;
-      
-      // Unique visitors (aproximação por IP)
-      const uniqueIps = new Set(data?.map(d => d.ip_address));
-      const uniqueVisitors = uniqueIps.size;
-      
-      // Unique pages (páginas únicas com tráfego)
-      const uniquePagePaths = new Set(data?.map(d => d.page_path));
-      const uniquePages = uniquePagePaths.size;
-      
-      const conversionRate = pageViews > 0 ? (conversions / pageViews * 100).toFixed(2) : "0.00";
+      const conversionRate = (pageViews || 0) > 0 
+        ? ((conversions || 0) / (pageViews || 0) * 100).toFixed(2) 
+        : "0.00";
 
       return {
         uniqueVisitors,
         uniquePages,
-        pageViews,
-        conversions,
+        pageViews: pageViews || 0,
+        conversions: conversions || 0,
         conversionRate,
-        totalEvents: count || 0,
+        totalEvents: (pageViews || 0) + (conversions || 0),
       };
     },
     enabled: !!siteId,
