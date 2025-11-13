@@ -13,7 +13,6 @@ interface PeriodSelectorProps {
 }
 
 const PRESET_PERIODS = [
-  { label: "Todo período", value: "all", unit: "all" as const },
   { label: "Últimos 7 dias", value: "7", unit: "days" as const },
   { label: "Últimos 14 dias", value: "14", unit: "days" as const },
   { label: "Últimos 21 dias", value: "21", unit: "days" as const },
@@ -39,15 +38,9 @@ export const PeriodSelector = ({ onPeriodChange, defaultPeriod = 30 }: PeriodSel
       return;
     }
 
-    if (value === "all") {
-      setShowCustomRange(false);
-      onPeriodChange("all", "all"); // Valor especial para "sem filtro de data"
-      return;
-    }
-
     setShowCustomRange(false);
     const preset = PRESET_PERIODS.find(p => p.value === value);
-    if (!preset || preset.unit === "custom" || preset.unit === "all") return;
+    if (!preset || preset.unit === "custom") return;
 
     const endDate = new Date();
     const startDate = preset.unit === "days" 
