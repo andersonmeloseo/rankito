@@ -16,7 +16,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { CRMHub } from "@/components/crm/CRMHub";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
+import { ClickUpTabTrigger } from "@/components/ui/custom-tabs";
 import { OverviewCards } from "@/components/rank-rent/OverviewCards";
 import { OverviewCRMSummary } from "@/components/dashboard/OverviewCRMSummary";
 import { OverviewFinancialSummary } from "@/components/dashboard/OverviewFinancialSummary";
@@ -342,49 +343,30 @@ const Dashboard = () => {
       <div className="flex-1">
         <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-8 space-y-8">{/* Content will continue... */}
           <Tabs defaultValue="overview" className="space-y-8">
-            {/* Tabs Navigation - ClickUp Style */}
-            <div className="border-b border-border">
-              <TabsList className="h-14 bg-transparent w-full justify-start gap-8">
-                <TabsTrigger 
-                  value="overview" 
-                  className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Overview
-                </TabsTrigger>
-                
-                <TabsTrigger 
-                  value="sites"
-                  className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
-                >
-                  <Globe className="w-4 h-4" />
-                  Sites
-                </TabsTrigger>
-                
-                <TabsTrigger 
-                  value="crm"
-                  className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
-                >
-                  <Briefcase className="w-4 h-4" />
-                  CRM
-                </TabsTrigger>
-                
-                <TabsTrigger 
-                  value="financial"
-                  className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
-                >
-                  <DollarSign className="w-4 h-4" />
-                  Financeiro
-                </TabsTrigger>
-                
-                <TabsTrigger 
-                  value="clients"
-                  className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
-                >
-                  <Users className="w-4 h-4" />
-                  Clientes
-                </TabsTrigger>
-              </TabsList>
+            <div className="border-b border-gray-200">
+              <div className="container mx-auto px-6 lg:px-24 xl:px-32">
+                <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0">
+                  <ClickUpTabTrigger value="overview" icon={LayoutDashboard}>
+                    Overview
+                  </ClickUpTabTrigger>
+                  
+                  <ClickUpTabTrigger value="sites" icon={Globe}>
+                    Sites
+                  </ClickUpTabTrigger>
+                  
+                  <ClickUpTabTrigger value="crm" icon={Briefcase}>
+                    CRM
+                  </ClickUpTabTrigger>
+                  
+                  <ClickUpTabTrigger value="financial" icon={DollarSign}>
+                    Financeiro
+                  </ClickUpTabTrigger>
+                  
+                  <ClickUpTabTrigger value="clients" icon={Users}>
+                    Clientes
+                  </ClickUpTabTrigger>
+                </TabsList>
+              </div>
             </div>
 
             <TabsContent value="overview" className="space-y-8">

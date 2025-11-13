@@ -4,13 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
+import { ClickUpTabTrigger } from "@/components/ui/custom-tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe, FileText, Search, Plug } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -757,46 +758,31 @@ const SiteDetails = () => {
           </Card>
         </div>
 
-        {/* Tabs Section - ClickUp Style */}
         <Tabs defaultValue={defaultTab} className="space-y-8">
-          <div className="border-b border-border">
-            <TabsList className="h-14 bg-transparent w-full justify-start gap-8">
-              <TabsTrigger 
-                value="pages"
-                className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
-              >
-                <Globe className="w-4 h-4" />
-                Páginas
-              </TabsTrigger>
-              <TabsTrigger 
-                value="advanced-analytics"
-                className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
-              >
-                <BarChart3 className="w-4 h-4" />
-                Analytics Avançado
-              </TabsTrigger>
-              <TabsTrigger 
-                value="reports"
-                className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
-              >
-                <BarChart3 className="w-4 h-4" />
-                Relatórios
-              </TabsTrigger>
-              <TabsTrigger 
-                value="gsc"
-                className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
-              >
-                <Globe className="w-4 h-4" />
-                Google Search Console
-              </TabsTrigger>
-              <TabsTrigger 
-                value="plugin"
-                className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
-              >
-                <Globe className="w-4 h-4" />
-                Plugin WordPress
-              </TabsTrigger>
-            </TabsList>
+          <div className="border-b border-gray-200">
+            <div className="container mx-auto px-6 lg:px-24 xl:px-32">
+              <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0">
+                <ClickUpTabTrigger value="pages" icon={Globe}>
+                  Páginas
+                </ClickUpTabTrigger>
+                
+                <ClickUpTabTrigger value="advanced-analytics" icon={BarChart3}>
+                  Analytics Avançado
+                </ClickUpTabTrigger>
+                
+                <ClickUpTabTrigger value="reports" icon={FileText}>
+                  Relatórios
+                </ClickUpTabTrigger>
+                
+                <ClickUpTabTrigger value="gsc" icon={Search}>
+                  Google Search Console
+                </ClickUpTabTrigger>
+                
+                <ClickUpTabTrigger value="plugin" icon={Plug}>
+                  Plugin WordPress
+                </ClickUpTabTrigger>
+              </TabsList>
+            </div>
           </div>
 
           {/* Páginas Tab */}
@@ -1253,10 +1239,10 @@ const SiteDetails = () => {
             />
             
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-                <TabsTrigger value="conversions">Conversões</TabsTrigger>
-                <TabsTrigger value="pageviews">Page Views</TabsTrigger>
+              <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0 border-b border-gray-200">
+                <ClickUpTabTrigger value="overview">Visão Geral</ClickUpTabTrigger>
+                <ClickUpTabTrigger value="conversions">Conversões</ClickUpTabTrigger>
+                <ClickUpTabTrigger value="pageviews">Page Views</ClickUpTabTrigger>
               </TabsList>
               
               <TabsContent value="overview" className="space-y-6 mt-6">
