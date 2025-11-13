@@ -10,7 +10,15 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
@@ -560,12 +568,40 @@ const SiteDetails = () => {
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
       <Header showSubtitle={false} />
+      
+      {/* Breadcrumbs */}
+      <div className="bg-card/50 border-b">
+        <div className="container mx-auto py-3">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/dashboard" className="flex items-center gap-1.5 transition-colors">
+                  <Home className="w-3.5 h-3.5" />
+                  Dashboard
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/dashboard?tab=sites" className="flex items-center gap-1.5 transition-colors">
+                  <Globe className="w-3.5 h-3.5" />
+                  Sites
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{site.site_name}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      </div>
+      
       {/* Site Header */}
       <header className="bg-card border-b shadow-sm">
         <div className="container mx-auto py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="gap-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="gap-2 transition-all duration-200 hover:scale-105">
                 <ArrowLeft className="w-4 h-4" />
                 Voltar
               </Button>
@@ -608,7 +644,7 @@ const SiteDetails = () => {
               variant="destructive" 
               size="sm"
               onClick={() => setShowDeleteDialog(true)}
-              className="gap-2"
+              className="gap-2 transition-all duration-200 hover:scale-105"
             >
               <Trash2 className="w-4 h-4" />
               Excluir Projeto

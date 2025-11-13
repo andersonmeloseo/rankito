@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Settings, ChevronDown } from "lucide-react";
+import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Settings, ChevronDown, Home } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -17,6 +17,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/hooks/useUserProfile";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { CRMHub } from "@/components/crm/CRMHub";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewCards } from "@/components/rank-rent/OverviewCards";
@@ -153,13 +161,26 @@ const Dashboard = () => {
       <div className="flex-1">
         <div className="container mx-auto py-8 pb-64 space-y-8">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">
-                Dashboard de Gestão de Rank & Rent
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                {isReturningUser ? "Seja bem-vindo de volta" : "Seja bem-vindo"} {userName} ({user?.email})
-              </p>
+            <div className="space-y-3">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink href="/dashboard" className="flex items-center gap-1.5">
+                      <Home className="w-3.5 h-3.5" />
+                      Dashboard
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+              
+              <div>
+                <h1 className="text-2xl font-bold">
+                  Dashboard de Gestão de Rank & Rent
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  {isReturningUser ? "Seja bem-vindo de volta" : "Seja bem-vindo"} {userName} ({user?.email})
+                </p>
+              </div>
               
               {/* Barra de status de limites */}
               <div className="mt-3">
