@@ -27,7 +27,7 @@ export const GSCQuotaChart = ({ data }: GSCQuotaChartProps) => {
         <CardHeader>
           <CardTitle>Uso de Quota de Indexação (Últimos 7 Dias)</CardTitle>
           <CardDescription>
-            Limite diário: 200 URLs por integração
+            Sem dados de quota disponíveis
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -41,12 +41,12 @@ export const GSCQuotaChart = ({ data }: GSCQuotaChartProps) => {
 
   return (
     <Card className="p-6">
-      <CardHeader>
-        <CardTitle>Uso de Quota de Indexação (Últimos 7 Dias)</CardTitle>
-        <CardDescription>
-          Limite diário: 200 URLs por integração
-        </CardDescription>
-      </CardHeader>
+        <CardHeader>
+          <CardTitle>Uso de Quota de Indexação (Últimos 7 Dias)</CardTitle>
+          <CardDescription>
+            Limite diário agregado: {data && data.length > 0 ? data[0].limit : 200} URLs
+          </CardDescription>
+        </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={data}>
@@ -70,7 +70,7 @@ export const GSCQuotaChart = ({ data }: GSCQuotaChartProps) => {
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
             />
             <YAxis 
-              domain={[0, 200]} 
+              domain={[0, 'dataMax']} 
               className="text-xs"
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
             />
@@ -89,10 +89,10 @@ export const GSCQuotaChart = ({ data }: GSCQuotaChartProps) => {
                         })}
                       </p>
                       <p className="text-sm mt-1">
-                        URLs indexadas: <span className="font-bold">{data.used}/200</span>
+                        URLs indexadas: <span className="font-bold">{data.used}/{data.limit}</span>
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {((data.used / 200) * 100).toFixed(1)}% da quota
+                        {((data.used / data.limit) * 100).toFixed(1)}% da quota
                       </p>
                     </Card>
                   );
@@ -109,7 +109,7 @@ export const GSCQuotaChart = ({ data }: GSCQuotaChartProps) => {
               fill="url(#colorUsed)" 
             />
             <ReferenceLine 
-              y={200} 
+              y={data && data.length > 0 ? data[0].limit : 200} 
               stroke="hsl(var(--destructive))" 
               strokeDasharray="5 5" 
               label={{ value: 'Limite', position: 'right', fill: 'hsl(var(--muted-foreground))' }}

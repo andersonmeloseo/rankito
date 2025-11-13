@@ -46,9 +46,12 @@ export function useGSCMonitoring({ siteId, userId }: { siteId: string; userId: s
         .eq('site_id', siteId)
         .eq('user_id', userId);
 
+      const activeIntegrationsCount = integrations?.filter(i => i.is_active).length || 0;
+      const aggregatedLimit = activeIntegrationsCount * 200; // 200 URLs/dia por integração
+
       const stats: AggregatedStats = {
         totalIntegrations: integrations?.length || 0,
-        activeIntegrations: integrations?.filter(i => i.is_active).length || 0,
+        activeIntegrations: activeIntegrationsCount,
         inactiveIntegrations: integrations?.filter(i => !i.is_active).length || 0,
         totalSitemaps: 0,
         totalUrlsSubmitted: 0,
@@ -56,7 +59,7 @@ export function useGSCMonitoring({ siteId, userId }: { siteId: string; userId: s
         totalErrors: 0,
         totalWarnings: 0,
         quotaUsed: 0,
-        quotaLimit: 200,
+        quotaLimit: aggregatedLimit,
         quotaPercentage: 0,
         quotaResetIn: '',
         quotaHistory: [],
@@ -141,7 +144,7 @@ export function useGSCMonitoring({ siteId, userId }: { siteId: string; userId: s
         stats.quotaHistory.push({
           date,
           used: dailyUsed,
-          limit: 200,
+          limit: aggregatedLimit, // Usa o limite agregado dinâmico
         });
       }
 
