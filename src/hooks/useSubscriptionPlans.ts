@@ -85,10 +85,51 @@ export const useSubscriptionPlans = () => {
     },
   });
 
+  const deletePlan = useMutation({
+    mutationFn: async (planId: string) => {
+      // Verificar se há assinaturas ativas usando este plano
+      const { data: activeSubscriptions, error: checkError } = await supabase
+        .from('user_subscriptions')
+        .select('id')
+        .eq('plan_id', planId)
+        .in('status', ['active', 'trial'])
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      if (activeSubscriptions && activeSubscriptions.length > 0) {
+        throw new Error('Não é possível excluir um plano com assinaturas ativas. Desative o plano ou migre os usuários para outro plano primeiro.');
+      }
+
+      // Se não há assinaturas ativas, pode excluir
+      const { error } = await supabase
+        .from('subscription_plans')
+        .delete()
+        .eq('id', planId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+      toast({
+        title: "Plano excluído",
+        description: "O plano foi removido com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir plano",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     plans,
     isLoading,
     updatePlan: updatePlan.mutate,
     createPlan: createPlan.mutate,
+    deletePlan: deletePlan.mutate,
   };
 };

@@ -3,15 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Eye, EyeOff, Plus } from "lucide-react";
+import { Edit, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { EditPlanDialog } from "./EditPlanDialog";
 import { CreatePlanDialog } from "./CreatePlanDialog";
+import { DeletePlanDialog } from "./DeletePlanDialog";
 
 export const PlansManagementTable = () => {
-  const { plans, isLoading, updatePlan } = useSubscriptionPlans();
+  const { plans, isLoading, updatePlan, deletePlan } = useSubscriptionPlans();
   const [editingPlan, setEditingPlan] = useState<any>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deletingPlan, setDeletingPlan] = useState<any>(null);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -116,6 +118,14 @@ export const PlansManagementTable = () => {
                           <Eye className="h-4 w-4" />
                         )}
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeletingPlan(plan)}
+                        className="transition-all active:scale-[0.98] text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -136,6 +146,13 @@ export const PlansManagementTable = () => {
       <CreatePlanDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+      />
+
+      <DeletePlanDialog
+        plan={deletingPlan}
+        open={!!deletingPlan}
+        onOpenChange={(open) => !open && setDeletingPlan(null)}
+        onConfirm={deletePlan}
       />
     </>
   );
