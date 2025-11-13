@@ -67,7 +67,7 @@ export const PricingSection = () => {
                   isPopular ? "border-2 border-blue-500 shadow-lg" : "hover:scale-[1.02]"
                 }`}
               >
-                <CardHeader className="flex-grow">
+                <CardHeader>
                   <div className="flex items-center justify-between mb-4">
                     <CardTitle className="text-2xl">{plan.name}</CardTitle>
                     {isPopular && (
@@ -90,11 +90,62 @@ export const PricingSection = () => {
                       </Badge>
                     )}
                   </div>
-
-                  <CardDescription className="text-base leading-relaxed">
-                    {plan.description}
-                  </CardDescription>
                 </CardHeader>
+
+                <CardContent className="flex-grow">
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">
+                        {plan.max_sites === null ? "Sites ilimitados" : `${plan.max_sites} sites`}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">
+                        {plan.max_pages_per_site === null 
+                          ? "Páginas ilimitadas por site" 
+                          : `${plan.max_pages_per_site} páginas por site`}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">
+                        {plan.max_gsc_integrations === null 
+                          ? "Integrações GSC ilimitadas" 
+                          : `${plan.max_gsc_integrations} integração${plan.max_gsc_integrations > 1 ? 'ões' : ''} GSC`}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">Dashboard inteligente</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">CRM completo</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">Portal whitelabel</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">Indexação automática GSC</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">Tracking de conversões</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">Relatórios automáticos</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground">Suporte por email</span>
+                    </li>
+                  </ul>
+                </CardContent>
 
                 <CardFooter className="mt-auto pt-0">
                   <Button
