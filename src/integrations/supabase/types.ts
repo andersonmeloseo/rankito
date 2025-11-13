@@ -828,6 +828,42 @@ export type Database = {
           },
         ]
       }
+      gsc_queue_execution_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          executed_at: string
+          execution_type: string
+          id: string
+          total_failed: number
+          total_processed: number
+          total_skipped: number
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          executed_at?: string
+          execution_type: string
+          id?: string
+          total_failed?: number
+          total_processed?: number
+          total_skipped?: number
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          executed_at?: string
+          execution_type?: string
+          id?: string
+          total_failed?: number
+          total_processed?: number
+          total_skipped?: number
+        }
+        Relationships: []
+      }
       gsc_schedule_execution_logs: {
         Row: {
           error_message: string | null
