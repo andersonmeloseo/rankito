@@ -6,22 +6,36 @@ const LOCALE_STORAGE_KEY = 'rankito-landing-locale';
 interface LandingLanguageContextType {
   locale: LandingLocale;
   setLocale: (locale: LandingLocale) => void;
+  isTransitioning: boolean;
 }
 
 const LandingLanguageContext = createContext<LandingLanguageContextType | undefined>(undefined);
 
 export function LandingLanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<LandingLocale>(() => {
+  const [locale, setLocaleState] = useState<LandingLocale>(() => {
     const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
     return (stored as LandingLocale) || 'pt-BR';
   });
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(LOCALE_STORAGE_KEY, locale);
   }, [locale]);
 
+  const setLocale = (newLocale: LandingLocale) => {
+    if (newLocale === locale) return;
+    
+    setIsTransitioning(true);
+    
+    // Fade out duration: 200ms
+    setTimeout(() => {
+      setLocaleState(newLocale);
+      setIsTransitioning(false);
+    }, 200);
+  };
+
   return (
-    <LandingLanguageContext.Provider value={{ locale, setLocale }}>
+    <LandingLanguageContext.Provider value={{ locale, setLocale, isTransitioning }}>
       {children}
     </LandingLanguageContext.Provider>
   );
