@@ -26,7 +26,6 @@ import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
-import { GSCIndexingQueue } from "./GSCIndexingQueue";
 
 interface GSCIndexingManagerProps {
   siteId: string;
@@ -697,21 +696,6 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         </Card>
       )}
 
-      {/* Fila de Indexação */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <List className="w-5 h-5" />
-            Fila de Indexação
-          </CardTitle>
-          <CardDescription>
-            URLs agendadas para processamento automático
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <GSCIndexingQueue siteId={siteId} />
-        </CardContent>
-      </Card>
 
       {/* Batch Indexing Dialog */}
       <GSCBatchIndexingDialog
