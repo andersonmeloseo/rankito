@@ -15,6 +15,12 @@ const features = [
     title: "Dashboard Inteligente",
     description: "Acompanhe performance, receita, custos e ROI de todos os seus sites em tempo real. Métricas que importam, sem ruído.",
     highlight: false,
+    benefits: [
+      "Visão geral de todos os sites em tempo real",
+      "Métricas de receita, custos e ROI automáticos",
+      "Gráficos de performance e conversões",
+      "Alertas de contratos e limites de quota"
+    ],
     screenshot: "/images/screenshots/dashboard-overview.png",
   },
   {
@@ -22,6 +28,12 @@ const features = [
     title: "CRM Completo",
     description: "Capture leads, gerencie deals, automatize follow-ups e nunca mais perca uma oportunidade de negócio.",
     highlight: false,
+    benefits: [
+      "Pipeline visual com drag & drop",
+      "Captura automática de leads",
+      "Histórico completo de interações",
+      "Automação de follow-ups e tarefas"
+    ],
     screenshot: "/images/screenshots/crm-pipeline.png",
   },
   {
@@ -43,6 +55,12 @@ const features = [
     title: "Financeiro Completo",
     description: "Registre receitas, custos, pagamentos e calcule ROI automaticamente. Saiba exatamente quanto cada site está gerando.",
     highlight: false,
+    benefits: [
+      "Registro de receitas e custos por projeto",
+      "Cálculo automático de ROI e margem",
+      "Controle de pagamentos e vencimentos",
+      "Simulador de cenários financeiros"
+    ],
     screenshot: "/images/screenshots/financial-performance.png",
   },
   {
@@ -50,6 +68,12 @@ const features = [
     title: "Portal Whitelabel",
     description: "Gere portais personalizados com sua logo e cores. Seus clientes acompanham performance sem acessar seu dashboard.",
     highlight: false,
+    benefits: [
+      "Personalização completa (logo e cores)",
+      "Métricas e gráficos em tempo real",
+      "Acesso seguro por token único",
+      "Exportação de relatórios em PDF/Excel"
+    ],
     screenshot: "/images/screenshots/client-portal.png",
   },
   {
@@ -57,6 +81,12 @@ const features = [
     title: "Analytics Avançado",
     description: "Saiba quantos leads cada página gera, de onde vêm, quando acontecem. Tracking pixel + integração WordPress.",
     highlight: false,
+    benefits: [
+      "Tracking pixel para WordPress",
+      "Captura de conversões e page views",
+      "Análise de origem de tráfego (UTMs)",
+      "Heatmaps de horários e dispositivos"
+    ],
     screenshot: "/images/screenshots/analytics-charts.png",
   },
 ];
