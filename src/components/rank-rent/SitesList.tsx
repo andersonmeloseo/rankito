@@ -16,12 +16,22 @@ import { UnrentSiteDialog } from "./UnrentSiteDialog";
 import { DeleteSiteDialog } from "./DeleteSiteDialog";
 import { ContractStatusBadge } from "./ContractStatusBadge";
 import { useContractStatus } from "@/hooks/useContractStatus";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SitesGrid } from "./SitesGrid";
 
 interface SitesListProps {
   userId: string;
+  viewMode?: "table" | "grid" | "list";
+  selectedSites?: Set<string>;
+  onSelectSite?: (siteId: string) => void;
 }
 
-export const SitesList = ({ userId }: SitesListProps) => {
+export const SitesList = ({ 
+  userId, 
+  viewMode = "table",
+  selectedSites = new Set(),
+  onSelectSite = () => {},
+}: SitesListProps) => {
   const navigate = useNavigate();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRentDialog, setShowRentDialog] = useState(false);
@@ -145,8 +155,14 @@ export const SitesList = ({ userId }: SitesListProps) => {
     });
 
     return (
-          <tr className="border-b hover:bg-muted/50 transition-colors h-16">
-            <td className="p-4">
+      <tr className="border-b hover:bg-muted/50 transition-colors h-16">
+        <td className="p-4 w-12">
+          <Checkbox
+            checked={selectedSites.has(site.id)}
+            onCheckedChange={() => onSelectSite(site.id)}
+          />
+        </td>
+        <td className="p-4">
           <div>
             <button
               onClick={() => navigate(`/dashboard/site/${site.id}`)}
@@ -301,12 +317,27 @@ export const SitesList = ({ userId }: SitesListProps) => {
             </Select>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Projeto</th>
+          {/* Table View */}
+          {viewMode === "table" && (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="w-12 p-3">
+                      <Checkbox
+                        checked={filteredSites.length > 0 && filteredSites.every(s => selectedSites.has(s.id))}
+                        onCheckedChange={() => {
+                          if (filteredSites.every(s => selectedSites.has(s.id))) {
+                            filteredSites.forEach(s => onSelectSite(s.id));
+                          } else {
+                            filteredSites.forEach(s => {
+                              if (!selectedSites.has(s.id)) onSelectSite(s.id);
+                            });
+                          }
+                        }}
+                      />
+                    </th>
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Projeto</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Cliente</th>
                   <th className="text-right p-3 text-sm font-medium text-muted-foreground">Valor Mensal</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Status Contrato</th>
@@ -323,9 +354,24 @@ export const SitesList = ({ userId }: SitesListProps) => {
                 {filteredSites.map((site) => (
                   <SiteRow key={site.id} site={site} />
                 ))}
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Grid View */}
+          {viewMode === "grid" && (
+            <SitesGrid
+              sites={filteredSites}
+              selectedSites={selectedSites}
+              onSelectSite={onSelectSite}
+              onEdit={handleEdit}
+              onRent={handleRent}
+              onRenew={handleRenew}
+              onUnrent={handleUnrent}
+              onDelete={handleDelete}
+            />
+          )}
 
           {filteredSites.length === 0 && (
             <div className="text-center py-12">

@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Settings, ChevronDown, Home } from "lucide-react";
+import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Settings, ChevronDown, Home, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -46,6 +46,9 @@ import { LimitWarningBanner } from "@/components/subscription/LimitWarningBanner
 import { SubscriptionStatusBar } from "@/components/subscription/SubscriptionStatusBar";
 import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
 import { Badge } from "@/components/ui/badge";
+import { ViewSwitcher } from "@/components/layout/ViewSwitcher";
+import { useViewMode } from "@/hooks/useViewMode";
+import { BulkActionsBar } from "@/components/layout/BulkActionsBar";
 
 import { LeadNotificationBanner } from "@/components/crm/LeadNotificationBanner";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
@@ -55,8 +58,10 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddSite, setShowAddSite] = useState(false);
+  const [selectedSites, setSelectedSites] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
   const { role, isSuperAdmin, isEndClient, isLoading: roleLoading } = useRole();
+  const { viewMode, setViewMode } = useViewMode("sites-view", "table");
 
   // Realtime leads
   const { newLeads, clearNewLeads } = useRealtimeLeads(user?.id);
@@ -136,6 +141,22 @@ const Dashboard = () => {
       description: "Até logo!",
     });
     navigate("/");
+  };
+
+  const handleSelectSite = (siteId: string) => {
+    setSelectedSites(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(siteId)) {
+        newSet.delete(siteId);
+      } else {
+        newSet.add(siteId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleClearSelection = () => {
+    setSelectedSites(new Set());
   };
 
   if (loading) {
@@ -318,9 +339,39 @@ const Dashboard = () => {
             <SitesList userId={user.id} />
           </TabsContent>
 
-          <TabsContent value="sites">
-            <SitesList userId={user.id} />
+          <TabsContent value="sites" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Meus Projetos</h2>
+              <ViewSwitcher value={viewMode} onValueChange={setViewMode} />
+            </div>
+            <SitesList 
+              userId={user.id} 
+              viewMode={viewMode}
+              selectedSites={selectedSites}
+              onSelectSite={handleSelectSite}
+            />
           </TabsContent>
+
+          <BulkActionsBar
+            selectedCount={selectedSites.size}
+            totalCount={0}
+            onSelectAll={() => {}}
+            onClearSelection={handleClearSelection}
+            actions={[
+              {
+                label: "Alugar",
+                icon: <Home className="w-4 h-4" />,
+                onClick: () => toast({ title: "Em breve" }),
+                variant: "outline",
+              },
+              {
+                label: "Exportar",
+                icon: <FileText className="w-4 h-4" />,
+                onClick: () => toast({ title: "Em breve" }),
+                variant: "outline",
+              },
+            ]}
+          />
 
           <TabsContent value="crm">
             <CRMHub userId={user.id} />
