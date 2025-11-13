@@ -363,7 +363,7 @@ const Dashboard = () => {
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="sites" icon={Globe}>
-                    Sites
+                    Projetos
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="crm" icon={Briefcase}>
