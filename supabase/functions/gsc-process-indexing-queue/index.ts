@@ -73,9 +73,17 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  let totalProcessed = 0;
+  let totalFailed = 0;
+  let totalSkipped = 0;
+  let errorMessage: string | null = null;
+
   try {
-    const startTime = Date.now();
-    console.log('🔄 GSC Queue Processor - Started at', new Date().toISOString());
+    const { scheduled } = await req.json().catch(() => ({ scheduled: false }));
+    const executionType = scheduled ? 'cron' : 'manual';
+    
+    console.log(`🔄 GSC Queue Processor - Started (${executionType}) at`, new Date().toISOString());
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -372,8 +380,8 @@ Deno.serve(async (req) => {
     }
 
     const duration = Date.now() - startTime;
-    const totalProcessed = results.reduce((sum, r) => sum + (r.processed || 0), 0);
-    const totalFailed = results.reduce((sum, r) => sum + (r.failed || 0), 0);
+    totalProcessed = results.reduce((sum, r) => sum + (r.processed || 0), 0);
+    totalFailed = results.reduce((sum, r) => sum + (r.failed || 0), 0);
 
     console.log(`✅ Queue processing complete in ${duration}ms`);
     console.log('📊 Final stats:', {
@@ -383,6 +391,17 @@ Deno.serve(async (req) => {
       total_failed: totalFailed,
       duration_ms: duration,
     });
+
+    // Save execution log
+    await supabase
+      .from('gsc_queue_execution_logs')
+      .insert({
+        total_processed: totalProcessed,
+        total_failed: totalFailed,
+        total_skipped: totalSkipped,
+        duration_ms: duration,
+        execution_type: executionType,
+      });
 
     return new Response(
       JSON.stringify({
@@ -399,7 +418,25 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error('❌ Queue processor error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    // Save error log
+    const duration = Date.now() - startTime;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    await supabase
+      .from('gsc_queue_execution_logs')
+      .insert({
+        total_processed: totalProcessed,
+        total_failed: totalFailed,
+        total_skipped: totalSkipped,
+        duration_ms: duration,
+        error_message: errorMessage,
+        execution_type: 'manual',
+      });
+
     return new Response(
       JSON.stringify({ error: errorMessage }),
       {

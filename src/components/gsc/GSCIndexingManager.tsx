@@ -18,11 +18,13 @@ import {
 } from "@/components/ui/table";
 import { useGSCIndexing } from "@/hooks/useGSCIndexing";
 import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
+import { useGSCQueueLogs } from "@/hooks/useGSCQueueLogs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Send, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, ExternalLink, List, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
-import { format } from "date-fns";
+import { Send, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, ExternalLink, List, ChevronUp, ChevronDown, ChevronsUpDown, Zap, Activity } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
 import { GSCIndexingQueue } from "./GSCIndexingQueue";
 
@@ -71,6 +73,9 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   } = useGSCIndexing({ siteId });
 
   const { addToQueue, isAddingToQueue } = useGSCIndexingQueue({ siteId });
+  const { latestLog, nextExecution, isLoading: isLoadingLogs } = useGSCQueueLogs();
+
+  const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
   // Fetch site pages with pagination, search, and filters
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
@@ -190,6 +195,26 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
     await addToQueue.mutateAsync({ urls: selectedUrls, distribution });
     setSelectedPages(new Set());
     setShowBatchDialog(false);
+  };
+
+  const handleProcessQueueNow = async () => {
+    setIsProcessingQueue(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('gsc-process-indexing-queue', {
+        body: { scheduled: false }
+      });
+
+      if (error) throw error;
+
+      toast.success(`✅ Fila processada! ${data.total_processed} URLs enviadas ao Google`);
+      refetchQuota();
+    } catch (error) {
+      toast.error("Erro ao processar fila", {
+        description: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    } finally {
+      setIsProcessingQueue(false);
+    }
   };
 
   const getGSCStatusBadge = (status: string | null) => {
@@ -352,15 +377,47 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                 required
               />
             </div>
-            <Button 
-              type="submit" 
-              disabled={isRequesting || !customUrl.trim() || quota?.remaining === 0}
-            >
-              {isRequesting ? "Enviando..." : "Solicitar Indexação"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                type="submit" 
+                disabled={isRequesting || !customUrl.trim() || quota?.remaining === 0}
+              >
+                {isRequesting ? "Enviando..." : "Solicitar Indexação"}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleProcessQueueNow}
+                disabled={isProcessingQueue}
+                variant="outline"
+                className="gap-2"
+              >
+                {isProcessingQueue ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Zap className="h-4 w-4" />
+                )}
+                Processar Fila Agora
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      {/* Last Execution Info */}
+      {latestLog && (
+        <Alert>
+          <Activity className="h-4 w-4" />
+          <AlertDescription className="space-y-1">
+            <div className="font-medium">
+              Última execução automática: {formatDistanceToNow(new Date(latestLog.executed_at), { addSuffix: true, locale: ptBR })}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              📊 {latestLog.total_processed} URLs processadas
+              {nextExecution && ` • Próxima execução: ${formatDistanceToNow(nextExecution, { addSuffix: true, locale: ptBR })}`}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Site Pages */}
       <Card>
