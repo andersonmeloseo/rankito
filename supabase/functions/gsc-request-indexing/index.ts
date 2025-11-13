@@ -1,5 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getIntegrationWithValidToken } from '../_shared/gsc-helpers.ts';
+import { 
+  getIntegrationWithValidToken, 
+  markIntegrationUnhealthy,
+  markIntegrationHealthy,
+  isAuthError 
+} from '../_shared/gsc-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -72,12 +77,35 @@ Deno.serve(async (req) => {
 
     console.log(`🔍 Found ${integrations.length} active integrations`);
 
-    // Verificar quota de cada integração e escolher a com mais quota disponível
+    // Filtrar integrações healthy ou que já passaram do cooldown
+    const now = Date.now();
+    const availableIntegrations = integrations.filter(int => {
+      if (int.health_status === 'healthy') return true;
+      if (int.health_status === 'unhealthy' && int.health_check_at) {
+        const cooldownEnd = new Date(int.health_check_at).getTime();
+        return now > cooldownEnd; // Retry após cooldown
+      }
+      return true; // Se não tem status definido, assume healthy
+    });
+
+    if (availableIntegrations.length === 0) {
+      return new Response(
+        JSON.stringify({
+          error: 'All integrations unavailable',
+          message: 'Todas as integrações GSC estão temporariamente indisponíveis. Tente novamente em alguns minutos.',
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`✅ ${availableIntegrations.length} healthy integrations available`);
+
+    // Verificar quota de cada integração disponível
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const integrationsWithQuota = await Promise.all(
-      integrations.map(async (integration) => {
+      availableIntegrations.map(async (integration) => {
         const { count, error: countError } = await supabase
           .from('gsc_url_indexing_requests')
           .select('*', { count: 'exact', head: true })
@@ -99,170 +127,170 @@ Deno.serve(async (req) => {
       })
     );
 
-    // Filtrar integrações com quota disponível e escolher a com mais quota
-    const availableIntegrations = integrationsWithQuota.filter(int => int.remaining_quota > 0);
+    // Ordenar por quota restante (maior primeiro)
+    integrationsWithQuota.sort((a, b) => b.remaining_quota - a.remaining_quota);
 
-    if (availableIntegrations.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error: 'Daily quota exceeded',
-          message: `Limite diário de ${DAILY_QUOTA_LIMIT} URLs atingido em todas as integrações. Tente novamente amanhã.`,
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Tentar cada integração sequencialmente até uma funcionar
+    let lastError: any = null;
+    let successfulRequest = null;
+    let selectedIntegration = null;
 
-    // Ordenar por quota restante (maior primeiro) e escolher a primeira
-    availableIntegrations.sort((a, b) => b.remaining_quota - a.remaining_quota);
-    const selectedIntegration = availableIntegrations[0];
-    const integration_id = selectedIntegration.id;
-
-    console.log(`✅ Selected integration ${selectedIntegration.connection_name} with ${selectedIntegration.remaining_quota} remaining quota`);
-
-    // Buscar integração com token válido
-    const integration = await getIntegrationWithValidToken(integration_id);
-
-    console.log('🔐 Integration found:', integration.connection_name);
-
-    // Buscar site_id da integração para atualizar páginas depois
-    const integrationSiteId = selectedIntegration.site_id;
-
-    const usedQuota = selectedIntegration.used_quota;
-    const remainingQuota = selectedIntegration.remaining_quota;
-
-    console.log('📊 Quota status:', {
-      integration: selectedIntegration.connection_name,
-      used: usedQuota,
-      limit: DAILY_QUOTA_LIMIT,
-      remaining: remainingQuota,
-    });
-
-    // Verificar se URL já foi indexada nas últimas 24h (em qualquer integração do site)
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    
-    const { data: recentRequest, error: recentError } = await supabase
-      .from('gsc_url_indexing_requests')
-      .select('*, google_search_console_integrations!inner(site_id)')
-      .eq('google_search_console_integrations.site_id', site_id)
-      .eq('url', url)
-      .gte('submitted_at', twentyFourHoursAgo.toISOString())
-      .order('submitted_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (recentError) {
-      console.error('❌ Error checking recent requests:', recentError);
-    }
-
-    if (recentRequest) {
-      console.log('⚠️ URL já foi indexada nas últimas 24h');
-      return new Response(
-        JSON.stringify({
-          error: 'URL recently indexed',
-          message: 'Esta URL já foi indexada nas últimas 24 horas. Aguarde antes de solicitar novamente.',
-          recent_request: recentRequest,
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Requisitar indexação via GSC Indexing API
-    console.log('📤 Requesting indexing via GSC API...');
-    
-    const indexingResponse = await fetch(
-      'https://indexing.googleapis.com/v3/urlNotifications:publish',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${integration.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: url,
-          type: request_type, // URL_UPDATED ou URL_DELETED
-        }),
+    for (const integration of integrationsWithQuota) {
+      // Pular se não tem quota
+      if (integration.remaining_quota <= 0) {
+        console.log(`⚠️ Integration ${integration.connection_name} has no remaining quota`);
+        continue;
       }
-    );
 
-    const indexingData = await indexingResponse.json();
+      try {
+        console.log(`🔄 Trying integration: ${integration.connection_name}`);
+        
+        // Buscar integração com token válido
+        const integrationData = await getIntegrationWithValidToken(integration.id);
 
-    if (!indexingResponse.ok) {
-      console.error('❌ GSC Indexing API Error:', indexingData);
-      
-      // Salvar request com erro
-      await supabase
-        .from('gsc_url_indexing_requests')
-        .insert({
-          integration_id,
-          page_id: page_id || null,
-          url,
-          request_type,
-          status: 'error',
-          error_message: indexingData.error?.message || 'Unknown error',
-          gsc_response: indexingData,
-          submitted_at: new Date().toISOString(),
-        });
+        // Verificar se URL já foi indexada nas últimas 24h (em qualquer integração do site)
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        
+        const { data: recentRequest, error: recentError } = await supabase
+          .from('gsc_url_indexing_requests')
+          .select('*, google_search_console_integrations!inner(site_id)')
+          .eq('google_search_console_integrations.site_id', site_id)
+          .eq('url', url)
+          .gte('submitted_at', twentyFourHoursAgo.toISOString())
+          .order('submitted_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      throw new Error(`Failed to request indexing: ${indexingData.error?.message || 'Unknown error'}`);
+        if (!recentError && recentRequest) {
+          console.log('⚠️ URL já foi indexada nas últimas 24h');
+          return new Response(
+            JSON.stringify({
+              error: 'URL recently indexed',
+              message: 'Esta URL já foi indexada nas últimas 24 horas. Aguarde antes de solicitar novamente.',
+              recent_request: recentRequest,
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Requisitar indexação via GSC Indexing API
+        console.log('📤 Requesting indexing via GSC API...');
+        
+        const indexingResponse = await fetch(
+          'https://indexing.googleapis.com/v3/urlNotifications:publish',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${integrationData.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: url,
+              type: request_type,
+            }),
+          }
+        );
+
+        const indexingData = await indexingResponse.json();
+
+        if (!indexingResponse.ok) {
+          console.error('❌ GSC Indexing API Error:', indexingData);
+          
+          // Se erro de autenticação, marcar como unhealthy e tentar próxima
+          if (isAuthError(indexingData)) {
+            await markIntegrationUnhealthy(
+              integration.id,
+              indexingData.error?.message || 'Authentication error'
+            );
+            lastError = indexingData;
+            continue; // Tentar próxima integração
+          }
+          
+          throw new Error(`Failed to request indexing: ${indexingData.error?.message || 'Unknown error'}`);
+        }
+
+        console.log('✅ Indexing requested successfully with', integration.connection_name);
+        
+        // Marcar integração como healthy (se estava unhealthy)
+        if (integration.health_status === 'unhealthy') {
+          await markIntegrationHealthy(integration.id);
+        }
+
+        // Salvar request no banco
+        const { data: savedRequest, error: dbError } = await supabase
+          .from('gsc_url_indexing_requests')
+          .insert({
+            integration_id: integration.id,
+            page_id: page_id || null,
+            url,
+            request_type,
+            status: 'success',
+            gsc_notification_id: indexingData.urlNotificationMetadata?.url || null,
+            gsc_response: indexingData,
+            submitted_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (dbError) {
+          console.error('❌ Database error:', dbError);
+          throw new Error('Failed to save indexing request');
+        }
+
+        // Atualizar status GSC na página se page_id foi fornecido
+        if (page_id) {
+          await supabase
+            .from('rank_rent_pages')
+            .update({
+              gsc_indexation_status: 'submitted',
+              gsc_integration_used: integration.connection_name,
+              gsc_last_checked_at: new Date().toISOString(),
+            })
+            .eq('id', page_id);
+        }
+
+        successfulRequest = savedRequest;
+        selectedIntegration = integration;
+        break; // Sucesso! Sair do loop
+
+      } catch (error) {
+        console.error(`❌ Integration ${integration.connection_name} failed:`, error);
+        
+        // Se erro de autenticação, marcar como unhealthy
+        if (isAuthError(error)) {
+          await markIntegrationUnhealthy(
+            integration.id,
+            error instanceof Error ? error.message : 'Authentication error'
+          );
+        }
+        
+        lastError = error;
+        continue; // Tentar próxima integração
+      }
     }
 
-    console.log('✅ Indexing requested successfully');
-    console.log('📊 GSC Response:', indexingData);
-
-    // Salvar request no banco
-    const { data: savedRequest, error: dbError } = await supabase
-      .from('gsc_url_indexing_requests')
-      .insert({
-        integration_id,
-        page_id: page_id || null,
-        url,
-        request_type,
-        status: 'success',
-        gsc_notification_id: indexingData.urlNotificationMetadata?.url || null,
-        gsc_response: indexingData,
-        submitted_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error('❌ Database error:', dbError);
-      throw new Error('Failed to save indexing request');
+    // Se chegou aqui e não teve sucesso, todas falharam
+    if (!successfulRequest || !selectedIntegration) {
+      throw new Error(
+        lastError instanceof Error 
+          ? lastError.message 
+          : 'All integrations failed. Please check integration health.'
+      );
     }
-
-    // Atualizar status GSC na página se page_id foi fornecido
-    if (page_id) {
-      await supabase
-        .from('rank_rent_pages')
-        .update({
-          gsc_indexation_status: 'submitted',
-          gsc_integration_used: selectedIntegration.connection_name,
-          gsc_last_checked_at: new Date().toISOString(),
-        })
-        .eq('id', page_id);
-    }
-
-    console.log('✅ Request saved to database');
 
     const duration = Date.now() - startTime;
     console.log(`✅ Request completed successfully in ${duration}ms`);
-    console.log('📊 Final stats:', {
-      integration: selectedIntegration.connection_name,
-      quota_used: usedQuota + 1,
-      quota_remaining: remainingQuota - 1,
-      duration_ms: duration,
-    });
 
     return new Response(
       JSON.stringify({
         success: true,
-        request: savedRequest,
-        gsc_response: indexingData,
+        request: successfulRequest,
+        integration_used: selectedIntegration.connection_name,
         quota: {
-          used: usedQuota + 1,
+          used: selectedIntegration.used_quota + 1,
           limit: DAILY_QUOTA_LIMIT,
-          remaining: remainingQuota - 1,
+          remaining: selectedIntegration.remaining_quota - 1,
         },
         performance: {
           duration_ms: duration,

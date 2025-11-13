@@ -273,6 +273,12 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                 Solicite a indexação de URLs diretamente ao Google Search Console
                 {quota && ` (quota agregada: ${quota.limit} URLs/dia)`}
               </CardDescription>
+              {quota && quota.unhealthy_count && quota.unhealthy_count > 0 && (
+                <Badge variant="destructive" className="mt-2">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {quota.unhealthy_count} integração(ões) temporariamente indisponível(is)
+                </Badge>
+              )}
             </div>
             <Button
               variant="outline"

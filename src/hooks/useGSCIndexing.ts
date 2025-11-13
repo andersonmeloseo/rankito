@@ -7,6 +7,7 @@ interface IndexingQuota {
   limit: number;
   remaining: number;
   percentage: number;
+  unhealthy_count?: number;
 }
 
 interface IndexingRequest {
@@ -68,6 +69,7 @@ export function useGSCIndexing({ siteId }: UseGSCIndexingParams) {
           limit: data.aggregated_quota.total_limit,
           remaining: data.aggregated_quota.total_remaining,
           percentage: data.aggregated_quota.percentage,
+          unhealthy_count: data.aggregated_quota.unhealthy_count || 0,
         } as IndexingQuota,
         recent_requests: (requests || []) as IndexingRequest[],
         reset_at: new Date().toISOString(),

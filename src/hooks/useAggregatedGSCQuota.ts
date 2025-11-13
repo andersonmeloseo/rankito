@@ -8,6 +8,9 @@ interface IntegrationBreakdown {
   used: number;
   limit: number;
   remaining: number;
+  health_status?: 'healthy' | 'unhealthy' | 'checking';
+  last_error?: string;
+  health_check_at?: string;
 }
 
 export interface AggregatedQuota {
@@ -17,6 +20,7 @@ export interface AggregatedQuota {
   total_remaining: number;
   percentage: number;
   breakdown: IntegrationBreakdown[];
+  unhealthy_count?: number;
 }
 
 interface UseAggregatedGSCQuotaParams {

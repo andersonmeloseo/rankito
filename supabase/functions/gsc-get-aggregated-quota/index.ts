@@ -85,6 +85,9 @@ Deno.serve(async (req) => {
           used,
           limit: DAILY_QUOTA_LIMIT,
           remaining,
+          health_status: integration.health_status || 'healthy',
+          last_error: integration.last_error,
+          health_check_at: integration.health_check_at,
         };
       })
     );
@@ -92,6 +95,7 @@ Deno.serve(async (req) => {
     const totalUsed = breakdown.reduce((sum, item) => sum + item.used, 0);
     const totalRemaining = totalLimit - totalUsed;
     const percentage = totalLimit > 0 ? Math.round((totalUsed / totalLimit) * 100) : 0;
+    const unhealthyCount = breakdown.filter(item => item.health_status === 'unhealthy').length;
 
     const aggregatedQuota = {
       total_integrations: totalIntegrations,
@@ -100,6 +104,7 @@ Deno.serve(async (req) => {
       total_remaining: totalRemaining,
       percentage,
       breakdown,
+      unhealthy_count: unhealthyCount,
     };
 
     console.log('✅ Aggregated quota calculated:', aggregatedQuota);

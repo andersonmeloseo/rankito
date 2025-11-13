@@ -612,12 +612,16 @@ export type Database = {
           auto_submit_new_pages: boolean | null
           auto_submit_sitemaps: boolean | null
           connection_name: string
+          consecutive_failures: number | null
           created_at: string | null
           google_email: string | null
           gsc_permission_level: string | null
           gsc_property_url: string | null
+          health_check_at: string | null
+          health_status: string | null
           id: string
           is_active: boolean | null
+          last_error: string | null
           last_sync_at: string | null
           service_account_json: Json | null
           site_id: string
@@ -628,12 +632,16 @@ export type Database = {
           auto_submit_new_pages?: boolean | null
           auto_submit_sitemaps?: boolean | null
           connection_name?: string
+          consecutive_failures?: number | null
           created_at?: string | null
           google_email?: string | null
           gsc_permission_level?: string | null
           gsc_property_url?: string | null
+          health_check_at?: string | null
+          health_status?: string | null
           id?: string
           is_active?: boolean | null
+          last_error?: string | null
           last_sync_at?: string | null
           service_account_json?: Json | null
           site_id: string
@@ -644,12 +652,16 @@ export type Database = {
           auto_submit_new_pages?: boolean | null
           auto_submit_sitemaps?: boolean | null
           connection_name?: string
+          consecutive_failures?: number | null
           created_at?: string | null
           google_email?: string | null
           gsc_permission_level?: string | null
           gsc_property_url?: string | null
+          health_check_at?: string | null
+          health_status?: string | null
           id?: string
           is_active?: boolean | null
+          last_error?: string | null
           last_sync_at?: string | null
           service_account_json?: Json | null
           site_id?: string

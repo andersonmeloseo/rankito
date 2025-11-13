@@ -165,11 +165,75 @@ async function fetchGSCProperties(accessToken: string): Promise<any[]> {
   return data.siteEntry || [];
 }
 
+/**
+ * Marca integração como unhealthy com cooldown de 1 hora
+ */
+async function markIntegrationUnhealthy(
+  integrationId: string,
+  errorMessage: string
+): Promise<void> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  
+  const healthCheckAt = new Date(Date.now() + 3600000); // 1 hora de cooldown
+  
+  await supabase
+    .from('google_search_console_integrations')
+    .update({
+      health_status: 'unhealthy',
+      last_error: errorMessage,
+      health_check_at: healthCheckAt.toISOString(),
+      consecutive_failures: supabase.rpc('increment', { x: 1, field_name: 'consecutive_failures' }),
+    })
+    .eq('id', integrationId);
+    
+  console.log(`⚠️ Integration ${integrationId} marked as unhealthy. Retry at ${healthCheckAt.toISOString()}`);
+}
+
+/**
+ * Marca integração como healthy
+ */
+async function markIntegrationHealthy(integrationId: string): Promise<void> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  
+  await supabase
+    .from('google_search_console_integrations')
+    .update({
+      health_status: 'healthy',
+      last_error: null,
+      health_check_at: null,
+      consecutive_failures: 0,
+    })
+    .eq('id', integrationId);
+    
+  console.log(`✅ Integration ${integrationId} marked as healthy`);
+}
+
+/**
+ * Verifica se erro é de autenticação
+ */
+function isAuthError(error: any): boolean {
+  const errorStr = JSON.stringify(error).toLowerCase();
+  return (
+    errorStr.includes('authentication') ||
+    errorStr.includes('unauthorized') ||
+    errorStr.includes('invalid_grant') ||
+    errorStr.includes('invalid credentials') ||
+    errorStr.includes('permission denied')
+  );
+}
+
 export {
   getIntegrationWithValidToken,
   getAccessToken,
   validateServiceAccountJSON,
   fetchGSCProperties,
+  markIntegrationUnhealthy,
+  markIntegrationHealthy,
+  isAuthError,
   type ServiceAccountCredentials,
   type GSCAccessToken,
 };

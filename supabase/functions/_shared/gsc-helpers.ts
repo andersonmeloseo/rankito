@@ -4,4 +4,7 @@ export {
   fetchGSCProperties,
   validateServiceAccountJSON,
   getAccessToken,
+  markIntegrationUnhealthy,
+  markIntegrationHealthy,
+  isAuthError,
 } from "./gsc-jwt-auth.ts";
