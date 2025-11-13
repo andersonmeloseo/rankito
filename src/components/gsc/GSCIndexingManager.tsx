@@ -24,9 +24,7 @@ import { Send, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, ExternalL
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
-import { GSCHealthDashboard } from "./GSCHealthDashboard";
 import { GSCIndexingQueue } from "./GSCIndexingQueue";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 
 interface GSCIndexingManagerProps {
   siteId: string;
@@ -150,45 +148,6 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
     });
   }, [pages, sortColumn, sortDirection]);
 
-  // Fetch GSC status distribution
-  const { data: statusDistribution, isLoading: isLoadingDistribution } = useQuery({
-    queryKey: ['gsc-status-distribution', siteId],
-    queryFn: async () => {
-      if (!siteId) return null;
-
-      const { data, error } = await supabase
-        .from('rank_rent_pages')
-        .select('gsc_indexation_status')
-        .eq('site_id', siteId)
-        .eq('status', 'active');
-
-      if (error) throw error;
-
-      // Count by status
-      const counts = {
-        not_submitted: 0,
-        submitted: 0,
-        indexed: 0,
-        error: 0,
-      };
-
-      data?.forEach((page) => {
-        const status = page.gsc_indexation_status || 'not_submitted';
-        if (status in counts) {
-          counts[status as keyof typeof counts]++;
-        }
-      });
-
-      return [
-        { name: 'Não Enviado', value: counts.not_submitted, color: '#94a3b8' },
-        { name: 'Enviado', value: counts.submitted, color: '#f59e0b' },
-        { name: 'Indexado', value: counts.indexed, color: '#10b981' },
-        { name: 'Erro', value: counts.error, color: '#ef4444' },
-      ].filter(item => item.value > 0);
-    },
-    enabled: !!siteId,
-  });
-
   const handleIndexCustomUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customUrl.trim()) return;
@@ -301,71 +260,6 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
 
   return (
     <div className="space-y-6">
-      {/* Health Dashboard */}
-      <GSCHealthDashboard siteId={siteId} />
-
-      {/* Status Distribution Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            📊 Distribuição de Status GSC
-          </CardTitle>
-          <CardDescription>
-            Visão geral do status de indexação das páginas
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoadingDistribution ? (
-            <Skeleton className="h-[300px] w-full" />
-          ) : statusDistribution && statusDistribution.length > 0 ? (
-            <div className="flex flex-col lg:flex-row items-center gap-8">
-              <div className="w-full lg:w-1/2 h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={statusDistribution}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {statusDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="w-full lg:w-1/2 space-y-3">
-                {statusDistribution.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded" style={{ backgroundColor: item.color }} />
-                      <span className="font-medium">{item.name}</span>
-                    </div>
-                    <Badge variant="outline" className="text-lg font-bold">
-                      {item.value.toLocaleString()}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <Alert>
-              <AlertDescription>
-                Nenhuma página encontrada para análise de status.
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-
-
       {/* Quota Card */}
       <Card>
         <CardHeader>
