@@ -25,8 +25,9 @@ interface GSCIndexingQueueProps {
 }
 
 export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
-  const { queueItems, batches, queueStats, isLoadingQueue, cancelBatch, removeFromQueue } = useGSCIndexingQueue({ siteId });
+  const { queueItems, batches, queueStats, isLoadingQueue, cancelBatch, removeFromQueue, clearAllPendingUrls } = useGSCIndexingQueue({ siteId });
   const [batchToCancel, setBatchToCancel] = useState<string | null>(null);
+  const [showClearAllDialog, setShowClearAllDialog] = useState(false);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -89,6 +90,20 @@ export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
             Exibindo os 100 itens mais recentes de {queueStats.total.toLocaleString()} na fila para melhor performance.
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* Clear All Button */}
+      {queueStats.pending > 0 && (
+        <div className="flex justify-end">
+          <Button
+            variant="destructive"
+            onClick={() => setShowClearAllDialog(true)}
+            disabled={clearAllPendingUrls.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Limpar Fila Completa ({queueStats.pending} pendentes)
+          </Button>
+        </div>
       )}
 
       {/* Stats Cards */}
@@ -281,6 +296,34 @@ export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
               }}
             >
               Sim, cancelar batch
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear All Dialog */}
+      <AlertDialog open={showClearAllDialog} onOpenChange={setShowClearAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Limpar Fila de Indexação?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Isso irá remover <strong>TODAS as {queueStats.pending} URLs pendentes</strong> da fila de indexação.</p>
+              <p className="text-destructive font-medium">Esta ação não pode ser desfeita.</p>
+              <p className="text-muted-foreground text-sm">
+                URLs que já estão sendo processadas ou completadas não serão afetadas.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                clearAllPendingUrls.mutate();
+                setShowClearAllDialog(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sim, limpar fila ({queueStats.pending})
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

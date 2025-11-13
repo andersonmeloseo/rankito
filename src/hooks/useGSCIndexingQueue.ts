@@ -280,6 +280,53 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
     },
   });
 
+  // Clear all pending URLs from queue
+  const clearAllPendingUrls = useMutation({
+    mutationFn: async () => {
+      if (!siteId) throw new Error('No site selected');
+
+      // Buscar todas integrações do site
+      const { data: integrations } = await supabase
+        .from('google_search_console_integrations')
+        .select('id')
+        .eq('site_id', siteId);
+
+      if (!integrations || integrations.length === 0) {
+        throw new Error('Nenhuma integração encontrada');
+      }
+
+      const integrationIds = integrations.map(i => i.id);
+
+      // Deletar todas URLs pendentes dessas integrações
+      const { data, error } = await supabase
+        .from('gsc_indexing_queue')
+        .delete()
+        .in('integration_id', integrationIds)
+        .eq('status', 'pending')
+        .select('id');
+
+      if (error) throw error;
+      
+      return { removedCount: data?.length || 0 };
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Fila limpa com sucesso!",
+        description: `${data.removedCount} URLs pendentes foram removidas.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-batches', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota', siteId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao limpar fila",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Calculate queue stats
   const queueStats = {
     total: queueData?.length || 0,
@@ -298,6 +345,7 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
     addToQueue,
     cancelBatch,
     removeFromQueue,
+    clearAllPendingUrls,
     isAddingToQueue: addToQueue.isPending,
   };
 }
