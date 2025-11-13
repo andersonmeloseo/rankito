@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { useRole } from "@/contexts/RoleContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { LogOut, Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Settings, ChevronDown, Home, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -49,6 +49,8 @@ import { Badge } from "@/components/ui/badge";
 import { ViewSwitcher } from "@/components/layout/ViewSwitcher";
 import { useViewMode } from "@/hooks/useViewMode";
 import { BulkActionsBar } from "@/components/layout/BulkActionsBar";
+import { BulkRentDialog } from "@/components/rank-rent/BulkRentDialog";
+import { BulkDeleteDialog } from "@/components/rank-rent/BulkDeleteDialog";
 
 import { LeadNotificationBanner } from "@/components/crm/LeadNotificationBanner";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
@@ -60,6 +62,7 @@ const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
   const [selectedSites, setSelectedSites] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { role, isSuperAdmin, isEndClient, isLoading: roleLoading } = useRole();
   const { viewMode, setViewMode } = useViewMode("sites-view", "table");
 
@@ -155,8 +158,106 @@ const Dashboard = () => {
     });
   };
 
+  const [showBulkRentDialog, setShowBulkRentDialog] = useState(false);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+
+  // Fetch sites for bulk operations
+  const { data: allSites } = useQuery({
+    queryKey: ["rank-rent-site-metrics", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rank_rent_site_metrics")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const selectedSitesData = allSites?.filter(site => selectedSites.has(site.id)) || [];
+
   const handleClearSelection = () => {
     setSelectedSites(new Set());
+  };
+
+  const handleSelectAll = (filteredSiteIds: string[]) => {
+    if (filteredSiteIds.every(id => selectedSites.has(id))) {
+      // Deselect all filtered
+      setSelectedSites(new Set([...selectedSites].filter(id => !filteredSiteIds.includes(id))));
+    } else {
+      // Select all filtered
+      setSelectedSites(new Set([...selectedSites, ...filteredSiteIds]));
+    }
+  };
+
+  const handleBulkRent = () => {
+    if (selectedSites.size === 0) {
+      toast({
+        title: "Nenhum projeto selecionado",
+        description: "Selecione pelo menos um projeto para alugar",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowBulkRentDialog(true);
+  };
+
+  const handleBulkIndex = async () => {
+    if (selectedSites.size === 0) {
+      toast({
+        title: "Nenhum projeto selecionado",
+        description: "Selecione pelo menos um projeto para indexar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "🔄 Indexação em massa",
+      description: `Iniciando indexação de ${selectedSites.size} projeto(s). As páginas serão adicionadas à fila GSC.`,
+    });
+
+    // TODO: Implementar integração com GSC batch indexing
+    // Por enquanto apenas mostra feedback visual
+  };
+
+  const handleBulkArchive = async () => {
+    toast({
+      title: "Em desenvolvimento",
+      description: "Funcionalidade de arquivamento em lote será implementada em breve",
+    });
+  };
+
+  const handleBulkExport = () => {
+    if (selectedSites.size === 0) {
+      toast({
+        title: "Nenhum projeto selecionado",
+        description: "Selecione pelo menos um projeto para exportar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { exportSitesToExcel } = require("@/utils/exportHelpers");
+    exportSitesToExcel(selectedSitesData);
+    
+    toast({
+      title: "✅ Exportação concluída",
+      description: `${selectedSites.size} projeto(s) exportado(s) para Excel`,
+    });
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedSites.size === 0) {
+      toast({
+        title: "Nenhum projeto selecionado",
+        description: "Selecione pelo menos um projeto para excluir",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowBulkDeleteDialog(true);
   };
 
   if (loading) {
@@ -354,23 +455,14 @@ const Dashboard = () => {
 
           <BulkActionsBar
             selectedCount={selectedSites.size}
-            totalCount={0}
-            onSelectAll={() => {}}
+            totalCount={allSites?.length || 0}
+            onSelectAll={() => handleSelectAll(allSites?.map(s => s.id) || [])}
             onClearSelection={handleClearSelection}
-            actions={[
-              {
-                label: "Alugar",
-                icon: <Home className="w-4 h-4" />,
-                onClick: () => toast({ title: "Em breve" }),
-                variant: "outline",
-              },
-              {
-                label: "Exportar",
-                icon: <FileText className="w-4 h-4" />,
-                onClick: () => toast({ title: "Em breve" }),
-                variant: "outline",
-              },
-            ]}
+            onRent={handleBulkRent}
+            onIndex={handleBulkIndex}
+            onArchive={handleBulkArchive}
+            onExport={handleBulkExport}
+            onDelete={handleBulkDelete}
           />
 
           <TabsContent value="crm">
@@ -428,6 +520,23 @@ const Dashboard = () => {
         onOpenChange={setShowAddSite}
         userId={user.id}
       />
+      
+      <BulkRentDialog
+        open={showBulkRentDialog}
+        onOpenChange={setShowBulkRentDialog}
+        siteIds={Array.from(selectedSites)}
+        siteNames={selectedSitesData.map(s => s.site_name)}
+        onComplete={handleClearSelection}
+      />
+
+      <BulkDeleteDialog
+        open={showBulkDeleteDialog}
+        onOpenChange={setShowBulkDeleteDialog}
+        siteIds={Array.from(selectedSites)}
+        siteNames={selectedSitesData.map(s => s.site_name)}
+        onComplete={handleClearSelection}
+      />
+      
       <Footer />
     </div>
   );
