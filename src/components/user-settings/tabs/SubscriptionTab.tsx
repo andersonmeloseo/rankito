@@ -137,7 +137,9 @@ export const SubscriptionTab = ({ profile }: SubscriptionTabProps) => {
                     )}
                   </div>
                   {plan.description && (
-                    <CardDescription>{plan.description}</CardDescription>
+                    <CardDescription className="text-base leading-relaxed mt-2">
+                      {plan.description}
+                    </CardDescription>
                   )}
                 </CardHeader>
                 

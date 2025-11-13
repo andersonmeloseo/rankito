@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { generatePlanDescription } from "@/utils/planDescriptionGenerator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,22 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
       slug: generateSlug(name) 
     });
   };
+
+  useEffect(() => {
+    const autoDescription = generatePlanDescription({
+      max_sites: formData.max_sites,
+      max_pages_per_site: formData.max_pages_per_site,
+      max_gsc_integrations: formData.max_gsc_integrations,
+      trial_days: formData.trial_days,
+    });
+    
+    setFormData(prev => ({ ...prev, description: autoDescription }));
+  }, [
+    formData.max_sites,
+    formData.max_pages_per_site,
+    formData.max_gsc_integrations,
+    formData.trial_days
+  ]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,14 +138,17 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
           </div>
 
           <div>
-            <Label htmlFor="description">Descrição</Label>
+            <Label htmlFor="description">Descrição (Gerada Automaticamente)</Label>
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Descrição do plano"
-              rows={2}
+              readOnly
+              className="bg-muted cursor-not-allowed"
+              rows={3}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Esta descrição é gerada automaticamente com base nos limites configurados
+            </p>
           </div>
 
           <div>
