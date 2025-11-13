@@ -1,18 +1,8 @@
-import { useState, useEffect } from 'react';
 import { landingTranslations, LandingLocale } from '@/i18n/landingTranslations';
-
-const LOCALE_STORAGE_KEY = 'rankito-landing-locale';
+import { useLandingLanguageContext } from '@/contexts/LandingLanguageContext';
 
 export function useLandingTranslation() {
-  const [locale, setLocale] = useState<LandingLocale>(() => {
-    const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
-    return (stored as LandingLocale) || 'pt-BR';
-  });
-
-  useEffect(() => {
-    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
-  }, [locale]);
-
+  const { locale, setLocale } = useLandingLanguageContext();
   const t = landingTranslations[locale];
 
   const formatCurrency = (price: number) => {
