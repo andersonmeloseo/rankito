@@ -660,7 +660,7 @@ const SiteDetails = () => {
       />
 
       {/* KPI Cards */}
-      <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-8">
+      <div className="container mx-auto px-4 lg:px-8 xl:px-12 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
           <Card className="shadow-card">
             <CardContent className="pt-6">
@@ -760,7 +760,7 @@ const SiteDetails = () => {
 
         <Tabs defaultValue={defaultTab} className="space-y-8">
           <div className="border-b border-gray-200">
-            <div className="container mx-auto px-6 lg:px-24 xl:px-32">
+            <div className="container mx-auto px-4 lg:px-8 xl:px-12">
               <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0">
                 <ClickUpTabTrigger value="pages" icon={Globe}>
                   Páginas
