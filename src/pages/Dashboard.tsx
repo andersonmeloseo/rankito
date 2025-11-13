@@ -21,6 +21,7 @@ import { ClickUpTabTrigger } from "@/components/ui/custom-tabs";
 import { OverviewCards } from "@/components/rank-rent/OverviewCards";
 import { OverviewCRMSummary } from "@/components/dashboard/OverviewCRMSummary";
 import { OverviewFinancialSummary } from "@/components/dashboard/OverviewFinancialSummary";
+import { TopProjectsPerformance } from "@/components/dashboard/TopProjectsPerformance";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { QuickAlerts } from "@/components/dashboard/QuickAlerts";
 import { SitesList } from "@/components/rank-rent/SitesList";
@@ -385,6 +386,9 @@ const Dashboard = () => {
                     <OverviewCRMSummary userId={user.id} />
                     <OverviewFinancialSummary userId={user.id} />
                   </div>
+                  
+                  {/* Top Projects Performance */}
+                  <TopProjectsPerformance userId={user.id} />
                   
                   {/* Recent Activity */}
                   <RecentActivity userId={user.id} />

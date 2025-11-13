@@ -77,45 +77,68 @@ export const OverviewFinancialSummary = ({ userId }: OverviewFinancialSummaryPro
       label: "Receita Mensal",
       value: formatCurrency(summary?.totalRevenue || 0),
       icon: DollarSign,
-      color: "text-green-600",
+      bgGradient: "from-green-50 to-emerald-50",
+      iconBg: "bg-green-100",
+      iconColor: "text-green-600",
     },
     {
       label: "Custos Totais",
       value: formatCurrency(summary?.totalCosts || 0),
       icon: PieChart,
-      color: "text-orange-600",
+      bgGradient: "from-orange-50 to-red-50",
+      iconBg: "bg-orange-100",
+      iconColor: "text-orange-600",
     },
     {
       label: "Lucro Líquido",
       value: formatCurrency(summary?.totalProfit || 0),
       icon: TrendingUp,
-      color: "text-emerald-600",
+      bgGradient: "from-emerald-50 to-teal-50",
+      iconBg: "bg-emerald-100",
+      iconColor: "text-emerald-600",
     },
     {
       label: "ROI Médio",
       value: `${summary?.avgROI?.toFixed(1) || 0}%`,
       icon: Percent,
-      color: "text-blue-600",
+      bgGradient: "from-blue-50 to-indigo-50",
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600",
     },
   ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <DollarSign className="w-5 h-5" />
           Resumo Financeiro
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {stats.map((stat) => (
-            <div key={stat.label} className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <stat.icon className={`w-4 h-4 ${stat.color}`} />
-                {stat.label}
+            <div 
+              key={stat.label} 
+              className={`
+                relative overflow-hidden rounded-lg border border-gray-200 
+                bg-gradient-to-br ${stat.bgGradient}
+                p-4 transition-all hover:shadow-md hover:scale-[1.02]
+              `}
+            >
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-600">
+                    {stat.label}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stat.value}
+                  </p>
+                </div>
+                <div className={`${stat.iconBg} p-3 rounded-lg`}>
+                  <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+                </div>
               </div>
-              <div className="text-2xl font-bold">{stat.value}</div>
             </div>
           ))}
         </div>
