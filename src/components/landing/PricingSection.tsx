@@ -126,17 +126,11 @@ export const PricingSection = () => {
                     className="w-full bg-blue-600 text-white hover:bg-blue-700"
                     size="lg"
                     onClick={() => {
-                      if (plan.stripe_checkout_url) {
-                        window.open(plan.stripe_checkout_url, '_blank');
-                      } else {
-                        window.location.href = '/auth';
-                      }
+                      // Redirecionar para página de registro com plano pré-selecionado
+                      window.location.href = `/auth?plan=${plan.slug}`;
                     }}
                   >
                     {t.pricing.subscribe}
-                    {plan.stripe_checkout_url && (
-                      <ExternalLink className="ml-2 h-4 w-4" />
-                    )}
                   </Button>
                 </CardFooter>
               </Card>
