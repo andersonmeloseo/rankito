@@ -11,8 +11,9 @@ import { LanguageSwitcher } from "@/components/landing/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useLandingTranslation } from "@/hooks/useLandingTranslation";
+import { LandingLanguageProvider } from "@/contexts/LandingLanguageContext";
 
-const LandingPage = () => {
+const LandingPageContent = () => {
   const navigate = useNavigate();
   const { t, locale, setLocale } = useLandingTranslation();
 
