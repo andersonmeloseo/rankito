@@ -43,6 +43,7 @@ const features = [
     title: "Financeiro Completo",
     description: "Registre receitas, custos, pagamentos e calcule ROI automaticamente. Saiba exatamente quanto cada site está gerando.",
     highlight: false,
+    screenshot: "/images/screenshots/financial-performance.png",
   },
   {
     icon: Users,
@@ -56,6 +57,7 @@ const features = [
     title: "Analytics Avançado",
     description: "Saiba quantos leads cada página gera, de onde vêm, quando acontecem. Tracking pixel + integração WordPress.",
     highlight: false,
+    screenshot: "/images/screenshots/analytics-charts.png",
   },
 ];
 

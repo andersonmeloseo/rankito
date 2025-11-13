@@ -2,6 +2,7 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { GSCShowcase } from "@/components/landing/GSCShowcase";
 import { PricingSection } from "@/components/landing/PricingSection";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -73,6 +74,8 @@ const LandingPage = () => {
       <div id="pricing">
         <PricingSection />
       </div>
+      
+      <TestimonialsSection />
       
       <div id="faq">
         <FAQSection />

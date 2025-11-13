@@ -56,18 +56,18 @@ export const PricingSection = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
           {sortedPlans.map((plan, index) => {
             const isPopular = index === 1; // Middle plan is popular
             
             return (
               <Card
                 key={plan.id}
-                className={`transition-all duration-300 hover:shadow-xl ${
-                  isPopular ? "border-2 border-blue-500 shadow-lg scale-105" : "hover:scale-[1.02]"
+                className={`flex flex-col h-full transition-all duration-300 hover:shadow-xl ${
+                  isPopular ? "border-2 border-blue-500 shadow-lg" : "hover:scale-[1.02]"
                 }`}
               >
-                <CardHeader>
+                <CardHeader className="flex-grow">
                   <div className="flex items-center justify-between mb-4">
                     <CardTitle className="text-2xl">{plan.name}</CardTitle>
                     {isPopular && (
@@ -96,49 +96,7 @@ export const PricingSection = () => {
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-6">
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-sm text-muted-foreground uppercase">
-                      Limites
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Sites</span>
-                        <span className="font-semibold flex items-center gap-1">
-                          {formatLimit(plan.max_sites)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Páginas por site</span>
-                        <span className="font-semibold flex items-center gap-1">
-                          {formatLimit(plan.max_pages_per_site)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Integrações GSC</span>
-                        <span className="font-semibold flex items-center gap-1">
-                          {formatLimit(plan.max_gsc_integrations)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-sm text-muted-foreground uppercase">
-                      Recursos Inclusos
-                    </h4>
-                    <ul className="space-y-2">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm">
-                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-
-                <CardFooter>
+                <CardFooter className="mt-auto pt-0">
                   <Button
                     className={`w-full text-lg py-6 ${
                       isPopular 
