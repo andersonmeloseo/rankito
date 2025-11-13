@@ -329,7 +329,7 @@ const Dashboard = () => {
               disabled={!limits?.canCreateSite}
             >
               <Plus className="w-5 h-5" />
-              <span className="font-medium">Adicionar Site</span>
+              <span className="font-medium">Adicionar Projeto</span>
               
               {/* Badge dinâmico com quota */}
               {limits && !limits.isUnlimited && limits.remainingSites !== null && (
