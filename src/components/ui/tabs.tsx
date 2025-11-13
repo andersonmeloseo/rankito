@@ -26,8 +26,8 @@ const tabsTriggerVariants = cva(
   {
     variants: {
       variant: {
-        default: "hover:bg-muted/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground",
-        gsc: "relative border-b-2 border-transparent hover:bg-blue-500/10 hover:border-blue-400 data-[state=active]:bg-blue-600 data-[state=active]:border-b-4 data-[state=active]:border-purple-500 data-[state=active]:text-white data-[state=inactive]:text-muted-foreground",
+        default: "relative border-b-2 border-transparent hover:bg-blue-500/10 hover:border-blue-400 data-[state=active]:bg-blue-600 data-[state=active]:border-b-4 data-[state=active]:border-gray-300 data-[state=active]:text-white data-[state=inactive]:text-muted-foreground",
+        gsc: "relative border-b-2 border-transparent hover:bg-blue-500/10 hover:border-blue-400 data-[state=active]:bg-blue-600 data-[state=active]:border-b-4 data-[state=active]:border-gray-300 data-[state=active]:text-white data-[state=inactive]:text-muted-foreground",
       },
     },
     defaultVariants: {
