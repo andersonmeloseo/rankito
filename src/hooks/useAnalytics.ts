@@ -410,12 +410,12 @@ export const useAnalytics = ({
 
   // Dados para funil de conversão
   const { data: funnelData } = useQuery({
-    queryKey: ["analytics-funnel", siteId, startDate, endDate],
+    queryKey: ["analytics-funnel", siteId, startDate, endDate, device],
     queryFn: async () => {
       // Query 1: Contar page_views
       const { data: pageViewsData, error: pvError } = await supabase
         .from("rank_rent_conversions")
-        .select("event_type")
+        .select("event_type, metadata")
         .eq("site_id", siteId)
         .eq("event_type", "page_view")
         .gte("created_at", startDate)
@@ -427,7 +427,7 @@ export const useAnalytics = ({
       // Query 2: Contar conversões (tudo exceto page_view)
       const { data: conversionsData, error: convError } = await supabase
         .from("rank_rent_conversions")
-        .select("event_type")
+        .select("event_type, metadata")
         .eq("site_id", siteId)
         .neq("event_type", "page_view")
         .gte("created_at", startDate)
@@ -436,8 +436,17 @@ export const useAnalytics = ({
 
       if (convError) throw convError;
 
-      const pageViews = pageViewsData?.length || 0;
-      const conversions = conversionsData?.length || 0;
+      // Aplicar filtro de device
+      const filteredPageViews = device !== "all" 
+        ? pageViewsData?.filter((pv: any) => pv.metadata?.device === device) || []
+        : pageViewsData || [];
+
+      const filteredConversions = device !== "all"
+        ? conversionsData?.filter((conv: any) => conv.metadata?.device === device) || []
+        : conversionsData || [];
+
+      const pageViews = filteredPageViews.length;
+      const conversions = filteredConversions.length;
       const interactions = conversions;
 
       return { pageViews, interactions, conversions };
