@@ -95,4 +95,12 @@ const LandingPage = () => {
   );
 };
 
+const LandingPage = () => {
+  return (
+    <LandingLanguageProvider>
+      <LandingPageContent />
+    </LandingLanguageProvider>
+  );
+};
+
 export default LandingPage;
