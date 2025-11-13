@@ -18,6 +18,10 @@ import {
 import { CRMHub } from "@/components/crm/CRMHub";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewCards } from "@/components/rank-rent/OverviewCards";
+import { OverviewCRMSummary } from "@/components/dashboard/OverviewCRMSummary";
+import { OverviewFinancialSummary } from "@/components/dashboard/OverviewFinancialSummary";
+import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { QuickAlerts } from "@/components/dashboard/QuickAlerts";
 import { SitesList } from "@/components/rank-rent/SitesList";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
 import { ClientsListIntegrated } from "@/components/rank-rent/ClientsListIntegrated";
@@ -391,7 +395,21 @@ const Dashboard = () => {
                   ))}
                 </div>
               ) : (
-                <OverviewCards userId={user.id} />
+                <>
+                  <OverviewCards userId={user.id} />
+                  
+                  {/* CRM & Financial Summaries */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <OverviewCRMSummary userId={user.id} />
+                    <OverviewFinancialSummary userId={user.id} />
+                  </div>
+                  
+                  {/* Recent Activity */}
+                  <RecentActivity userId={user.id} />
+                  
+                  {/* Quick Alerts */}
+                  <QuickAlerts userId={user.id} />
+                </>
               )}
             </TabsContent>
 

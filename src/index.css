@@ -133,14 +133,14 @@ All colors MUST be HSL.
   :root {
     /* Pure White Backgrounds */
     --background: 0 0% 100%;
-    --foreground: 220 15% 20%;
+    --foreground: 220 20% 15%;
 
     /* Cards - Pure White */
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 20%;
+    --card-foreground: 220 20% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 20%;
+    --popover-foreground: 220 20% 15%;
 
     /* Primary: Modern Professional Blue */
     --primary: 217 91% 60%;
@@ -149,11 +149,11 @@ All colors MUST be HSL.
 
     /* Secondary: Subtle Gray */
     --secondary: 220 13% 97%;
-    --secondary-foreground: 220 15% 20%;
+    --secondary-foreground: 220 20% 15%;
 
     /* Muted - Almost White */
-    --muted: 220 13% 97%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 220 13% 95%;
+    --muted-foreground: 220 12% 35%;
 
     /* Accent: Professional Green */
     --accent: 142 76% 36%;
@@ -176,8 +176,8 @@ All colors MUST be HSL.
     --info-foreground: 0 0% 100%;
 
     /* Borders - Nearly Invisible */
-    --border: 220 13% 92%;
-    --input: 220 13% 92%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
     --ring: 217 91% 60%;
 
     --radius: 0.875rem;

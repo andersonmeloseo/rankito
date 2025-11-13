@@ -54,6 +54,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ReportsTab } from "@/components/reports/ReportsTab";
 import { GSCIntegrationsManager } from "@/components/gsc/GSCIntegrationsManager";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -597,64 +598,68 @@ const SiteDetails = () => {
       </div>
       
       {/* Site Header */}
-      <header className="bg-card border-b shadow-sm">
-        <div className="container mx-auto py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="gap-2 transition-all duration-200 hover:scale-105">
-                <ArrowLeft className="w-4 h-4" />
-                Voltar
-              </Button>
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-foreground">{site.site_name}</h1>
-                  {site.is_rented ? (
-                    <Badge className="bg-success text-success-foreground">Alugado</Badge>
-                  ) : (
-                    <Badge variant="outline">Disponível</Badge>
-                  )}
-                  {site.tracking_pixel_installed ? (
-                    <Badge className="bg-green-600 text-white">
-                      ✓ Plugin Ativo
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="border-orange-500 text-orange-600">
-                      ⚠ Plugin Inativo
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <a
-                    href={site.site_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline flex items-center gap-1"
-                  >
-                    {new URL(site.site_url).hostname}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-sm text-muted-foreground">{site.niche}</span>
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-sm text-muted-foreground">{site.location}</span>
-                </div>
-              </div>
-            </div>
+      {/* Modern Page Header */}
+      <PageHeader
+        breadcrumbs={[
+          { href: "/dashboard", label: "Dashboard", icon: Home },
+          { label: site.site_name },
+        ]}
+        title={site.site_name}
+        subtitle={
+          <div className="flex items-center gap-2">
+            <a
+              href={site.site_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary flex items-center gap-1 transition-colors"
+            >
+              {new URL(site.site_url).hostname}
+              <ExternalLink className="w-4 h-4" />
+            </a>
+            <span>•</span>
+            <span>{site.niche}</span>
+            <span>•</span>
+            <span>{site.location}</span>
+          </div>
+        }
+        badge={{
+          label: site.is_rented ? "Alugado" : "Disponível",
+          variant: site.is_rented ? "default" : "outline"
+        }}
+        actions={
+          <>
+            {site.tracking_pixel_installed && (
+              <Badge className="bg-green-600 text-white">
+                ✓ Plugin Ativo
+              </Badge>
+            )}
+            {!site.tracking_pixel_installed && (
+              <Badge variant="outline" className="border-orange-500 text-orange-600">
+                ⚠ Plugin Inativo
+              </Badge>
+            )}
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/dashboard")}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar
+            </Button>
             <Button 
               variant="destructive" 
               size="sm"
               onClick={() => setShowDeleteDialog(true)}
-              className="gap-2 transition-all duration-200 hover:scale-105"
             >
               <Trash2 className="w-4 h-4" />
-              Excluir Projeto
+              Excluir
             </Button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* KPI Cards */}
-      <div className="container mx-auto py-8 pb-24 space-y-8">
+      <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
           <Card className="shadow-card">
             <CardContent className="pt-6">
@@ -752,18 +757,50 @@ const SiteDetails = () => {
           </Card>
         </div>
 
-        {/* Tabs Section */}
-        <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-5xl">
-            <TabsTrigger value="pages">📄 Páginas</TabsTrigger>
-            <TabsTrigger value="advanced-analytics">📈 Analytics Avançado</TabsTrigger>
-            <TabsTrigger value="reports">📊 Relatórios</TabsTrigger>
-            <TabsTrigger value="gsc">🔍 Google Search Console</TabsTrigger>
-            <TabsTrigger value="plugin">🔌 Plugin WordPress</TabsTrigger>
-          </TabsList>
+        {/* Tabs Section - ClickUp Style */}
+        <Tabs defaultValue={defaultTab} className="space-y-8">
+          <div className="border-b border-border">
+            <TabsList className="h-14 bg-transparent w-full justify-start gap-8">
+              <TabsTrigger 
+                value="pages"
+                className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
+              >
+                <Globe className="w-4 h-4" />
+                Páginas
+              </TabsTrigger>
+              <TabsTrigger 
+                value="advanced-analytics"
+                className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Analytics Avançado
+              </TabsTrigger>
+              <TabsTrigger 
+                value="reports"
+                className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Relatórios
+              </TabsTrigger>
+              <TabsTrigger 
+                value="gsc"
+                className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
+              >
+                <Globe className="w-4 h-4" />
+                Google Search Console
+              </TabsTrigger>
+              <TabsTrigger 
+                value="plugin"
+                className="relative h-14 px-1 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground hover:text-foreground transition-colors gap-2"
+              >
+                <Globe className="w-4 h-4" />
+                Plugin WordPress
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Páginas Tab */}
-          <TabsContent value="pages">
+          <TabsContent value="pages" className="space-y-6">
             {/* Stats Card */}
             <Card className="bg-muted/50 mb-4">
               <CardContent className="py-4">
