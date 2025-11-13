@@ -329,6 +329,31 @@ export const useAnalytics = ({
     enabled: !!siteId,
   });
 
+  // Timeline de Conversões - Query dedicada sem limite para gráficos
+  const { data: conversionsForTimeline, isLoading: timelineConversionsLoading } = useQuery({
+    queryKey: ["analytics-conversions-timeline", siteId, startDate, endDate, device],
+    queryFn: async () => {
+      let query = supabase
+        .from("rank_rent_conversions")
+        .select("created_at, event_type")
+        .eq("site_id", siteId)
+        .neq("event_type", "page_view")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate)
+        .limit(10000);
+
+      if (device !== "all") {
+        query = query.filter('metadata->>device', 'eq', device);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return data;
+    },
+    enabled: !!siteId,
+  });
+
   // Lista de page views separada
   const { data: pageViewsList, isLoading: pageViewsLoading } = useQuery({
     queryKey: ["analytics-page-views", siteId, period, startDate, endDate, device],
@@ -668,7 +693,7 @@ export const useAnalytics = ({
   });
 
   // Conversions timeline (agrupado por data + tipo)
-  const conversionsTimeline = conversions?.reduce((acc: any[], conv: any) => {
+  const conversionsTimeline = conversionsForTimeline?.reduce((acc: any[], conv: any) => {
     const dateObj = new Date(conv.created_at);
     const dateStr = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
     
@@ -815,7 +840,7 @@ export const useAnalytics = ({
       .sort((a, b) => b.value - a.value);
   }, [pageViewsList]);
 
-  const isLoading =
+  const isLoading = 
     metricsLoading || 
     timelineLoading || 
     eventsLoading || 
@@ -824,7 +849,8 @@ export const useAnalytics = ({
     pageViewsLoading ||
     pageViewsTimelineLoading ||
     topReferrersLoading ||
-    pagePerformanceLoading;
+    pagePerformanceLoading ||
+    timelineConversionsLoading;
 
   return {
     metrics,
