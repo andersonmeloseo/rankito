@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
 import { GSCHealthDashboard } from "./GSCHealthDashboard";
+import { GSCIndexingQueue } from "./GSCIndexingQueue";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 
 interface GSCIndexingManagerProps {
@@ -738,6 +739,22 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Fila de Indexação */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <List className="w-5 h-5" />
+            Fila de Indexação
+          </CardTitle>
+          <CardDescription>
+            URLs agendadas para processamento automático
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GSCIndexingQueue siteId={siteId} />
+        </CardContent>
+      </Card>
 
       {/* Batch Indexing Dialog */}
       <GSCBatchIndexingDialog

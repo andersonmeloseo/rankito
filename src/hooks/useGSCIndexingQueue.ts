@@ -171,6 +171,21 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
 
       if (queueError) throw new Error(queueError.message);
 
+      // Atualizar status GSC das páginas para "submitted"
+      const pageIds = uniqueUrls
+        .map(u => u.page_id)
+        .filter(Boolean);
+      
+      if (pageIds.length > 0) {
+        await supabase
+          .from('rank_rent_pages')
+          .update({ 
+            gsc_indexation_status: 'submitted',
+            gsc_last_checked_at: new Date().toISOString()
+          })
+          .in('id', pageIds);
+      }
+
       return { 
         batch, 
         totalUrls: uniqueUrls.length,
@@ -191,6 +206,7 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', siteId] });
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-batches', siteId] });
       queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['site-pages', siteId] });
     },
     onError: (error: Error) => {
       toast({
