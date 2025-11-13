@@ -364,7 +364,7 @@ const Dashboard = () => {
       </div>
       
       <div className="flex-1">
-        <div className="container mx-auto px-4 lg:px-8 xl:px-12 py-8 space-y-8">{/* Content will continue... */}
+        <div className="container mx-auto px-4 lg:px-8 xl:px-12 py-8 space-y-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
             <div className="border-b border-gray-200">
               <div className="container mx-auto px-4 lg:px-8 xl:px-12">
