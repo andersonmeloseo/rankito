@@ -12,7 +12,6 @@ const navItems: NavItem[] = [
   { id: 'account', label: 'Conta', icon: Settings },
   { id: 'subscription', label: 'Assinatura', icon: CreditCard },
   { id: 'appearance', label: 'Aparência', icon: Palette },
-  { id: 'theme', label: 'Tema', icon: Paintbrush },
   { id: 'notifications', label: 'Notificações', icon: Bell },
 ];
 
