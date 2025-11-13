@@ -1,10 +1,15 @@
-import { Mountain } from "lucide-react";
+import { Mountain, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCommandPalette } from "@/hooks/useCommandPalette";
+import { CommandPalette } from "./CommandPalette";
 
 interface HeaderProps {
   showSubtitle?: boolean;
 }
 
 export const Header = ({ showSubtitle = true }: HeaderProps) => {
+  const { open, setOpen } = useCommandPalette();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 glass supports-[backdrop-filter]:bg-background/80">
       <div className="container mx-auto px-6 py-4">
@@ -30,8 +35,23 @@ export const Header = ({ showSubtitle = true }: HeaderProps) => {
               )}
             </div>
           </div>
+
+          {/* Command Palette Trigger */}
+          <Button
+            variant="outline"
+            className="gap-2 min-w-[240px] justify-start text-muted-foreground hover:text-foreground"
+            onClick={() => setOpen(true)}
+          >
+            <Search className="w-4 h-4" />
+            <span className="hidden md:inline">Buscar...</span>
+            <kbd className="hidden md:inline-flex ml-auto px-1.5 py-0.5 text-xs bg-muted rounded font-mono">
+              ⌘K
+            </kbd>
+          </Button>
         </div>
       </div>
+
+      <CommandPalette open={open} onOpenChange={setOpen} />
     </header>
   );
 };
