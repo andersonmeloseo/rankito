@@ -64,6 +64,7 @@ export const RegistrationApprovalTab = () => {
   const approveMutation = useMutation({
     mutationFn: async (userId: string) => {
       const profile = pendingUsers?.find(u => u.id === userId);
+      let plan: any = null;
       
       // 1. Ativar conta
       const { error: profileError } = await supabase
@@ -80,13 +81,15 @@ export const RegistrationApprovalTab = () => {
       // 2. Criar subscription se plano foi selecionado
       if (profile?.selected_plan_slug) {
         // Buscar plano
-        const { data: plan, error: planError } = await supabase
+        const { data: planData, error: planError } = await supabase
           .from('subscription_plans')
           .select('*')
           .eq('slug', profile.selected_plan_slug)
           .single();
 
         if (planError) throw planError;
+        
+        plan = planData;
 
         if (plan) {
           const trialEndDate = new Date();
@@ -118,6 +121,22 @@ export const RegistrationApprovalTab = () => {
         });
 
       if (notifError) throw notifError;
+
+      // 4. Enviar email de aprovação
+      try {
+        await supabase.functions.invoke('send-account-status-email', {
+          body: {
+            email: profile?.email,
+            status: 'approved',
+            userName: profile?.full_name,
+            planName: plan?.name || profile?.selected_plan_slug || 'Starter',
+          }
+        });
+        console.log('✅ Email de aprovação enviado');
+      } catch (emailError) {
+        console.error('❌ Erro ao enviar email:', emailError);
+        // Não bloqueia a aprovação se email falhar
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-users'] });
@@ -159,6 +178,24 @@ export const RegistrationApprovalTab = () => {
         });
 
       if (notifError) throw notifError;
+
+      // Enviar email de rejeição
+      try {
+        const profile = pendingUsers?.find(u => u.id === userId);
+        
+        await supabase.functions.invoke('send-account-status-email', {
+          body: {
+            email: profile?.email,
+            status: 'rejected',
+            userName: profile?.full_name,
+            rejectionReason: reason,
+          }
+        });
+        console.log('✅ Email de rejeição enviado');
+      } catch (emailError) {
+        console.error('❌ Erro ao enviar email:', emailError);
+        // Não bloqueia a rejeição se email falhar
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-users'] });
