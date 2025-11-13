@@ -249,6 +249,8 @@ export const useAnalytics = ({
         query = query.filter('metadata->>device', 'eq', device);
       }
 
+      query = query.limit(10000);
+
       const { data, error } = await query;
       if (error) throw error;
 
@@ -390,7 +392,8 @@ export const useAnalytics = ({
         .select("event_type")
         .eq("site_id", siteId)
         .gte("created_at", startDate)
-        .lte("created_at", endDate);
+        .lte("created_at", endDate)
+        .limit(10000);
 
       if (error) throw error;
 
