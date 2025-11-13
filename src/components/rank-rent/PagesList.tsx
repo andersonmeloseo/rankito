@@ -240,7 +240,7 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
             <TableBody>
               {paginatedPages && paginatedPages.length > 0 ? (
                 paginatedPages.map((page) => (
-                <TableRow key={page.page_id}>
+                <TableRow key={page.page_id} className="hover:bg-muted/50 transition-colors group">
                   <TableCell className="px-4 py-3">
                     <div className="max-w-xs">
                       <div className="font-medium truncate">{page.page_title || page.page_path}</div>
@@ -286,7 +286,8 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center px-4 py-3">
-                    <div className="flex gap-2 justify-center">
+                    {/* Quick Actions - aparecem no hover */}
+                    <div className="flex gap-2 justify-center items-center">
                       <Button
                         variant="ghost"
                         size="sm"

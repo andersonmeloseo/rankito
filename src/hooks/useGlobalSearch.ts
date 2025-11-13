@@ -44,23 +44,26 @@ export const useGlobalSearch = (searchQuery: string) => {
 
       if (searchQuery.length >= 2) {
         try {
-          const { data: user } = await supabase.auth.getUser();
-          if (!user.user) {
+          const userResponse = await supabase.auth.getUser();
+          if (!userResponse.data.user) {
             setResults(allResults);
             setLoading(false);
             return;
           }
 
+          const userId = userResponse.data.user.id;
+
           // Buscar sites
-          const { data: sites } = await supabase
+          // @ts-expect-error - Supabase type inference bug (TS2589)
+          const sitesResponse = await supabase
             .from("rank_rent_sites")
             .select("id, site_name, site_url")
-            .eq("user_id", user.user.id)
+            .eq("user_id", userId)
             .ilike("site_name", `%${searchQuery}%`)
             .limit(5);
 
-          if (sites) {
-            sites.forEach((site) => {
+          if (sitesResponse.data) {
+            sitesResponse.data.forEach((site: any) => {
               allResults.push({
                 id: site.id,
                 title: site.site_name,
@@ -73,15 +76,15 @@ export const useGlobalSearch = (searchQuery: string) => {
           }
 
           // Buscar clientes
-          const { data: clients } = await supabase
+          const clientsResponse = await supabase
             .from("rank_rent_clients")
             .select("id, name, email")
-            .eq("user_id", user.user.id)
+            .eq("user_id", userId)
             .ilike("name", `%${searchQuery}%`)
             .limit(5);
 
-          if (clients) {
-            clients.forEach((client) => {
+          if (clientsResponse.data) {
+            clientsResponse.data.forEach((client: any) => {
               allResults.push({
                 id: client.id,
                 title: client.name,
@@ -93,15 +96,15 @@ export const useGlobalSearch = (searchQuery: string) => {
           }
 
           // Buscar deals
-          const { data: deals } = await supabase
+          const dealsResponse = await supabase
             .from("crm_deals")
             .select("id, title, contact_name")
-            .eq("user_id", user.user.id)
+            .eq("user_id", userId)
             .ilike("title", `%${searchQuery}%`)
             .limit(5);
 
-          if (deals) {
-            deals.forEach((deal) => {
+          if (dealsResponse.data) {
+            dealsResponse.data.forEach((deal: any) => {
               allResults.push({
                 id: deal.id,
                 title: deal.title,
