@@ -20,7 +20,7 @@ export const ClickUpTabTrigger = ({
     <TabsTrigger 
       value={value}
       className={cn(
-        "relative px-4 py-3 rounded-t-lg font-medium text-sm",
+        "relative px-4 py-3 rounded-t-none font-medium text-sm",
         "data-[state=inactive]:bg-transparent",
         "data-[state=inactive]:text-gray-600",
         "data-[state=inactive]:hover:bg-gray-50",
