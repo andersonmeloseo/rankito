@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/utils/errorMessages";
 import type { Database } from "@/integrations/supabase/types";
 
 type ExternalSource = Database['public']['Tables']['external_lead_sources']['Row'];
@@ -50,7 +51,8 @@ export const useExternalSources = (userId: string) => {
       toast.success('Integração criada com sucesso!');
     },
     onError: (error: any) => {
-      toast.error('Erro ao criar integração: ' + error.message);
+      const errorMsg = getErrorMessage(error, 'criar integração externa');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -71,7 +73,8 @@ export const useExternalSources = (userId: string) => {
       toast.success('Integração atualizada!');
     },
     onError: (error: any) => {
-      toast.error('Erro ao atualizar: ' + error.message);
+      const errorMsg = getErrorMessage(error, 'atualizar integração');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -89,7 +92,8 @@ export const useExternalSources = (userId: string) => {
       toast.success('Integração removida!');
     },
     onError: (error: any) => {
-      toast.error('Erro ao remover: ' + error.message);
+      const errorMsg = getErrorMessage(error, 'remover integração');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 

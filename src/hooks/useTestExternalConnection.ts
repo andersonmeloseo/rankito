@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getErrorMessage, CONTEXT_ERRORS } from "@/utils/errorMessages";
 
 export function useTestExternalConnection() {
   const [isTesting, setIsTesting] = useState(false);
@@ -17,10 +18,11 @@ export function useTestExternalConnection() {
         .single();
 
       if (error || !source) {
+        const errorMsg = CONTEXT_ERRORS.tracking.invalid_token;
         toast.error(
-          "❌ Token inválido",
+          errorMsg.title,
           {
-            description: "O token fornecido não existe ou está inativo",
+            description: errorMsg.description,
           }
         );
         return { success: false, error: 'Token inválido' };
@@ -52,10 +54,11 @@ export function useTestExternalConnection() {
 
     } catch (error) {
       console.error('Erro ao testar conexão:', error);
+      const errorMsg = getErrorMessage(error, 'testar conexão');
       toast.error(
-        "Erro ao testar conexão",
+        errorMsg.title,
         {
-          description: error instanceof Error ? error.message : "Erro desconhecido",
+          description: errorMsg.description,
         }
       );
       return { success: false, error };

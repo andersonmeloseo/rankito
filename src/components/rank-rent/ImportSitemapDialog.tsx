@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/utils/errorMessages";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, CheckCircle2, Download, AlertCircle, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -104,9 +105,10 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
       });
     } catch (error: any) {
       console.error("Erro ao descobrir sitemaps:", error);
+      const errorMsg = getErrorMessage(error, 'descobrir sitemaps');
       toast({
-        title: "Erro na Descoberta",
-        description: error.message || "Não foi possível descobrir os sitemaps",
+        title: errorMsg.title,
+        description: `${errorMsg.description}${errorMsg.action ? `\n\n💡 ${errorMsg.action}` : ''}`,
         variant: "destructive",
       });
     } finally {

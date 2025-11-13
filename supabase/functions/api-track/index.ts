@@ -37,7 +37,11 @@ serve(async (req) => {
     if (!token) {
       console.error('❌ Missing tracking token');
       return new Response(
-        JSON.stringify({ error: 'Missing tracking token' }), 
+        JSON.stringify({ 
+          error: 'Token de rastreamento não fornecido',
+          message: 'É necessário fornecer um token válido para registrar eventos.',
+          action: 'Verifique se o plugin está instalado corretamente'
+        }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -55,7 +59,11 @@ serve(async (req) => {
       if (siteError || !site) {
         console.error('❌ Invalid token for GET request:', token);
         return new Response(
-          JSON.stringify({ error: 'Invalid tracking token' }), 
+          JSON.stringify({ 
+            error: 'Token inválido',
+            message: 'O token de rastreamento fornecido não é válido ou não foi encontrado.',
+            action: 'Verifique o token nas configurações do projeto'
+          }), 
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -99,7 +107,11 @@ serve(async (req) => {
     if (!page_url || !event_type) {
       console.error('Missing required fields:', { page_url, event_type });
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: page_url, event_type' }), 
+        JSON.stringify({ 
+          error: 'Campos obrigatórios faltando',
+          message: 'Os campos page_url e event_type são obrigatórios para registrar eventos.',
+          action: 'Verifique se o plugin está enviando todos os dados necessários'
+        }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

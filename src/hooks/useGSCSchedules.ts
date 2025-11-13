@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/utils/errorMessages";
 
 export interface GSCSchedule {
   id: string;
@@ -90,7 +91,8 @@ export function useGSCSchedules({ siteId }: UseGSCSchedulesParams) {
       toast.success('Agendamento criado com sucesso!');
     },
     onError: (error: Error) => {
-      toast.error(`Erro ao criar agendamento: ${error.message}`);
+      const errorMsg = getErrorMessage(error, 'criar agendamento');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -112,7 +114,8 @@ export function useGSCSchedules({ siteId }: UseGSCSchedulesParams) {
       toast.success('Agendamento atualizado!');
     },
     onError: (error: Error) => {
-      toast.error(`Erro ao atualizar: ${error.message}`);
+      const errorMsg = getErrorMessage(error, 'atualizar agendamento');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -132,7 +135,8 @@ export function useGSCSchedules({ siteId }: UseGSCSchedulesParams) {
       toast.success('Agendamento excluído!');
     },
     onError: (error: Error) => {
-      toast.error(`Erro ao excluir: ${error.message}`);
+      const errorMsg = getErrorMessage(error, 'excluir agendamento');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -155,11 +159,13 @@ export function useGSCSchedules({ siteId }: UseGSCSchedulesParams) {
       } else if (data.status === 'partial_success') {
         toast.warning(`⚠️ ${data.sitemaps_succeeded}/${data.sitemaps_attempted} sitemaps enviados`);
       } else {
-        toast.error(`❌ Falha ao enviar sitemaps`);
+        const errorMsg = getErrorMessage(data, 'enviar sitemaps');
+        toast.error(errorMsg.title, { description: errorMsg.description });
       }
     },
     onError: (error: Error) => {
-      toast.error(`Erro na execução: ${error.message}`);
+      const errorMsg = getErrorMessage(error, 'executar agendamento');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -178,7 +184,8 @@ export function useGSCSchedules({ siteId }: UseGSCSchedulesParams) {
       toast.success(variables.is_active ? 'Agendamento ativado!' : 'Agendamento pausado!');
     },
     onError: (error: Error) => {
-      toast.error(`Erro: ${error.message}`);
+      const errorMsg = getErrorMessage(error, 'alterar status do agendamento');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
