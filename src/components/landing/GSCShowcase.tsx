@@ -1,8 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Clock, BarChart, ArrowRight } from "lucide-react";
+import { useLandingTranslation } from "@/hooks/useLandingTranslation";
+
+const featureIcons = [Zap, Clock, BarChart];
+const featureColors = {
+  bg: ["bg-blue-100 dark:bg-blue-900", "bg-purple-100 dark:bg-purple-900", "bg-green-100 dark:bg-green-900"],
+  text: ["text-blue-600", "text-purple-600", "text-green-600"]
+};
 
 export const GSCShowcase = () => {
+  const { t } = useLandingTranslation();
+
   return (
     <section className="py-24 bg-gradient-to-br from-blue-50 via-purple-50 to-blue-50 dark:from-blue-950 dark:via-purple-950 dark:to-blue-950">
       <div className="container mx-auto px-6 lg:px-12">
@@ -10,61 +19,37 @@ export const GSCShowcase = () => {
           {/* Left Column - Copy */}
           <div className="space-y-8">
             <Badge className="bg-red-600 text-white hover:bg-red-600">
-              ⚠️ Chega de Perder Tempo
+              {t.gsc.badge}
             </Badge>
             <h2 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight">
-              Pare de Indexar 5 Páginas Por Vez Manualmente
+              {t.gsc.title}
             </h2>
             
             <p className="text-xl text-red-600 dark:text-red-400 font-semibold leading-tight">
-              Você tem 500 páginas criadas mas o Google só indexou 50? 
-              Está perdendo dinheiro todos os dias enquanto suas páginas ficam invisíveis.
+              {t.gsc.painPoint}
             </p>
             
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Nossa indexação automática conecta ao Google Search Console e indexa 
-              centenas de páginas por dia. Sem esforço manual, sem perder oportunidades.
+              {t.gsc.description}
             </p>
 
             <div className="space-y-6">
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1">Indexação em Massa</h3>
-                  <p className="text-muted-foreground">
-                    Adicione centenas de URLs à fila e deixe o sistema processar automaticamente.
-                    Suporte a múltiplas contas GSC para quota agregada.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1">Agendamentos Inteligentes</h3>
-                  <p className="text-muted-foreground">
-                    Configure envio automático de sitemaps (diário, semanal, mensal). 
-                    O sistema trabalha por você 24/7.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                  <BarChart className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1">Monitoramento em Tempo Real</h3>
-                  <p className="text-muted-foreground">
-                    Acompanhe status de indexação, quotas diárias e histórico completo de 
-                    todas as submissões. Transparência total.
-                  </p>
-                </div>
-              </div>
+              {t.gsc.features.map((feature, index) => {
+                const Icon = featureIcons[index];
+                return (
+                  <div key={index} className="flex gap-4">
+                    <div className={`flex-shrink-0 w-12 h-12 ${featureColors.bg[index]} rounded-lg flex items-center justify-center`}>
+                      <Icon className={`h-6 w-6 ${featureColors.text[index]}`} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg mb-1">{feature.title}</h3>
+                      <p className="text-muted-foreground">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-600 p-6 rounded-r-lg">
@@ -78,7 +63,7 @@ export const GSCShowcase = () => {
               className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg text-lg px-8 py-6"
               onClick={() => window.location.href = '/auth'}
             >
-              Começar a Indexar Automaticamente
+              {t.gsc.ctaButton}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>

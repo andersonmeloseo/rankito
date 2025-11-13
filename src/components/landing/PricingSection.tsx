@@ -4,19 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Infinity, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLandingTranslation } from "@/hooks/useLandingTranslation";
 
 export const PricingSection = () => {
   const { plans, isLoading } = useSubscriptionPlans();
+  const { t, formatCurrency } = useLandingTranslation();
 
   const activePlans = plans?.filter(p => p.is_active) || [];
   const sortedPlans = [...activePlans].sort((a, b) => a.price - b.price);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(price);
-  };
 
   const formatLimit = (value: number | null) => {
     if (value === null) return <Infinity className="h-5 w-5 text-blue-600" />;
@@ -46,13 +41,13 @@ export const PricingSection = () => {
       <div className="container mx-auto px-6 lg:px-12">
         <div className="text-center mb-16 space-y-4">
           <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-            Planos e Preços
+            {t.pricing.badge}
           </Badge>
           <h2 className="text-4xl lg:text-5xl font-bold text-foreground">
-            Escolha o Plano Ideal para Seu Portfólio
+            {t.pricing.title}
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Comece com trial gratuito. Sem cartão de crédito. Cancele quando quiser.
+            {t.pricing.description}
           </p>
         </div>
 
@@ -72,7 +67,7 @@ export const PricingSection = () => {
                     <CardTitle className="text-2xl">{plan.name}</CardTitle>
                     {isPopular && (
                       <Badge className="bg-yellow-500 text-white hover:bg-yellow-500">
-                        Mais Popular
+                        {t.pricing.popular}
                       </Badge>
                     )}
                   </div>
@@ -80,13 +75,13 @@ export const PricingSection = () => {
                   <div className="mb-4">
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl font-bold text-foreground">
-                        {formatPrice(plan.price)}
+                        {formatCurrency(plan.price)}
                       </span>
-                      <span className="text-muted-foreground">/mês</span>
+                      <span className="text-muted-foreground">{t.pricing.perMonth}</span>
                     </div>
                     {plan.trial_days > 0 && (
                       <Badge variant="outline" className="mt-2 border-green-600 text-green-600">
-                        {plan.trial_days} dias grátis
+                        {plan.trial_days} {t.pricing.freeDays}
                       </Badge>
                     )}
                   </div>
@@ -97,64 +92,39 @@ export const PricingSection = () => {
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
                       <span className="text-sm text-foreground">
-                        {plan.max_sites === null ? "Sites ilimitados" : `${plan.max_sites} sites`}
+                        {t.pricing.upTo} {formatLimit(plan.max_sites)} {t.pricing.sites}
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
                       <span className="text-sm text-foreground">
-                        {plan.max_pages_per_site === null 
-                          ? "Páginas ilimitadas por site" 
-                          : `${plan.max_pages_per_site} páginas por site`}
+                        {t.pricing.upTo} {formatLimit(plan.max_pages_per_site)} {t.pricing.pages}
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
                       <span className="text-sm text-foreground">
-                        {plan.max_gsc_integrations === null 
-                          ? "Integrações GSC ilimitadas" 
-                          : `${plan.max_gsc_integrations} integração${plan.max_gsc_integrations > 1 ? 'ões' : ''} GSC`}
+                        {formatLimit(plan.max_gsc_integrations)} {t.pricing.integrations}
                       </span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                      <span className="text-sm text-foreground">Dashboard inteligente</span>
+                    
+                    <li className="pt-4 pb-2 text-xs font-semibold text-muted-foreground uppercase border-t mt-4">
+                      {t.pricing.footer}
                     </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                      <span className="text-sm text-foreground">CRM completo</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                      <span className="text-sm text-foreground">Portal whitelabel</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                      <span className="text-sm text-foreground">Indexação automática GSC</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                      <span className="text-sm text-foreground">Tracking de conversões</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                      <span className="text-sm text-foreground">Relatórios automáticos</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                      <span className="text-sm text-foreground">Suporte por email</span>
-                    </li>
+                    
+                    {t.pricing.commonFeatures.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                        <span className="text-sm text-foreground">{feature}</span>
+                      </li>
+                    ))}
                   </ul>
                 </CardContent>
 
-                <CardFooter className="mt-auto pt-0">
+                <CardFooter className="pt-6">
                   <Button
-                    className={`w-full text-lg py-6 ${
-                      isPopular 
-                        ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg" 
-                        : "border-2"
-                    }`}
-                    variant={isPopular ? "default" : "outline"}
+                    className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                    size="lg"
                     onClick={() => {
                       if (plan.stripe_checkout_url) {
                         window.open(plan.stripe_checkout_url, '_blank');
@@ -163,25 +133,15 @@ export const PricingSection = () => {
                       }
                     }}
                   >
-                    {plan.stripe_checkout_url ? (
-                      <>
-                        Começar Agora
-                        <ExternalLink className="ml-2 h-5 w-5" />
-                      </>
-                    ) : (
-                      "Começar Trial Gratuito"
+                    {t.pricing.subscribe}
+                    {plan.stripe_checkout_url && (
+                      <ExternalLink className="ml-2 h-4 w-4" />
                     )}
                   </Button>
                 </CardFooter>
               </Card>
             );
           })}
-        </div>
-
-        <div className="text-center mt-12">
-          <p className="text-sm text-muted-foreground">
-            Todos os planos incluem: Suporte por email • Atualizações gratuitas • Cancelamento a qualquer momento
-          </p>
         </div>
       </div>
     </section>
