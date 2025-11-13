@@ -411,66 +411,48 @@ export const useAnalytics = ({
   // Dados para funil de conversão
   const { data: funnelData } = useQuery({
     queryKey: ["analytics-funnel", siteId, startDate, endDate, device],
-    staleTime: 0, // Forçar refresh imediato
     queryFn: async () => {
       // Query 1: Contar page_views
-      const { data: pageViewsData, error: pvError } = await supabase
+      let pvQuery = supabase
         .from("rank_rent_conversions")
-        .select("event_type, metadata")
+        .select("event_type")
         .eq("site_id", siteId)
         .eq("event_type", "page_view")
         .gte("created_at", startDate)
         .lte("created_at", endDate)
-        .limit(10000);
+        .order("created_at", { ascending: false });
+
+      // Aplicar filtro de device no Supabase
+      if (device !== "all") {
+        pvQuery = pvQuery.filter('metadata->>device', 'eq', device);
+      }
+
+      const { data: pageViewsData, error: pvError, count: pvCount } = await pvQuery.limit(50000);
 
       if (pvError) throw pvError;
 
-      // DEBUG: Verificar estrutura do metadata
-      console.log('📊 First Page View Sample:', {
-        total: pageViewsData?.length,
-        sample: pageViewsData?.[0],
-        hasMetadata: !!pageViewsData?.[0]?.metadata,
-        deviceValue: (pageViewsData?.[0]?.metadata as any)?.device
-      });
-
       // Query 2: Contar conversões (tudo exceto page_view)
-      const { data: conversionsData, error: convError } = await supabase
+      let convQuery = supabase
         .from("rank_rent_conversions")
-        .select("event_type, metadata")
+        .select("event_type")
         .eq("site_id", siteId)
         .neq("event_type", "page_view")
         .gte("created_at", startDate)
         .lte("created_at", endDate)
-        .limit(10000);
+        .order("created_at", { ascending: false });
+
+      // Aplicar filtro de device no Supabase
+      if (device !== "all") {
+        convQuery = convQuery.filter('metadata->>device', 'eq', device);
+      }
+
+      const { data: conversionsData, error: convError } = await convQuery.limit(50000);
 
       if (convError) throw convError;
 
-      // Aplicar filtro de device
-      const filteredPageViews = device !== "all" 
-        ? pageViewsData?.filter((pv: any) => (pv.metadata as any)?.device === device) || []
-        : pageViewsData || [];
-
-      const filteredConversions = device !== "all"
-        ? conversionsData?.filter((conv: any) => (conv.metadata as any)?.device === device) || []
-        : conversionsData || [];
-
-      const pageViews = filteredPageViews.length;
-      const conversions = filteredConversions.length;
+      const pageViews = pageViewsData?.length || 0;
+      const conversions = conversionsData?.length || 0;
       const interactions = conversions;
-
-      // ADICIONAR LOGS DE DEBUG
-      console.log('🎯 Funnel Data Debug:', {
-        device,
-        rawPageViewsCount: pageViewsData?.length || 0,
-        rawConversionsCount: conversionsData?.length || 0,
-        filteredPageViewsCount: filteredPageViews.length,
-        filteredConversionsCount: filteredConversions.length,
-        finalPageViews: pageViews,
-        finalConversions: conversions,
-        samplePageView: pageViewsData?.[0],
-        startDate,
-        endDate
-      });
 
       return { pageViews, interactions, conversions };
     },
