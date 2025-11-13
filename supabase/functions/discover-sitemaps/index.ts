@@ -49,7 +49,15 @@ Deno.serve(async (req) => {
     // Fetch the sitemap index
     const response = await fetch(sitemap_url);
     if (!response.ok) {
-      throw new Error(`Failed to fetch sitemap: ${response.statusText}`);
+      if (response.status === 404) {
+        throw new Error('SITEMAP_NOT_FOUND: O sitemap não foi encontrado na URL fornecida. Verifique se a URL está correta e acessível.');
+      } else if (response.status === 403) {
+        throw new Error('SITEMAP_FORBIDDEN: Acesso negado ao sitemap. Verifique as permissões do site.');
+      } else if (response.status >= 500) {
+        throw new Error('SITEMAP_SERVER_ERROR: O servidor do sitemap está com problemas. Tente novamente mais tarde.');
+      } else {
+        throw new Error(`SITEMAP_FETCH_FAILED: Não foi possível acessar o sitemap (código ${response.status}). Verifique a URL e tente novamente.`);
+      }
     }
 
     const xmlText = await response.text();
@@ -117,11 +125,20 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error discovering sitemaps:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    
+    // Extrair tipo de erro se houver prefixo
+    const errorType = errorMessage.split(':')[0];
+    const errorDetails = errorMessage.includes(':') ? errorMessage.split(':').slice(1).join(':').trim() : errorMessage;
+    
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        error: errorType,
+        message: errorDetails,
+        action: 'Verifique a URL do sitemap e tente novamente'
+      }),
       { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   }

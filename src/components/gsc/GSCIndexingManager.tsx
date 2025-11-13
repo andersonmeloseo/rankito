@@ -25,6 +25,7 @@ import { Send, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, ExternalL
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/utils/errorMessages";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
 
 interface GSCIndexingManagerProps {
@@ -208,8 +209,9 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
       toast.success(`✅ Fila processada! ${data.total_processed} URLs enviadas ao Google`);
       refetchQuota();
     } catch (error) {
-      toast.error("Erro ao processar fila", {
-        description: error instanceof Error ? error.message : 'Erro desconhecido'
+      const errorMsg = getErrorMessage(error, 'processar fila de indexação');
+      toast.error(errorMsg.title, {
+        description: `${errorMsg.description}${errorMsg.action ? `\n\n💡 ${errorMsg.action}` : ''}`
       });
     } finally {
       setIsProcessingQueue(false);

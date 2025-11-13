@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/utils/errorMessages";
 
 export interface PipelineStage {
   id: string;
@@ -60,7 +61,8 @@ export const usePipelineStages = (userId: string) => {
       toast.success("Estágio criado com sucesso!");
     },
     onError: (error: Error) => {
-      toast.error("Erro ao criar estágio: " + error.message);
+      const errorMsg = getErrorMessage(error, 'criar estágio');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -81,7 +83,8 @@ export const usePipelineStages = (userId: string) => {
       toast.success("Estágio atualizado!");
     },
     onError: (error: Error) => {
-      toast.error("Erro ao atualizar estágio: " + error.message);
+      const errorMsg = getErrorMessage(error, 'atualizar estágio');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -99,7 +102,8 @@ export const usePipelineStages = (userId: string) => {
       toast.success("Estágio removido!");
     },
     onError: (error: Error) => {
-      toast.error("Erro ao remover estágio: " + error.message);
+      const errorMsg = getErrorMessage(error, 'remover estágio');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -119,7 +123,8 @@ export const usePipelineStages = (userId: string) => {
       toast.success("Ordem atualizada!");
     },
     onError: (error: Error) => {
-      toast.error("Erro ao reordenar: " + error.message);
+      const errorMsg = getErrorMessage(error, 'reordenar estágios');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 

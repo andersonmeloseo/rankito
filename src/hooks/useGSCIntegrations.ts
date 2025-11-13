@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/utils/errorMessages";
 import type { Database } from "@/integrations/supabase/types";
 
 type GSCIntegration = Database['public']['Tables']['google_search_console_integrations']['Row'];
@@ -149,7 +150,8 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
       toast.success('✅ Integração criada com sucesso! Service Account conectada e pronta para uso.');
     },
     onError: (error: any) => {
-      toast.error(`Erro ao criar integração: ${error.message}`);
+      const errorMsg = getErrorMessage(error, 'criar integração GSC');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -170,7 +172,8 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
       toast.success('Integração GSC removida com sucesso!');
     },
     onError: (error: any) => {
-      toast.error(`Erro ao remover integração: ${error.message}`);
+      const errorMsg = getErrorMessage(error, 'remover integração GSC');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 
@@ -196,7 +199,8 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
       toast.success('Integração atualizada!');
     },
     onError: (error: any) => {
-      toast.error(`Erro ao atualizar: ${error.message}`);
+      const errorMsg = getErrorMessage(error, 'atualizar integração GSC');
+      toast.error(errorMsg.title, { description: errorMsg.description });
     },
   });
 

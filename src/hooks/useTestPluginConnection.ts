@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getErrorMessage, CONTEXT_ERRORS } from "@/utils/errorMessages";
 
 export function useTestPluginConnection() {
   const [isTestingConnection, setIsTestingConnection] = useState(false);
@@ -60,10 +61,11 @@ export function useTestPluginConnection() {
             }
           );
         } else {
+          const errorMsg = CONTEXT_ERRORS.plugin.not_installed;
           toast.error(
-            `❌ Plugin não detectado`,
+            errorMsg.title,
             {
-              description: `Nenhum evento registrado ainda em ${siteName}. Verifique a instalação do plugin.`,
+              description: `${errorMsg.description} Site: ${siteName}`,
             }
           );
         }
@@ -72,10 +74,11 @@ export function useTestPluginConnection() {
       }
     } catch (error) {
       console.error('Erro ao testar conexão:', error);
+      const errorMsg = getErrorMessage(error, 'testar conexão do plugin');
       toast.error(
-        "Erro ao testar conexão",
+        errorMsg.title,
         {
-          description: error instanceof Error ? error.message : "Erro desconhecido",
+          description: errorMsg.description,
         }
       );
       return { success: false, events: 0, error };
