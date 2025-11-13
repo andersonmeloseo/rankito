@@ -7,11 +7,14 @@ import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { LanguageSwitcher } from "@/components/landing/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useLandingTranslation } from "@/hooks/useLandingTranslation";
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { t, locale, setLocale } = useLandingTranslation();
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,31 +33,32 @@ const LandingPage = () => {
 
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
-                Funcionalidades
+                {t.nav.features}
               </a>
               <a href="#gsc" className="text-muted-foreground hover:text-foreground transition-colors">
-                Indexação GSC
+                {t.nav.gsc}
               </a>
               <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">
-                Preços
+                {t.nav.pricing}
               </a>
               <a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">
-                FAQ
+                {t.nav.faq}
               </a>
             </div>
 
             <div className="flex items-center gap-4">
+              <LanguageSwitcher locale={locale} setLocale={setLocale} />
               <Button 
                 variant="ghost"
                 onClick={() => navigate('/auth')}
               >
-                Entrar
+                {t.nav.login}
               </Button>
               <Button
                 className="bg-blue-600 text-white hover:bg-blue-700"
                 onClick={() => navigate('/auth')}
               >
-                Começar Grátis
+                {t.nav.startFree}
               </Button>
             </div>
           </div>
