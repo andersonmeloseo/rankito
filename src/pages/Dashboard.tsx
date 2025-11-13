@@ -140,14 +140,17 @@ const Dashboard = () => {
           console.error('Error checking profile:', error);
         }
 
-        if (profile && !profile.is_active) {
-          // Conta não aprovada, redirecionar para página de pendência
-          navigate("/pending-approval");
-          return;
-        }
+      if (profile && !profile.is_active) {
+        // Conta não aprovada, redirecionar para página de pendência
+        navigate("/pending-approval");
+        return;
       }
+    }
 
-      setLoading(false);
+    // Setar user e session no estado
+    setUser(session.user);
+    setSession(session);
+    setLoading(false);
     };
     checkAuth();
   }, [navigate]);
