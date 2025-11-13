@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, DollarSign, Globe, TrendingUp } from "lucide-react";
@@ -8,6 +9,8 @@ interface OverviewCardsProps {
 }
 
 export const OverviewCards = ({ userId }: OverviewCardsProps) => {
+  const navigate = useNavigate();
+  
   const { data: metrics, isLoading } = useQuery({
     queryKey: ["overview-metrics", userId],
     queryFn: async () => {
@@ -77,6 +80,18 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
     return gradients[color] || 'icon-gradient-blue';
   };
 
+  const handleCardClick = (cardTitle: string) => {
+    if (cardTitle === "Projetos Alugados") {
+      navigate("/dashboard", { state: { tab: "sites" } });
+    } else if (cardTitle === "Receita Mensal Total") {
+      navigate("/dashboard", { state: { tab: "financial" } });
+    } else if (cardTitle === "Contratos Vencendo") {
+      navigate("/dashboard", { state: { tab: "sites" } });
+    } else if (cardTitle === "Taxa de Ocupação") {
+      navigate("/dashboard", { state: { tab: "sites" } });
+    }
+  };
+
   const cards = [
     {
       title: "Projetos Alugados",
@@ -133,7 +148,8 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
         return (
           <Card 
             key={card.title} 
-            className="group relative overflow-hidden border border-border/50 shadow-card hover:shadow-card-hover transition-all duration-300 card-hover bg-gradient-to-br from-card to-muted/30"
+            className="group relative overflow-hidden border border-border/50 shadow-card hover:shadow-card-hover transition-all duration-300 card-hover bg-gradient-to-br from-card to-muted/30 cursor-pointer active:scale-[0.98]"
+            onClick={() => handleCardClick(card.title)}
           >
             {/* Subtle Gradient on Hover */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

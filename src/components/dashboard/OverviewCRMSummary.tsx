@@ -1,13 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Briefcase, TrendingUp, DollarSign, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Briefcase, TrendingUp, DollarSign, Clock, ArrowRight } from "lucide-react";
 import { useCRMMetrics } from "@/hooks/useCRMMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
 interface OverviewCRMSummaryProps {
   userId: string;
 }
 
 export const OverviewCRMSummary = ({ userId }: OverviewCRMSummaryProps) => {
+  const navigate = useNavigate();
   const { metrics, isLoading } = useCRMMetrics(userId);
 
   if (isLoading) {
@@ -96,15 +99,30 @@ export const OverviewCRMSummary = ({ userId }: OverviewCRMSummaryProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Briefcase className="w-5 h-5" />
-          Resumo do CRM
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="w-5 h-5" />
+            Resumo do CRM
+          </CardTitle>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate("/dashboard", { state: { tab: "crm" } })}
+            className="gap-2"
+          >
+            Ver CRM
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {stats.map((stat) => (
-            <div key={stat.label} className="space-y-2">
+            <div 
+              key={stat.label} 
+              className="space-y-2 cursor-pointer hover:bg-muted/50 p-3 rounded-lg transition-colors"
+              onClick={() => navigate("/dashboard", { state: { tab: "crm" } })}
+            >
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <stat.icon className={`w-4 h-4 ${stat.color}`} />
                 {stat.label}

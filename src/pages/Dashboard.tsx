@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { useRole } from "@/contexts/RoleContext";
@@ -57,10 +57,21 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showAddSite, setShowAddSite] = useState(false);
   const [selectedSites, setSelectedSites] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState("overview");
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { role, isSuperAdmin, isEndClient, isLoading: roleLoading } = useRole();
   const { viewMode, setViewMode } = useViewMode("sites-view", "table");
+
+  // Listen to navigation state changes
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+      // Clear state to prevent issues on reload
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Realtime leads
   const { newLeads, clearNewLeads } = useRealtimeLeads(user?.id);
@@ -343,7 +354,7 @@ const Dashboard = () => {
       
       <div className="flex-1">
         <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-8 space-y-8">{/* Content will continue... */}
-          <Tabs defaultValue="overview" className="space-y-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
             <div className="border-b border-gray-200">
               <div className="container mx-auto px-6 lg:px-24 xl:px-32">
                 <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0">

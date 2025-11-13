@@ -5,12 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface RecentActivityProps {
   userId: string;
 }
 
 export const RecentActivity = ({ userId }: RecentActivityProps) => {
+  const navigate = useNavigate();
+  
   const { data: activities, isLoading } = useQuery({
     queryKey: ['recent-activities', userId],
     queryFn: async () => {
@@ -20,6 +23,7 @@ export const RecentActivity = ({ userId }: RecentActivityProps) => {
           id,
           event_type,
           created_at,
+          site_id,
           rank_rent_pages(page_title, page_url, rank_rent_sites(site_name))
         `)
         .eq('rank_rent_sites.user_id', userId)
@@ -28,6 +32,7 @@ export const RecentActivity = ({ userId }: RecentActivityProps) => {
 
       return conversions?.map(c => ({
         id: c.id,
+        siteId: c.site_id,
         type: 'conversion' as const,
         title: `Nova conversão em ${c.rank_rent_pages?.rank_rent_sites?.site_name}`,
         description: c.rank_rent_pages?.page_title || c.rank_rent_pages?.page_url,
@@ -75,7 +80,11 @@ export const RecentActivity = ({ userId }: RecentActivityProps) => {
         {activities && activities.length > 0 ? (
           <div className="space-y-4">
             {activities.map((activity) => (
-              <div key={activity.id} className="flex gap-3">
+              <div 
+                key={activity.id} 
+                className="flex gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+                onClick={() => navigate(`/site/${activity.siteId}`)}
+              >
                 <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
                   <activity.icon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>

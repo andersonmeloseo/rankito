@@ -1,13 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingUp, PieChart, Percent } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DollarSign, TrendingUp, PieChart, Percent, ArrowRight } from "lucide-react";
 import { useGlobalFinancialMetrics } from "@/hooks/useGlobalFinancialMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
 interface OverviewFinancialSummaryProps {
   userId: string;
 }
 
 export const OverviewFinancialSummary = ({ userId }: OverviewFinancialSummaryProps) => {
+  const navigate = useNavigate();
   const { summary, isLoading } = useGlobalFinancialMetrics(userId);
 
   if (isLoading) {
@@ -108,38 +111,48 @@ export const OverviewFinancialSummary = ({ userId }: OverviewFinancialSummaryPro
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <DollarSign className="w-5 h-5" />
-          Resumo Financeiro
-        </CardTitle>
+    <Card className="shadow-card">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5" />
+            Resumo Financeiro
+          </CardTitle>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate("/dashboard", { state: { tab: "financial" } })}
+            className="gap-2"
+          >
+            Ver Financeiro
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {stats.map((stat) => (
-            <div 
-              key={stat.label} 
-              className={`
-                relative overflow-hidden rounded-lg border border-gray-200 
-                bg-gradient-to-br ${stat.bgGradient}
-                p-4 transition-all hover:shadow-md hover:scale-[1.02]
-              `}
+            <Card 
+              key={stat.label}
+              className="relative overflow-hidden border border-border/40 bg-gradient-to-br from-card to-muted/20 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98]"
+              onClick={() => navigate("/dashboard", { state: { tab: "financial" } })}
             >
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-600">
-                    {stat.label}
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stat.value}
-                  </p>
+              <CardContent className="pt-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {stat.label}
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {stat.value}
+                    </p>
+                  </div>
+                  <div className={`${stat.iconBg} p-3 rounded-lg`}>
+                    <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+                  </div>
                 </div>
-                <div className={`${stat.iconBg} p-3 rounded-lg`}>
-                  <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </CardContent>
