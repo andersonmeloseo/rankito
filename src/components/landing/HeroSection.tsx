@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, CheckCircle, TrendingUp, Shield } from "lucide-react";
+import { useLandingTranslation } from "@/hooks/useLandingTranslation";
 
 export const HeroSection = () => {
+  const { t } = useLandingTranslation();
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-background via-muted/20 to-background py-24 lg:py-32">
       <div className="container mx-auto px-6 lg:px-12">
@@ -11,23 +14,19 @@ export const HeroSection = () => {
           <div className="space-y-8">
             <div className="space-y-4">
               <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-100">
-                Sistema Completo de Gestão
+                {t.hero.badge}
               </Badge>
               <h1 className="text-5xl lg:text-6xl font-bold leading-tight text-foreground">
-                Gerencie Seu Império de{" "}
-                <span className="text-blue-600">Rank & Rent</span> com Inteligência
+                {t.hero.title}
               </h1>
               
               {/* Sub-headline batendo na dor */}
               <p className="text-2xl font-semibold text-red-600 dark:text-red-400 leading-tight">
-                Pare de perder dinheiro com sites sem controle, conversões invisíveis 
-                e indexação manual que consome seu tempo.
+                {t.hero.painPoint}
               </p>
               
               <p className="text-xl text-muted-foreground leading-relaxed">
-                A única plataforma completa para profissionais de SEO que gerenciam
-                portfólios de sites de lead generation. Centralize gestão, financeiro,
-                CRM e indexação automática em um só lugar.
+                {t.hero.description}
               </p>
             </div>
 
@@ -38,7 +37,7 @@ export const HeroSection = () => {
                 className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg text-lg px-8 py-6"
                 onClick={() => window.location.href = '/auth'}
               >
-                Comece Grátis Agora
+                {t.hero.ctaPrimary}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button
@@ -46,7 +45,7 @@ export const HeroSection = () => {
                 variant="outline"
                 className="border-2 text-lg px-8 py-6"
               >
-                Ver Demonstração
+                {t.hero.ctaSecondary}
               </Button>
             </div>
 
@@ -54,15 +53,15 @@ export const HeroSection = () => {
             <div className="flex flex-wrap gap-6 pt-4">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="text-sm text-muted-foreground">200+ sites gerenciados</span>
+                <span className="text-sm text-muted-foreground">{t.hero.socialProof.sites}</span>
               </div>
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-green-600" />
-                <span className="text-sm text-muted-foreground">R$ 1M+ rastreado</span>
+                <span className="text-sm text-muted-foreground">{t.hero.socialProof.revenue}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-green-600" />
-                <span className="text-sm text-muted-foreground">100% Seguro</span>
+                <span className="text-sm text-muted-foreground">{t.hero.socialProof.secure}</span>
               </div>
             </div>
           </div>
