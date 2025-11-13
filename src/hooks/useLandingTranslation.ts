@@ -2,7 +2,7 @@ import { landingTranslations, LandingLocale } from '@/i18n/landingTranslations';
 import { useLandingLanguageContext } from '@/contexts/LandingLanguageContext';
 
 export function useLandingTranslation() {
-  const { locale, setLocale } = useLandingLanguageContext();
+  const { locale, setLocale, isTransitioning } = useLandingLanguageContext();
   const t = landingTranslations[locale];
 
   const formatCurrency = (price: number) => {
@@ -23,5 +23,5 @@ export function useLandingTranslation() {
     }).format(price);
   };
 
-  return { t, locale, setLocale, formatCurrency };
+  return { t, locale, setLocale, isTransitioning, formatCurrency };
 }

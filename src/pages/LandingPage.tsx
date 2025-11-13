@@ -15,10 +15,13 @@ import { LandingLanguageProvider } from "@/contexts/LandingLanguageContext";
 
 const LandingPageContent = () => {
   const navigate = useNavigate();
-  const { t, locale, setLocale } = useLandingTranslation();
+  const { t, locale, setLocale, isTransitioning } = useLandingTranslation();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div 
+      className="min-h-screen bg-background transition-opacity duration-200"
+      style={{ opacity: isTransitioning ? 0 : 1 }}
+    >
       {/* Navigation Bar */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b">
         <div className="container mx-auto px-6 lg:px-12">
