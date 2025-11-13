@@ -123,6 +123,26 @@ const SiteDetails = () => {
     enabled: !!siteId,
   });
 
+  // Fetch last conversion city
+  const { data: lastConversionCity } = useQuery({
+    queryKey: ["last-conversion-city", siteId],
+    queryFn: async () => {
+      if (!site?.last_conversion_at) return null;
+      
+      const { data, error } = await supabase
+        .from("rank_rent_conversions")
+        .select("city")
+        .eq("site_id", siteId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) return null;
+      return data?.city;
+    },
+    enabled: !!siteId && !!site?.last_conversion_at,
+  });
+
   // Fetch pages for this site with pagination, sorting, and filters
   const { data: pagesData, isLoading: pagesLoading } = useQuery({
     queryKey: ["site-pages", siteId, currentPage, pageSize, sortColumn, sortAscending, debouncedSearch, statusFilter, clientFilter],
@@ -744,13 +764,18 @@ const SiteDetails = () => {
           <Card className="shadow-card">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Última Conv.</p>
                   <p className="text-sm font-medium text-foreground">
                     {site.last_conversion_at
                       ? new Date(site.last_conversion_at).toLocaleDateString("pt-BR")
                       : "Nenhuma"}
                   </p>
+                  {lastConversionCity && (
+                    <p className="text-xs text-muted-foreground">
+                      📍 {lastConversionCity}
+                    </p>
+                  )}
                 </div>
                 <Calendar className="w-8 h-8 text-muted-foreground opacity-60" />
               </div>
