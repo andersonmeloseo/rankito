@@ -256,7 +256,7 @@ export const useAnalytics = ({
 
       const grouped = data?.reduce((acc: any, conv) => {
         if (!acc[conv.page_path]) {
-          acc[conv.page_path] = { path: conv.page_path, count: 0 };
+          acc[conv.page_path] = { page: conv.page_path, count: 0 };
         }
         acc[conv.page_path].count++;
         return acc;
@@ -387,19 +387,33 @@ export const useAnalytics = ({
   const { data: funnelData } = useQuery({
     queryKey: ["analytics-funnel", siteId, startDate, endDate],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Query 1: Contar page_views
+      const { data: pageViewsData, error: pvError } = await supabase
         .from("rank_rent_conversions")
         .select("event_type")
         .eq("site_id", siteId)
+        .eq("event_type", "page_view")
         .gte("created_at", startDate)
         .lte("created_at", endDate)
         .limit(10000);
 
-      if (error) throw error;
+      if (pvError) throw pvError;
 
-      const pageViews = data?.filter(d => d.event_type === "page_view").length || 0;
-      const conversions = data?.filter(d => d.event_type !== "page_view").length || 0;
-      const interactions = conversions; // Para simplificar
+      // Query 2: Contar conversões (tudo exceto page_view)
+      const { data: conversionsData, error: convError } = await supabase
+        .from("rank_rent_conversions")
+        .select("event_type")
+        .eq("site_id", siteId)
+        .neq("event_type", "page_view")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate)
+        .limit(10000);
+
+      if (convError) throw convError;
+
+      const pageViews = pageViewsData?.length || 0;
+      const conversions = conversionsData?.length || 0;
+      const interactions = conversions;
 
       return { pageViews, interactions, conversions };
     },
