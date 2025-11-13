@@ -8,162 +8,97 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CheckCircle } from "lucide-react";
+import { useLandingTranslation } from "@/hooks/useLandingTranslation";
 
-const features = [
-  {
-    icon: LayoutDashboard,
-    title: "Dashboard Inteligente",
-    description: "Você não sabe quais sites estão convertendo e perdendo dinheiro? Acompanhe performance, receita, custos e ROI de todos os seus sites em tempo real. Métricas que importam, sem ruído.",
-    highlight: false,
-    benefits: [
-      "Visão geral de todos os sites em tempo real",
-      "Métricas de receita, custos e ROI automáticos",
-      "Gráficos de performance e conversões",
-      "Alertas de contratos e limites de quota"
-    ],
-    screenshot: "/images/screenshots/dashboard-overview.png",
-  },
-  {
-    icon: Briefcase,
-    title: "CRM Completo",
-    description: "Leads ligam, você anota no papel e esquece de retornar? Capture leads automaticamente, gerencie deals, automatize follow-ups e nunca mais perca uma oportunidade de negócio.",
-    highlight: false,
-    benefits: [
-      "Pipeline visual com drag & drop",
-      "Captura automática de leads",
-      "Histórico completo de interações",
-      "Automação de follow-ups e tarefas"
-    ],
-    screenshot: "/images/screenshots/crm-pipeline.png",
-  },
-  {
-    icon: Send,
-    title: "Indexação Automática GSC",
-    description: "Cansado de indexar 5 páginas por vez manualmente no Search Console? Conecte sua conta Google e indexe centenas de páginas automaticamente. Envie sitemaps, agende indexações e monitore status em tempo real.",
-    highlight: true,
-    badge: "EXCLUSIVO",
-    benefits: [
-      "Batch indexing (200 URLs/dia por integração)",
-      "Agendamento automático de sitemaps",
-      "Monitoramento de quota agregada",
-      "Múltiplas contas GSC por site"
-    ],
-    screenshot: "/images/screenshots/gsc-monitoring.png",
-  },
-  {
-    icon: DollarSign,
-    title: "Financeiro Completo",
-    description: "Planilhas desorganizadas e sem saber se está lucrando ou perdendo? Registre receitas, custos, pagamentos e calcule ROI automaticamente. Saiba exatamente quanto cada site está gerando.",
-    highlight: false,
-    benefits: [
-      "Registro de receitas e custos por projeto",
-      "Cálculo automático de ROI e margem",
-      "Controle de pagamentos e vencimentos",
-      "Simulador de cenários financeiros"
-    ],
-    screenshot: "/images/screenshots/financial-performance.png",
-  },
-  {
-    icon: Users,
-    title: "Portal Whitelabel",
-    description: "Cliente pediu relatório e você não tem nada para mostrar? Gere portais personalizados com sua logo e cores. Seus clientes acompanham performance sem acessar seu dashboard.",
-    highlight: false,
-    benefits: [
-      "Personalização completa (logo e cores)",
-      "Métricas e gráficos em tempo real",
-      "Acesso seguro por token único",
-      "Exportação de relatórios em PDF/Excel"
-    ],
-    screenshot: "/images/screenshots/client-portal.png",
-  },
-  {
-    icon: BarChart3,
-    title: "Analytics Avançado",
-    description: "Não sabe quantos leads cada página gerou hoje? Saiba quantos leads cada página gera, de onde vêm, quando acontecem. Tracking pixel + integração WordPress.",
-    highlight: false,
-    benefits: [
-      "Tracking pixel para WordPress",
-      "Captura de conversões e page views",
-      "Análise de origem de tráfego (UTMs)",
-      "Heatmaps de horários e dispositivos"
-    ],
-    screenshot: "/images/screenshots/analytics-charts.png",
-  },
+const featureIcons = [
+  LayoutDashboard,
+  Briefcase,
+  Send,
+  DollarSign,
+  Users,
+  BarChart3
+];
+
+const featureScreenshots = [
+  "/images/screenshots/dashboard-overview.png",
+  "/images/screenshots/crm-pipeline.png",
+  "/images/screenshots/gsc-monitoring.png",
+  "/images/screenshots/financial-performance.png",
+  "/images/screenshots/client-portal.png",
+  "/images/screenshots/analytics-charts.png",
 ];
 
 export const FeaturesSection = () => {
+  const { t } = useLandingTranslation();
+
   return (
     <section className="py-24 bg-muted/30">
       <div className="container mx-auto px-6 lg:px-12">
         <div className="text-center mb-16 space-y-4">
           <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-            Funcionalidades
+            {t.features.badge}
           </Badge>
           <h2 className="text-4xl lg:text-5xl font-bold text-foreground">
-            Tudo que Você Precisa em Uma Plataforma
+            {t.features.title}
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Pare de usar 5 ferramentas diferentes. Gerencie todo seu negócio de Rank & Rent
-            com uma única solução profissional.
+            {t.features.subtitle}
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
-            <Card
-              key={index}
-              className={`transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
-                feature.highlight ? "border-2 border-blue-500 shadow-lg" : ""
-              }`}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-lg ${
-                    feature.highlight 
-                      ? "bg-blue-100 dark:bg-blue-900" 
-                      : "bg-muted"
-                  }`}>
-                    <feature.icon className={`h-8 w-8 ${
-                      feature.highlight ? "text-blue-600" : "text-foreground"
-                    }`} />
+        <div className="grid lg:grid-cols-2 gap-12 max-w-7xl mx-auto">
+          {t.features.items.map((feature, index) => {
+            const Icon = featureIcons[index];
+            const isHighlight = index === 2; // GSC feature
+            return (
+              <Card
+                key={index}
+                className={`flex flex-col transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+                  isHighlight ? "border-2 border-blue-500 shadow-lg" : ""
+                }`}
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                        <Icon className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <CardTitle className="text-2xl">{feature.title}</CardTitle>
+                    </div>
+                    {feature.badge && (
+                      <Badge className="bg-yellow-500 text-white hover:bg-yellow-500">
+                        {feature.badge}
+                      </Badge>
+                    )}
                   </div>
-                  {feature.badge && (
-                    <Badge className="bg-yellow-500 text-white hover:bg-yellow-500">
-                      {feature.badge}
-                    </Badge>
-                  )}
-                </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-                <CardDescription className="text-base leading-relaxed">
-                  {feature.description}
-                </CardDescription>
-              </CardHeader>
-              {feature.benefits && (
-                <CardContent>
-                  <ul className="space-y-2">
+                  <CardDescription className="text-base leading-relaxed">
+                    {feature.description}
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="flex-grow space-y-6">
+                  <ul className="space-y-3">
                     {feature.benefits.map((benefit, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <span className="text-green-600 mt-0.5">✓</span>
-                        {benefit}
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                        <span className="text-sm text-foreground">{benefit}</span>
                       </li>
                     ))}
                   </ul>
-                </CardContent>
-              )}
-              {feature.screenshot && (
-                <CardContent className={feature.benefits ? "pt-0" : ""}>
-                  <div className="rounded-lg overflow-hidden border border-border/50 shadow-sm">
+                  
+                  <div className="pt-4">
                     <img
-                      src={feature.screenshot}
-                      alt={`Screenshot da funcionalidade ${feature.title} do Rankito CRM`}
-                      className="w-full h-48 object-cover object-top hover:scale-105 transition-transform duration-300"
+                      src={featureScreenshots[index]}
+                      alt={`Screenshot ${feature.title}`}
+                      className="rounded-lg shadow-lg w-full"
                       loading="lazy"
                     />
                   </div>
                 </CardContent>
-              )}
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       </div>
     </section>
