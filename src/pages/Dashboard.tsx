@@ -289,7 +289,7 @@ const Dashboard = () => {
       {/* Lead Notifications Banner */}
       {newLeads.length > 0 && (
         <div className="border-b border-warning/20 bg-warning/5">
-          <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-3">
+          <div className="container mx-auto px-4 lg:px-8 xl:px-12 py-3">
             <LeadNotificationBanner leads={newLeads} onDismiss={clearNewLeads} />
           </div>
         </div>
@@ -299,7 +299,7 @@ const Dashboard = () => {
       
       {/* Hero Section */}
       <div className="border-b border-border/50 bg-gradient-to-r from-background via-muted/20 to-background">
-        <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-8">
+        <div className="container mx-auto px-4 lg:px-8 xl:px-12 py-8">
           {/* Breadcrumb */}
           <Breadcrumb className="mb-6">
             <BreadcrumbList>
@@ -353,10 +353,10 @@ const Dashboard = () => {
       </div>
       
       <div className="flex-1">
-        <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-8 space-y-8">{/* Content will continue... */}
+        <div className="container mx-auto px-4 lg:px-8 xl:px-12 py-8 space-y-8">{/* Content will continue... */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
             <div className="border-b border-gray-200">
-              <div className="container mx-auto px-6 lg:px-24 xl:px-32">
+              <div className="container mx-auto px-4 lg:px-8 xl:px-12">
                 <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0">
                   <ClickUpTabTrigger value="overview" icon={LayoutDashboard}>
                     Overview
