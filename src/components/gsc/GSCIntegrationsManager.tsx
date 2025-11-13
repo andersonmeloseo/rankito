@@ -97,23 +97,23 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
     <>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5 max-w-5xl">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
+          <TabsTrigger value="overview" variant="gsc" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Visão Geral
           </TabsTrigger>
-          <TabsTrigger value="connections" className="flex items-center gap-2">
+          <TabsTrigger value="connections" variant="gsc" className="flex items-center gap-2">
             <LinkIcon className="h-4 w-4" />
             Integrações
           </TabsTrigger>
-          <TabsTrigger value="sitemaps" className="flex items-center gap-2">
+          <TabsTrigger value="sitemaps" variant="gsc" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Sitemaps
           </TabsTrigger>
-          <TabsTrigger value="indexing" className="flex items-center gap-2">
+          <TabsTrigger value="indexing" variant="gsc" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
             Indexação
           </TabsTrigger>
-          <TabsTrigger value="schedules" className="flex items-center gap-2">
+          <TabsTrigger value="schedules" variant="gsc" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
             Agendamentos
           </TabsTrigger>
