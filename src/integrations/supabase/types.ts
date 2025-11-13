@@ -2342,6 +2342,7 @@ export type Database = {
           name: string
           price: number
           slug: string
+          stripe_checkout_url: string | null
           trial_days: number | null
           updated_at: string | null
         }
@@ -2359,6 +2360,7 @@ export type Database = {
           name: string
           price: number
           slug: string
+          stripe_checkout_url?: string | null
           trial_days?: number | null
           updated_at?: string | null
         }
@@ -2376,6 +2378,7 @@ export type Database = {
           name?: string
           price?: number
           slug?: string
+          stripe_checkout_url?: string | null
           trial_days?: number | null
           updated_at?: string | null
         }

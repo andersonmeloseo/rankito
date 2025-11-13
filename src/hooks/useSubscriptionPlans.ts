@@ -16,6 +16,7 @@ export interface SubscriptionPlan {
   trial_days: number;
   is_active: boolean;
   display_order: number;
+  stripe_checkout_url: string | null;
   created_at: string;
   updated_at: string;
 }

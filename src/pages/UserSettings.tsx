@@ -5,6 +5,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { UserSettingsLayout } from '@/components/user-settings/UserSettingsLayout';
 import { ProfileTab } from '@/components/user-settings/tabs/ProfileTab';
 import { AccountTab } from '@/components/user-settings/tabs/AccountTab';
+import { SubscriptionTab } from '@/components/user-settings/tabs/SubscriptionTab';
 import { AppearanceTab } from '@/components/user-settings/tabs/AppearanceTab';
 import { ThemeTab } from '@/components/user-settings/tabs/ThemeTab';
 import { NotificationsTab } from '@/components/user-settings/tabs/NotificationsTab';
@@ -63,6 +64,8 @@ const UserSettings = () => {
             isUpdating={updatePassword.isPending}
           />
         );
+      case 'subscription':
+        return <SubscriptionTab profile={profile} />;
       case 'appearance':
         return (
           <AppearanceTab

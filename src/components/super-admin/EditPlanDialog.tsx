@@ -22,6 +22,7 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
     max_pages_per_site: plan.max_pages_per_site || "",
     max_gsc_integrations: plan.max_gsc_integrations || "",
     trial_days: plan.trial_days || 0,
+    stripe_checkout_url: plan.stripe_checkout_url || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -36,6 +37,7 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
         max_pages_per_site: formData.max_pages_per_site ? Number(formData.max_pages_per_site) : null,
         max_gsc_integrations: formData.max_gsc_integrations ? Number(formData.max_gsc_integrations) : null,
         trial_days: Number(formData.trial_days),
+        stripe_checkout_url: formData.stripe_checkout_url || null,
       },
     });
     onOpenChange(false);
@@ -136,6 +138,20 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
                 0 = sem trial
               </p>
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="stripe_url">Link de Checkout Stripe</Label>
+            <Input
+              id="stripe_url"
+              type="url"
+              value={formData.stripe_checkout_url}
+              onChange={(e) => setFormData({ ...formData, stripe_checkout_url: e.target.value })}
+              placeholder="https://buy.stripe.com/..."
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Link gerado no Stripe para pagamento
+            </p>
           </div>
 
           <div className="flex justify-end gap-2">
