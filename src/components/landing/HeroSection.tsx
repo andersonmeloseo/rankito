@@ -64,9 +64,10 @@ export const HeroSection = () => {
           <div className="relative">
             <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 rounded-2xl shadow-2xl p-8">
               <img
-                src="/placeholder.svg"
-                alt="Rankito CRM Dashboard"
+                src="/images/screenshots/dashboard-overview.png"
+                alt="Dashboard Rankito CRM mostrando visão geral com métricas de sites ativos, receita mensal, conversões, gráficos de performance e pipeline CRM"
                 className="rounded-lg shadow-xl w-full"
+                loading="lazy"
               />
             </div>
             {/* Floating Elements */}

@@ -15,12 +15,14 @@ const features = [
     title: "Dashboard Inteligente",
     description: "Acompanhe performance, receita, custos e ROI de todos os seus sites em tempo real. Métricas que importam, sem ruído.",
     highlight: false,
+    screenshot: "/images/screenshots/dashboard-overview.png",
   },
   {
     icon: Briefcase,
     title: "CRM Completo",
     description: "Capture leads, gerencie deals, automatize follow-ups e nunca mais perca uma oportunidade de negócio.",
     highlight: false,
+    screenshot: "/images/screenshots/crm-pipeline.png",
   },
   {
     icon: Send,
@@ -33,7 +35,8 @@ const features = [
       "Agendamento automático de sitemaps",
       "Monitoramento de quota agregada",
       "Múltiplas contas GSC por site"
-    ]
+    ],
+    screenshot: "/images/screenshots/gsc-monitoring.png",
   },
   {
     icon: DollarSign,
@@ -46,6 +49,7 @@ const features = [
     title: "Portal Whitelabel",
     description: "Gere portais personalizados com sua logo e cores. Seus clientes acompanham performance sem acessar seu dashboard.",
     highlight: false,
+    screenshot: "/images/screenshots/client-portal.png",
   },
   {
     icon: BarChart3,
@@ -112,6 +116,18 @@ export const FeaturesSection = () => {
                       </li>
                     ))}
                   </ul>
+                </CardContent>
+              )}
+              {feature.screenshot && (
+                <CardContent className={feature.benefits ? "pt-0" : ""}>
+                  <div className="rounded-lg overflow-hidden border border-border/50 shadow-sm">
+                    <img
+                      src={feature.screenshot}
+                      alt={`Screenshot da funcionalidade ${feature.title} do Rankito CRM`}
+                      className="w-full h-48 object-cover object-top hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  </div>
                 </CardContent>
               )}
             </Card>

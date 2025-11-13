@@ -82,9 +82,10 @@ export const GSCShowcase = () => {
           <div className="relative">
             <div className="bg-white dark:bg-card rounded-2xl shadow-2xl p-6 border">
               <img
-                src="/placeholder.svg"
-                alt="Google Search Console Integration"
+                src="/images/screenshots/gsc-monitoring.png"
+                alt="Interface de Monitoramento Google Search Console mostrando integrações ativas, quota de URLs disponível, URLs indexadas, taxa de sucesso e gráfico de uso diário"
                 className="rounded-lg w-full"
+                loading="lazy"
               />
             </div>
             {/* Floating Stats */}
