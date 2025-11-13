@@ -27,7 +27,7 @@ interface PageHeaderProps {
 export const PageHeader = ({ breadcrumbs, title, subtitle, badge, actions }: PageHeaderProps) => {
   return (
     <div className="border-b border-border/50 bg-gradient-to-r from-background via-muted/20 to-background">
-      <div className="container mx-auto px-6 lg:px-24 xl:px-32 py-8">
+      <div className="container mx-auto px-4 lg:px-8 xl:px-12 py-8">
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
             {breadcrumbs.map((item, index) => (
