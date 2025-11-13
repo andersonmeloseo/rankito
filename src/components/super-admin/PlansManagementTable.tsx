@@ -30,7 +30,7 @@ export const PlansManagementTable = () => {
 
   return (
     <>
-      <Card>
+      <Card className="shadow-card hover:shadow-lg transition-all duration-200">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -39,7 +39,10 @@ export const PlansManagementTable = () => {
                 Configure os planos de assinatura disponíveis
               </CardDescription>
             </div>
-            <Button onClick={() => setCreateDialogOpen(true)}>
+            <Button 
+              onClick={() => setCreateDialogOpen(true)}
+              className="transition-all active:scale-[0.98]"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Novo Plano
             </Button>
@@ -58,18 +61,18 @@ export const PlansManagementTable = () => {
             </TableHeader>
             <TableBody>
               {plans?.map((plan) => (
-                <TableRow key={plan.id}>
-                  <TableCell>
+                <TableRow key={plan.id} className="h-16">
+                  <TableCell className="p-4">
                     <div>
                       <div className="font-medium">{plan.name}</div>
                       <div className="text-sm text-muted-foreground">{plan.description}</div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="p-4">
                     <div className="font-medium">{formatCurrency(plan.price)}</div>
                     <div className="text-sm text-muted-foreground">/mês</div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="p-4">
                     <div className="text-sm">
                       {plan.max_sites ? `${plan.max_sites} sites` : 'Ilimitado'}
                     </div>
@@ -77,17 +80,18 @@ export const PlansManagementTable = () => {
                       {plan.max_pages_per_site ? `${plan.max_pages_per_site} páginas/site` : 'Ilimitado'}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="p-4">
                     <Badge variant={plan.is_active ? "default" : "secondary"}>
                       {plan.is_active ? "Ativo" : "Inativo"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right p-4">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setEditingPlan(plan)}
+                        className="transition-all active:scale-[0.98]"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -95,6 +99,7 @@ export const PlansManagementTable = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => togglePlanStatus(plan.id, plan.is_active)}
+                        className="transition-all active:scale-[0.98]"
                       >
                         {plan.is_active ? (
                           <EyeOff className="h-4 w-4" />

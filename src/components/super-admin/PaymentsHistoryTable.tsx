@@ -59,7 +59,7 @@ export const PaymentsHistoryTable = () => {
   }
 
   return (
-    <Card>
+    <Card className="shadow-card hover:shadow-lg transition-all duration-200">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -99,8 +99,8 @@ export const PaymentsHistoryTable = () => {
           </TableHeader>
           <TableBody>
             {filteredPayments?.map((payment) => (
-              <TableRow key={payment.id}>
-                <TableCell>
+              <TableRow key={payment.id} className="h-16">
+                <TableCell className="p-4">
                   <div>
                     <div className="font-medium">
                       {payment.profiles?.full_name || "Sem nome"}
@@ -110,16 +110,16 @@ export const PaymentsHistoryTable = () => {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="p-4">
                   {payment.user_subscriptions?.subscription_plans?.name || "N/A"}
                 </TableCell>
-                <TableCell>
+                <TableCell className="p-4">
                   {payment.reference_month}
                 </TableCell>
-                <TableCell className="font-medium">
+                <TableCell className="p-4 font-medium">
                   {formatCurrency(payment.amount)}
                 </TableCell>
-                <TableCell>
+                <TableCell className="p-4">
                   {format(new Date(payment.due_date), "dd/MM/yyyy", { locale: ptBR })}
                   {payment.payment_date && (
                     <div className="text-sm text-muted-foreground">
@@ -127,8 +127,8 @@ export const PaymentsHistoryTable = () => {
                     </div>
                   )}
                 </TableCell>
-                <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="p-4">{getStatusBadge(payment.status)}</TableCell>
+                <TableCell className="text-right p-4">
                   <div className="flex justify-end gap-2">
                     {payment.status === 'pending' && (
                       <>
@@ -136,6 +136,7 @@ export const PaymentsHistoryTable = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => markAsPaid(payment.id)}
+                          className="transition-all active:scale-[0.98]"
                         >
                           <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
                           Pago
@@ -144,6 +145,7 @@ export const PaymentsHistoryTable = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => markAsFailed(payment.id)}
+                          className="transition-all active:scale-[0.98]"
                         >
                           <XCircle className="h-4 w-4 mr-1 text-red-600" />
                           Falhou
