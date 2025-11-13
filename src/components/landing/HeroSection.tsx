@@ -17,6 +17,13 @@ export const HeroSection = () => {
                 Gerencie Seu Império de{" "}
                 <span className="text-blue-600">Rank & Rent</span> com Inteligência
               </h1>
+              
+              {/* Sub-headline batendo na dor */}
+              <p className="text-2xl font-semibold text-red-600 dark:text-red-400 leading-tight">
+                Pare de perder dinheiro com sites sem controle, conversões invisíveis 
+                e indexação manual que consome seu tempo.
+              </p>
+              
               <p className="text-xl text-muted-foreground leading-relaxed">
                 A única plataforma completa para profissionais de SEO que gerenciam
                 portfólios de sites de lead generation. Centralize gestão, financeiro,

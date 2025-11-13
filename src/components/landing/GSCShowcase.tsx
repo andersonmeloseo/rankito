@@ -9,16 +9,21 @@ export const GSCShowcase = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Column - Copy */}
           <div className="space-y-8">
-            <Badge className="bg-yellow-500 text-white hover:bg-yellow-500">
-              🚀 Diferencial Exclusivo
+            <Badge className="bg-red-600 text-white hover:bg-red-600">
+              ⚠️ Chega de Perder Tempo
             </Badge>
             <h2 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight">
-              Pare de Indexar Sites Manualmente.{" "}
-              <span className="text-blue-600">Deixe o Rankito Fazer por Você</span>
+              Pare de Indexar 5 Páginas Por Vez Manualmente
             </h2>
-            <p className="text-xl text-muted-foreground leading-relaxed">
-              A única plataforma de Rank & Rent com integração completa ao Google Search Console.
-              Automatize completamente o processo de indexação e economize horas de trabalho manual.
+            
+            <p className="text-xl text-red-600 dark:text-red-400 font-semibold leading-tight">
+              Você tem 500 páginas criadas mas o Google só indexou 50? 
+              Está perdendo dinheiro todos os dias enquanto suas páginas ficam invisíveis.
+            </p>
+            
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              Nossa indexação automática conecta ao Google Search Console e indexa 
+              centenas de páginas por dia. Sem esforço manual, sem perder oportunidades.
             </p>
 
             <div className="space-y-6">

@@ -13,7 +13,7 @@ const features = [
   {
     icon: LayoutDashboard,
     title: "Dashboard Inteligente",
-    description: "Acompanhe performance, receita, custos e ROI de todos os seus sites em tempo real. Métricas que importam, sem ruído.",
+    description: "Você não sabe quais sites estão convertendo e perdendo dinheiro? Acompanhe performance, receita, custos e ROI de todos os seus sites em tempo real. Métricas que importam, sem ruído.",
     highlight: false,
     benefits: [
       "Visão geral de todos os sites em tempo real",
@@ -26,7 +26,7 @@ const features = [
   {
     icon: Briefcase,
     title: "CRM Completo",
-    description: "Capture leads, gerencie deals, automatize follow-ups e nunca mais perca uma oportunidade de negócio.",
+    description: "Leads ligam, você anota no papel e esquece de retornar? Capture leads automaticamente, gerencie deals, automatize follow-ups e nunca mais perca uma oportunidade de negócio.",
     highlight: false,
     benefits: [
       "Pipeline visual com drag & drop",
@@ -39,7 +39,7 @@ const features = [
   {
     icon: Send,
     title: "Indexação Automática GSC",
-    description: "Conecte sua conta Google Search Console e indexe centenas de páginas automaticamente. Envie sitemaps, agende indexações e monitore status em tempo real.",
+    description: "Cansado de indexar 5 páginas por vez manualmente no Search Console? Conecte sua conta Google e indexe centenas de páginas automaticamente. Envie sitemaps, agende indexações e monitore status em tempo real.",
     highlight: true,
     badge: "EXCLUSIVO",
     benefits: [
@@ -53,7 +53,7 @@ const features = [
   {
     icon: DollarSign,
     title: "Financeiro Completo",
-    description: "Registre receitas, custos, pagamentos e calcule ROI automaticamente. Saiba exatamente quanto cada site está gerando.",
+    description: "Planilhas desorganizadas e sem saber se está lucrando ou perdendo? Registre receitas, custos, pagamentos e calcule ROI automaticamente. Saiba exatamente quanto cada site está gerando.",
     highlight: false,
     benefits: [
       "Registro de receitas e custos por projeto",
@@ -66,7 +66,7 @@ const features = [
   {
     icon: Users,
     title: "Portal Whitelabel",
-    description: "Gere portais personalizados com sua logo e cores. Seus clientes acompanham performance sem acessar seu dashboard.",
+    description: "Cliente pediu relatório e você não tem nada para mostrar? Gere portais personalizados com sua logo e cores. Seus clientes acompanham performance sem acessar seu dashboard.",
     highlight: false,
     benefits: [
       "Personalização completa (logo e cores)",
@@ -79,7 +79,7 @@ const features = [
   {
     icon: BarChart3,
     title: "Analytics Avançado",
-    description: "Saiba quantos leads cada página gera, de onde vêm, quando acontecem. Tracking pixel + integração WordPress.",
+    description: "Não sabe quantos leads cada página gerou hoje? Saiba quantos leads cada página gera, de onde vêm, quando acontecem. Tracking pixel + integração WordPress.",
     highlight: false,
     benefits: [
       "Tracking pixel para WordPress",
