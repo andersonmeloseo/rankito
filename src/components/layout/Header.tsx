@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useCommandPalette } from "@/hooks/useCommandPalette";
 import { CommandPalette } from "./CommandPalette";
 import { NotificationsDropdown } from "./NotificationsDropdown";
+import { UserMenu } from "./UserMenu";
 
 interface HeaderProps {
   showSubtitle?: boolean;
@@ -54,6 +55,9 @@ export const Header = ({ showSubtitle = true }: HeaderProps) => {
 
             {/* Notifications */}
             <NotificationsDropdown />
+
+            {/* User Menu */}
+            <UserMenu />
           </div>
         </div>
       </div>

@@ -17,6 +17,11 @@ export interface UserProfile {
   notifications_enabled: boolean;
   email_notifications: boolean;
   country_code: string | null;
+  theme_preferences?: {
+    primary_color?: string;
+    accent_color?: string;
+    mode?: 'light' | 'dark' | 'system';
+  };
 }
 
 export const useUserProfile = (userId: string | undefined) => {

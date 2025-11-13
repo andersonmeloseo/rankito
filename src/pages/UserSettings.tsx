@@ -6,6 +6,7 @@ import { UserSettingsLayout } from '@/components/user-settings/UserSettingsLayou
 import { ProfileTab } from '@/components/user-settings/tabs/ProfileTab';
 import { AccountTab } from '@/components/user-settings/tabs/AccountTab';
 import { AppearanceTab } from '@/components/user-settings/tabs/AppearanceTab';
+import { ThemeTab } from '@/components/user-settings/tabs/ThemeTab';
 import { NotificationsTab } from '@/components/user-settings/tabs/NotificationsTab';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -65,6 +66,14 @@ const UserSettings = () => {
       case 'appearance':
         return (
           <AppearanceTab
+            profile={profile}
+            onUpdate={(updates) => updateProfile.mutate(updates)}
+            isUpdating={updateProfile.isPending}
+          />
+        );
+      case 'theme':
+        return (
+          <ThemeTab
             profile={profile}
             onUpdate={(updates) => updateProfile.mutate(updates)}
             isUpdating={updateProfile.isPending}

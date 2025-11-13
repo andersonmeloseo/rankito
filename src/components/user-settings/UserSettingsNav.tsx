@@ -1,4 +1,4 @@
-import { User, Settings, Palette, Bell } from 'lucide-react';
+import { User, Settings, Palette, Bell, Paintbrush } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -11,6 +11,7 @@ const navItems: NavItem[] = [
   { id: 'profile', label: 'Perfil', icon: User },
   { id: 'account', label: 'Conta', icon: Settings },
   { id: 'appearance', label: 'Aparência', icon: Palette },
+  { id: 'theme', label: 'Tema', icon: Paintbrush },
   { id: 'notifications', label: 'Notificações', icon: Bell },
 ];
 

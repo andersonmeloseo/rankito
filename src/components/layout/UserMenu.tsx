@@ -2,6 +2,7 @@ import { LogOut, User, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useRole } from '@/contexts/RoleContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -17,7 +18,8 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export const UserMenu = () => {
   const navigate = useNavigate();
-  const { user, profile } = useRole();
+  const { user } = useRole();
+  const { profile } = useUserProfile(user?.id);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
