@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-
 import { Footer } from "@/components/layout/Footer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Mountain, Eye, EyeOff } from "lucide-react";
+import { Mountain, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Session } from "@supabase/supabase-js";
+import { PhoneInput } from 'react-international-phone';
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -60,10 +60,10 @@ const Auth = () => {
       return;
     }
 
-    if (!whatsapp) {
+    if (!whatsapp || whatsapp.length < 8) {
       toast({
         title: "WhatsApp obrigatório",
-        description: "Por favor, informe seu WhatsApp.",
+        description: "Por favor, informe um número de WhatsApp válido.",
         variant: "destructive",
       });
       return;
@@ -112,7 +112,6 @@ const Auth = () => {
           full_name: fullName,
           whatsapp,
           website,
-          country_code: 'BR', // You can add country selector later
         })
         .eq('id', authData.user.id);
 
@@ -220,39 +219,27 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-primary/10">
-      <div className="flex-1 flex items-center justify-center px-4 py-12 md:py-16">
-        <Card className="w-full max-w-md shadow-xl my-8">
-          <CardHeader className="space-y-4">
-            {/* Logo e Branding do Rankito */}
-            <div className="flex flex-col items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Mountain className="h-8 w-8 text-primary" />
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full animate-pulse" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    Rankito
-                  </h1>
-                  <p className="text-xs text-muted-foreground">
-                    Gestão de Rank & Rent
-                  </p>
-                </div>
+    <>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-background dark:to-gray-900">
+        <Card className="w-full max-w-md shadow-2xl border-0">
+          <CardHeader className="space-y-3 pb-6">
+            <div className="flex items-center justify-center">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-lg">
+                <Mountain className="h-8 w-8 text-white" />
               </div>
             </div>
-            
-            {/* Título da seção de login */}
-            <CardTitle className="text-2xl text-center">Acesse sua conta</CardTitle>
-            <CardDescription className="text-center">
-              Desenvolvido pela GO Everest Marketing
+            <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+              Rankito CRM
+            </CardTitle>
+            <CardDescription className="text-center text-base">
+              Sistema de Gestão de Rank n Rent
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Criar conta</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="signin" className="font-semibold">Entrar</TabsTrigger>
+                <TabsTrigger value="signup" className="font-semibold">Criar conta</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
@@ -313,19 +300,20 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="fullname-signup">Nome Completo</Label>
+                    <Label htmlFor="fullname-signup" className="text-sm font-semibold">Nome Completo</Label>
                     <Input
                       id="fullname-signup"
                       type="text"
-                      placeholder="Seu nome completo"
+                      placeholder="João Silva"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
                       minLength={3}
+                      className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email-signup">E-mail</Label>
+                    <Label htmlFor="email-signup" className="text-sm font-semibold">Email</Label>
                     <Input
                       id="email-signup"
                       type="email"
@@ -333,58 +321,79 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password-signup">Senha</Label>
+                    <Label htmlFor="password-signup" className="text-sm font-semibold">Senha</Label>
                     <div className="relative">
                       <Input
                         id="password-signup"
                         type={showSignupPassword ? "text" : "password"}
-                        placeholder="Mínimo 8 caracteres"
+                        placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         minLength={8}
-                        className="pr-10"
+                        className="h-11 pr-10 transition-all focus:ring-2 focus:ring-blue-500"
                       />
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                         onClick={() => setShowSignupPassword(!showSignupPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {showSignupPassword ? (
-                          <EyeOff className="h-4 w-4" />
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 text-muted-foreground" />
                         )}
-                      </button>
+                      </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">Mínimo 8 caracteres</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="whatsapp-signup">WhatsApp</Label>
-                    <Input
-                      id="whatsapp-signup"
-                      type="tel"
-                      placeholder="+55 11 99999-9999"
+                    <Label htmlFor="whatsapp-signup" className="text-sm font-semibold">
+                      WhatsApp (Internacional)
+                    </Label>
+                    <PhoneInput
+                      defaultCountry="br"
                       value={whatsapp}
-                      onChange={(e) => setWhatsapp(e.target.value)}
-                      required
+                      onChange={(phone) => setWhatsapp(phone)}
+                      placeholder="Digite seu WhatsApp"
+                      className="w-full"
+                      inputClassName="h-11 w-full"
+                      countrySelectorStyleProps={{
+                        buttonClassName: "h-11"
+                      }}
                     />
+                    <p className="text-xs text-muted-foreground">Inclua o código do país</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="website-signup">Site Principal</Label>
+                    <Label htmlFor="website-signup" className="text-sm font-semibold">Site (opcional)</Label>
                     <Input
                       id="website-signup"
                       type="url"
                       placeholder="https://seusite.com"
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
-                      required
+                      className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Criando conta..." : "Criar conta grátis (14 dias trial)"}
+                  <Button 
+                    type="submit" 
+                    className="w-full h-11 font-semibold transition-all active:scale-[0.98]" 
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Criando conta...
+                      </>
+                    ) : (
+                      "Criar conta"
+                    )}
                   </Button>
                 </form>
               </TabsContent>
@@ -393,7 +402,7 @@ const Auth = () => {
         </Card>
       </div>
       <Footer />
-    </div>
+    </>
   );
 };
 
