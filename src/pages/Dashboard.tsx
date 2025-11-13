@@ -121,28 +121,35 @@ const Dashboard = () => {
   }, [role, isEndClient, roleLoading, navigate]);
 
   useEffect(() => {
-    // 1. Configurar listener PRIMEIRO
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate("/");
+        navigate("/auth");
+        return;
       }
-    });
 
-    // 2. DEPOIS verificar sessão existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (!session) {
-        navigate("/");
+      // Verificar se a conta está aprovada
+      if (session.user) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_active')
+          .eq('id', session.user.id)
+          .single();
+
+        if (error) {
+          console.error('Error checking profile:', error);
+        }
+
+        if (profile && !profile.is_active) {
+          // Conta não aprovada, redirecionar para página de pendência
+          navigate("/pending-approval");
+          return;
+        }
       }
+
       setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    };
+    checkAuth();
   }, [navigate]);
 
   const handleSignOut = async () => {
