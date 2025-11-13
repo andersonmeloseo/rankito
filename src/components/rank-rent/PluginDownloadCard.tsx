@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Copy, Check, FileCode, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { Copy, Check, FileCode, AlertCircle, CheckCircle, XCircle, Download } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -29,6 +29,14 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
       description: "Cole esta URL nas configurações do plugin.",
     });
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadPlugin = () => {
+    window.open('https://drive.google.com/drive/folders/1iRJW2DiS_G863xxExkJbt8efEkrcNcj_?usp=sharing', '_blank');
+    toast({
+      title: "Abrindo pasta do plugin",
+      description: "Baixe o arquivo do plugin na pasta do Google Drive.",
+    });
   };
 
   return (
@@ -115,14 +123,24 @@ export function PluginDownloadCard({ onOpenGuide, siteId, trackingToken, trackin
           </div>
         </div>
 
-        {/* Installation Guide Button */}
-        <Button
-          variant="outline"
-          onClick={onOpenGuide}
-          className="gap-2 w-full"
-        >
-          📖 Guia de Instalação
-        </Button>
+        {/* Download and Installation Guide Buttons */}
+        <div className="space-y-2">
+          <Button
+            onClick={handleDownloadPlugin}
+            className="gap-2 w-full"
+          >
+            <Download className="w-4 h-4" />
+            Baixar Plugin WordPress
+          </Button>
+          
+          <Button
+            variant="outline"
+            onClick={onOpenGuide}
+            className="gap-2 w-full"
+          >
+            📖 Guia de Instalação
+          </Button>
+        </div>
 
         {/* Quick Tips */}
         <div className="bg-muted/50 rounded-lg p-4 space-y-2">
