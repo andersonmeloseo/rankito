@@ -16,6 +16,7 @@ import UserSettings from "./pages/UserSettings";
 import NotFound from "./pages/NotFound";
 import ExternalLeadsAPI from "./pages/ExternalLeadsAPI";
 import ExternalLeadsTestAPI from "./pages/ExternalLeadsTestAPI";
+import PendingApproval from "./pages/PendingApproval";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/super-admin" element={<SuperAdminDashboard />} />
             <Route path="/end-client-portal" element={<EndClientPortal />} />

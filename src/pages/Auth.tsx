@@ -1,47 +1,51 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Footer } from "@/components/layout/Footer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Mountain, Eye, EyeOff, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { Session } from "@supabase/supabase-js";
+import { Loader2, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { PhoneInput } from 'react-international-phone';
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Session } from "@supabase/supabase-js";
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [loading, setLoading] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  
+  // Detectar plano selecionado via URL
+  const searchParams = new URLSearchParams(location.search);
+  const selectedPlanSlug = searchParams.get('plan');
+
+  // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [website, setWebsite] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    // 1. Configurar listener PRIMEIRO
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
         navigate("/dashboard");
       }
     });
 
-    // 2. DEPOIS verificar sessão existente
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
         navigate("/dashboard");
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -50,11 +54,10 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validations
-    if (!fullName || fullName.length < 3) {
+    if (!fullName || fullName.trim().length < 3) {
       toast({
         title: "Nome inválido",
-        description: "O nome deve ter pelo menos 3 caracteres.",
+        description: "O nome completo deve ter pelo menos 3 caracteres",
         variant: "destructive",
       });
       return;
@@ -62,8 +65,8 @@ const Auth = () => {
 
     if (!whatsapp || whatsapp.length < 8) {
       toast({
-        title: "WhatsApp obrigatório",
-        description: "Por favor, informe um número de WhatsApp válido.",
+        title: "WhatsApp inválido",
+        description: "Por favor, insira um número de WhatsApp válido",
         variant: "destructive",
       });
       return;
@@ -71,8 +74,8 @@ const Auth = () => {
 
     if (website && !website.startsWith('http')) {
       toast({
-        title: "URL inválida",
-        description: "O site deve começar com http:// ou https://",
+        title: "Website inválido",
+        description: "O website deve começar com http:// ou https://",
         variant: "destructive",
       });
       return;
@@ -80,119 +83,126 @@ const Auth = () => {
 
     setLoading(true);
 
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+          }
+        }
+      });
 
-    // Create auth account
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
+      if (error) throw error;
 
-    if (authError) {
+      if (data.user) {
+        // Atualizar profile com dados adicionais e plano selecionado (usando any para contornar type check)
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ 
+            whatsapp: whatsapp,
+            website: website || null,
+            selected_plan_slug: selectedPlanSlug,
+          } as any)
+          .eq('id', data.user.id);
+
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+        }
+
+        // Mostrar mensagem de sucesso e aguardar aprovação
+        setRegistrationSuccess(true);
+        
+        // Fazer logout para prevenir acesso antes da aprovação
+        await supabase.auth.signOut();
+      }
+    } catch (error: any) {
       toast({
         title: "Erro ao criar conta",
-        description: authError.message,
+        description: error.message,
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (authData.user) {
-      // Update profile with additional data
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: fullName,
-          whatsapp,
-          website,
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) {
-        console.error('Error updating profile:', profileError);
-      }
-
-      // Create trial subscription (14 days)
-      const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 14);
-
-      // Get starter plan
-      const { data: plans } = await supabase
-        .from('subscription_plans')
-        .select('id')
-        .eq('slug', 'starter')
-        .single();
-
-      if (plans) {
-        const periodStart = new Date();
-        const periodEnd = new Date(trialEndDate);
-
-        await supabase.from('user_subscriptions').insert({
-          user_id: authData.user.id,
-          plan_id: plans.id,
-          status: 'trial',
-          trial_end_date: trialEndDate.toISOString().split('T')[0],
-          current_period_start: periodStart.toISOString().split('T')[0],
-          current_period_end: periodEnd.toISOString().split('T')[0],
-        });
-      }
-
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Você ganhou 14 dias de trial gratuito.",
-      });
-      navigate("/dashboard");
-    }
-
-    setLoading(false);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
+      if (error) throw error;
+
+      // Verificar se a conta está aprovada
+      if (data.user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_active')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error checking profile:', profileError);
+        }
+
+        if (profile && !profile.is_active) {
+          // Conta não aprovada, fazer logout
+          await supabase.auth.signOut();
+          
+          toast({
+            title: "Conta aguardando aprovação",
+            description: "Sua conta ainda não foi aprovada pela nossa equipe. Você receberá um email quando sua conta for ativada.",
+            variant: "destructive",
+          });
+          
+          setLoading(false);
+          return;
+        }
+      }
+
+      toast({
+        title: "Login realizado!",
+        description: "Bem-vindo de volta.",
+      });
+
+      navigate('/dashboard');
+    } catch (error: any) {
       toast({
         title: "Erro ao fazer login",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Login realizado!",
-        description: "Bem-vindo de volta.",
-      });
-      navigate("/dashboard");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleForgotPassword = async () => {
     if (!email) {
       toast({
-        title: "Email obrigatório",
-        description: "Por favor, informe seu email para recuperar a senha.",
+        title: "Email necessário",
+        description: "Por favor, insira seu email primeiro.",
         variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
+
+    const redirectUrl = `${window.location.origin}/auth`;
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/dashboard`,
+      redirectTo: redirectUrl,
     });
 
     if (error) {
@@ -207,202 +217,258 @@ const Auth = () => {
         description: "Verifique sua caixa de entrada para redefinir sua senha.",
       });
     }
+
     setLoading(false);
   };
 
-  if (loading) {
+  // Mostrar tela de sucesso após cadastro
+  if (registrationSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-primary/10">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-background dark:to-gray-900 p-4">
+        <Card className="w-full max-w-md shadow-xl border-0 bg-card/95 backdrop-blur">
+          <CardHeader className="space-y-3 pb-6">
+            <div className="flex items-center justify-center mb-2">
+              <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <CheckCircle className="h-10 w-10 text-green-600 dark:text-green-500" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold text-center">
+              Cadastro Enviado!
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
+              <AlertDescription className="text-center space-y-3">
+                <p className="font-semibold text-green-900 dark:text-green-100">
+                  Sua conta foi criada com sucesso!
+                </p>
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  Nossa equipe validará seu cadastro em até 24 horas. Você receberá um email de confirmação assim que sua conta for aprovada.
+                </p>
+                {selectedPlanSlug && (
+                  <div className="pt-2">
+                    <Badge variant="outline" className="bg-white dark:bg-gray-900">
+                      Plano selecionado: <span className="font-semibold ml-1 capitalize">{selectedPlanSlug}</span>
+                    </Badge>
+                  </div>
+                )}
+              </AlertDescription>
+            </Alert>
+            <Button 
+              className="w-full h-11 font-semibold transition-all active:scale-[0.98]"
+              onClick={() => window.location.href = '/'}
+            >
+              Voltar para Home
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-background dark:to-gray-900">
-        <Card className="w-full max-w-md shadow-2xl border-0">
-          <CardHeader className="space-y-3 pb-6">
-            <div className="flex items-center justify-center">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-lg">
-                <Mountain className="h-8 w-8 text-white" />
-              </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-background dark:to-gray-900 p-4">
+      <Card className="w-full max-w-md shadow-xl border-0 bg-card/95 backdrop-blur">
+        <CardHeader className="space-y-3 pb-6">
+          <div className="flex items-center justify-center mb-2">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 to-green-500 flex items-center justify-center shadow-lg">
+              <span className="text-2xl font-bold text-white">R</span>
             </div>
-            <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-              Rankito CRM
-            </CardTitle>
-            <CardDescription className="text-center text-base">
-              Sistema de Gestão de Rank n Rent
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signin" className="font-semibold">Entrar</TabsTrigger>
-                <TabsTrigger value="signup" className="font-semibold">Criar conta</TabsTrigger>
-              </TabsList>
+          </div>
+          <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent">
+            Rankito CRM
+          </CardTitle>
+          <CardDescription className="text-center text-base">
+            Sistema de Gestão de Rank n Rent
+          </CardDescription>
+          {selectedPlanSlug && (
+            <div className="flex justify-center pt-2">
+              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                Plano: <span className="font-semibold ml-1 capitalize">{selectedPlanSlug}</span>
+              </Badge>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="signin" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="signin">Entrar</TabsTrigger>
+              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email-signin">E-mail</Label>
+            <TabsContent value="signin">
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email-signin" className="text-sm font-semibold">
+                    Email
+                  </Label>
+                  <Input
+                    id="email-signin"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password-signin" className="text-sm font-semibold">
+                    Senha
+                  </Label>
+                  <div className="relative">
                     <Input
-                      id="email-signin"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      id="password-signin"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
+                      className="h-11 pr-10 transition-all focus:ring-2 focus:ring-blue-500"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password-signin">Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="password-signin"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <Button
+                    <button
                       type="button"
-                      variant="link"
-                      className="px-0 text-sm"
-                      onClick={handleForgotPassword}
-                      disabled={loading}
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      Esqueci minha senha
-                    </Button>
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Entrando..." : "Entrar"}
-                  </Button>
-                </form>
-              </TabsContent>
+                </div>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="px-0 font-normal text-sm"
+                  onClick={handleForgotPassword}
+                  disabled={loading}
+                >
+                  Esqueceu sua senha?
+                </Button>
+                <Button
+                  type="submit"
+                  className="w-full h-11 font-semibold transition-all active:scale-[0.98]"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Entrando...
+                    </>
+                  ) : (
+                    "Entrar"
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullname-signup" className="text-sm font-semibold">Nome Completo</Label>
+            <TabsContent value="signup">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullname-signup" className="text-sm font-semibold">
+                    Nome Completo
+                  </Label>
+                  <Input
+                    id="fullname-signup"
+                    type="text"
+                    placeholder="Seu Nome Completo"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email-signup" className="text-sm font-semibold">
+                    Email
+                  </Label>
+                  <Input
+                    id="email-signup"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password-signup" className="text-sm font-semibold">
+                    Senha
+                  </Label>
+                  <div className="relative">
                     <Input
-                      id="fullname-signup"
-                      type="text"
-                      placeholder="João Silva"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
+                      id="password-signup"
+                      type={showSignupPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
-                      minLength={3}
-                      className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                      minLength={6}
+                      className="h-11 pr-10 transition-all focus:ring-2 focus:ring-blue-500"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignupPassword(!showSignupPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showSignupPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email-signup" className="text-sm font-semibold">Email</Label>
-                    <Input
-                      id="email-signup"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password-signup" className="text-sm font-semibold">Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="password-signup"
-                        type={showSignupPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        minLength={8}
-                        className="h-11 pr-10 transition-all focus:ring-2 focus:ring-blue-500"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                        onClick={() => setShowSignupPassword(!showSignupPassword)}
-                      >
-                        {showSignupPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Mínimo 8 caracteres</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="whatsapp-signup" className="text-sm font-semibold">
-                      WhatsApp (Internacional)
-                    </Label>
-                    <PhoneInput
-                      defaultCountry="br"
-                      value={whatsapp}
-                      onChange={(phone) => setWhatsapp(phone)}
-                      placeholder="Digite seu WhatsApp"
-                      className="w-full"
-                      inputClassName="h-11 w-full"
-                      countrySelectorStyleProps={{
-                        buttonClassName: "h-11"
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">Inclua o código do país</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="website-signup" className="text-sm font-semibold">Site (opcional)</Label>
-                    <Input
-                      id="website-signup"
-                      type="url"
-                      placeholder="https://seusite.com"
-                      value={website}
-                      onChange={(e) => setWebsite(e.target.value)}
-                      className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full h-11 font-semibold transition-all active:scale-[0.98]" 
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Criando conta...
-                      </>
-                    ) : (
-                      "Criar conta"
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-      <Footer />
-    </>
+                  <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp-signup" className="text-sm font-semibold">
+                    WhatsApp
+                  </Label>
+                  <PhoneInput
+                    defaultCountry="br"
+                    value={whatsapp}
+                    onChange={(phone) => setWhatsapp(phone)}
+                    placeholder="Digite seu WhatsApp"
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="website-signup" className="text-sm font-semibold">
+                    Website (opcional)
+                  </Label>
+                  <Input
+                    id="website-signup"
+                    type="url"
+                    placeholder="https://seusite.com"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full h-11 font-semibold transition-all active:scale-[0.98]"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Criando conta...
+                    </>
+                  ) : (
+                    "Criar Conta"
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
