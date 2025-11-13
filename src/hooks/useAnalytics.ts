@@ -244,9 +244,9 @@ export const useAnalytics = ({
     enabled: !!siteId,
   });
 
-  // Lista completa de conversões (últimas 100)
+  // Lista completa de conversões (últimas 100, ou todas se período = "all")
   const { data: conversions, isLoading: conversionsLoading } = useQuery({
-    queryKey: ["analytics-conversions", siteId, startDate, endDate, eventType, device],
+    queryKey: ["analytics-conversions", siteId, startDate, endDate, eventType, device, period],
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_conversions")
@@ -255,8 +255,12 @@ export const useAnalytics = ({
         .neq("event_type", "page_view")
         .gte("created_at", startDate)
         .lte("created_at", endDate)
-        .order("created_at", { ascending: false })
-        .limit(100);
+        .order("created_at", { ascending: false });
+
+      // Aplicar limite apenas se não for "todo período"
+      if (period !== "all") {
+        query = query.limit(100);
+      }
 
       if (eventType !== "all" && eventType !== "page_view") {
         query = query.eq("event_type", eventType as any);
@@ -300,9 +304,12 @@ export const useAnalytics = ({
           .lte("created_at", endDate);
       }
 
-      query = query
-        .order("created_at", { ascending: false })
-        .limit(1000);
+      query = query.order("created_at", { ascending: false });
+
+      // Aplicar limite apenas se não for "todo período"
+      if (period !== "all") {
+        query = query.limit(1000);
+      }
 
       if (device !== "all") {
         query = query.filter('metadata->>device', 'eq', device);
