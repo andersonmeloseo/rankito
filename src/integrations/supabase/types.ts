@@ -1202,6 +1202,7 @@ export type Database = {
           parent_user_id: string | null
           phone: string | null
           theme: string | null
+          theme_preferences: Json | null
           timezone: string | null
           updated_at: string | null
           website: string | null
@@ -1224,6 +1225,7 @@ export type Database = {
           parent_user_id?: string | null
           phone?: string | null
           theme?: string | null
+          theme_preferences?: Json | null
           timezone?: string | null
           updated_at?: string | null
           website?: string | null
@@ -1246,6 +1248,7 @@ export type Database = {
           parent_user_id?: string | null
           phone?: string | null
           theme?: string | null
+          theme_preferences?: Json | null
           timezone?: string | null
           updated_at?: string | null
           website?: string | null
@@ -2339,6 +2342,7 @@ export type Database = {
           name: string
           price: number
           slug: string
+          trial_days: number | null
           updated_at: string | null
         }
         Insert: {
@@ -2355,6 +2359,7 @@ export type Database = {
           name: string
           price: number
           slug: string
+          trial_days?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -2371,6 +2376,7 @@ export type Database = {
           name?: string
           price?: number
           slug?: string
+          trial_days?: number | null
           updated_at?: string | null
         }
         Relationships: []

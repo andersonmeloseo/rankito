@@ -21,6 +21,7 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
     max_sites: "",
     max_pages_per_site: "",
     max_gsc_integrations: "",
+    trial_days: "0",
     billing_period: "monthly",
     features: [] as string[],
     display_order: 0,
@@ -54,6 +55,7 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
       max_sites: formData.max_sites ? Number(formData.max_sites) : null,
       max_pages_per_site: formData.max_pages_per_site ? Number(formData.max_pages_per_site) : null,
       max_gsc_integrations: formData.max_gsc_integrations ? Number(formData.max_gsc_integrations) : null,
+      trial_days: Number(formData.trial_days),
       billing_period: formData.billing_period,
       features: formData.features,
       display_order: formData.display_order,
@@ -69,6 +71,7 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
       max_sites: "",
       max_pages_per_site: "",
       max_gsc_integrations: "",
+      trial_days: "0",
       billing_period: "monthly",
       features: [],
       display_order: 0,
@@ -177,18 +180,35 @@ export const CreatePlanDialog = ({ open, onOpenChange }: CreatePlanDialogProps) 
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="display_order">Ordem de Exibição</Label>
-            <Input
-              id="display_order"
-              type="number"
-              value={formData.display_order}
-              onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
-              placeholder="0"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Números menores aparecem primeiro na lista
-            </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="trial_days">Dias de Trial</Label>
+              <Input
+                id="trial_days"
+                type="number"
+                min="0"
+                value={formData.trial_days}
+                onChange={(e) => setFormData({ ...formData, trial_days: e.target.value })}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                0 = sem trial
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="display_order">Ordem de Exibição</Label>
+              <Input
+                id="display_order"
+                type="number"
+                value={formData.display_order}
+                onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Números menores aparecem primeiro na lista
+              </p>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

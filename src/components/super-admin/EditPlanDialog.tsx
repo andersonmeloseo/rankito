@@ -20,6 +20,8 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
     price: plan.price,
     max_sites: plan.max_sites || "",
     max_pages_per_site: plan.max_pages_per_site || "",
+    max_gsc_integrations: plan.max_gsc_integrations || "",
+    trial_days: plan.trial_days || 0,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -32,6 +34,8 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
         price: Number(formData.price),
         max_sites: formData.max_sites ? Number(formData.max_sites) : null,
         max_pages_per_site: formData.max_pages_per_site ? Number(formData.max_pages_per_site) : null,
+        max_gsc_integrations: formData.max_gsc_integrations ? Number(formData.max_gsc_integrations) : null,
+        trial_days: Number(formData.trial_days),
       },
     });
     onOpenChange(false);
@@ -100,6 +104,37 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
                 onChange={(e) => setFormData({ ...formData, max_pages_per_site: e.target.value })}
                 placeholder="Ilimitado"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="max_gsc">Máx. GSC Integrations</Label>
+              <Input
+                id="max_gsc"
+                type="number"
+                value={formData.max_gsc_integrations}
+                onChange={(e) => setFormData({ ...formData, max_gsc_integrations: e.target.value })}
+                placeholder="Ilimitado"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Número de integrações GSC permitidas
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="trial_days">Dias de Trial</Label>
+              <Input
+                id="trial_days"
+                type="number"
+                min="0"
+                value={formData.trial_days}
+                onChange={(e) => setFormData({ ...formData, trial_days: Number(e.target.value) })}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                0 = sem trial
+              </p>
             </div>
           </div>
 

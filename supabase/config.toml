@@ -1,5 +1,8 @@
 project_id = "jhzmgexprjnpgadkxjup"
 
+[functions.check-expired-trials]
+verify_jwt = false
+
 [functions.api-track]
 verify_jwt = false
 

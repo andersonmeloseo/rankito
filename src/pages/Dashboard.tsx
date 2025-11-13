@@ -40,6 +40,7 @@ import { Footer } from "@/components/layout/Footer";
 import { PlanUsageCard } from "@/components/subscription/PlanUsageCard";
 import { LimitWarningBanner } from "@/components/subscription/LimitWarningBanner";
 import { SubscriptionStatusBar } from "@/components/subscription/SubscriptionStatusBar";
+import { TrialExpiredBanner } from "@/components/subscription/TrialExpiredBanner";
 import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
 import { Badge } from "@/components/ui/badge";
 import { ViewSwitcher } from "@/components/layout/ViewSwitcher";
@@ -285,6 +286,9 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {isSuperAdmin && <SuperAdminBanner currentView="client" />}
+      
+      {/* Trial Expired Banner */}
+      <TrialExpiredBanner />
       
       {/* Lead Notifications Banner */}
       {newLeads.length > 0 && (

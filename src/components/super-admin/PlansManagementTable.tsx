@@ -52,11 +52,12 @@ export const PlansManagementTable = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Plano</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead>Limites</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+              <TableHead>Plano</TableHead>
+              <TableHead>Preço</TableHead>
+              <TableHead>Limites</TableHead>
+              <TableHead>Trial</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -79,6 +80,14 @@ export const PlansManagementTable = () => {
                     <div className="text-sm text-muted-foreground">
                       {plan.max_pages_per_site ? `${plan.max_pages_per_site} páginas/site` : 'Ilimitado'}
                     </div>
+                    <div className="text-sm text-muted-foreground">
+                      {plan.max_gsc_integrations ? `${plan.max_gsc_integrations} GSC` : 'GSC Ilimitado'}
+                    </div>
+                  </TableCell>
+                  <TableCell className="p-4">
+                    <Badge variant={plan.trial_days > 0 ? "default" : "secondary"}>
+                      {plan.trial_days > 0 ? `${plan.trial_days} dias` : 'Sem trial'}
+                    </Badge>
                   </TableCell>
                   <TableCell className="p-4">
                     <Badge variant={plan.is_active ? "default" : "secondary"}>
