@@ -1,0 +1,1438 @@
+export type LandingLocale = 'pt-BR' | 'es-ES' | 'en-US' | 'fr-FR' | 'pt-PT';
+
+export interface LandingTranslations {
+  nav: {
+    features: string;
+    gsc: string;
+    pricing: string;
+    faq: string;
+    login: string;
+    startFree: string;
+  };
+  hero: {
+    badge: string;
+    title: string;
+    painPoint: string;
+    description: string;
+    ctaPrimary: string;
+    ctaSecondary: string;
+    socialProof: {
+      sites: string;
+      revenue: string;
+      secure: string;
+    };
+  };
+  problems: {
+    title: string;
+    items: string[];
+    conclusion: string;
+  };
+  features: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    items: Array<{
+      title: string;
+      description: string;
+      benefits: string[];
+      badge?: string;
+    }>;
+  };
+  gsc: {
+    badge: string;
+    title: string;
+    painPoint: string;
+    description: string;
+    ctaButton: string;
+    features: Array<{
+      title: string;
+      description: string;
+    }>;
+  };
+  pricing: {
+    badge: string;
+    title: string;
+    description: string;
+    perMonth: string;
+    freeDays: string;
+    popular: string;
+    subscribe: string;
+    upTo: string;
+    unlimited: string;
+    sites: string;
+    pages: string;
+    integrations: string;
+    commonFeatures: string[];
+    footer: string;
+  };
+  testimonials: {
+    badge: string;
+    title: string;
+    description: string;
+    items: Array<{
+      name: string;
+      role: string;
+      text: string;
+      category: string;
+    }>;
+  };
+  faq: {
+    badge: string;
+    title: string;
+    description: string;
+    items: Array<{
+      question: string;
+      answer: string;
+    }>;
+  };
+  cta: {
+    title: string;
+    description: string;
+    button: string;
+    features: string[];
+  };
+  footer: {
+    product: {
+      title: string;
+      features: string;
+      pricing: string;
+      start: string;
+      gsc: string;
+    };
+    resources: {
+      title: string;
+      docs: string;
+      tutorials: string;
+      blog: string;
+      faq: string;
+    };
+    company: {
+      title: string;
+      about: string;
+      privacy: string;
+      terms: string;
+      contact: string;
+    };
+    support: {
+      title: string;
+      help: string;
+      status: string;
+      email: string;
+      whatsapp: string;
+    };
+    copyright: string;
+  };
+}
+
+export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
+  'pt-BR': {
+    nav: {
+      features: 'Funcionalidades',
+      gsc: 'Indexação GSC',
+      pricing: 'Preços',
+      faq: 'FAQ',
+      login: 'Entrar',
+      startFree: 'Começar Grátis',
+    },
+    hero: {
+      badge: 'Rank & Rent CRM',
+      title: 'Gerencie Seu Império de Rank & Rent com Inteligência',
+      painPoint: 'Pare de perder dinheiro com sites sem controle, conversões invisíveis e indexação manual que consome seu tempo.',
+      description: 'A única plataforma completa para profissionais de SEO que gerenciam portfólios de sites de lead generation. Centralize gestão, financeiro, CRM e indexação automática em um só lugar.',
+      ctaPrimary: 'Comece Grátis Agora',
+      ctaSecondary: 'Ver Demonstração',
+      socialProof: {
+        sites: '200+ sites gerenciados',
+        revenue: 'R$ 500K+ em receita',
+        secure: 'Dados 100% seguros',
+      },
+    },
+    problems: {
+      title: 'Reconhece Esses Problemas?',
+      items: [
+        'Sites parados sem saber quais estão convertendo',
+        'Páginas criadas mas não indexadas pelo Google',
+        'Horas perdidas em planilhas desorganizadas',
+        'Cliente pede relatório e você não tem dados',
+        'Leads ligam e você anota no papel',
+        'Sem saber o ROI real de cada projeto',
+      ],
+      conclusion: '👉 O Rankito CRM resolve TODOS esses problemas em uma única plataforma.',
+    },
+    features: {
+      badge: 'Funcionalidades',
+      title: 'Tudo Que Você Precisa em Uma Plataforma',
+      subtitle: 'Gerencie seu portfólio com ferramentas profissionais',
+      items: [
+        {
+          title: 'Dashboard Inteligente',
+          description: 'Você não sabe quais sites estão convertendo e perdendo dinheiro? Acompanhe performance, receita, custos e ROI de todos os seus sites em tempo real. Métricas que importam, sem ruído.',
+          benefits: [
+            'Visão geral de todos os sites',
+            'Receita e custos em tempo real',
+            'ROI automático por projeto',
+            'Alertas de performance',
+          ],
+          badge: 'Essencial',
+        },
+        {
+          title: 'CRM Completo',
+          description: 'Leads ligam, você anota no papel e esquece de retornar? Capture leads automaticamente, gerencie deals, automatize follow-ups e nunca mais perca uma oportunidade de negócio.',
+          benefits: [
+            'Pipeline visual de vendas',
+            'Automação de follow-ups',
+            'Histórico completo de interações',
+            'Integração com WhatsApp',
+          ],
+        },
+        {
+          title: 'Indexação Automática GSC',
+          description: 'Cansado de indexar 5 páginas por vez manualmente no Search Console? Conecte sua conta Google e indexe centenas de páginas automaticamente. Envie sitemaps, agende indexações e monitore status em tempo real.',
+          benefits: [
+            'Indexação em massa (200+ URLs/dia)',
+            'Agendamento automático',
+            'Monitoramento de status',
+            'Múltiplas contas GSC',
+          ],
+          badge: 'Exclusivo',
+        },
+        {
+          title: 'Financeiro Completo',
+          description: 'Planilhas desorganizadas e sem saber se está lucrando ou perdendo? Registre receitas, custos, pagamentos e calcule ROI automaticamente. Saiba exatamente quanto cada site está gerando.',
+          benefits: [
+            'Controle de receitas e despesas',
+            'ROI automático por site',
+            'Histórico de pagamentos',
+            'Projeções financeiras',
+          ],
+        },
+        {
+          title: 'Portal Whitelabel',
+          description: 'Cliente pediu relatório e você não tem nada para mostrar? Gere portais personalizados com sua logo e cores. Seus clientes acompanham performance sem acessar seu dashboard.',
+          benefits: [
+            'Customização completa (logo, cores)',
+            'Acesso seguro por link único',
+            'Métricas em tempo real',
+            'Relatórios automáticos',
+          ],
+        },
+        {
+          title: 'Analytics Avançado',
+          description: 'Não sabe quantos leads cada página gerou hoje? Saiba quantos leads cada página gera, de onde vêm, quando acontecem. Tracking pixel + integração WordPress.',
+          benefits: [
+            'Tracking de conversões por página',
+            'Origem de tráfego detalhada',
+            'Horários de pico',
+            'Plugin WordPress incluso',
+          ],
+        },
+      ],
+    },
+    gsc: {
+      badge: 'Chega de Perder Tempo',
+      title: 'Pare de Indexar 5 Páginas Por Vez Manualmente',
+      painPoint: 'Você tem 500 páginas criadas mas o Google só indexou 50? Está perdendo dinheiro todos os dias enquanto suas páginas ficam invisíveis.',
+      description: 'Nossa indexação automática conecta ao Google Search Console e indexa centenas de páginas por dia. Sem esforço manual, sem perder oportunidades.',
+      ctaButton: 'Começar a Indexar Agora',
+      features: [
+        {
+          title: 'Indexação em Massa',
+          description: 'Envie até 200 URLs por dia automaticamente para o Google Search Console. Multiplique isso por quantas contas você conectar.',
+        },
+        {
+          title: 'Agendamento Inteligente',
+          description: 'Configure horários automáticos para submissão de sitemaps. O sistema gerencia tudo sem você precisar lembrar.',
+        },
+        {
+          title: 'Monitoramento em Tempo Real',
+          description: 'Acompanhe o status de cada URL: pendente, indexado, erro. Saiba exatamente o que está acontecendo com suas páginas.',
+        },
+      ],
+    },
+    pricing: {
+      badge: 'Preços',
+      title: 'Planos Para Todos os Tamanhos',
+      description: 'Escolha o plano ideal para o tamanho do seu portfólio',
+      perMonth: '/mês',
+      freeDays: 'dias grátis',
+      popular: 'Mais Popular',
+      subscribe: 'Assinar',
+      upTo: 'Até',
+      unlimited: 'Ilimitado',
+      sites: 'sites',
+      pages: 'páginas por site',
+      integrations: 'integrações GSC',
+      commonFeatures: [
+        'CRM completo',
+        'Portal whitelabel',
+        'Analytics avançado',
+        'Financeiro completo',
+        'Suporte prioritário',
+      ],
+      footer: '*Todos os planos incluem suporte técnico e atualizações gratuitas',
+    },
+    testimonials: {
+      badge: 'Depoimentos',
+      title: 'O Que Nossos Clientes Dizem',
+      description: 'Profissionais de SEO que transformaram seus negócios com Rankito CRM',
+      items: [
+        {
+          name: 'Carlos Silva',
+          role: 'CEO, Agência Digital Pro',
+          text: 'Rankito CRM mudou completamente como gerenciamos nosso portfólio de 30+ sites. A indexação automática no GSC economiza 8 horas por semana.',
+          category: 'Agência SEO',
+        },
+        {
+          name: 'Marina Santos',
+          role: 'Consultora SEO',
+          text: 'Finalmente tenho controle financeiro total sobre meus projetos. O ROI automático e o portal whitelabel impressionam meus clientes.',
+          category: 'Consultora',
+        },
+        {
+          name: 'Ricardo Oliveira',
+          role: 'Head de Growth',
+          text: 'A integração com Google Search Console é simplesmente incrível. Nenhuma outra plataforma oferece isso de forma tão profissional.',
+          category: 'Startup',
+        },
+        {
+          name: 'Juliana Costa',
+          role: 'Fundadora, LeadGen Brasil',
+          text: 'O CRM integrado me ajudou a fechar 40% mais contratos. Não perco mais nenhum lead e o pipeline é cristalino.',
+          category: 'Agência Lead Gen',
+        },
+        {
+          name: 'Pedro Alves',
+          role: 'Especialista Rank & Rent',
+          text: 'Gerencio 50 sites com facilidade. O tracking de conversões e os relatórios automáticos economizam dias de trabalho manual.',
+          category: 'Especialista',
+        },
+        {
+          name: 'Ana Paula',
+          role: 'Diretora de Marketing',
+          text: 'O portal do cliente é perfeito. Meus clientes adoram a transparência e eu não preciso mais enviar relatórios manuais.',
+          category: 'Marketing',
+        },
+      ],
+    },
+    faq: {
+      badge: 'FAQ',
+      title: 'Perguntas Frequentes',
+      description: 'Tire suas dúvidas sobre o Rankito CRM',
+      items: [
+        {
+          question: 'Como funciona a integração com Google Search Console?',
+          answer: 'Você conecta suas contas do GSC usando Service Account do Google Cloud. O sistema gerencia automaticamente a submissão de URLs e sitemaps, respeitando os limites diários do Google (200 URLs/dia por conta).',
+        },
+        {
+          question: 'Posso conectar múltiplas contas do Google Search Console?',
+          answer: 'Sim! Dependendo do seu plano, você pode conectar múltiplas contas GSC. Isso multiplica sua capacidade de indexação diária. Por exemplo, com 5 contas, você pode indexar até 1000 URLs por dia.',
+        },
+        {
+          question: 'O portal whitelabel é realmente personalizável?',
+          answer: 'Sim! Você pode adicionar sua logo, definir cores primárias e secundárias, personalizar textos de boas-vindas e até configurar informações de contato. Cada cliente tem seu próprio link único e seguro.',
+        },
+        {
+          question: 'Como funciona o tracking de conversões?',
+          answer: 'Oferecemos um plugin WordPress que instala um pixel de tracking em suas páginas. Ele registra visualizações, cliques em WhatsApp, telefones e formulários. Tudo aparece em tempo real no dashboard.',
+        },
+        {
+          question: 'Posso testar antes de assinar?',
+          answer: 'Sim! Todos os planos pagos incluem período de trial gratuito. Free (0 dias), Starter (7 dias), Professional (14 dias), Enterprise (30 dias). Não precisa cartão de crédito para começar.',
+        },
+        {
+          question: 'Vocês têm suporte em português?',
+          answer: 'Sim! Todo nosso suporte é em português, incluindo documentação, tutoriais em vídeo e atendimento por email/WhatsApp. Respondemos em até 24 horas.',
+        },
+      ],
+    },
+    cta: {
+      title: 'Pronto Para Gerenciar Seu Império Rank & Rent?',
+      description: 'Junte-se a centenas de profissionais de SEO que já transformaram seus negócios',
+      button: 'Começar Trial Gratuito de 7 Dias',
+      features: [
+        'Sem cartão de crédito',
+        'Cancele quando quiser',
+        'Suporte dedicado',
+      ],
+    },
+    footer: {
+      product: {
+        title: 'Produto',
+        features: 'Funcionalidades',
+        pricing: 'Preços',
+        start: 'Começar Agora',
+        gsc: 'Indexação GSC',
+      },
+      resources: {
+        title: 'Recursos',
+        docs: 'Documentação',
+        tutorials: 'Tutoriais',
+        blog: 'Blog',
+        faq: 'FAQ',
+      },
+      company: {
+        title: 'Empresa',
+        about: 'Sobre Nós',
+        privacy: 'Política de Privacidade',
+        terms: 'Termos de Uso',
+        contact: 'Contato',
+      },
+      support: {
+        title: 'Suporte',
+        help: 'Central de Ajuda',
+        status: 'Status do Sistema',
+        email: 'contato@rankitocrm.com',
+        whatsapp: '(11) 99999-9999',
+      },
+      copyright: '© 2024 Rankito CRM. Todos os direitos reservados.',
+    },
+  },
+  'es-ES': {
+    nav: {
+      features: 'Funcionalidades',
+      gsc: 'Indexación GSC',
+      pricing: 'Precios',
+      faq: 'FAQ',
+      login: 'Iniciar Sesión',
+      startFree: 'Empezar Gratis',
+    },
+    hero: {
+      badge: 'Rank & Rent CRM',
+      title: 'Gestiona Tu Imperio de Rank & Rent con Inteligencia',
+      painPoint: 'Deja de perder dinero con sitios sin control, conversiones invisibles e indexación manual que consume tu tiempo.',
+      description: 'La única plataforma completa para profesionales de SEO que gestionan carteras de sitios de generación de leads. Centraliza gestión, finanzas, CRM e indexación automática en un solo lugar.',
+      ctaPrimary: 'Empezar Gratis Ahora',
+      ctaSecondary: 'Ver Demostración',
+      socialProof: {
+        sites: '200+ sitios gestionados',
+        revenue: '€120K+ en ingresos',
+        secure: 'Datos 100% seguros',
+      },
+    },
+    problems: {
+      title: '¿Reconoces Estos Problemas?',
+      items: [
+        'Sitios parados sin saber cuáles están convirtiendo',
+        'Páginas creadas pero no indexadas por Google',
+        'Horas perdidas en hojas de cálculo desorganizadas',
+        'Cliente pide informe y no tienes datos',
+        'Leads llaman y anotas en papel',
+        'Sin saber el ROI real de cada proyecto',
+      ],
+      conclusion: '👉 Rankito CRM resuelve TODOS estos problemas en una única plataforma.',
+    },
+    features: {
+      badge: 'Funcionalidades',
+      title: 'Todo Lo Que Necesitas en Una Plataforma',
+      subtitle: 'Gestiona tu cartera con herramientas profesionales',
+      items: [
+        {
+          title: 'Panel Inteligente',
+          description: '¿No sabes qué sitios están convirtiendo y perdiendo dinero? Monitorea rendimiento, ingresos, costos y ROI de todos tus sitios en tiempo real. Métricas que importan, sin ruido.',
+          benefits: [
+            'Vista general de todos los sitios',
+            'Ingresos y costos en tiempo real',
+            'ROI automático por proyecto',
+            'Alertas de rendimiento',
+          ],
+          badge: 'Esencial',
+        },
+        {
+          title: 'CRM Completo',
+          description: '¿Los leads llaman, anotas en papel y olvidas devolver la llamada? Captura leads automáticamente, gestiona deals, automatiza seguimientos y nunca más pierdas una oportunidad de negocio.',
+          benefits: [
+            'Pipeline visual de ventas',
+            'Automatización de seguimientos',
+            'Historial completo de interacciones',
+            'Integración con WhatsApp',
+          ],
+        },
+        {
+          title: 'Indexación Automática GSC',
+          description: '¿Cansado de indexar 5 páginas a la vez manualmente en Search Console? Conecta tu cuenta de Google e indexa cientos de páginas automáticamente. Envía sitemaps, programa indexaciones y monitorea el estado en tiempo real.',
+          benefits: [
+            'Indexación masiva (200+ URLs/día)',
+            'Programación automática',
+            'Monitoreo de estado',
+            'Múltiples cuentas GSC',
+          ],
+          badge: 'Exclusivo',
+        },
+        {
+          title: 'Financiero Completo',
+          description: '¿Hojas de cálculo desorganizadas y sin saber si estás ganando o perdiendo? Registra ingresos, costos, pagos y calcula el ROI automáticamente. Sabe exactamente cuánto está generando cada sitio.',
+          benefits: [
+            'Control de ingresos y gastos',
+            'ROI automático por sitio',
+            'Historial de pagos',
+            'Proyecciones financieras',
+          ],
+        },
+        {
+          title: 'Portal Whitelabel',
+          description: '¿Cliente pidió informe y no tienes nada que mostrar? Genera portales personalizados con tu logo y colores. Tus clientes monitorizan rendimiento sin acceder a tu panel.',
+          benefits: [
+            'Personalización completa (logo, colores)',
+            'Acceso seguro por enlace único',
+            'Métricas en tiempo real',
+            'Informes automáticos',
+          ],
+        },
+        {
+          title: 'Analytics Avanzado',
+          description: '¿No sabes cuántos leads generó cada página hoy? Descubre cuántos leads genera cada página, de dónde vienen, cuándo ocurren. Pixel de seguimiento + integración WordPress.',
+          benefits: [
+            'Seguimiento de conversiones por página',
+            'Origen de tráfico detallado',
+            'Horarios pico',
+            'Plugin WordPress incluido',
+          ],
+        },
+      ],
+    },
+    gsc: {
+      badge: 'Deja de Perder Tiempo',
+      title: 'Deja de Indexar 5 Páginas a la Vez Manualmente',
+      painPoint: '¿Tienes 500 páginas creadas pero Google solo indexó 50? Estás perdiendo dinero todos los días mientras tus páginas permanecen invisibles.',
+      description: 'Nuestra indexación automática se conecta a Google Search Console e indexa cientos de páginas por día. Sin esfuerzo manual, sin perder oportunidades.',
+      ctaButton: 'Empezar a Indexar Ahora',
+      features: [
+        {
+          title: 'Indexación Masiva',
+          description: 'Envía hasta 200 URLs por día automáticamente a Google Search Console. Multiplica esto por cuantas cuentas conectes.',
+        },
+        {
+          title: 'Programación Inteligente',
+          description: 'Configura horarios automáticos para envío de sitemaps. El sistema gestiona todo sin que tengas que recordarlo.',
+        },
+        {
+          title: 'Monitoreo en Tiempo Real',
+          description: 'Monitorea el estado de cada URL: pendiente, indexada, error. Sabe exactamente qué está pasando con tus páginas.',
+        },
+      ],
+    },
+    pricing: {
+      badge: 'Precios',
+      title: 'Planes Para Todos los Tamaños',
+      description: 'Elige el plan ideal para el tamaño de tu cartera',
+      perMonth: '/mes',
+      freeDays: 'días gratis',
+      popular: 'Más Popular',
+      subscribe: 'Suscribirse',
+      upTo: 'Hasta',
+      unlimited: 'Ilimitado',
+      sites: 'sitios',
+      pages: 'páginas por sitio',
+      integrations: 'integraciones GSC',
+      commonFeatures: [
+        'CRM completo',
+        'Portal whitelabel',
+        'Analytics avanzado',
+        'Financiero completo',
+        'Soporte prioritario',
+      ],
+      footer: '*Todos los planes incluyen soporte técnico y actualizaciones gratuitas',
+    },
+    testimonials: {
+      badge: 'Testimonios',
+      title: 'Lo Que Dicen Nuestros Clientes',
+      description: 'Profesionales de SEO que transformaron sus negocios con Rankito CRM',
+      items: [
+        {
+          name: 'Carlos Silva',
+          role: 'CEO, Agencia Digital Pro',
+          text: 'Rankito CRM cambió completamente cómo gestionamos nuestra cartera de 30+ sitios. La indexación automática en GSC ahorra 8 horas por semana.',
+          category: 'Agencia SEO',
+        },
+        {
+          name: 'Marina Santos',
+          role: 'Consultora SEO',
+          text: 'Finalmente tengo control financiero total sobre mis proyectos. El ROI automático y el portal whitelabel impresionan a mis clientes.',
+          category: 'Consultora',
+        },
+        {
+          name: 'Ricardo Oliveira',
+          role: 'Head de Growth',
+          text: 'La integración con Google Search Console es simplemente increíble. Ninguna otra plataforma ofrece esto de forma tan profesional.',
+          category: 'Startup',
+        },
+        {
+          name: 'Juliana Costa',
+          role: 'Fundadora, LeadGen Brasil',
+          text: 'El CRM integrado me ayudó a cerrar 40% más contratos. No pierdo más ningún lead y el pipeline es cristalino.',
+          category: 'Agencia Lead Gen',
+        },
+        {
+          name: 'Pedro Alves',
+          role: 'Especialista Rank & Rent',
+          text: 'Gestiono 50 sitios con facilidad. El seguimiento de conversiones y los informes automáticos ahorran días de trabajo manual.',
+          category: 'Especialista',
+        },
+        {
+          name: 'Ana Paula',
+          role: 'Directora de Marketing',
+          text: 'El portal del cliente es perfecto. Mis clientes adoran la transparencia y ya no necesito enviar informes manuales.',
+          category: 'Marketing',
+        },
+      ],
+    },
+    faq: {
+      badge: 'FAQ',
+      title: 'Preguntas Frecuentes',
+      description: 'Resuelve tus dudas sobre Rankito CRM',
+      items: [
+        {
+          question: '¿Cómo funciona la integración con Google Search Console?',
+          answer: 'Conectas tus cuentas de GSC usando Service Account de Google Cloud. El sistema gestiona automáticamente el envío de URLs y sitemaps, respetando los límites diarios de Google (200 URLs/día por cuenta).',
+        },
+        {
+          question: '¿Puedo conectar múltiples cuentas de Google Search Console?',
+          answer: '¡Sí! Dependiendo de tu plan, puedes conectar múltiples cuentas GSC. Esto multiplica tu capacidad de indexación diaria. Por ejemplo, con 5 cuentas, puedes indexar hasta 1000 URLs por día.',
+        },
+        {
+          question: '¿El portal whitelabel es realmente personalizable?',
+          answer: '¡Sí! Puedes agregar tu logo, definir colores primarios y secundarios, personalizar textos de bienvenida e incluso configurar información de contacto. Cada cliente tiene su propio enlace único y seguro.',
+        },
+        {
+          question: '¿Cómo funciona el seguimiento de conversiones?',
+          answer: 'Ofrecemos un plugin de WordPress que instala un píxel de seguimiento en tus páginas. Registra visualizaciones, clics en WhatsApp, teléfonos y formularios. Todo aparece en tiempo real en el panel.',
+        },
+        {
+          question: '¿Puedo probar antes de suscribirme?',
+          answer: '¡Sí! Todos los planes de pago incluyen período de prueba gratuito. Free (0 días), Starter (7 días), Professional (14 días), Enterprise (30 días). No necesitas tarjeta de crédito para empezar.',
+        },
+        {
+          question: '¿Tienen soporte en español?',
+          answer: '¡Sí! Todo nuestro soporte es en español, incluyendo documentación, tutoriales en video y atención por email/WhatsApp. Respondemos en hasta 24 horas.',
+        },
+      ],
+    },
+    cta: {
+      title: '¿Listo Para Gestionar Tu Imperio Rank & Rent?',
+      description: 'Únete a cientos de profesionales de SEO que ya transformaron sus negocios',
+      button: 'Empezar Prueba Gratuita de 7 Días',
+      features: [
+        'Sin tarjeta de crédito',
+        'Cancela cuando quieras',
+        'Soporte dedicado',
+      ],
+    },
+    footer: {
+      product: {
+        title: 'Producto',
+        features: 'Funcionalidades',
+        pricing: 'Precios',
+        start: 'Empezar Ahora',
+        gsc: 'Indexación GSC',
+      },
+      resources: {
+        title: 'Recursos',
+        docs: 'Documentación',
+        tutorials: 'Tutoriales',
+        blog: 'Blog',
+        faq: 'FAQ',
+      },
+      company: {
+        title: 'Empresa',
+        about: 'Sobre Nosotros',
+        privacy: 'Política de Privacidad',
+        terms: 'Términos de Uso',
+        contact: 'Contacto',
+      },
+      support: {
+        title: 'Soporte',
+        help: 'Centro de Ayuda',
+        status: 'Estado del Sistema',
+        email: 'contacto@rankitocrm.com',
+        whatsapp: '+34 999 999 999',
+      },
+      copyright: '© 2024 Rankito CRM. Todos los derechos reservados.',
+    },
+  },
+  'en-US': {
+    nav: {
+      features: 'Features',
+      gsc: 'GSC Indexing',
+      pricing: 'Pricing',
+      faq: 'FAQ',
+      login: 'Login',
+      startFree: 'Start Free',
+    },
+    hero: {
+      badge: 'Rank & Rent CRM',
+      title: 'Manage Your Rank & Rent Empire with Intelligence',
+      painPoint: 'Stop losing money with uncontrolled sites, invisible conversions and manual indexing consuming your time.',
+      description: 'The only complete platform for SEO professionals managing lead generation site portfolios. Centralize management, finance, CRM and automatic indexing in one place.',
+      ctaPrimary: 'Start Free Now',
+      ctaSecondary: 'View Demo',
+      socialProof: {
+        sites: '200+ managed sites',
+        revenue: '$150K+ in revenue',
+        secure: '100% secure data',
+      },
+    },
+    problems: {
+      title: 'Recognize These Problems?',
+      items: [
+        'Sites stuck without knowing which are converting',
+        'Pages created but not indexed by Google',
+        'Hours lost in disorganized spreadsheets',
+        'Client asks for report and you have no data',
+        'Leads call and you write on paper',
+        'Without knowing the real ROI of each project',
+      ],
+      conclusion: '👉 Rankito CRM solves ALL these problems in a single platform.',
+    },
+    features: {
+      badge: 'Features',
+      title: 'Everything You Need in One Platform',
+      subtitle: 'Manage your portfolio with professional tools',
+      items: [
+        {
+          title: 'Smart Dashboard',
+          description: "Don't know which sites are converting and losing money? Track performance, revenue, costs and ROI of all your sites in real time. Metrics that matter, no noise.",
+          benefits: [
+            'Overview of all sites',
+            'Revenue and costs in real time',
+            'Automatic ROI per project',
+            'Performance alerts',
+          ],
+          badge: 'Essential',
+        },
+        {
+          title: 'Complete CRM',
+          description: "Leads call, you write on paper and forget to return? Capture leads automatically, manage deals, automate follow-ups and never miss a business opportunity again.",
+          benefits: [
+            'Visual sales pipeline',
+            'Follow-up automation',
+            'Complete interaction history',
+            'WhatsApp integration',
+          ],
+        },
+        {
+          title: 'Automatic GSC Indexing',
+          description: "Tired of indexing 5 pages at a time manually in Search Console? Connect your Google account and index hundreds of pages automatically. Submit sitemaps, schedule indexing and monitor status in real time.",
+          benefits: [
+            'Mass indexing (200+ URLs/day)',
+            'Automatic scheduling',
+            'Status monitoring',
+            'Multiple GSC accounts',
+          ],
+          badge: 'Exclusive',
+        },
+        {
+          title: 'Complete Financial',
+          description: "Disorganized spreadsheets and not knowing if you're profiting or losing? Record revenue, costs, payments and calculate ROI automatically. Know exactly how much each site is generating.",
+          benefits: [
+            'Revenue and expense control',
+            'Automatic ROI per site',
+            'Payment history',
+            'Financial projections',
+          ],
+        },
+        {
+          title: 'Whitelabel Portal',
+          description: "Client asked for report and you have nothing to show? Generate customized portals with your logo and colors. Your clients track performance without accessing your dashboard.",
+          benefits: [
+            'Complete customization (logo, colors)',
+            'Secure access via unique link',
+            'Real-time metrics',
+            'Automatic reports',
+          ],
+        },
+        {
+          title: 'Advanced Analytics',
+          description: "Don't know how many leads each page generated today? Know how many leads each page generates, where they come from, when they happen. Tracking pixel + WordPress integration.",
+          benefits: [
+            'Conversion tracking per page',
+            'Detailed traffic source',
+            'Peak hours',
+            'WordPress plugin included',
+          ],
+        },
+      ],
+    },
+    gsc: {
+      badge: 'Stop Wasting Time',
+      title: 'Stop Indexing 5 Pages at a Time Manually',
+      painPoint: "You have 500 pages created but Google only indexed 50? You're losing money every day while your pages remain invisible.",
+      description: 'Our automatic indexing connects to Google Search Console and indexes hundreds of pages per day. No manual effort, no missed opportunities.',
+      ctaButton: 'Start Indexing Now',
+      features: [
+        {
+          title: 'Mass Indexing',
+          description: 'Submit up to 200 URLs per day automatically to Google Search Console. Multiply this by how many accounts you connect.',
+        },
+        {
+          title: 'Smart Scheduling',
+          description: 'Set automatic schedules for sitemap submission. The system manages everything without you having to remember.',
+        },
+        {
+          title: 'Real-Time Monitoring',
+          description: 'Track the status of each URL: pending, indexed, error. Know exactly what is happening with your pages.',
+        },
+      ],
+    },
+    pricing: {
+      badge: 'Pricing',
+      title: 'Plans For All Sizes',
+      description: 'Choose the ideal plan for your portfolio size',
+      perMonth: '/month',
+      freeDays: 'free days',
+      popular: 'Most Popular',
+      subscribe: 'Subscribe',
+      upTo: 'Up to',
+      unlimited: 'Unlimited',
+      sites: 'sites',
+      pages: 'pages per site',
+      integrations: 'GSC integrations',
+      commonFeatures: [
+        'Complete CRM',
+        'Whitelabel portal',
+        'Advanced analytics',
+        'Complete financial',
+        'Priority support',
+      ],
+      footer: '*All plans include technical support and free updates',
+    },
+    testimonials: {
+      badge: 'Testimonials',
+      title: 'What Our Clients Say',
+      description: 'SEO professionals who transformed their businesses with Rankito CRM',
+      items: [
+        {
+          name: 'Carlos Smith',
+          role: 'CEO, Digital Pro Agency',
+          text: 'Rankito CRM completely changed how we manage our 30+ site portfolio. Automatic GSC indexing saves 8 hours per week.',
+          category: 'SEO Agency',
+        },
+        {
+          name: 'Marina Santos',
+          role: 'SEO Consultant',
+          text: 'I finally have total financial control over my projects. The automatic ROI and whitelabel portal impress my clients.',
+          category: 'Consultant',
+        },
+        {
+          name: 'Ricardo Oliveira',
+          role: 'Head of Growth',
+          text: 'The Google Search Console integration is simply amazing. No other platform offers this so professionally.',
+          category: 'Startup',
+        },
+        {
+          name: 'Juliana Costa',
+          role: 'Founder, LeadGen Brasil',
+          text: 'The integrated CRM helped me close 40% more contracts. I no longer miss any lead and the pipeline is crystal clear.',
+          category: 'Lead Gen Agency',
+        },
+        {
+          name: 'Pedro Alves',
+          role: 'Rank & Rent Specialist',
+          text: 'I manage 50 sites with ease. Conversion tracking and automatic reports save days of manual work.',
+          category: 'Specialist',
+        },
+        {
+          name: 'Ana Paula',
+          role: 'Marketing Director',
+          text: 'The client portal is perfect. My clients love the transparency and I no longer need to send manual reports.',
+          category: 'Marketing',
+        },
+      ],
+    },
+    faq: {
+      badge: 'FAQ',
+      title: 'Frequently Asked Questions',
+      description: 'Clear your doubts about Rankito CRM',
+      items: [
+        {
+          question: 'How does the Google Search Console integration work?',
+          answer: 'You connect your GSC accounts using Google Cloud Service Account. The system automatically manages URL and sitemap submissions, respecting Google daily limits (200 URLs/day per account).',
+        },
+        {
+          question: 'Can I connect multiple Google Search Console accounts?',
+          answer: 'Yes! Depending on your plan, you can connect multiple GSC accounts. This multiplies your daily indexing capacity. For example, with 5 accounts, you can index up to 1000 URLs per day.',
+        },
+        {
+          question: 'Is the whitelabel portal really customizable?',
+          answer: 'Yes! You can add your logo, set primary and secondary colors, customize welcome texts and even configure contact information. Each client has their own unique and secure link.',
+        },
+        {
+          question: 'How does conversion tracking work?',
+          answer: 'We offer a WordPress plugin that installs a tracking pixel on your pages. It records views, clicks on WhatsApp, phones and forms. Everything appears in real time on the dashboard.',
+        },
+        {
+          question: 'Can I test before subscribing?',
+          answer: 'Yes! All paid plans include free trial period. Free (0 days), Starter (7 days), Professional (14 days), Enterprise (30 days). No credit card needed to start.',
+        },
+        {
+          question: 'Do you have support in English?',
+          answer: 'Yes! All our support is in English, including documentation, video tutorials and service by email/WhatsApp. We respond within 24 hours.',
+        },
+      ],
+    },
+    cta: {
+      title: 'Ready To Manage Your Rank & Rent Empire?',
+      description: 'Join hundreds of SEO professionals who have already transformed their businesses',
+      button: 'Start 7-Day Free Trial',
+      features: [
+        'No credit card',
+        'Cancel anytime',
+        'Dedicated support',
+      ],
+    },
+    footer: {
+      product: {
+        title: 'Product',
+        features: 'Features',
+        pricing: 'Pricing',
+        start: 'Start Now',
+        gsc: 'GSC Indexing',
+      },
+      resources: {
+        title: 'Resources',
+        docs: 'Documentation',
+        tutorials: 'Tutorials',
+        blog: 'Blog',
+        faq: 'FAQ',
+      },
+      company: {
+        title: 'Company',
+        about: 'About Us',
+        privacy: 'Privacy Policy',
+        terms: 'Terms of Use',
+        contact: 'Contact',
+      },
+      support: {
+        title: 'Support',
+        help: 'Help Center',
+        status: 'System Status',
+        email: 'contact@rankitocrm.com',
+        whatsapp: '+1 999 999 9999',
+      },
+      copyright: '© 2024 Rankito CRM. All rights reserved.',
+    },
+  },
+  'fr-FR': {
+    nav: {
+      features: 'Fonctionnalités',
+      gsc: 'Indexation GSC',
+      pricing: 'Tarifs',
+      faq: 'FAQ',
+      login: 'Connexion',
+      startFree: 'Commencer Gratuitement',
+    },
+    hero: {
+      badge: 'Rank & Rent CRM',
+      title: 'Gérez Votre Empire de Rank & Rent avec Intelligence',
+      painPoint: 'Arrêtez de perdre de l\'argent avec des sites incontrôlés, des conversions invisibles et une indexation manuelle qui consomme votre temps.',
+      description: 'La seule plateforme complète pour les professionnels SEO gérant des portefeuilles de sites de génération de leads. Centralisez gestion, finance, CRM et indexation automatique en un seul endroit.',
+      ctaPrimary: 'Commencer Gratuitement',
+      ctaSecondary: 'Voir Démo',
+      socialProof: {
+        sites: '200+ sites gérés',
+        revenue: '€120K+ de revenus',
+        secure: 'Données 100% sécurisées',
+      },
+    },
+    problems: {
+      title: 'Reconnaissez-Vous Ces Problèmes?',
+      items: [
+        'Sites bloqués sans savoir lesquels convertissent',
+        'Pages créées mais non indexées par Google',
+        'Heures perdues dans des feuilles de calcul désorganisées',
+        'Client demande un rapport et vous n\'avez pas de données',
+        'Leads appellent et vous notez sur papier',
+        'Sans connaître le ROI réel de chaque projet',
+      ],
+      conclusion: '👉 Rankito CRM résout TOUS ces problèmes sur une seule plateforme.',
+    },
+    features: {
+      badge: 'Fonctionnalités',
+      title: 'Tout Ce Dont Vous Avez Besoin sur Une Plateforme',
+      subtitle: 'Gérez votre portefeuille avec des outils professionnels',
+      items: [
+        {
+          title: 'Tableau de Bord Intelligent',
+          description: 'Vous ne savez pas quels sites convertissent et perdent de l\'argent? Suivez les performances, revenus, coûts et ROI de tous vos sites en temps réel. Métriques importantes, sans bruit.',
+          benefits: [
+            'Vue d\'ensemble de tous les sites',
+            'Revenus et coûts en temps réel',
+            'ROI automatique par projet',
+            'Alertes de performance',
+          ],
+          badge: 'Essentiel',
+        },
+        {
+          title: 'CRM Complet',
+          description: 'Les leads appellent, vous notez sur papier et oubliez de rappeler? Capturez automatiquement les leads, gérez les deals, automatisez les suivis et ne manquez plus jamais une opportunité commerciale.',
+          benefits: [
+            'Pipeline visuel des ventes',
+            'Automatisation des suivis',
+            'Historique complet des interactions',
+            'Intégration WhatsApp',
+          ],
+        },
+        {
+          title: 'Indexation Automatique GSC',
+          description: 'Fatigué d\'indexer 5 pages à la fois manuellement dans Search Console? Connectez votre compte Google et indexez des centaines de pages automatiquement. Soumettez des sitemaps, programmez l\'indexation et surveillez l\'état en temps réel.',
+          benefits: [
+            'Indexation de masse (200+ URLs/jour)',
+            'Programmation automatique',
+            'Surveillance de l\'état',
+            'Plusieurs comptes GSC',
+          ],
+          badge: 'Exclusif',
+        },
+        {
+          title: 'Finance Complète',
+          description: 'Feuilles de calcul désorganisées et sans savoir si vous gagnez ou perdez? Enregistrez revenus, coûts, paiements et calculez le ROI automatiquement. Sachez exactement combien génère chaque site.',
+          benefits: [
+            'Contrôle des revenus et dépenses',
+            'ROI automatique par site',
+            'Historique des paiements',
+            'Projections financières',
+          ],
+        },
+        {
+          title: 'Portail Whitelabel',
+          description: 'Client a demandé un rapport et vous n\'avez rien à montrer? Générez des portails personnalisés avec votre logo et couleurs. Vos clients suivent les performances sans accéder à votre tableau de bord.',
+          benefits: [
+            'Personnalisation complète (logo, couleurs)',
+            'Accès sécurisé par lien unique',
+            'Métriques en temps réel',
+            'Rapports automatiques',
+          ],
+        },
+        {
+          title: 'Analytics Avancé',
+          description: 'Vous ne savez pas combien de leads chaque page a générés aujourd\'hui? Découvrez combien de leads génère chaque page, d\'où ils viennent, quand ils se produisent. Pixel de suivi + intégration WordPress.',
+          benefits: [
+            'Suivi des conversions par page',
+            'Source de trafic détaillée',
+            'Heures de pointe',
+            'Plugin WordPress inclus',
+          ],
+        },
+      ],
+    },
+    gsc: {
+      badge: 'Arrêtez de Perdre du Temps',
+      title: 'Arrêtez d\'Indexer 5 Pages à la Fois Manuellement',
+      painPoint: 'Vous avez 500 pages créées mais Google n\'en a indexé que 50? Vous perdez de l\'argent tous les jours pendant que vos pages restent invisibles.',
+      description: 'Notre indexation automatique se connecte à Google Search Console et indexe des centaines de pages par jour. Sans effort manuel, sans opportunités manquées.',
+      ctaButton: 'Commencer à Indexer Maintenant',
+      features: [
+        {
+          title: 'Indexation de Masse',
+          description: 'Soumettez jusqu\'à 200 URLs par jour automatiquement à Google Search Console. Multipliez cela par le nombre de comptes que vous connectez.',
+        },
+        {
+          title: 'Programmation Intelligente',
+          description: 'Configurez des horaires automatiques pour la soumission de sitemaps. Le système gère tout sans que vous ayez à vous en souvenir.',
+        },
+        {
+          title: 'Surveillance en Temps Réel',
+          description: 'Suivez l\'état de chaque URL: en attente, indexée, erreur. Sachez exactement ce qui se passe avec vos pages.',
+        },
+      ],
+    },
+    pricing: {
+      badge: 'Tarifs',
+      title: 'Plans Pour Toutes les Tailles',
+      description: 'Choisissez le plan idéal pour la taille de votre portefeuille',
+      perMonth: '/mois',
+      freeDays: 'jours gratuits',
+      popular: 'Plus Populaire',
+      subscribe: 'S\'abonner',
+      upTo: 'Jusqu\'à',
+      unlimited: 'Illimité',
+      sites: 'sites',
+      pages: 'pages par site',
+      integrations: 'intégrations GSC',
+      commonFeatures: [
+        'CRM complet',
+        'Portail whitelabel',
+        'Analytics avancé',
+        'Finance complète',
+        'Support prioritaire',
+      ],
+      footer: '*Tous les plans incluent le support technique et les mises à jour gratuites',
+    },
+    testimonials: {
+      badge: 'Témoignages',
+      title: 'Ce Que Disent Nos Clients',
+      description: 'Professionnels SEO qui ont transformé leurs entreprises avec Rankito CRM',
+      items: [
+        {
+          name: 'Carlos Silva',
+          role: 'PDG, Agence Digital Pro',
+          text: 'Rankito CRM a complètement changé la façon dont nous gérons notre portefeuille de 30+ sites. L\'indexation automatique GSC économise 8 heures par semaine.',
+          category: 'Agence SEO',
+        },
+        {
+          name: 'Marina Santos',
+          role: 'Consultante SEO',
+          text: 'J\'ai enfin un contrôle financier total sur mes projets. Le ROI automatique et le portail whitelabel impressionnent mes clients.',
+          category: 'Consultante',
+        },
+        {
+          name: 'Ricardo Oliveira',
+          role: 'Responsable Growth',
+          text: 'L\'intégration avec Google Search Console est tout simplement incroyable. Aucune autre plateforme n\'offre cela de manière aussi professionnelle.',
+          category: 'Startup',
+        },
+        {
+          name: 'Juliana Costa',
+          role: 'Fondatrice, LeadGen Brasil',
+          text: 'Le CRM intégré m\'a aidée à conclure 40% de contrats en plus. Je ne perds plus aucun lead et le pipeline est limpide.',
+          category: 'Agence Lead Gen',
+        },
+        {
+          name: 'Pedro Alves',
+          role: 'Spécialiste Rank & Rent',
+          text: 'Je gère 50 sites avec facilité. Le suivi des conversions et les rapports automatiques économisent des jours de travail manuel.',
+          category: 'Spécialiste',
+        },
+        {
+          name: 'Ana Paula',
+          role: 'Directrice Marketing',
+          text: 'Le portail client est parfait. Mes clients adorent la transparence et je n\'ai plus besoin d\'envoyer de rapports manuels.',
+          category: 'Marketing',
+        },
+      ],
+    },
+    faq: {
+      badge: 'FAQ',
+      title: 'Questions Fréquentes',
+      description: 'Clarifiez vos doutes sur Rankito CRM',
+      items: [
+        {
+          question: 'Comment fonctionne l\'intégration avec Google Search Console?',
+          answer: 'Vous connectez vos comptes GSC en utilisant le Service Account de Google Cloud. Le système gère automatiquement la soumission d\'URLs et de sitemaps, en respectant les limites quotidiennes de Google (200 URLs/jour par compte).',
+        },
+        {
+          question: 'Puis-je connecter plusieurs comptes Google Search Console?',
+          answer: 'Oui! Selon votre plan, vous pouvez connecter plusieurs comptes GSC. Cela multiplie votre capacité d\'indexation quotidienne. Par exemple, avec 5 comptes, vous pouvez indexer jusqu\'à 1000 URLs par jour.',
+        },
+        {
+          question: 'Le portail whitelabel est-il vraiment personnalisable?',
+          answer: 'Oui! Vous pouvez ajouter votre logo, définir des couleurs primaires et secondaires, personnaliser les textes de bienvenue et même configurer les informations de contact. Chaque client a son propre lien unique et sécurisé.',
+        },
+        {
+          question: 'Comment fonctionne le suivi des conversions?',
+          answer: 'Nous proposons un plugin WordPress qui installe un pixel de suivi sur vos pages. Il enregistre les vues, les clics sur WhatsApp, téléphones et formulaires. Tout apparaît en temps réel sur le tableau de bord.',
+        },
+        {
+          question: 'Puis-je tester avant de m\'abonner?',
+          answer: 'Oui! Tous les plans payants incluent une période d\'essai gratuite. Free (0 jours), Starter (7 jours), Professional (14 jours), Enterprise (30 jours). Pas besoin de carte de crédit pour commencer.',
+        },
+        {
+          question: 'Avez-vous un support en français?',
+          answer: 'Oui! Tout notre support est en français, y compris la documentation, les tutoriels vidéo et le service par email/WhatsApp. Nous répondons sous 24 heures.',
+        },
+      ],
+    },
+    cta: {
+      title: 'Prêt à Gérer Votre Empire Rank & Rent?',
+      description: 'Rejoignez des centaines de professionnels SEO qui ont déjà transformé leurs entreprises',
+      button: 'Commencer Essai Gratuit de 7 Jours',
+      features: [
+        'Sans carte de crédit',
+        'Annulez quand vous voulez',
+        'Support dédié',
+      ],
+    },
+    footer: {
+      product: {
+        title: 'Produit',
+        features: 'Fonctionnalités',
+        pricing: 'Tarifs',
+        start: 'Commencer',
+        gsc: 'Indexation GSC',
+      },
+      resources: {
+        title: 'Ressources',
+        docs: 'Documentation',
+        tutorials: 'Tutoriels',
+        blog: 'Blog',
+        faq: 'FAQ',
+      },
+      company: {
+        title: 'Entreprise',
+        about: 'À Propos',
+        privacy: 'Politique de Confidentialité',
+        terms: 'Conditions d\'Utilisation',
+        contact: 'Contact',
+      },
+      support: {
+        title: 'Support',
+        help: 'Centre d\'Aide',
+        status: 'État du Système',
+        email: 'contact@rankitocrm.com',
+        whatsapp: '+33 9 99 99 99 99',
+      },
+      copyright: '© 2024 Rankito CRM. Tous droits réservés.',
+    },
+  },
+  'pt-PT': {
+    nav: {
+      features: 'Funcionalidades',
+      gsc: 'Indexação GSC',
+      pricing: 'Preços',
+      faq: 'FAQ',
+      login: 'Entrar',
+      startFree: 'Começar Grátis',
+    },
+    hero: {
+      badge: 'Rank & Rent CRM',
+      title: 'Gira o Teu Império de Rank & Rent com Inteligência',
+      painPoint: 'Para de perder dinheiro com sites sem controlo, conversões invisíveis e indexação manual que consome o teu tempo.',
+      description: 'A única plataforma completa para profissionais de SEO que gerem portfolios de sites de geração de leads. Centraliza gestão, financeiro, CRM e indexação automática num só lugar.',
+      ctaPrimary: 'Começar Grátis Agora',
+      ctaSecondary: 'Ver Demonstração',
+      socialProof: {
+        sites: '200+ sites geridos',
+        revenue: '€120K+ em receita',
+        secure: 'Dados 100% seguros',
+      },
+    },
+    problems: {
+      title: 'Reconheces Estes Problemas?',
+      items: [
+        'Sites parados sem saber quais estão a converter',
+        'Páginas criadas mas não indexadas pelo Google',
+        'Horas perdidas em folhas de cálculo desorganizadas',
+        'Cliente pede relatório e não tens dados',
+        'Leads ligam e anotas em papel',
+        'Sem saber o ROI real de cada projeto',
+      ],
+      conclusion: '👉 O Rankito CRM resolve TODOS estes problemas numa única plataforma.',
+    },
+    features: {
+      badge: 'Funcionalidades',
+      title: 'Tudo o Que Precisas Numa Plataforma',
+      subtitle: 'Gere o teu portfolio com ferramentas profissionais',
+      items: [
+        {
+          title: 'Painel Inteligente',
+          description: 'Não sabes quais sites estão a converter e a perder dinheiro? Acompanha performance, receita, custos e ROI de todos os teus sites em tempo real. Métricas que importam, sem ruído.',
+          benefits: [
+            'Visão geral de todos os sites',
+            'Receita e custos em tempo real',
+            'ROI automático por projeto',
+            'Alertas de performance',
+          ],
+          badge: 'Essencial',
+        },
+        {
+          title: 'CRM Completo',
+          description: 'Leads ligam, anotas em papel e esqueces de retornar? Captura leads automaticamente, gere deals, automatiza follow-ups e nunca mais percas uma oportunidade de negócio.',
+          benefits: [
+            'Pipeline visual de vendas',
+            'Automatização de follow-ups',
+            'Histórico completo de interações',
+            'Integração com WhatsApp',
+          ],
+        },
+        {
+          title: 'Indexação Automática GSC',
+          description: 'Cansado de indexar 5 páginas de cada vez manualmente no Search Console? Conecta a tua conta Google e indexa centenas de páginas automaticamente. Envia sitemaps, agenda indexações e monitoriza o estado em tempo real.',
+          benefits: [
+            'Indexação em massa (200+ URLs/dia)',
+            'Agendamento automático',
+            'Monitorização de estado',
+            'Múltiplas contas GSC',
+          ],
+          badge: 'Exclusivo',
+        },
+        {
+          title: 'Financeiro Completo',
+          description: 'Folhas de cálculo desorganizadas e sem saber se estás a lucrar ou a perder? Regista receitas, custos, pagamentos e calcula ROI automaticamente. Sabe exatamente quanto cada site está a gerar.',
+          benefits: [
+            'Controlo de receitas e despesas',
+            'ROI automático por site',
+            'Histórico de pagamentos',
+            'Projeções financeiras',
+          ],
+        },
+        {
+          title: 'Portal Whitelabel',
+          description: 'Cliente pediu relatório e não tens nada para mostrar? Gera portais personalizados com o teu logo e cores. Os teus clientes acompanham performance sem aceder ao teu painel.',
+          benefits: [
+            'Personalização completa (logo, cores)',
+            'Acesso seguro por link único',
+            'Métricas em tempo real',
+            'Relatórios automáticos',
+          ],
+        },
+        {
+          title: 'Analytics Avançado',
+          description: 'Não sabes quantos leads cada página gerou hoje? Descobre quantos leads cada página gera, de onde vêm, quando acontecem. Pixel de tracking + integração WordPress.',
+          benefits: [
+            'Tracking de conversões por página',
+            'Origem de tráfego detalhada',
+            'Horários de pico',
+            'Plugin WordPress incluído',
+          ],
+        },
+      ],
+    },
+    gsc: {
+      badge: 'Chega de Perder Tempo',
+      title: 'Para de Indexar 5 Páginas de Cada Vez Manualmente',
+      painPoint: 'Tens 500 páginas criadas mas o Google só indexou 50? Estás a perder dinheiro todos os dias enquanto as tuas páginas ficam invisíveis.',
+      description: 'A nossa indexação automática conecta ao Google Search Console e indexa centenas de páginas por dia. Sem esforço manual, sem perder oportunidades.',
+      ctaButton: 'Começar a Indexar Agora',
+      features: [
+        {
+          title: 'Indexação em Massa',
+          description: 'Envia até 200 URLs por dia automaticamente para o Google Search Console. Multiplica isto por quantas contas conectares.',
+        },
+        {
+          title: 'Agendamento Inteligente',
+          description: 'Configura horários automáticos para submissão de sitemaps. O sistema gere tudo sem precisares de te lembrar.',
+        },
+        {
+          title: 'Monitorização em Tempo Real',
+          description: 'Acompanha o estado de cada URL: pendente, indexado, erro. Sabe exatamente o que está a acontecer com as tuas páginas.',
+        },
+      ],
+    },
+    pricing: {
+      badge: 'Preços',
+      title: 'Planos Para Todos os Tamanhos',
+      description: 'Escolhe o plano ideal para o tamanho do teu portfolio',
+      perMonth: '/mês',
+      freeDays: 'dias grátis',
+      popular: 'Mais Popular',
+      subscribe: 'Subscrever',
+      upTo: 'Até',
+      unlimited: 'Ilimitado',
+      sites: 'sites',
+      pages: 'páginas por site',
+      integrations: 'integrações GSC',
+      commonFeatures: [
+        'CRM completo',
+        'Portal whitelabel',
+        'Analytics avançado',
+        'Financeiro completo',
+        'Suporte prioritário',
+      ],
+      footer: '*Todos os planos incluem suporte técnico e atualizações gratuitas',
+    },
+    testimonials: {
+      badge: 'Depoimentos',
+      title: 'O Que Os Nossos Clientes Dizem',
+      description: 'Profissionais de SEO que transformaram os seus negócios com Rankito CRM',
+      items: [
+        {
+          name: 'Carlos Silva',
+          role: 'CEO, Agência Digital Pro',
+          text: 'Rankito CRM mudou completamente como gerimos o nosso portfolio de 30+ sites. A indexação automática no GSC poupa 8 horas por semana.',
+          category: 'Agência SEO',
+        },
+        {
+          name: 'Marina Santos',
+          role: 'Consultora SEO',
+          text: 'Finalmente tenho controlo financeiro total sobre os meus projetos. O ROI automático e o portal whitelabel impressionam os meus clientes.',
+          category: 'Consultora',
+        },
+        {
+          name: 'Ricardo Oliveira',
+          role: 'Head de Growth',
+          text: 'A integração com Google Search Console é simplesmente incrível. Nenhuma outra plataforma oferece isto de forma tão profissional.',
+          category: 'Startup',
+        },
+        {
+          name: 'Juliana Costa',
+          role: 'Fundadora, LeadGen Brasil',
+          text: 'O CRM integrado ajudou-me a fechar 40% mais contratos. Não perco mais nenhum lead e o pipeline é cristalino.',
+          category: 'Agência Lead Gen',
+        },
+        {
+          name: 'Pedro Alves',
+          role: 'Especialista Rank & Rent',
+          text: 'Giro 50 sites com facilidade. O tracking de conversões e os relatórios automáticos poupam dias de trabalho manual.',
+          category: 'Especialista',
+        },
+        {
+          name: 'Ana Paula',
+          role: 'Diretora de Marketing',
+          text: 'O portal do cliente é perfeito. Os meus clientes adoram a transparência e já não preciso de enviar relatórios manuais.',
+          category: 'Marketing',
+        },
+      ],
+    },
+    faq: {
+      badge: 'FAQ',
+      title: 'Perguntas Frequentes',
+      description: 'Esclarece as tuas dúvidas sobre o Rankito CRM',
+      items: [
+        {
+          question: 'Como funciona a integração com Google Search Console?',
+          answer: 'Conectas as tuas contas do GSC usando Service Account do Google Cloud. O sistema gere automaticamente a submissão de URLs e sitemaps, respeitando os limites diários do Google (200 URLs/dia por conta).',
+        },
+        {
+          question: 'Posso conectar múltiplas contas do Google Search Console?',
+          answer: 'Sim! Dependendo do teu plano, podes conectar múltiplas contas GSC. Isto multiplica a tua capacidade de indexação diária. Por exemplo, com 5 contas, podes indexar até 1000 URLs por dia.',
+        },
+        {
+          question: 'O portal whitelabel é realmente personalizável?',
+          answer: 'Sim! Podes adicionar o teu logo, definir cores primárias e secundárias, personalizar textos de boas-vindas e até configurar informações de contacto. Cada cliente tem o seu próprio link único e seguro.',
+        },
+        {
+          question: 'Como funciona o tracking de conversões?',
+          answer: 'Oferecemos um plugin WordPress que instala um pixel de tracking nas tuas páginas. Ele regista visualizações, cliques em WhatsApp, telefones e formulários. Tudo aparece em tempo real no painel.',
+        },
+        {
+          question: 'Posso testar antes de subscrever?',
+          answer: 'Sim! Todos os planos pagos incluem período de trial gratuito. Free (0 dias), Starter (7 dias), Professional (14 dias), Enterprise (30 dias). Não precisas de cartão de crédito para começar.',
+        },
+        {
+          question: 'Têm suporte em português?',
+          answer: 'Sim! Todo o nosso suporte é em português, incluindo documentação, tutoriais em vídeo e atendimento por email/WhatsApp. Respondemos em até 24 horas.',
+        },
+      ],
+    },
+    cta: {
+      title: 'Pronto Para Gerir o Teu Império Rank & Rent?',
+      description: 'Junta-te a centenas de profissionais de SEO que já transformaram os seus negócios',
+      button: 'Começar Trial Gratuito de 7 Dias',
+      features: [
+        'Sem cartão de crédito',
+        'Cancela quando quiseres',
+        'Suporte dedicado',
+      ],
+    },
+    footer: {
+      product: {
+        title: 'Produto',
+        features: 'Funcionalidades',
+        pricing: 'Preços',
+        start: 'Começar Agora',
+        gsc: 'Indexação GSC',
+      },
+      resources: {
+        title: 'Recursos',
+        docs: 'Documentação',
+        tutorials: 'Tutoriais',
+        blog: 'Blog',
+        faq: 'FAQ',
+      },
+      company: {
+        title: 'Empresa',
+        about: 'Sobre Nós',
+        privacy: 'Política de Privacidade',
+        terms: 'Termos de Uso',
+        contact: 'Contacto',
+      },
+      support: {
+        title: 'Suporte',
+        help: 'Centro de Ajuda',
+        status: 'Estado do Sistema',
+        email: 'contacto@rankitocrm.com',
+        whatsapp: '+351 999 999 999',
+      },
+      copyright: '© 2024 Rankito CRM. Todos os direitos reservados.',
+    },
+  },
+};
