@@ -81,7 +81,6 @@ export const GSCMetricsCards = ({ stats }: GSCMetricsCardsProps) => {
         value={stats.activeIntegrations}
         subtitle={`${stats.totalIntegrations} no total`}
         icon={<Link className="h-5 w-5 text-blue-600" />}
-        variant={stats.inactiveIntegrations > 0 ? 'warning' : 'success'}
       />
       
       <MetricCard
@@ -96,10 +95,6 @@ export const GSCMetricsCards = ({ stats }: GSCMetricsCardsProps) => {
         value={`${stats.quotaUsed}/${stats.quotaLimit}`}
         subtitle={`Reset em ${stats.quotaResetIn}`}
         icon={<Send className="h-5 w-5 text-green-600" />}
-        variant={
-          stats.quotaPercentage >= 90 ? 'error' :
-          stats.quotaPercentage >= 70 ? 'warning' : 'success'
-        }
         progress={stats.quotaPercentage}
       />
       
