@@ -23,12 +23,6 @@ const UserSettings = () => {
     updatePassword,
   } = useUserProfile(user?.id);
 
-  useEffect(() => {
-    if (!isLoadingRole && !user) {
-      navigate('/');
-    }
-  }, [user, isLoadingRole, navigate]);
-
   if (isLoadingRole || isLoadingProfile) {
     return (
       <UserSettingsLayout activeTab={activeTab} onTabChange={setActiveTab} userRole={role}>

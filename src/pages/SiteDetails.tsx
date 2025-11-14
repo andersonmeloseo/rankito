@@ -129,15 +129,13 @@ const SiteDetails = () => {
     enabled: !!siteId,
   });
 
-  // Sync with URL params - ONLY after site data is loaded
+  // Sync with URL params
   useEffect(() => {
-    if (!siteLoading && site) {
-      const urlTab = searchParams.get('tab');
-      if (urlTab && urlTab !== activeTab) {
-        setActiveTab(urlTab);
-      }
+    const urlTab = searchParams.get('tab');
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab);
     }
-  }, [searchParams, siteLoading, site, activeTab]);
+  }, [searchParams, activeTab]);
 
   // Fetch last conversion city
   const { data: lastConversionCity } = useQuery({
