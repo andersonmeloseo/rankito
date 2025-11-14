@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { AlertCircle, Calendar, Zap } from "lucide-react";
+import { AlertCircle, Calendar, Zap, Activity, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 interface GSCBatchIndexingDialogProps {
   open: boolean;
@@ -12,6 +13,7 @@ interface GSCBatchIndexingDialogProps {
   selectedUrls: { url: string; page_id?: string }[];
   remainingQuota: number;
   totalLimit: number;
+  pendingInQueue: number;
   onConfirm: (distribution: 'fast' | 'even') => void;
   isSubmitting: boolean;
 }
@@ -22,6 +24,7 @@ export const GSCBatchIndexingDialog = ({
   selectedUrls,
   remainingQuota,
   totalLimit,
+  pendingInQueue,
   onConfirm,
   isSubmitting,
 }: GSCBatchIndexingDialogProps) => {
@@ -34,6 +37,9 @@ export const GSCBatchIndexingDialog = ({
   
   const daysNeeded = Math.ceil(totalUrls / totalLimit);
   const urlsPerDay = distribution === 'even' ? Math.min(totalLimit, Math.ceil(totalUrls / daysNeeded)) : 0;
+  
+  const projectedUsage = Math.min((totalLimit - remainingQuota) + pendingInQueue + urlsToday, totalLimit);
+  const willExceedQuota = projectedUsage > totalLimit;
 
   const handleConfirm = () => {
     onConfirm(distribution);
@@ -50,19 +56,69 @@ export const GSCBatchIndexingDialog = ({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Resumo */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg border bg-card p-4">
-              <div className="text-sm text-muted-foreground">URLs Selecionadas</div>
-              <div className="mt-1 text-2xl font-bold">{totalUrls}</div>
+          {/* Resumo Detalhado */}
+          <div className="rounded-lg border p-4 space-y-3">
+            <h4 className="font-semibold flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Resumo da Indexação
+            </h4>
+            
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">URLs selecionadas:</span>
+                  <strong>{totalUrls}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Quota disponível hoje:</span>
+                  <strong>{remainingQuota}/{totalLimit}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">URLs na fila atual:</span>
+                  <strong className="text-yellow-600">{pendingInQueue}</strong>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Dias necessários:</span>
+                  <strong>{daysNeeded}</strong>
+                </div>
+                {distribution === 'fast' && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Hoje:</span>
+                      <strong>{urlsToday} URLs</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Amanhã:</span>
+                      <strong>{Math.max(0, totalUrls - urlsToday)} URLs</strong>
+                    </div>
+                  </>
+                )}
+                {distribution === 'even' && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Por dia:</span>
+                    <strong>~{urlsPerDay} URLs</strong>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="rounded-lg border bg-card p-4">
-              <div className="text-sm text-muted-foreground">Quota Disponível Hoje</div>
-              <div className="mt-1 text-2xl font-bold">{remainingQuota}/{totalLimit}</div>
-            </div>
-            <div className="rounded-lg border bg-card p-4">
-              <div className="text-sm text-muted-foreground">Dias Necessários</div>
-              <div className="mt-1 text-2xl font-bold">{daysNeeded}</div>
+
+            <div className="pt-3 mt-3 border-t">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Projeção após processar:</span>
+                <div className="flex items-center gap-2">
+                  <strong className={willExceedQuota ? "text-destructive" : ""}>
+                    {projectedUsage}/{totalLimit}
+                  </strong>
+                  {willExceedQuota && (
+                    <Badge variant="destructive" className="text-xs">
+                      Quota excedida
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -113,8 +169,25 @@ export const GSCBatchIndexingDialog = ({
             </div>
           </RadioGroup>
 
-          {/* Alertas */}
-          {totalUrls > remainingQuota && (
+          {/* Alertas e Recomendações */}
+          {willExceedQuota && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="space-y-2">
+                <p>
+                  <strong>⚠️ Você vai esgotar a quota hoje!</strong>
+                </p>
+                <p className="text-xs">
+                  {distribution === 'fast' 
+                    ? `${totalUrls - urlsToday} URLs serão agendadas para amanhã.`
+                    : `Recomendamos "Distribuir Uniformemente" para evitar sobrecarga.`
+                  }
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {totalUrls > remainingQuota && !willExceedQuota && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>

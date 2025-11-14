@@ -207,6 +207,7 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-batches', siteId] });
       queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota', siteId] });
       queryClient.invalidateQueries({ queryKey: ['site-pages', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-pending-count', siteId] });
     },
     onError: (error: Error) => {
       toast({
