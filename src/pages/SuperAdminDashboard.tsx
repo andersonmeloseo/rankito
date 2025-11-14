@@ -24,13 +24,6 @@ const SuperAdminDashboard = () => {
   const { isSuperAdmin, isLoading, user } = useRole();
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
 
-  useEffect(() => {
-    if (!isLoading && !isSuperAdmin) {
-      navigate("/dashboard");
-    }
-  }, [isSuperAdmin, isLoading, navigate]);
-
-
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {

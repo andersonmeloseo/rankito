@@ -55,7 +55,6 @@ import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showAddSite, setShowAddSite] = useState(false);
   const [selectedSites, setSelectedSites] = useState<Set<string>>(new Set());
   const [searchParams, setSearchParams] = useSearchParams();
@@ -118,51 +117,13 @@ const Dashboard = () => {
     }
   }, [role, isEndClient, roleLoading, navigate]);
 
-  // Check authentication
+  // Sync with URL params
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-
-      // Verificar se a conta está aprovada
-      if (session.user) {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('is_active')
-          .eq('id', session.user.id)
-          .single();
-
-        if (error) {
-          console.error('Error checking profile:', error);
-        }
-
-        if (profile && !profile.is_active) {
-          // Conta não aprovada, redirecionar para página de pendência
-          navigate("/pending-approval");
-          return;
-        }
-      }
-
-      // Setar user e session no estado
-      setUser(session.user);
-      setSession(session);
-      setLoading(false);
-    };
-    checkAuth();
-  }, [navigate]);
-
-  // Sync with URL params - ONLY after auth is confirmed
-  useEffect(() => {
-    if (!loading && user) {
-      const urlTab = searchParams.get('tab');
-      if (urlTab && urlTab !== activeTab) {
-        setActiveTab(urlTab);
-      }
+    const urlTab = searchParams.get('tab');
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab);
     }
-  }, [searchParams, loading, user]);
+  }, [searchParams, activeTab]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -287,18 +248,7 @@ const Dashboard = () => {
     setShowBulkDeleteDialog(true);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
+  if (roleLoading) {
     return null;
   }
 

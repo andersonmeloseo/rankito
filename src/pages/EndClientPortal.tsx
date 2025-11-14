@@ -59,12 +59,6 @@ const EndClientPortal = () => {
     return 'Boa noite';
   };
 
-  useEffect(() => {
-    if (!isLoading && !isEndClient && !isSuperAdmin) {
-      navigate("/dashboard");
-    }
-  }, [isEndClient, isSuperAdmin, isLoading, navigate]);
-
   const { data: endClientData, isLoading: endClientLoading } = useEndClientData(user?.id);
   
   const { analytics, reports, isLoading: analyticsLoading } = useClientPortalAnalytics(

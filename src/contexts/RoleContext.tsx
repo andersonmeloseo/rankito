@@ -22,15 +22,16 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchRole = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    // Use getSession() instead of getUser() for faster session restoration
+    const { data: { session } } = await supabase.auth.getSession();
     
-    if (user) {
-      setUser(user);
+    if (session?.user) {
+      setUser(session.user);
       
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
+        .eq('user_id', session.user.id)
         .maybeSingle();
       
       if (!error && data) {
