@@ -59,49 +59,58 @@ const Auth = () => {
   };
 
   useEffect(() => {
+    let mounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      
       setSession(session);
       if (session && !hasRedirected) {
         setHasRedirected(true);
         const from = getPreservedLocation();
         console.log('🔍 [Auth onAuthStateChange] from:', from);
-        if (from?.pathname) {
+        
+        // Dar prioridade para rotas preservadas, mas evitar loop com /auth
+        if (from?.pathname && from.pathname !== '/auth' && from.pathname !== '/') {
           const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
-          console.log('✅ [Auth] Redirecionando para:', fullPath);
-          
-          // 🔥 LIMPAR sessionStorage após usar
+          console.log('✅ [Auth] Redirecionando para localização preservada:', fullPath);
           sessionStorage.removeItem('redirectAfterAuth');
-          
           navigate(fullPath, { replace: true });
         } else {
-          console.log('✅ [Auth] Redirecionando para /dashboard');
-          navigate("/dashboard");
+          console.log('✅ [Auth] Redirecionando para /dashboard (sem localização preservada)');
+          sessionStorage.removeItem('redirectAfterAuth');
+          navigate("/dashboard", { replace: true });
         }
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      
       setSession(session);
       if (session && !hasRedirected) {
         setHasRedirected(true);
         const from = getPreservedLocation();
         console.log('🔍 [Auth getSession] from:', from);
-        if (from?.pathname) {
+        
+        // Dar prioridade para rotas preservadas, mas evitar loop com /auth
+        if (from?.pathname && from.pathname !== '/auth' && from.pathname !== '/') {
           const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
-          console.log('✅ [Auth] Redirecionando para:', fullPath);
-          
-          // 🔥 LIMPAR sessionStorage após usar
+          console.log('✅ [Auth] Redirecionando para localização preservada:', fullPath);
           sessionStorage.removeItem('redirectAfterAuth');
-          
           navigate(fullPath, { replace: true });
         } else {
-          console.log('✅ [Auth] Redirecionando para /dashboard');
-          navigate("/dashboard");
+          console.log('✅ [Auth] Redirecionando para /dashboard (sem localização preservada)');
+          sessionStorage.removeItem('redirectAfterAuth');
+          navigate("/dashboard", { replace: true });
         }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -232,17 +241,17 @@ const Auth = () => {
         setHasRedirected(true);
         const from = getPreservedLocation();
         console.log('🔍 [handleSignIn] from:', from);
-        if (from?.pathname) {
+        
+        // Dar prioridade para rotas preservadas, mas evitar loop com /auth
+        if (from?.pathname && from.pathname !== '/auth' && from.pathname !== '/') {
           const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
-          console.log('✅ [handleSignIn] Redirecionando para:', fullPath);
-          
-          // 🔥 LIMPAR sessionStorage após usar
+          console.log('✅ [handleSignIn] Redirecionando para localização preservada:', fullPath);
           sessionStorage.removeItem('redirectAfterAuth');
-          
           navigate(fullPath, { replace: true });
         } else {
-          console.log('✅ [handleSignIn] Redirecionando para /dashboard');
-          navigate('/dashboard');
+          console.log('✅ [handleSignIn] Redirecionando para /dashboard (sem localização preservada)');
+          sessionStorage.removeItem('redirectAfterAuth');
+          navigate('/dashboard', { replace: true });
         }
       }
     } catch (error: any) {
