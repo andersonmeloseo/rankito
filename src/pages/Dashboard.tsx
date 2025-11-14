@@ -55,7 +55,11 @@ const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
   const [selectedSites, setSelectedSites] = useState<Set<string>>(new Set());
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview');
+  // 🔒 CRITICAL: Read directly from browser URL, not from React Router
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') || 'overview';
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -107,10 +111,12 @@ const Dashboard = () => {
   // Sync with URL params - only when URL changes
   useEffect(() => {
     const urlTab = searchParams.get('tab');
-    if (urlTab) {
+    if (urlTab && urlTab !== activeTab) {
       setActiveTab(urlTab);
+    } else if (!urlTab && activeTab !== 'overview') {
+      setActiveTab('overview');
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
