@@ -13,6 +13,13 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
   const location = useLocation();
+  
+  // 🔒 CRITICAL: Preserve original location including search params
+  const [preservedLocation] = useState(() => ({
+    pathname: location.pathname,
+    search: location.search,
+    hash: location.hash,
+  }));
 
   useEffect(() => {
     const checkSession = async () => {
@@ -58,7 +65,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
 
   // Not authenticated - redirect to login
   if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/auth" state={{ from: preservedLocation }} replace />;
   }
 
   // Role check if required
