@@ -412,49 +412,45 @@ export const useAnalytics = ({
   const { data: funnelData } = useQuery({
     queryKey: ["analytics-funnel", siteId, startDate, endDate, device],
     queryFn: async () => {
-      // Query 1: Contar page_views
+      // Query 1: COUNT page_views diretamente no banco
       let pvQuery = supabase
         .from("rank_rent_conversions")
-        .select("event_type")
+        .select("*", { count: 'exact', head: true })
         .eq("site_id", siteId)
         .eq("event_type", "page_view")
         .gte("created_at", startDate)
-        .lte("created_at", endDate)
-        .order("created_at", { ascending: false });
+        .lte("created_at", endDate);
 
-      // Aplicar filtro de device no Supabase
+      // Aplicar filtro de device
       if (device !== "all") {
         pvQuery = pvQuery.filter('metadata->>device', 'eq', device);
       }
 
-      const { data: pageViewsData, error: pvError, count: pvCount } = await pvQuery.limit(50000);
-
+      const { count: pageViews, error: pvError } = await pvQuery;
       if (pvError) throw pvError;
 
-      // Query 2: Contar conversões (tudo exceto page_view)
+      // Query 2: COUNT conversions diretamente no banco
       let convQuery = supabase
         .from("rank_rent_conversions")
-        .select("event_type")
+        .select("*", { count: 'exact', head: true })
         .eq("site_id", siteId)
         .neq("event_type", "page_view")
         .gte("created_at", startDate)
-        .lte("created_at", endDate)
-        .order("created_at", { ascending: false });
+        .lte("created_at", endDate);
 
-      // Aplicar filtro de device no Supabase
+      // Aplicar filtro de device
       if (device !== "all") {
         convQuery = convQuery.filter('metadata->>device', 'eq', device);
       }
 
-      const { data: conversionsData, error: convError } = await convQuery.limit(50000);
-
+      const { count: conversions, error: convError } = await convQuery;
       if (convError) throw convError;
 
-      const pageViews = pageViewsData?.length || 0;
-      const conversions = conversionsData?.length || 0;
-      const interactions = conversions;
-
-      return { pageViews, interactions, conversions };
+      return { 
+        pageViews: pageViews || 0, 
+        interactions: conversions || 0, 
+        conversions: conversions || 0 
+      };
     },
     enabled: !!siteId,
   });
