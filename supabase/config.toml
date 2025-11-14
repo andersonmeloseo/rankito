@@ -15,6 +15,11 @@ verify_jwt = false
 [functions.gsc-validate-apis]
 verify_jwt = false
 
+[functions.gsc-get-quota]
+verify_jwt = false
+
+[functions.gsc-get-aggregated-quota]
+verify_jwt = true
 
 [functions.api-external-leads]
 verify_jwt = false
@@ -80,4 +85,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.send-account-status-email]
+verify_jwt = true
+
+[functions.gsc-request-indexing]
 verify_jwt = true

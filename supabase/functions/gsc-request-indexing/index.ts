@@ -130,6 +130,25 @@ Deno.serve(async (req) => {
     // Ordenar por quota restante (maior primeiro)
     integrationsWithQuota.sort((a, b) => b.remaining_quota - a.remaining_quota);
 
+    // Validar se ALGUMA integração tem quota disponível
+    const hasAvailableQuota = integrationsWithQuota.some(int => int.remaining_quota > 0);
+    
+    if (!hasAvailableQuota) {
+      console.error('❌ All integrations quota exhausted');
+      return new Response(
+        JSON.stringify({
+          error: 'Quota exhausted',
+          message: 'Todas as integrações GSC atingiram o limite diário de 200 requisições. Tente novamente amanhã ou adicione mais integrações.',
+          quotaStatus: integrationsWithQuota.map(int => ({
+            name: int.connection_name,
+            used: int.used_quota,
+            limit: DAILY_QUOTA_LIMIT,
+          })),
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Tentar cada integração sequencialmente até uma funcionar
     let lastError: any = null;
     let successfulRequest = null;
