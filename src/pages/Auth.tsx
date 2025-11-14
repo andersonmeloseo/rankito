@@ -34,16 +34,44 @@ const Auth = () => {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
 
+  // 🔥 Função para recuperar localização preservada
+  const getPreservedLocation = () => {
+    // Tentar pegar do location.state primeiro (caso venha de navegação normal)
+    const stateFrom = (location.state as any)?.from;
+    if (stateFrom?.pathname && stateFrom.pathname !== '/auth') {
+      return stateFrom;
+    }
+    
+    // Se não tiver no state, tentar pegar do sessionStorage (caso de F5)
+    const stored = sessionStorage.getItem('redirectAfterAuth');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed?.pathname && parsed.pathname !== '/auth') {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Erro ao parsear redirectAfterAuth:', e);
+      }
+    }
+    
+    return null;
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session && !hasRedirected) {
         setHasRedirected(true);
-        const from = (location.state as any)?.from;
+        const from = getPreservedLocation();
         console.log('🔍 [Auth onAuthStateChange] from:', from);
-        if (from?.pathname && from.pathname !== '/auth') {
+        if (from?.pathname) {
           const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
           console.log('✅ [Auth] Redirecionando para:', fullPath);
+          
+          // 🔥 LIMPAR sessionStorage após usar
+          sessionStorage.removeItem('redirectAfterAuth');
+          
           navigate(fullPath, { replace: true });
         } else {
           console.log('✅ [Auth] Redirecionando para /dashboard');
@@ -56,11 +84,15 @@ const Auth = () => {
       setSession(session);
       if (session && !hasRedirected) {
         setHasRedirected(true);
-        const from = (location.state as any)?.from;
+        const from = getPreservedLocation();
         console.log('🔍 [Auth getSession] from:', from);
-        if (from?.pathname && from.pathname !== '/auth') {
+        if (from?.pathname) {
           const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
           console.log('✅ [Auth] Redirecionando para:', fullPath);
+          
+          // 🔥 LIMPAR sessionStorage após usar
+          sessionStorage.removeItem('redirectAfterAuth');
+          
           navigate(fullPath, { replace: true });
         } else {
           console.log('✅ [Auth] Redirecionando para /dashboard');
@@ -198,11 +230,15 @@ const Auth = () => {
 
       if (!hasRedirected) {
         setHasRedirected(true);
-        const from = (location.state as any)?.from;
+        const from = getPreservedLocation();
         console.log('🔍 [handleSignIn] from:', from);
-        if (from?.pathname && from.pathname !== '/auth') {
+        if (from?.pathname) {
           const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
           console.log('✅ [handleSignIn] Redirecionando para:', fullPath);
+          
+          // 🔥 LIMPAR sessionStorage após usar
+          sessionStorage.removeItem('redirectAfterAuth');
+          
           navigate(fullPath, { replace: true });
         } else {
           console.log('✅ [handleSignIn] Redirecionando para /dashboard');

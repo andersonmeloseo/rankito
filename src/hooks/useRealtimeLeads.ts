@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,13 +16,22 @@ export const useRealtimeLeads = (userId: string | undefined) => {
   const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
 
+  // 🔥 Usar ref para toast estável
+  const toastRef = useRef(toast);
+  
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
+
   useEffect(() => {
     if (!userId) return;
 
     console.log('🔔 Setting up realtime leads subscription...');
 
+    // 🔥 Nome único de canal para evitar conflitos
+    const channelName = `leads-${userId}-${Date.now()}`;
     const channel = supabase
-      .channel('realtime-leads')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -42,8 +51,8 @@ export const useRealtimeLeads = (userId: string | undefined) => {
           // Determinar emoji baseado no score
           const emoji = newLead.lead_score >= 80 ? '🔥' : newLead.lead_score >= 60 ? '⚡' : '❄️';
           
-          // Mostrar toast
-          toast({
+          // 🔥 Mostrar toast usando ref
+          toastRef.current({
             title: `${emoji} Novo Lead Capturado!`,
             description: newLead.title,
             duration: 8000,
@@ -68,9 +77,12 @@ export const useRealtimeLeads = (userId: string | undefined) => {
 
     return () => {
       console.log('🔕 Unsubscribing from realtime leads');
-      supabase.removeChannel(channel);
+      // 🔥 Unsubscribe antes de remover canal
+      channel.unsubscribe().then(() => {
+        supabase.removeChannel(channel);
+      });
     };
-  }, [userId, toast]);
+  }, [userId]);
 
   const clearNewLeads = () => {
     setNewLeads([]);

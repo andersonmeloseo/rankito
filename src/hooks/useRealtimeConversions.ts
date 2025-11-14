@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -34,6 +34,13 @@ export const useRealtimeConversions = (
     setNewConversions([]);
   }, []);
 
+  // 🔥 Usar ref para callback estável
+  const onNewConversionRef = useRef(onNewConversion);
+  
+  useEffect(() => {
+    onNewConversionRef.current = onNewConversion;
+  }, [onNewConversion]);
+
   useEffect(() => {
     if (!siteIds || siteIds.length === 0) {
       return;
@@ -55,9 +62,10 @@ export const useRealtimeConversions = (
 
         setTotalConversionsToday(todayConversions?.length || 0);
 
-        // Configurar canal de realtime
+        // 🔥 Nome único de canal para evitar conflitos
+        const channelName = `conversions-${Date.now()}`;
         channel = supabase
-          .channel('conversions-realtime')
+          .channel(channelName)
           .on(
             'postgres_changes',
             {
@@ -79,9 +87,9 @@ export const useRealtimeConversions = (
 
               setTotalConversionsToday((prev) => prev + 1);
 
-              // Callback para notificações
-              if (onNewConversion) {
-                onNewConversion(newConversion);
+              // 🔥 Callback usando ref
+              if (onNewConversionRef.current) {
+                onNewConversionRef.current(newConversion);
               }
             }
           )
@@ -102,10 +110,13 @@ export const useRealtimeConversions = (
     return () => {
       if (channel) {
         console.log('🔌 Desconectando realtime...');
-        supabase.removeChannel(channel);
+        // 🔥 Unsubscribe antes de remover canal
+        channel.unsubscribe().then(() => {
+          supabase.removeChannel(channel);
+        });
       }
     };
-  }, [siteIds, onNewConversion]);
+  }, [siteIds]);
 
   return {
     newConversions,
