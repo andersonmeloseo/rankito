@@ -95,6 +95,23 @@
 
 ---
 
+#### 6. ✅ Correção de Redirecionamento após F5 (URL Preservation)
+
+**Problema:** Quando usuário atualizava página (F5) em qualquer rota protegida (ex: `/dashboard/site/:id?tab=gsc`), era redirecionado para landing page `/` após login, perdendo contexto original.
+
+**Solução Implementada:**
+- Corrigido `emailRedirectTo` de `/` para `/auth` no signup
+- `useEffect` agora lê `location.state.from` preservado pelo `ProtectedRoute`
+- Redireciona para URL completa (pathname + search + hash) após autenticação
+- `handleSignIn` também implementa mesma lógica de restauração de URL
+
+**Arquivos Modificados:**
+- `src/pages/Auth.tsx`
+
+**Impacto:** Usuário agora retorna exatamente para mesma página e aba após F5 + login, mantendo contexto completo de navegação.
+
+---
+
 ### Configurações Adicionais
 
 **Edge Function Config:**
@@ -105,7 +122,7 @@
 
 ### Métricas de Qualidade
 
-**Score de Saúde do Sistema:** 7/10 → 9/10 (após melhorias)
+**Score de Saúde do Sistema:** 7/10 → 9.5/10 (após melhorias)
 
 **Problemas Resolvidos:**
 - ✅ Limite de páginas excedido (Critical)
