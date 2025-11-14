@@ -72,14 +72,6 @@ const Dashboard = () => {
     setSearchParams({ tab: value }, { replace: true });
   };
 
-  // Sync with URL params
-  useEffect(() => {
-    const urlTab = searchParams.get('tab');
-    if (urlTab && urlTab !== activeTab) {
-      setActiveTab(urlTab);
-    }
-  }, [searchParams]);
-
   // Realtime leads
   const { newLeads, clearNewLeads } = useRealtimeLeads(user?.id);
 
@@ -126,6 +118,7 @@ const Dashboard = () => {
     }
   }, [role, isEndClient, roleLoading, navigate]);
 
+  // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -146,20 +139,30 @@ const Dashboard = () => {
           console.error('Error checking profile:', error);
         }
 
-      if (profile && !profile.is_active) {
-        // Conta não aprovada, redirecionar para página de pendência
-        navigate("/pending-approval");
-        return;
+        if (profile && !profile.is_active) {
+          // Conta não aprovada, redirecionar para página de pendência
+          navigate("/pending-approval");
+          return;
+        }
       }
-    }
 
-    // Setar user e session no estado
-    setUser(session.user);
-    setSession(session);
-    setLoading(false);
+      // Setar user e session no estado
+      setUser(session.user);
+      setSession(session);
+      setLoading(false);
     };
     checkAuth();
   }, [navigate]);
+
+  // Sync with URL params - ONLY after auth is confirmed
+  useEffect(() => {
+    if (!loading && user) {
+      const urlTab = searchParams.get('tab');
+      if (urlTab && urlTab !== activeTab) {
+        setActiveTab(urlTab);
+      }
+    }
+  }, [searchParams, loading, user]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
