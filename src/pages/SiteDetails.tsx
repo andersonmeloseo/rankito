@@ -60,9 +60,15 @@ import { PageHeader } from "@/components/layout/PageHeader";
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'pages';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'pages');
   const queryClient = useQueryClient();
+
+  // Handle tab changes with URL sync
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value }, { replace: true });
+  };
   
   // UI States
   const [searchTerm, setSearchTerm] = useState("");
@@ -783,7 +789,7 @@ const SiteDetails = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue={defaultTab} className="space-y-8">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
           <div className="border-b border-gray-200">
             <div className="container mx-auto px-4 lg:px-8 xl:px-12">
               <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0">

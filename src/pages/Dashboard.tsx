@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { useRole } from "@/contexts/RoleContext";
@@ -58,21 +58,27 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showAddSite, setShowAddSite] = useState(false);
   const [selectedSites, setSelectedSites] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview');
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
   const { role, isSuperAdmin, isEndClient, isLoading: roleLoading } = useRole();
   const { viewMode, setViewMode } = useViewMode("sites-view", "table");
 
-  // Listen to navigation state changes
+  // Handle tab changes with URL sync
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value }, { replace: true });
+  };
+
+  // Sync with URL params
   useEffect(() => {
-    if (location.state?.tab) {
-      setActiveTab(location.state.tab);
-      // Clear state to prevent issues on reload
-      window.history.replaceState({}, document.title);
+    const urlTab = searchParams.get('tab');
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab);
     }
-  }, [location.state]);
+  }, [searchParams]);
 
   // Realtime leads
   const { newLeads, clearNewLeads } = useRealtimeLeads(user?.id);
@@ -368,7 +374,7 @@ const Dashboard = () => {
       
       <div className="flex-1">
         <div className="container mx-auto px-4 lg:px-8 xl:px-12 py-8 space-y-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
             <div className="border-b border-gray-200">
               <div className="container mx-auto px-4 lg:px-8 xl:px-12">
                 <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0">
