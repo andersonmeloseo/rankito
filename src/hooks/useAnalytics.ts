@@ -203,30 +203,18 @@ export const useAnalytics = ({
   const { data: events, isLoading: eventsLoading } = useQuery({
     queryKey: ["analytics-events", siteId, startDate, endDate, device],
     queryFn: async () => {
-      let query = supabase
-        .from("rank_rent_conversions")
-        .select("event_type")
-        .eq("site_id", siteId)
-        .gte("created_at", startDate)
-        .lte("created_at", endDate);
+      const { data, error } = await supabase.rpc("get_event_distribution", {
+        site_uuid: siteId,
+        start_date: startDate,
+        end_date: endDate,
+        device_filter: device,
+      });
 
-      if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
-      }
-
-      query = query.limit(50000);
-
-      const { data, error } = await query;
       if (error) throw error;
 
-      const grouped = data?.reduce((acc: any, conv) => {
-        acc[conv.event_type] = (acc[conv.event_type] || 0) + 1;
-        return acc;
-      }, {});
-
-      return Object.entries(grouped || {}).map(([name, value]) => ({
-        name: name.replace("_", " ").toUpperCase(),
-        value,
+      return (data || []).map((item) => ({
+        name: item.event_type.replace("_", " ").toUpperCase(),
+        value: Number(item.count),
       }));
     },
     enabled: !!siteId,
@@ -236,37 +224,54 @@ export const useAnalytics = ({
   const { data: topPages, isLoading: topPagesLoading } = useQuery({
     queryKey: ["analytics-top-pages", siteId, startDate, endDate, eventType, device],
     queryFn: async () => {
-      let query = supabase
-        .from("rank_rent_conversions")
-        .select("page_path, event_type")
-        .eq("site_id", siteId)
-        .gte("created_at", startDate)
-        .lte("created_at", endDate);
-
+      // Se eventType não for 'all', precisamos filtrar no cliente
+      // porque a função SQL não suporta esse filtro
       if (eventType !== "all") {
-        query = query.eq("event_type", eventType as any);
+        let query = supabase
+          .from("rank_rent_conversions")
+          .select("page_path, event_type")
+          .eq("site_id", siteId)
+          .eq("event_type", eventType as any)
+          .gte("created_at", startDate)
+          .lte("created_at", endDate);
+
+        if (device !== "all") {
+          query = query.filter('metadata->>device', 'eq', device);
+        }
+
+        query = query.limit(50000);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const grouped = data?.reduce((acc: any, conv) => {
+          if (!acc[conv.page_path]) {
+            acc[conv.page_path] = { page: conv.page_path, count: 0 };
+          }
+          acc[conv.page_path].count++;
+          return acc;
+        }, {});
+
+        return Object.values(grouped || {})
+          .sort((a: any, b: any) => b.count - a.count)
+          .slice(0, 10);
       }
 
-      if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
-      }
+      // Para 'all', usar a função SQL otimizada
+      const { data, error } = await supabase.rpc("get_top_pages", {
+        site_uuid: siteId,
+        start_date: startDate,
+        end_date: endDate,
+        device_filter: device,
+        limit_count: 10,
+      });
 
-      query = query.limit(50000);
-
-      const { data, error } = await query;
       if (error) throw error;
 
-      const grouped = data?.reduce((acc: any, conv) => {
-        if (!acc[conv.page_path]) {
-          acc[conv.page_path] = { page: conv.page_path, count: 0 };
-        }
-        acc[conv.page_path].count++;
-        return acc;
-      }, {});
-
-      return Object.values(grouped || {})
-        .sort((a: any, b: any) => b.count - a.count)
-        .slice(0, 10);
+      return (data || []).map((item) => ({
+        page: item.page,
+        count: Number(item.page_views) + Number(item.conversions),
+      }));
     },
     enabled: !!siteId,
   });
@@ -415,47 +420,25 @@ export const useAnalytics = ({
   const { data: funnelData } = useQuery({
     queryKey: ["analytics-funnel", siteId, startDate, endDate, device],
     queryFn: async () => {
-      // Query 1: Buscar page_views com limit alto
-      let pvQuery = supabase
-        .from("rank_rent_conversions")
-        .select("event_type")
-        .eq("site_id", siteId)
-        .eq("event_type", "page_view")
-        .gte("created_at", startDate)
-        .lte("created_at", endDate)
-        .limit(50000);
+      const { data, error } = await supabase.rpc("get_funnel_metrics", {
+        site_uuid: siteId,
+        start_date: startDate,
+        end_date: endDate,
+        device_filter: device,
+      });
 
-      // Aplicar filtro de device
-      if (device !== "all") {
-        pvQuery = pvQuery.filter('metadata->>device', 'eq', device);
+      if (error) throw error;
+
+      const result = data?.[0];
+      if (!result) {
+        return { pageViews: 0, interactions: 0, conversions: 0 };
       }
 
-      const { data: pageViewsData, error: pvError } = await pvQuery;
-      if (pvError) throw pvError;
-
-      // Query 2: Buscar conversions com limit alto
-      let convQuery = supabase
-        .from("rank_rent_conversions")
-        .select("event_type")
-        .eq("site_id", siteId)
-        .neq("event_type", "page_view")
-        .gte("created_at", startDate)
-        .lte("created_at", endDate)
-        .limit(50000);
-
-      // Aplicar filtro de device
-      if (device !== "all") {
-        convQuery = convQuery.filter('metadata->>device', 'eq', device);
-      }
-
-      const { data: conversionsData, error: convError } = await convQuery;
-      if (convError) throw convError;
-
-      const pageViews = pageViewsData?.length || 0;
-      const conversions = conversionsData?.length || 0;
-      const interactions = conversions;
-
-      return { pageViews, interactions, conversions };
+      return {
+        pageViews: Number(result.page_views),
+        interactions: Number(result.interactions),
+        conversions: Number(result.conversions),
+      };
     },
     enabled: !!siteId,
   });
