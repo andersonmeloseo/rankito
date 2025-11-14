@@ -17,6 +17,20 @@ export const RecentActivity = ({ userId }: RecentActivityProps) => {
   const { data: activities, isLoading } = useQuery({
     queryKey: ['recent-activities', userId],
     queryFn: async () => {
+      // Primeiro: buscar os site_ids do usuário
+      const { data: userSites } = await supabase
+        .from('rank_rent_sites')
+        .select('id')
+        .eq('owner_user_id', userId);
+
+      const siteIds = userSites?.map(s => s.id) || [];
+
+      // Se não houver sites, retornar array vazio
+      if (siteIds.length === 0) {
+        return [];
+      }
+
+      // Segundo: buscar conversões desses sites
       const { data: conversions } = await supabase
         .from('rank_rent_conversions')
         .select(`
@@ -26,7 +40,7 @@ export const RecentActivity = ({ userId }: RecentActivityProps) => {
           site_id,
           rank_rent_pages(page_title, page_url, rank_rent_sites(site_name))
         `)
-        .eq('rank_rent_sites.user_id', userId)
+        .in('site_id', siteIds)
         .order('created_at', { ascending: false })
         .limit(5);
 
