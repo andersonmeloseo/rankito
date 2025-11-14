@@ -104,13 +104,13 @@ const Dashboard = () => {
     }
   }, [user?.id]);
 
-  // Sync with URL params
+  // Sync with URL params - only when URL changes
   useEffect(() => {
     const urlTab = searchParams.get('tab');
-    if (urlTab && urlTab !== activeTab) {
+    if (urlTab) {
       setActiveTab(urlTab);
     }
-  }, [searchParams, activeTab]);
+  }, [searchParams]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
