@@ -8,6 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -42,6 +44,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const [sortBy, setSortBy] = useState<string>("page_path");
   const [sortColumn, setSortColumn] = useState<string>("page_path");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [showProcessDialog, setShowProcessDialog] = useState(false);
   const PAGES_PER_PAGE = 50;
 
   const handleSort = (column: string) => {
@@ -72,10 +75,35 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
     refetchQuota,
   } = useGSCIndexing({ siteId });
 
-  const { addToQueue, isAddingToQueue } = useGSCIndexingQueue({ siteId });
+  const { addToQueue, isAddingToQueue, queueStats } = useGSCIndexingQueue({ siteId });
   const { latestLog, nextExecution, isLoading: isLoadingLogs } = useGSCQueueLogs();
 
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
+
+  // Fetch pending URLs count for quota projection
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ['gsc-pending-count', siteId],
+    queryFn: async () => {
+      if (!siteId) return 0;
+
+      const { data: integrations } = await supabase
+        .from('google_search_console_integrations')
+        .select('id')
+        .eq('site_id', siteId);
+
+      if (!integrations || integrations.length === 0) return 0;
+
+      const { count } = await supabase
+        .from('gsc_indexing_queue')
+        .select('*', { count: 'exact', head: true })
+        .in('integration_id', integrations.map(i => i.id))
+        .eq('status', 'pending');
+
+      return count || 0;
+    },
+    enabled: !!siteId,
+    refetchInterval: 10000,
+  });
 
   // Fetch site pages with pagination, search, and filters
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
@@ -198,7 +226,13 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   };
 
   const handleProcessQueueNow = async () => {
+    setShowProcessDialog(false);
     setIsProcessingQueue(true);
+    
+    toast.info("Processando fila...", {
+      description: "Isso pode levar alguns minutos",
+    });
+
     try {
       const { data, error } = await supabase.functions.invoke('gsc-process-indexing-queue', {
         body: { scheduled: false }
@@ -206,7 +240,14 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
 
       if (error) throw error;
 
-      toast.success(`✅ Fila processada! ${data.total_processed} URLs enviadas ao Google`);
+      const processed = data.total_processed || 0;
+      const failed = data.total_failed || 0;
+      const skipped = data.total_skipped || 0;
+
+      toast.success(`✅ Fila processada!`, {
+        description: `${processed} URLs indexadas${failed > 0 ? `, ${failed} falharam` : ''}${skipped > 0 ? `, ${skipped} agendadas para depois` : ''}`
+      });
+      
       refetchQuota();
     } catch (error) {
       const errorMsg = getErrorMessage(error, 'processar fila de indexação');
@@ -317,41 +358,67 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {quota && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Quota Diária</p>
-                  <p className="text-2xl font-bold">
-                    {quota.used} / {quota.limit}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {quota.remaining} URLs restantes hoje
-                  </p>
-                </div>
-                <div className="text-right">
-                  <Badge variant={quota.remaining > 0 ? "outline" : "destructive"} className="text-lg px-4 py-2">
-                    {quota.percentage}%
-                  </Badge>
-                  {resetAt && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Renova em: {formatDate(resetAt)}
-                    </p>
-                  )}
-                </div>
+        <CardContent className="space-y-6">
+          {/* Quota Stats with Pending URLs */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Quota Diária Usada</div>
+              <div className="text-2xl font-bold">
+                {quota?.used || 0}/{quota?.limit || 0}
               </div>
-              <Progress value={quota.percentage} className={`h-3 ${getQuotaColor()}`} />
-              
-              {quota.remaining === 0 && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Limite diário atingido. A quota será renovada automaticamente às 00:00 UTC.
-                  </AlertDescription>
-                </Alert>
+              <Progress 
+                value={quota?.percentage || 0} 
+                className="h-2"
+              />
+              <div className="text-xs text-muted-foreground">
+                {quota?.remaining || 0} URLs restantes hoje
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Pendentes na Fila
+              </div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {pendingCount}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                URLs aguardando processamento
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                <Activity className="h-3 w-3" />
+                Projeção após Processar
+              </div>
+              <div className="text-2xl font-bold">
+                {Math.min((quota?.used || 0) + pendingCount, quota?.limit || 0)}/{quota?.limit || 0}
+              </div>
+              <Progress 
+                value={Math.min(((quota?.used || 0) + pendingCount) / (quota?.limit || 1) * 100, 100)}
+                className="h-2"
+              />
+              {((quota?.used || 0) + pendingCount) > (quota?.limit || 0) && (
+                <div className="text-xs text-destructive flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Quota excedida! {((quota?.used || 0) + pendingCount) - (quota?.limit || 0)} URLs para amanhã
+                </div>
               )}
             </div>
+          </div>
+
+          {/* Alert for high quota usage */}
+          {quota && quota.percentage >= 80 && (
+            <Alert variant={quota.percentage >= 95 ? "destructive" : "default"}>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {quota.percentage >= 95 
+                  ? "Quota diária quase esgotada! Novas URLs serão agendadas para amanhã."
+                  : "Você está próximo do limite da quota diária. URLs pendentes serão processadas gradualmente."}
+              </AlertDescription>
+            </Alert>
           )}
         </CardContent>
       </Card>
@@ -385,40 +452,64 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
               >
                 {isRequesting ? "Enviando..." : "Solicitar Indexação"}
               </Button>
-              <Button
-                type="button"
-                onClick={handleProcessQueueNow}
-                disabled={isProcessingQueue}
-                variant="outline"
-                className="gap-2"
-              >
-                {isProcessingQueue ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Zap className="h-4 w-4" />
-                )}
-                Processar Fila Agora
-              </Button>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      onClick={() => setShowProcessDialog(true)}
+                      disabled={isProcessingQueue || pendingCount === 0}
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      {isProcessingQueue ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                          Processando...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4" />
+                          Processar Fila {pendingCount > 0 && `(${pendingCount})`}
+                        </>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Processa imediatamente as URLs pendentes na fila.</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Normalmente o sistema processa automaticamente a cada 6 horas.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            
+            {/* Last Execution Info */}
+            <div className="flex flex-col gap-1 text-xs text-muted-foreground mt-2">
+              {latestLog && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Última execução: {formatDistanceToNow(new Date(latestLog.executed_at), { 
+                    addSuffix: true,
+                    locale: ptBR 
+                  })}
+                </div>
+              )}
+              {nextExecution && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Próxima execução automática: {formatDistanceToNow(new Date(nextExecution), { 
+                    addSuffix: true,
+                    locale: ptBR 
+                  })}
+                </div>
+              )}
             </div>
           </form>
         </CardContent>
       </Card>
-
-      {/* Last Execution Info */}
-      {latestLog && (
-        <Alert>
-          <Activity className="h-4 w-4" />
-          <AlertDescription className="space-y-1">
-            <div className="font-medium">
-              Última execução automática: {formatDistanceToNow(new Date(latestLog.executed_at), { addSuffix: true, locale: ptBR })}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              📊 {latestLog.total_processed} URLs processadas
-              {nextExecution && ` • Próxima execução: ${formatDistanceToNow(nextExecution, { addSuffix: true, locale: ptBR })}`}
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Site Pages */}
       <Card>
@@ -706,6 +797,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         selectedUrls={sortedPages?.filter(p => selectedPages.has(p.id)).map(p => ({ url: p.page_url, page_id: p.id })) || []}
         remainingQuota={quota?.remaining || 0}
         totalLimit={quota?.limit || 200}
+        pendingInQueue={pendingCount}
         onConfirm={handleBatchIndexing}
         isSubmitting={isAddingToQueue}
       />

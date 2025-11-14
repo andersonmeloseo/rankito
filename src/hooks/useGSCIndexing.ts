@@ -117,6 +117,7 @@ export function useGSCIndexing({ siteId }: UseGSCIndexingParams) {
         description: `Google Search Console receberá a solicitação em breve. Quota restante: ${data.quota.remaining}/${data.quota.limit}`,
       });
       queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-pending-count', siteId] });
       queryClient.invalidateQueries({ queryKey: ['site-pages', siteId] });
       refetchQuota();
     },

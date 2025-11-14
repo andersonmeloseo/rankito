@@ -1186,6 +1186,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           avatar_url: string | null
           bio: string | null
           company: string | null
@@ -1201,6 +1203,8 @@ export type Database = {
           onboarding_completed: boolean | null
           parent_user_id: string | null
           phone: string | null
+          rejection_reason: string | null
+          selected_plan_slug: string | null
           theme: string | null
           theme_preferences: Json | null
           timezone: string | null
@@ -1209,6 +1213,8 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           bio?: string | null
           company?: string | null
@@ -1224,6 +1230,8 @@ export type Database = {
           onboarding_completed?: boolean | null
           parent_user_id?: string | null
           phone?: string | null
+          rejection_reason?: string | null
+          selected_plan_slug?: string | null
           theme?: string | null
           theme_preferences?: Json | null
           timezone?: string | null
@@ -1232,6 +1240,8 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           bio?: string | null
           company?: string | null
@@ -1247,6 +1257,8 @@ export type Database = {
           onboarding_completed?: boolean | null
           parent_user_id?: string | null
           phone?: string | null
+          rejection_reason?: string | null
+          selected_plan_slug?: string | null
           theme?: string | null
           theme_preferences?: Json | null
           timezone?: string | null
@@ -2945,7 +2957,46 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
+      get_event_distribution: {
+        Args: {
+          device_filter?: string
+          end_date: string
+          site_uuid: string
+          start_date: string
+        }
+        Returns: {
+          count: number
+          event_type: string
+        }[]
+      }
+      get_funnel_metrics: {
+        Args: {
+          device_filter?: string
+          end_date: string
+          site_uuid: string
+          start_date: string
+        }
+        Returns: {
+          conversions: number
+          interactions: number
+          page_views: number
+        }[]
+      }
       get_parent_user_id: { Args: { _user_id: string }; Returns: string }
+      get_top_pages: {
+        Args: {
+          device_filter?: string
+          end_date: string
+          limit_count?: number
+          site_uuid: string
+          start_date: string
+        }
+        Returns: {
+          conversions: number
+          page: string
+          page_views: number
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
