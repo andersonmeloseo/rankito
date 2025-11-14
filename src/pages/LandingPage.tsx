@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
@@ -12,10 +13,22 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useLandingTranslation } from "@/hooks/useLandingTranslation";
 import { LandingLanguageProvider } from "@/contexts/LandingLanguageContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const LandingPageContent = () => {
   const navigate = useNavigate();
   const { t, locale, setLocale, isTransitioning } = useLandingTranslation();
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard", { replace: true });
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   return (
     <div 
