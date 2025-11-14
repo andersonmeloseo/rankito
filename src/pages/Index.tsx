@@ -9,7 +9,26 @@ const Index = () => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        console.log('🏠 [Index] Usuário autenticado detectado, redirecionando para /dashboard');
+        // 🔥 Verificar se existe localização preservada no sessionStorage
+        const stored = sessionStorage.getItem('redirectAfterAuth');
+        
+        if (stored) {
+          try {
+            const preserved = JSON.parse(stored);
+            if (preserved?.pathname && preserved.pathname !== '/' && preserved.pathname !== '/auth') {
+              const fullPath = `${preserved.pathname}${preserved.search || ''}${preserved.hash || ''}`;
+              console.log('🏠 [Index] Redirecionando para localização preservada:', fullPath);
+              sessionStorage.removeItem('redirectAfterAuth');
+              navigate(fullPath, { replace: true });
+              return;
+            }
+          } catch (e) {
+            console.error('Erro ao parsear sessionStorage:', e);
+          }
+        }
+        
+        // Se não houver localização preservada, vai para /dashboard
+        console.log('🏠 [Index] Usuário autenticado, redirecionando para /dashboard');
         navigate('/dashboard', { replace: true });
       }
     };
