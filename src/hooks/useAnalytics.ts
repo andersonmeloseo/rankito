@@ -76,7 +76,7 @@ export const useAnalytics = ({
         .match(baseFilters)
         .gte("created_at", startDate)
         .lte("created_at", endDate)
-        .limit(10000); // Aumentar limite para garantir todos os registros
+        .limit(50000); // Limite aumentado para capturar mais registros
 
       if (device !== "all") {
         uniqueVisitorsQuery = uniqueVisitorsQuery.filter('metadata->>device', 'eq', device);
@@ -93,7 +93,7 @@ export const useAnalytics = ({
         .match(baseFilters)
         .gte("created_at", startDate)
         .lte("created_at", endDate)
-        .limit(10000); // Aumentar limite para garantir todos os registros
+        .limit(50000); // Limite aumentado para capturar mais registros
 
       if (device !== "all") {
         uniquePagesQuery = uniquePagesQuery.filter('metadata->>device', 'eq', device);
@@ -214,6 +214,8 @@ export const useAnalytics = ({
         query = query.filter('metadata->>device', 'eq', device);
       }
 
+      query = query.limit(50000);
+
       const { data, error } = await query;
       if (error) throw error;
 
@@ -249,7 +251,7 @@ export const useAnalytics = ({
         query = query.filter('metadata->>device', 'eq', device);
       }
 
-      query = query.limit(10000);
+      query = query.limit(50000);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -278,7 +280,8 @@ export const useAnalytics = ({
         .select("*")
         .eq("site_id", siteId)
         .gte("created_at", previousStart)
-        .lte("created_at", previousEnd);
+        .lte("created_at", previousEnd)
+        .limit(50000);
 
       if (error) throw error;
 
@@ -340,7 +343,7 @@ export const useAnalytics = ({
         .neq("event_type", "page_view")
         .gte("created_at", startDate)
         .lte("created_at", endDate)
-        .limit(10000);
+        .limit(50000);
 
       if (device !== "all") {
         query = query.filter('metadata->>device', 'eq', device);
@@ -384,7 +387,7 @@ export const useAnalytics = ({
 
       // Aplicar limite apenas se não for "todo período"
       if (period !== "all") {
-        query = query.limit(1000);
+        query = query.limit(50000);
       }
 
       if (device !== "all") {
@@ -412,45 +415,47 @@ export const useAnalytics = ({
   const { data: funnelData } = useQuery({
     queryKey: ["analytics-funnel", siteId, startDate, endDate, device],
     queryFn: async () => {
-      // Query 1: COUNT page_views diretamente no banco
+      // Query 1: Buscar page_views com limit alto
       let pvQuery = supabase
         .from("rank_rent_conversions")
-        .select("*", { count: 'exact', head: true })
+        .select("event_type")
         .eq("site_id", siteId)
         .eq("event_type", "page_view")
         .gte("created_at", startDate)
-        .lte("created_at", endDate);
+        .lte("created_at", endDate)
+        .limit(50000);
 
       // Aplicar filtro de device
       if (device !== "all") {
         pvQuery = pvQuery.filter('metadata->>device', 'eq', device);
       }
 
-      const { count: pageViews, error: pvError } = await pvQuery;
+      const { data: pageViewsData, error: pvError } = await pvQuery;
       if (pvError) throw pvError;
 
-      // Query 2: COUNT conversions diretamente no banco
+      // Query 2: Buscar conversions com limit alto
       let convQuery = supabase
         .from("rank_rent_conversions")
-        .select("*", { count: 'exact', head: true })
+        .select("event_type")
         .eq("site_id", siteId)
         .neq("event_type", "page_view")
         .gte("created_at", startDate)
-        .lte("created_at", endDate);
+        .lte("created_at", endDate)
+        .limit(50000);
 
       // Aplicar filtro de device
       if (device !== "all") {
         convQuery = convQuery.filter('metadata->>device', 'eq', device);
       }
 
-      const { count: conversions, error: convError } = await convQuery;
+      const { data: conversionsData, error: convError } = await convQuery;
       if (convError) throw convError;
 
-      return { 
-        pageViews: pageViews || 0, 
-        interactions: conversions || 0, 
-        conversions: conversions || 0 
-      };
+      const pageViews = pageViewsData?.length || 0;
+      const conversions = conversionsData?.length || 0;
+      const interactions = conversions;
+
+      return { pageViews, interactions, conversions };
     },
     enabled: !!siteId,
   });
