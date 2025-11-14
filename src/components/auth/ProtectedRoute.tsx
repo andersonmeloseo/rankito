@@ -13,22 +13,6 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
   const location = useLocation();
-  
-  // 🔒 CRITICAL: Preserve original location including search params
-  const [preservedLocation] = useState(() => ({
-    pathname: location.pathname,
-    search: location.search,
-    hash: location.hash,
-  }));
-
-  // 🔥 SALVAR SEMPRE no sessionStorage, independente do estado de autenticação
-  useEffect(() => {
-    // Não salvar se for /auth ou / (evita loops)
-    if (preservedLocation.pathname !== '/auth' && preservedLocation.pathname !== '/') {
-      console.log('💾 [ProtectedRoute] Salvando localização no sessionStorage:', preservedLocation);
-      sessionStorage.setItem('redirectAfterAuth', JSON.stringify(preservedLocation));
-    }
-  }, []); // Empty dependency - só executa uma vez na montagem
 
   useEffect(() => {
     const checkSession = async () => {
@@ -74,8 +58,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
 
   // Not authenticated - redirect to login
   if (!user) {
-    console.log('🔒 [ProtectedRoute] Não autenticado, redirecionando para /auth');
-    return <Navigate to="/auth" state={{ from: preservedLocation }} replace />;
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // Role check if required
