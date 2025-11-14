@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -53,8 +52,6 @@ import { LeadNotificationBanner } from "@/components/crm/LeadNotificationBanner"
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
 
 const Dashboard = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [showAddSite, setShowAddSite] = useState(false);
   const [selectedSites, setSelectedSites] = useState<Set<string>>(new Set());
   const [searchParams, setSearchParams] = useSearchParams();
@@ -62,7 +59,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { role, isSuperAdmin, isEndClient, isLoading: roleLoading } = useRole();
+  const { role, isSuperAdmin, isEndClient, isLoading: roleLoading, user } = useRole();
   const { viewMode, setViewMode } = useViewMode("sites-view", "table");
 
   // Handle tab changes with URL sync
