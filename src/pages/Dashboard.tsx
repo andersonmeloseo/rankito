@@ -104,16 +104,6 @@ const Dashboard = () => {
     }
   }, [user?.id]);
 
-  // Redirecionar apenas End Clients (Super Admin pode acessar tudo)
-  useEffect(() => {
-    if (!roleLoading && role) {
-      if (isEndClient) {
-        navigate("/end-client-portal");
-        return;
-      }
-    }
-  }, [role, isEndClient, roleLoading, navigate]);
-
   // Sync with URL params
   useEffect(() => {
     const urlTab = searchParams.get('tab');
