@@ -37,19 +37,31 @@ const Auth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
-        navigate("/dashboard");
+        const from = (location.state as any)?.from;
+        if (from?.pathname && from.pathname !== '/auth') {
+          const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
+          navigate(fullPath, { replace: true });
+        } else {
+          navigate("/dashboard");
+        }
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
-        navigate("/dashboard");
+        const from = (location.state as any)?.from;
+        if (from?.pathname && from.pathname !== '/auth') {
+          const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
+          navigate(fullPath, { replace: true });
+        } else {
+          navigate("/dashboard");
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, location.state]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +96,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/auth`;
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -175,7 +187,13 @@ const Auth = () => {
         description: "Bem-vindo de volta.",
       });
 
-      navigate('/dashboard');
+      const from = (location.state as any)?.from;
+      if (from?.pathname && from.pathname !== '/auth') {
+        const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
+        navigate(fullPath, { replace: true });
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao fazer login",
