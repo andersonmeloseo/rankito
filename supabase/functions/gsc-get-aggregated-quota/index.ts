@@ -78,6 +78,24 @@ Deno.serve(async (req) => {
         const used = count || 0;
         const remaining = DAILY_QUOTA_LIMIT - used;
 
+        // Marcar como unhealthy se quota exceder 90% ou estiver negativo
+        let actualHealthStatus = integration.health_status || 'healthy';
+        if (remaining < 0 || used > DAILY_QUOTA_LIMIT * 0.9) {
+          actualHealthStatus = 'unhealthy';
+          
+          // Atualizar no banco se necessário
+          if (integration.health_status !== 'unhealthy') {
+            await supabase
+              .from('google_search_console_integrations')
+              .update({ 
+                health_status: 'unhealthy',
+                last_error: `Quota excedida: ${used}/${DAILY_QUOTA_LIMIT}`,
+                health_check_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1h cooldown
+              })
+              .eq('id', integration.id);
+          }
+        }
+
         return {
           integration_id: integration.id,
           name: integration.connection_name,
@@ -85,7 +103,7 @@ Deno.serve(async (req) => {
           used,
           limit: DAILY_QUOTA_LIMIT,
           remaining,
-          health_status: integration.health_status || 'healthy',
+          health_status: actualHealthStatus,
           last_error: integration.last_error,
           health_check_at: integration.health_check_at,
         };

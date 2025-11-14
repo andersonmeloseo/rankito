@@ -33,6 +33,17 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar limite de sites ANTES de tentar criar
+    if (!limits?.canCreateSite) {
+      toast({
+        title: "⚠️ Limite de sites atingido",
+        description: `Você atingiu o limite de ${limits?.plan?.max_sites} sites do seu plano ${limits?.plan?.name}. Faça upgrade para criar mais sites.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     // Validar se usuário tem role 'client'
@@ -130,6 +141,17 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
             <AlertDescription>
               Você atingiu o limite de {limits?.plan?.max_sites} sites do plano {limits?.plan?.name}.
               Entre em contato para fazer upgrade e criar mais sites.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {limits?.canCreateSite && !limits?.isUnlimited && limits.remainingSites !== null && limits.remainingSites <= 3 && (
+          <Alert className="mt-4 border-orange-200 bg-orange-50">
+            <AlertCircle className="h-4 w-4 text-orange-600" />
+            <AlertTitle className="text-orange-900">Atenção aos limites</AlertTitle>
+            <AlertDescription className="text-orange-800">
+              Você pode criar mais {limits.remainingSites} site(s) no seu plano {limits?.plan?.name}.
+              Considere fazer upgrade se precisar de mais capacidade.
             </AlertDescription>
           </Alert>
         )}

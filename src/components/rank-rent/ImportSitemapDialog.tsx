@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/utils/errorMessages";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
 import { Loader2, CheckCircle2, Download, AlertCircle, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ interface ImportSitemapDialogProps {
 export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitemapDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: limits } = useSubscriptionLimits();
   
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -137,6 +139,24 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
       toast({
         title: "Nenhum sitemap selecionado",
         description: "Por favor, selecione pelo menos um sitemap para importar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validar limite de páginas ANTES de importar
+    const totalUrlsToImport = discoveredSitemaps
+      .filter(s => selectedSitemaps.includes(s.url))
+      .reduce((sum, s) => sum + s.urlCount, 0);
+    
+    const currentPages = limits?.currentUsage.pagesPerSite[siteId] || 0;
+    const maxPages = limits?.plan?.max_pages_per_site;
+    
+    if (maxPages && (currentPages + totalUrlsToImport) > maxPages) {
+      const available = maxPages - currentPages;
+      toast({
+        title: "⚠️ Limite de páginas excedido",
+        description: `Este import adicionaria ${totalUrlsToImport} páginas, mas você só tem ${available} disponíveis no seu plano ${limits?.plan?.name}. Faça upgrade para continuar.`,
         variant: "destructive"
       });
       return;

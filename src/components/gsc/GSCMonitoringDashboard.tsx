@@ -3,6 +3,7 @@ import { GSCMetricsCards } from './GSCMetricsCards';
 import { GSCQuotaChart } from './GSCQuotaChart';
 import { GSCActivityTimeline } from './GSCActivityTimeline';
 import { GSCAlertsBanner } from './GSCAlertsBanner';
+import { GSCQuotaWarningBanner } from './GSCQuotaWarningBanner';
 import { useGSCMonitoring } from '@/hooks/useGSCMonitoring';
 import { useGSCActivity } from '@/hooks/useGSCActivity';
 
@@ -38,6 +39,9 @@ export const GSCMonitoringDashboard = ({ siteId, userId }: GSCMonitoringDashboar
 
   return (
     <div className="space-y-6">
+      {/* Quota Warning Banner */}
+      <GSCQuotaWarningBanner siteId={siteId} />
+      
       {/* Alerts Banner */}
       <GSCAlertsBanner alerts={aggregatedStats?.alerts} />
       
