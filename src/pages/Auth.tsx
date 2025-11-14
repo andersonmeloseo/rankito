@@ -32,16 +32,21 @@ const Auth = () => {
   const [website, setWebsite] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) {
+      if (session && !hasRedirected) {
+        setHasRedirected(true);
         const from = (location.state as any)?.from;
+        console.log('🔍 [Auth onAuthStateChange] from:', from);
         if (from?.pathname && from.pathname !== '/auth') {
           const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
+          console.log('✅ [Auth] Redirecionando para:', fullPath);
           navigate(fullPath, { replace: true });
         } else {
+          console.log('✅ [Auth] Redirecionando para /dashboard');
           navigate("/dashboard");
         }
       }
@@ -49,19 +54,23 @@ const Auth = () => {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) {
+      if (session && !hasRedirected) {
+        setHasRedirected(true);
         const from = (location.state as any)?.from;
+        console.log('🔍 [Auth getSession] from:', from);
         if (from?.pathname && from.pathname !== '/auth') {
           const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
+          console.log('✅ [Auth] Redirecionando para:', fullPath);
           navigate(fullPath, { replace: true });
         } else {
+          console.log('✅ [Auth] Redirecionando para /dashboard');
           navigate("/dashboard");
         }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, location.state]);
+  }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,12 +196,18 @@ const Auth = () => {
         description: "Bem-vindo de volta.",
       });
 
-      const from = (location.state as any)?.from;
-      if (from?.pathname && from.pathname !== '/auth') {
-        const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
-        navigate(fullPath, { replace: true });
-      } else {
-        navigate('/dashboard');
+      if (!hasRedirected) {
+        setHasRedirected(true);
+        const from = (location.state as any)?.from;
+        console.log('🔍 [handleSignIn] from:', from);
+        if (from?.pathname && from.pathname !== '/auth') {
+          const fullPath = `${from.pathname}${from.search || ''}${from.hash || ''}`;
+          console.log('✅ [handleSignIn] Redirecionando para:', fullPath);
+          navigate(fullPath, { replace: true });
+        } else {
+          console.log('✅ [handleSignIn] Redirecionando para /dashboard');
+          navigate('/dashboard');
+        }
       }
     } catch (error: any) {
       toast({
