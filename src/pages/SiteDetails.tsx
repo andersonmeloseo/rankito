@@ -129,6 +129,16 @@ const SiteDetails = () => {
     enabled: !!siteId,
   });
 
+  // Sync with URL params - ONLY after site data is loaded
+  useEffect(() => {
+    if (!siteLoading && site) {
+      const urlTab = searchParams.get('tab');
+      if (urlTab && urlTab !== activeTab) {
+        setActiveTab(urlTab);
+      }
+    }
+  }, [searchParams, siteLoading, site, activeTab]);
+
   // Fetch last conversion city
   const { data: lastConversionCity } = useQuery({
     queryKey: ["last-conversion-city", siteId],
