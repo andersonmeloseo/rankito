@@ -95,8 +95,11 @@ try {
         try {
           console.log(`📤 [${integration.connection_name}] Submitting: ${sitemapUrl}`);
           
+          const encodedSiteUrl = encodeURIComponent(integration.gsc_property_url);
+          const encodedFeedpath = encodeURIComponent(sitemapUrl);
+          
           const response = await fetch(
-            `https://indexing.googleapis.com/v3/${encodeURIComponent(integration.gsc_property_url)}/sitemaps/${encodeURIComponent(sitemapUrl)}:submit`,
+            `https://www.googleapis.com/webmasters/v3/sites/${encodedSiteUrl}/sitemaps/${encodedFeedpath}`,
             {
               method: 'PUT',
               headers: {

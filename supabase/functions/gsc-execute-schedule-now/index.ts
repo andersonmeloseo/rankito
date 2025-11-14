@@ -104,19 +104,22 @@ Deno.serve(async (req) => {
       const sitemapUrl = sitemapsToSubmit[i];
       const integration = integrationsToUse[i % integrationsToUse.length]; // Round-robin
       
-      try {
-        console.log(`📤 [${integration.connection_name}] Submitting: ${sitemapUrl}`);
-        
-        const response = await fetch(
-          `https://indexing.googleapis.com/v3/${encodeURIComponent(integration.gsc_property_url)}/sitemaps/${encodeURIComponent(sitemapUrl)}:submit`,
-          {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${integration.access_token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        try {
+          console.log(`📤 [${integration.connection_name}] Submitting: ${sitemapUrl}`);
+          
+          const encodedSiteUrl = encodeURIComponent(integration.gsc_property_url);
+          const encodedFeedpath = encodeURIComponent(sitemapUrl);
+          
+          const response = await fetch(
+            `https://www.googleapis.com/webmasters/v3/sites/${encodedSiteUrl}/sitemaps/${encodedFeedpath}`,
+            {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${integration.access_token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
 
         if (response.ok) {
           succeeded.push(sitemapUrl);
