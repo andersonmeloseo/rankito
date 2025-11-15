@@ -49,13 +49,32 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
   const getStatusBadge = (status: string | null) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="default" className="bg-green-500">✅ Sucesso</Badge>;
+        return <Badge variant="success">Concluído</Badge>;
       case 'failed':
-        return <Badge variant="destructive">❌ Falha</Badge>;
+        return <Badge variant="destructive">Falhou</Badge>;
       case 'pending':
-        return <Badge variant="secondary">⏳ Pendente</Badge>;
+        return <Badge variant="secondary">Pendente</Badge>;
       default:
-        return <Badge variant="outline">Desconhecido</Badge>;
+        return <Badge variant="outline">Aguardando</Badge>;
+    }
+  };
+
+  const getRequestTypeLabel = (type: string) => {
+    switch (type) {
+      case 'URL_UPDATED':
+        return 'Atualização';
+      case 'URL_DELETED':
+        return 'Remoção';
+      default:
+        return type;
+    }
+  };
+
+  const getRelativeUrl = (url: string) => {
+    try {
+      return new URL(url).pathname;
+    } catch {
+      return url;
     }
   };
 
@@ -67,7 +86,7 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>📊 Histórico de Indexação</span>
+          <span>Histórico de Indexação</span>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -83,22 +102,22 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
 
       <CardContent className="space-y-6">
         {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div>
-            <p className="text-sm text-muted-foreground">Hoje</p>
-            <p className="text-2xl font-bold">{stats?.todayTotal || 0} URLs</p>
+            <p className="text-sm text-muted-foreground">URLs Hoje</p>
+            <p className="text-2xl font-bold">{stats?.todayTotal || 0}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Taxa de Sucesso</p>
-            <p className="text-2xl font-bold text-green-600">{stats?.successRate || 0}%</p>
+            <p className="text-2xl font-bold">{stats?.successRate || 0}%</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Tempo Médio</p>
-            <p className="text-2xl font-bold">{stats?.avgResponseTime || 0}s</p>
+            <p className="text-2xl font-bold">{stats?.avgResponseTime || '-'}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Falharam</p>
-            <p className="text-2xl font-bold text-red-600">{stats?.todayFailed || 0}</p>
+            <p className="text-sm text-muted-foreground">Total de Falhas</p>
+            <p className="text-2xl font-bold">{stats?.todayFailed || 0}</p>
           </div>
         </div>
 
@@ -106,7 +125,7 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex-1 flex gap-2">
             <Input
-              placeholder="🔍 Buscar URL..."
+              placeholder="Buscar URL..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -121,13 +140,13 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
             onValueChange={(value) => handleFilterChange('status', value)}
           >
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="📊 Status" />
+              <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos Status</SelectItem>
-              <SelectItem value="success">✅ Sucesso</SelectItem>
-              <SelectItem value="failed">❌ Falha</SelectItem>
-              <SelectItem value="pending">⏳ Pendente</SelectItem>
+              <SelectItem value="all">Todos os Status</SelectItem>
+              <SelectItem value="success">Concluído</SelectItem>
+              <SelectItem value="failed">Falhou</SelectItem>
+              <SelectItem value="pending">Pendente</SelectItem>
             </SelectContent>
           </Select>
 
@@ -153,7 +172,7 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
             }}
           >
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="📅 Período" />
+              <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todo Período</SelectItem>
@@ -169,12 +188,12 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>URL</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Integração</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+              <TableHead>URL</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Conta GSC Utilizada</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Data/Hora</TableHead>
+              <TableHead className="text-right">Detalhes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -187,36 +206,44 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="hover:text-primary flex items-center gap-1"
+                        title={request.url}
                       >
-                        {request.url}
+                        {getRelativeUrl(request.url)}
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     </TableCell>
                     <TableCell>{getStatusBadge(request.status)}</TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div className="font-medium">
-                          {request.used_integration?.connection_name || 'N/A'}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {request.used_integration?.google_email || ''}
-                        </div>
+                        {request.used_integration ? (
+                          <>
+                            <div className="font-medium">
+                              {request.used_integration.connection_name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {request.used_integration.google_email}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">Sistema</span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {request.request_type}
-                      </Badge>
+                      <span className="text-sm">
+                        {getRequestTypeLabel(request.request_type)}
+                      </span>
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {request.created_at && format(
-                        new Date(request.created_at), 
-                        "dd/MM/yy HH:mm:ss",
-                        { locale: ptBR }
-                      )}
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{format(new Date(request.created_at), 'dd/MM/yyyy', { locale: ptBR })}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(request.created_at), 'HH:mm:ss')}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      {request.error_message && (
+                      {request.status === 'failed' && request.error_message ? (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -224,6 +251,8 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
                         >
                           Ver Erro
                         </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </TableCell>
                   </TableRow>
