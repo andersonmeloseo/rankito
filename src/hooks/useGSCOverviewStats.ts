@@ -16,7 +16,8 @@ export function useGSCOverviewStats({ siteId, userId }: UseGSCOverviewStatsParam
   const { 
     isKeyValidated, 
     submissions, 
-    isLoading: indexNowLoading 
+    isLoading: indexNowLoading,
+    siteKey
   } = useIndexNow(siteId);
   const { schedules, isLoading: schedulesLoading } = useGSCSchedules({ siteId });
 
@@ -38,8 +39,8 @@ export function useGSCOverviewStats({ siteId, userId }: UseGSCOverviewStatsParam
       return { total: 0, urlsSubmitted: 0, urlsIndexed: 0, indexationRate: 0 };
     }
 
-    const urlsSubmitted = sitemaps.reduce((sum, s) => sum + (s.urls_submitted || 0), 0);
-    const urlsIndexed = sitemaps.reduce((sum, s) => sum + (s.urls_indexed || 0), 0);
+    const urlsSubmitted = sitemaps.reduce((sum, s) => sum + Number(s.urls_submitted || 0), 0);
+    const urlsIndexed = sitemaps.reduce((sum, s) => sum + Number(s.urls_indexed || 0), 0);
     const indexationRate = urlsSubmitted > 0 ? (urlsIndexed / urlsSubmitted) * 100 : 0;
 
     return {
@@ -111,7 +112,7 @@ export function useGSCOverviewStats({ siteId, userId }: UseGSCOverviewStatsParam
       failed: indexingStats?.failed || 0,
     },
     indexNow: {
-      isValidated: isKeyValidated,
+      isValidated: !!siteKey?.indexnow_key,
       todayCount: todayIndexNowCount,
       platforms: 7,
       totalSubmissions: submissions?.length || 0,

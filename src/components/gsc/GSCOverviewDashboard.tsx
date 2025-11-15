@@ -14,7 +14,7 @@ import { GSCPerformance24hChart } from './charts/GSCPerformance24hChart';
 import { GSCSuccessRateChart } from './charts/GSCSuccessRateChart';
 import { GSCQuotaHistoryChart } from './charts/GSCQuotaHistoryChart';
 import { GSCSitemapIndexationChart } from './charts/GSCSitemapIndexationChart';
-import { generateQuotaHistory } from '@/lib/gsc-chart-utils';
+import { generateQuotaHistory, formatNumber } from '@/lib/gsc-chart-utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
 import { Link, FileText, Send, Zap, Clock, RefreshCw } from 'lucide-react';
@@ -159,12 +159,12 @@ export function GSCOverviewDashboard({
           icon={Link}
           status={getHealthStatus()}
           badge={{
-            text: `${stats.integrations.active}/${stats.integrations.total}`,
+            text: `${formatNumber(stats.integrations.active)}/${formatNumber(stats.integrations.total)}`,
             variant: getHealthStatus() === 'success' ? 'success' : 'warning',
           }}
           metrics={[
-            { label: 'Total', value: stats.integrations.total },
-            { label: 'Ativas', value: stats.integrations.active },
+            { label: 'Total', value: formatNumber(stats.integrations.total) },
+            { label: 'Ativas', value: formatNumber(stats.integrations.active) },
             { label: 'Saúde', value: `${stats.integrations.healthScore.toFixed(0)}%` },
           ]}
           onClick={() => onNavigateToTab('connections')}
@@ -179,9 +179,9 @@ export function GSCOverviewDashboard({
             variant: getIndexationStatus() === 'success' ? 'success' : 'warning',
           }}
           metrics={[
-            { label: 'Total', value: stats.sitemaps.total },
-            { label: 'Submetidas', value: stats.sitemaps.urlsSubmitted },
-            { label: 'Indexadas', value: stats.sitemaps.urlsIndexed },
+            { label: 'Total', value: formatNumber(stats.sitemaps.total) },
+            { label: 'Submetidas', value: formatNumber(stats.sitemaps.urlsSubmitted) },
+            { label: 'Indexadas', value: formatNumber(stats.sitemaps.urlsIndexed) },
           ]}
           onClick={() => onNavigateToTab('sitemaps')}
         />
@@ -195,7 +195,7 @@ export function GSCOverviewDashboard({
             variant: getIndexingStatus() === 'success' ? 'success' : 'warning',
           }}
           metrics={[
-            { label: 'Requisições Hoje', value: stats.googleIndexing.todayCount },
+            { label: 'Requisições Hoje', value: formatNumber(stats.googleIndexing.todayCount) },
             { label: 'Taxa de Sucesso', value: `${stats.googleIndexing.successRate.toFixed(0)}%` },
             { label: 'Tempo Médio', value: `${stats.googleIndexing.avgTime.toFixed(1)}s` },
           ]}
@@ -211,9 +211,9 @@ export function GSCOverviewDashboard({
             variant: stats.indexNow.isValidated ? 'success' : 'default',
           }}
           metrics={[
-            { label: 'Hoje', value: stats.indexNow.todayCount },
-            { label: 'Plataformas', value: stats.indexNow.platforms },
-            { label: 'Total', value: stats.indexNow.totalSubmissions },
+            { label: 'Hoje', value: formatNumber(stats.indexNow.todayCount) },
+            { label: 'Plataformas', value: formatNumber(stats.indexNow.platforms) },
+            { label: 'Total', value: formatNumber(stats.indexNow.totalSubmissions) },
           ]}
           onClick={() => onNavigateToTab('indexnow')}
         />
@@ -223,12 +223,12 @@ export function GSCOverviewDashboard({
           icon={Clock}
           status={stats.schedules.active > 0 ? 'success' : 'info'}
           badge={{
-            text: `${stats.schedules.active} Ativos`,
+            text: `${formatNumber(stats.schedules.active)} Ativos`,
             variant: stats.schedules.active > 0 ? 'success' : 'default',
           }}
           metrics={[
-            { label: 'Total', value: stats.schedules.total },
-            { label: 'Ativos', value: stats.schedules.active },
+            { label: 'Total', value: formatNumber(stats.schedules.total) },
+            { label: 'Ativos', value: formatNumber(stats.schedules.active) },
             { label: 'Próximo', value: getNextRunText() },
           ]}
           onClick={() => onNavigateToTab('schedules')}
