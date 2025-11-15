@@ -13,16 +13,40 @@ Deno.serve(async (req) => {
   try {
     const { urls, siteId, userId } = await req.json();
 
-    console.log('IndexNow submission request:', { urlsCount: urls?.length, host, siteId });
-
-    // Validações
+    // Validações iniciais
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       throw new Error('URLs array is required and must not be empty');
     }
-    if (!key) throw new Error('API key is required');
-    if (!host) throw new Error('Host is required');
     if (!siteId) throw new Error('Site ID is required');
     if (!userId) throw new Error('User ID is required');
+
+    // Buscar informações do site
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase configuration missing');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: site, error: siteError } = await supabase
+      .from('rank_rent_sites')
+      .select('indexnow_key, site_url')
+      .eq('id', siteId)
+      .single();
+
+    if (siteError || !site) {
+      throw new Error('Site not found or error fetching site data');
+    }
+
+    const key = site.indexnow_key;
+    const host = site.site_url;
+
+    if (!key) throw new Error('IndexNow API key not configured for this site');
+    if (!host) throw new Error('Site URL not configured');
+
+    console.log('IndexNow submission request:', { urlsCount: urls?.length, host, siteId });
 
     // Limpar e validar URLs
     const validUrls = urls
@@ -75,16 +99,7 @@ Deno.serve(async (req) => {
     // - 429: Too Many Requests
     const success = statusCode === 200 || statusCode === 202;
 
-    // Salvar no banco
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase configuration missing');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
+    // Salvar no banco (supabase client já foi criado acima)
     const { error: dbError } = await supabase.from('indexnow_submissions').insert({
       site_id: siteId,
       user_id: userId,
