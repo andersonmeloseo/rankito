@@ -241,6 +241,7 @@ Deno.serve(async (req) => {
           .from('gsc_url_indexing_requests')
           .insert({
             integration_id: integration.id,
+            used_integration_id: integration.id,
             page_id: page_id || null,
             url,
             request_type,
