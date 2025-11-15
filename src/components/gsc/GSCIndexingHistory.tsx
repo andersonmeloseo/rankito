@@ -50,7 +50,7 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
     switch (status) {
       case 'completed':
       case 'success':
-        return <Badge variant="success">Concluído</Badge>;
+        return <Badge variant="success">Sucesso</Badge>;
       case 'failed':
         return <Badge variant="destructive">Falhou</Badge>;
       case 'pending':
@@ -145,7 +145,7 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os Status</SelectItem>
-              <SelectItem value="success">Concluído</SelectItem>
+              <SelectItem value="success">Sucesso</SelectItem>
               <SelectItem value="failed">Falhou</SelectItem>
               <SelectItem value="pending">Pendente</SelectItem>
             </SelectContent>
