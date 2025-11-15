@@ -9,7 +9,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIndexNow } from '@/hooks/useIndexNow';
-import { useGSCSitemaps } from '@/hooks/useGSCSitemaps';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -63,7 +62,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("page_url");
-  const [isLoadingSitemapUrls, setIsLoadingSitemapUrls] = useState(false);
   const PAGES_PER_PAGE = 50;
 
   const { 
@@ -79,8 +77,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     isValidating,
     isKeyValidated
   } = useIndexNow(siteId);
-
-  const { sitemaps, isLoading: isLoadingSitemaps } = useGSCSitemaps({ siteId });
 
   const { data: pages, isLoading: isLoadingPages } = useQuery({
     queryKey: ['site-pages-indexnow', siteId],
@@ -152,44 +148,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
 
     submitUrls({ urls: [singleUrl] });
     setSingleUrl('');
-  };
-
-  const handleLoadFromSitemaps = async () => {
-    if (!sitemaps || sitemaps.length === 0) {
-      toast.error('Nenhum sitemap encontrado');
-      return;
-    }
-
-    setIsLoadingSitemapUrls(true);
-    try {
-      const allUrls: string[] = [];
-      
-      for (const sitemap of sitemaps) {
-        try {
-          const response = await fetch(sitemap.sitemap_url);
-          const text = await response.text();
-          
-          const urlMatches = text.match(/<loc>(.*?)<\/loc>/g);
-          if (urlMatches) {
-            const urls = urlMatches.map(match => match.replace(/<\/?loc>/g, ''));
-            allUrls.push(...urls);
-          }
-        } catch (error) {
-          console.error(`Erro ao processar sitemap ${sitemap.sitemap_url}:`, error);
-        }
-      }
-
-      if (allUrls.length > 0) {
-        await submitUrls({ urls: allUrls });
-        toast.success(`${allUrls.length} URLs dos sitemaps enviadas para indexação`);
-      } else {
-        toast.error('Nenhuma URL encontrada nos sitemaps');
-      }
-    } catch (error) {
-      toast.error('Erro ao carregar URLs dos sitemaps');
-    } finally {
-      setIsLoadingSitemapUrls(false);
-    }
   };
 
   const filteredAndSortedPages = useMemo(() => {
@@ -625,47 +583,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
               <p>Nenhuma página encontrada</p>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Carregar URLs dos Sitemaps
-          </CardTitle>
-          <CardDescription>Indexe todas as URLs descobertas nos seus sitemaps do Google Search Console</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                Esta ação irá buscar todas as URLs dos seus sitemaps cadastrados no Google Search Console
-                e enviá-las para indexação via IndexNow.
-              </AlertDescription>
-            </Alert>
-            
-            <Button onClick={handleLoadFromSitemaps} disabled={isLoadingSitemapUrls || isLoadingSitemaps || !sitemaps?.length}>
-              {isLoadingSitemapUrls ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Carregando URLs...
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Carregar e Indexar URLs dos Sitemaps
-                </>
-              )}
-            </Button>
-
-            {sitemaps && sitemaps.length > 0 && (
-              <div className="text-sm text-muted-foreground">
-                {sitemaps.length} sitemap(s) encontrado(s)
-              </div>
-            )}
-          </div>
         </CardContent>
       </Card>
 
