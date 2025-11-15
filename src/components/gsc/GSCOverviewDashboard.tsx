@@ -2,6 +2,7 @@ import { useGSCOverviewStats } from '@/hooks/useGSCOverviewStats';
 import { useGSCPerformanceCharts } from '@/hooks/useGSCPerformanceCharts';
 import { useGSCTimeRange } from '@/hooks/useGSCTimeRange';
 import { useGSCActivity } from '@/hooks/useGSCActivity';
+import { useGSCAggregatedQuota } from '@/hooks/useGSCAggregatedQuota';
 import { GSCClickableCard } from './GSCClickableCard';
 import { GSCHealthStatus } from './GSCHealthStatus';
 import { GSCQuotaChart } from './GSCQuotaChart';
@@ -14,6 +15,7 @@ import { GSCPerformance24hChart } from './charts/GSCPerformance24hChart';
 import { GSCSuccessRateChart } from './charts/GSCSuccessRateChart';
 import { GSCQuotaHistoryChart } from './charts/GSCQuotaHistoryChart';
 import { GSCSitemapIndexationChart } from './charts/GSCSitemapIndexationChart';
+import { GSCAggregatedQuotaCard } from './GSCAggregatedQuotaCard';
 import { generateQuotaHistory, formatNumber } from '@/lib/gsc-chart-utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
@@ -38,6 +40,7 @@ export function GSCOverviewDashboard({
 }: GSCOverviewDashboardProps) {
   const { timeRange, setTimeRange } = useGSCTimeRange('24h');
   const stats = useGSCOverviewStats({ siteId, userId });
+  const { data: quota } = useGSCAggregatedQuota(siteId);
   const { data: performanceData, isLoading: isLoadingPerformance, refetch: refetchPerformance } = useGSCPerformanceCharts(siteId, timeRange);
   const { activityTimeline, isLoading: isLoadingActivities, refetch: refetchActivities } = useGSCActivity({ siteId });
 
@@ -237,6 +240,9 @@ export function GSCOverviewDashboard({
 
       {/* KPIs Agregados */}
       <GSCKPIPanel kpis={kpis} />
+
+      {/* Quota Agregada GSC */}
+      <GSCAggregatedQuotaCard siteId={siteId} />
 
       {/* Gráficos de Performance */}
       <div className="space-y-2">
