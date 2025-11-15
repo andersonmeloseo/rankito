@@ -60,7 +60,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("page_url");
   const PAGES_PER_PAGE = 50;
 
@@ -78,17 +77,58 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     isKeyValidated
   } = useIndexNow(siteId);
 
-  const { data: pages, isLoading: isLoadingPages } = useQuery({
-    queryKey: ['site-pages-indexnow', siteId],
+  const { data: pagesData, isLoading: isLoadingPages } = useQuery({
+    queryKey: ['site-pages-indexnow', siteId, currentPage, searchTerm, sortBy],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = (currentPage - 1) * PAGES_PER_PAGE;
+      const to = from + PAGES_PER_PAGE - 1;
+
+      // Buscar contagem total
+      let countQuery = supabase
         .from('rank_rent_pages')
-        .select('id, page_url, page_title, created_at')
+        .select('*', { count: 'exact', head: true })
         .eq('site_id', siteId)
-        .order('page_url', { ascending: true });
+        .eq('status', 'active');
+
+      // Buscar dados paginados
+      let dataQuery = supabase
+        .from('rank_rent_pages')
+        .select('id, page_url, page_title, created_at, gsc_indexation_status')
+        .eq('site_id', siteId)
+        .eq('status', 'active');
+
+      // Aplicar filtro de busca
+      if (searchTerm) {
+        countQuery = countQuery.or(`page_path.ilike.%${searchTerm}%,page_title.ilike.%${searchTerm}%`);
+        dataQuery = dataQuery.or(`page_path.ilike.%${searchTerm}%,page_title.ilike.%${searchTerm}%`);
+      }
+
+      // Aplicar ordenação
+      const sortOptions: Record<string, { column: string; ascending: boolean }> = {
+        'page_path': { column: 'page_path', ascending: true },
+        'page_url': { column: 'page_url', ascending: true },
+        'created_at_desc': { column: 'created_at', ascending: false },
+        'created_at_asc': { column: 'created_at', ascending: true },
+      };
+
+      const sort = sortOptions[sortBy] || sortOptions['page_url'];
+      dataQuery = dataQuery
+        .order(sort.column, { ascending: sort.ascending })
+        .range(from, to);
+
+      // Executar queries
+      const [{ count }, { data, error }] = await Promise.all([
+        countQuery,
+        dataQuery
+      ]);
 
       if (error) throw error;
-      return data || [];
+
+      return {
+        pages: data || [],
+        totalCount: count || 0,
+        totalPages: Math.ceil((count || 0) / PAGES_PER_PAGE)
+      };
     },
   });
 
@@ -150,61 +190,14 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     setSingleUrl('');
   };
 
-  const filteredAndSortedPages = useMemo(() => {
-    if (!pages) return [];
-
-    let filtered = pages;
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(p => 
-        p.page_url.toLowerCase().includes(term) ||
-        p.page_title?.toLowerCase().includes(term)
-      );
-    }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(p => {
-        const status = indexNowStatusData?.get(p.page_url);
-        if (statusFilter === "submitted") return status?.status === 'success';
-        if (statusFilter === "not_submitted") return !status;
-        if (statusFilter === "error") return status?.status === 'error';
-        return true;
-      });
-    }
-
-    const sorted = [...filtered];
-    if (sortBy === "page_url") {
-      sorted.sort((a, b) => a.page_url.localeCompare(b.page_url));
-    } else if (sortBy === "submitted_at_desc") {
-      sorted.sort((a, b) => {
-        const aDate = indexNowStatusData?.get(a.page_url)?.submitted_at || "";
-        const bDate = indexNowStatusData?.get(b.page_url)?.submitted_at || "";
-        return bDate.localeCompare(aDate);
-      });
-    } else if (sortBy === "submitted_at_asc") {
-      sorted.sort((a, b) => {
-        const aDate = indexNowStatusData?.get(a.page_url)?.submitted_at || "";
-        const bDate = indexNowStatusData?.get(b.page_url)?.submitted_at || "";
-        return aDate.localeCompare(bDate);
-      });
-    }
-
-    return sorted;
-  }, [pages, searchTerm, statusFilter, sortBy, indexNowStatusData]);
-
-  const paginatedPages = useMemo(() => {
-    const start = (currentPage - 1) * PAGES_PER_PAGE;
-    return filteredAndSortedPages.slice(start, start + PAGES_PER_PAGE);
-  }, [filteredAndSortedPages, currentPage]);
-
-  const totalPages = Math.ceil(filteredAndSortedPages.length / PAGES_PER_PAGE);
+  // Páginas já vêm filtradas e paginadas do servidor
+  const displayPages = pagesData?.pages || [];
 
   const handleSelectAll = () => {
-    if (selectedPages.size === paginatedPages.length) {
+    if (selectedPages.size === displayPages.length) {
       setSelectedPages(new Set());
     } else {
-      setSelectedPages(new Set(paginatedPages.map(p => p.id)));
+      setSelectedPages(new Set(displayPages.map(p => p.id)));
     }
   };
 
@@ -221,7 +214,7 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
   const handleIndexSelected = async () => {
     if (selectedPages.size === 0) return;
 
-    const selectedUrls = paginatedPages
+    const selectedUrls = displayPages
       .filter(p => selectedPages.has(p.id))
       .map(p => p.page_url);
 
@@ -413,7 +406,7 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
               {selectedPages.size > 0 && (
                 <>
                   <Badge variant="secondary">
-                    {selectedPages.size} de {filteredAndSortedPages.length} selecionadas
+                    {selectedPages.size} de {pagesData?.totalCount || 0} selecionadas
                   </Badge>
                   <Button onClick={handleIndexSelected} size="sm" disabled={isSubmitting}>
                     <Zap className="h-4 w-4 mr-2" />
@@ -435,18 +428,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               className="max-w-md flex-1"
             />
-            
-            <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="submitted">Enviado</SelectItem>
-                <SelectItem value="not_submitted">Não Enviado</SelectItem>
-                <SelectItem value="error">Erro</SelectItem>
-              </SelectContent>
-            </Select>
 
             <Select value={sortBy} onValueChange={(value) => { setSortBy(value); setCurrentPage(1); }}>
               <SelectTrigger className="w-[200px]">
@@ -459,8 +440,8 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
               </SelectContent>
             </Select>
 
-            {(searchTerm || statusFilter !== "all" || sortBy !== "page_url") && (
-              <Button variant="ghost" onClick={() => { setSearchTerm(""); setStatusFilter("all"); setSortBy("page_url"); setCurrentPage(1); }}>
+            {(searchTerm || sortBy !== "page_url") && (
+              <Button variant="ghost" onClick={() => { setSearchTerm(""); setSortBy("page_url"); setCurrentPage(1); }}>
                 Limpar Filtros
               </Button>
             )}
@@ -470,17 +451,17 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
-          ) : paginatedPages.length > 0 ? (
+          ) : displayPages.length > 0 ? (
             <>
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12">
-                        <Checkbox
-                          checked={selectedPages.size === paginatedPages.length && paginatedPages.length > 0}
-                          onCheckedChange={handleSelectAll}
-                        />
+                      <Checkbox
+                        checked={selectedPages.size === displayPages.length && displayPages.length > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
                       </TableHead>
                       <TableHead>URL</TableHead>
                       <TableHead>Título</TableHead>
@@ -490,7 +471,7 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedPages.map((page) => {
+                    {displayPages.map((page) => {
                       const status = indexNowStatusData?.get(page.page_url);
                       return (
                         <TableRow key={page.id}>
@@ -558,19 +539,19 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
                 </Table>
               </div>
 
-              {totalPages > 1 && (
+              {pagesData && pagesData.totalPages > 1 && (
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Mostrando {((currentPage - 1) * PAGES_PER_PAGE) + 1} a {Math.min(currentPage * PAGES_PER_PAGE, filteredAndSortedPages.length)} de {filteredAndSortedPages.length} páginas
+                    Mostrando {((currentPage - 1) * PAGES_PER_PAGE) + 1} a {Math.min(currentPage * PAGES_PER_PAGE, pagesData.totalCount)} de {pagesData.totalCount} páginas
                   </p>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
                       Anterior
                     </Button>
                     <span className="flex items-center px-3 text-sm">
-                      Página {currentPage} de {totalPages}
+                      Página {currentPage} de {pagesData.totalPages}
                     </span>
-                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(pagesData.totalPages, p + 1))} disabled={currentPage === pagesData.totalPages}>
                       Próxima
                     </Button>
                   </div>
