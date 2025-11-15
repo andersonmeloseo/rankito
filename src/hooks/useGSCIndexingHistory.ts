@@ -42,7 +42,7 @@ export const useGSCIndexingHistory = ({
 
       // Apply filters
       if (filters.status === 'success') {
-        query = query.eq('status', 'completed');
+        query = query.eq('status', 'success');
       } else if (filters.status === 'failed') {
         query = query.eq('status', 'failed');
       } else if (filters.status === 'pending') {
@@ -104,13 +104,13 @@ export const useGSCIndexingStats = (siteId: string) => {
       if (todayError) throw todayError;
 
       const total = todayRequests?.length || 0;
-      const success = todayRequests?.filter(r => r.status === 'completed').length || 0;
+      const success = todayRequests?.filter(r => r.status === 'success').length || 0;
       const failed = todayRequests?.filter(r => r.status === 'failed').length || 0;
       const successRate = total > 0 ? (success / total) * 100 : 0;
 
       // Calculate average response time for completed requests
       const completedWithTimes = todayRequests?.filter(r => 
-        r.status === 'completed' && r.submitted_at && r.completed_at
+        r.status === 'success' && r.submitted_at && r.completed_at
       ) || [];
       
       const avgResponseTime = completedWithTimes.length > 0
