@@ -108,10 +108,10 @@ export function useGSCOverviewStats({ siteId, userId }: UseGSCOverviewStatsParam
       items: sitemaps || [],
     },
     googleIndexing: {
-      todayCount: indexingStats?.total || 0,
-      successRate: indexingStats?.successRate || 0,
-      avgTime: indexingStats?.avgResponseTime || 0,
-      failed: indexingStats?.failed || 0,
+      todayCount: Number(indexingStats?.total || 0),
+      successRate: Number(indexingStats?.successRate || 0),
+      avgTime: Number(indexingStats?.avgResponseTime || 0),
+      failed: Number(indexingStats?.failed || 0),
     },
     indexNow: {
       isValidated: !!siteKey?.indexnow_key,
