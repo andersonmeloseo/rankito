@@ -111,13 +111,13 @@ export function GSCOverviewDashboard({
     },
     {
       label: 'Taxa de Sucesso',
-      value: performanceData?.totals.avgSuccessRate.toFixed(1) || 0,
+      value: (performanceData?.totals.avgSuccessRate || 0).toFixed(1),
       suffix: '%',
       trend: stats.trends?.successRate,
     },
     {
       label: 'Tempo Médio Resposta',
-      value: stats.googleIndexing.avgTime.toFixed(1),
+      value: (stats.googleIndexing.avgTime || 0).toFixed(1),
       suffix: 's',
       trend: stats.trends?.avgTime,
     },
@@ -168,7 +168,7 @@ export function GSCOverviewDashboard({
           metrics={[
             { label: 'Total', value: formatNumber(stats.integrations.total) },
             { label: 'Ativas', value: formatNumber(stats.integrations.active) },
-            { label: 'Saúde', value: `${stats.integrations.healthScore.toFixed(0)}%` },
+            { label: 'Saúde', value: `${(stats.integrations.healthScore || 0).toFixed(0)}%` },
           ]}
           onClick={() => onNavigateToTab('connections')}
         />
@@ -178,7 +178,7 @@ export function GSCOverviewDashboard({
           icon={FileText}
           status={getIndexationStatus()}
           badge={{
-            text: `${stats.sitemaps.indexationRate.toFixed(0)}% Indexados`,
+            text: `${(stats.sitemaps.indexationRate || 0).toFixed(0)}% Indexados`,
             variant: getIndexationStatus() === 'success' ? 'success' : 'warning',
           }}
           metrics={[
@@ -194,13 +194,13 @@ export function GSCOverviewDashboard({
           icon={Send}
           status={getIndexingStatus()}
           badge={{
-            text: `${stats.googleIndexing.successRate.toFixed(0)}% Sucesso`,
+            text: `${(stats.googleIndexing.successRate || 0).toFixed(0)}% Sucesso`,
             variant: getIndexingStatus() === 'success' ? 'success' : 'warning',
           }}
           metrics={[
             { label: 'Requisições Hoje', value: formatNumber(stats.googleIndexing.todayCount) },
-            { label: 'Taxa de Sucesso', value: `${stats.googleIndexing.successRate.toFixed(0)}%` },
-            { label: 'Tempo Médio', value: `${stats.googleIndexing.avgTime.toFixed(1)}s` },
+            { label: 'Taxa de Sucesso', value: `${(stats.googleIndexing.successRate || 0).toFixed(0)}%` },
+            { label: 'Tempo Médio', value: `${(stats.googleIndexing.avgTime || 0).toFixed(1)}s` },
           ]}
           onClick={() => onNavigateToTab('indexing')}
         />
