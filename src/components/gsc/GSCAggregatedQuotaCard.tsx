@@ -160,7 +160,7 @@ export function GSCAggregatedQuotaCard({ siteId }: GSCAggregatedQuotaCardProps) 
         <div className="space-y-2">
           <p className="text-sm font-medium">Distribuição por Conta</p>
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {quota.integrations
+            {(quota.integrations || [])
               .filter(i => i.is_active)
               .sort((a, b) => b.remaining_today - a.remaining_today)
               .map((integration) => {
