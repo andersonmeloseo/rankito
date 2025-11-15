@@ -70,14 +70,6 @@ const Dashboard = () => {
     setSearchParams({ tab: value }, { replace: true });
   };
 
-  // Sync activeTab with URL on mount and URL changes
-  useEffect(() => {
-    const tabFromUrl = searchParams.get('tab') || 'overview';
-    if (tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
-    }
-  }, [location.search, searchParams, activeTab]);
-
   // Realtime leads
   const { newLeads, clearNewLeads } = useRealtimeLeads(user?.id);
 
