@@ -21,6 +21,9 @@ verify_jwt = false
 [functions.gsc-get-aggregated-quota]
 verify_jwt = true
 
+[functions.indexnow-submit]
+verify_jwt = true
+
 [functions.api-external-leads]
 verify_jwt = false
 
