@@ -19,7 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useGSCIndexing } from "@/hooks/useGSCIndexing";
-import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
+import { useGSCSmartDistribution } from "@/hooks/useGSCSmartDistribution";
+import { useGSCAggregatedQuota } from "@/hooks/useGSCAggregatedQuota";
 import { useGSCQueueLogs } from "@/hooks/useGSCQueueLogs";
 import { useAggregatedGSCQuota } from "@/hooks/useAggregatedGSCQuota";
 import { useQuery } from "@tanstack/react-query";
@@ -79,11 +80,12 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
     refetchQuota,
   } = useGSCIndexing({ siteId });
 
-  const { addToQueue, isAddingToQueue, queueStats } = useGSCIndexingQueue({ siteId });
+  const { distributeUrls, isDistributing } = useGSCSmartDistribution(siteId);
+  const { data: aggregatedQuota } = useGSCAggregatedQuota(siteId);
   const { latestLog, nextExecution, isLoading: isLoadingLogs } = useGSCQueueLogs();
   
   // Fetch aggregated quota with integration breakdown
-  const { data: aggregatedQuota, refetch: refetchAggregatedQuota } = useAggregatedGSCQuota({ 
+  const { data: legacyQuota, refetch: refetchAggregatedQuota } = useAggregatedGSCQuota({ 
     siteId 
   });
 
@@ -222,14 +224,14 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
     setSelectedPages(newSelected);
   };
 
-  const handleBatchIndexing = async (distribution: 'fast' | 'even') => {
+  const handleBatchIndexing = async () => {
     if (!sortedPages) return;
 
     const selectedUrls = sortedPages
       .filter(p => selectedPages.has(p.id))
       .map(p => ({ url: p.page_url, page_id: p.id }));
 
-    await addToQueue.mutateAsync({ urls: selectedUrls, distribution });
+    distributeUrls({ siteId, urls: selectedUrls });
     setSelectedPages(new Set());
     setShowBatchDialog(false);
   };
@@ -427,9 +429,9 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
       </Card>
 
       {/* Integration Health Status */}
-      {aggregatedQuota && aggregatedQuota.breakdown && (
+      {legacyQuota && legacyQuota.breakdown && (
         <GSCIntegrationHealthCard 
-          integrations={aggregatedQuota.breakdown}
+          integrations={legacyQuota.breakdown}
           onHealthCheck={() => {
             refetchQuota();
             refetchAggregatedQuota();
@@ -763,11 +765,11 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         open={showBatchDialog}
         onOpenChange={setShowBatchDialog}
         selectedUrls={sortedPages?.filter(p => selectedPages.has(p.id)).map(p => ({ url: p.page_url, page_id: p.id })) || []}
-        remainingQuota={quota?.remaining || 0}
-        totalLimit={quota?.limit || 200}
+        remainingQuota={aggregatedQuota?.estimated_capacity_today || 0}
+        totalLimit={aggregatedQuota?.total_daily_limit || 200}
         pendingInQueue={pendingCount}
         onConfirm={handleBatchIndexing}
-        isSubmitting={isAddingToQueue}
+        isSubmitting={isDistributing}
       />
     </div>
   );
