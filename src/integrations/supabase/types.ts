@@ -802,6 +802,13 @@ export type Database = {
             foreignKeyName: "gsc_indexing_queue_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
+            referencedRelation: "pages_with_indexnow_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_indexing_queue_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_daily_stats"
             referencedColumns: ["page_id"]
           },
@@ -1158,6 +1165,13 @@ export type Database = {
             foreignKeyName: "gsc_url_indexing_requests_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
+            referencedRelation: "pages_with_indexnow_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_url_indexing_requests_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_daily_stats"
             referencedColumns: ["page_id"]
           },
@@ -1454,6 +1468,13 @@ export type Database = {
             foreignKeyName: "rank_rent_conversions_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
+            referencedRelation: "pages_with_indexnow_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_conversions_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
             referencedRelation: "rank_rent_daily_stats"
             referencedColumns: ["page_id"]
           },
@@ -1556,6 +1577,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rank_rent_financial_config_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages_with_indexnow_status"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rank_rent_financial_config_page_id_fkey"
             columns: ["page_id"]
@@ -2678,6 +2706,82 @@ export type Database = {
           user_id: string | null
         }
         Relationships: []
+      }
+      pages_with_indexnow_status: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          cta_config: Json | null
+          gsc_indexation_status: string | null
+          gsc_indexed_at: string | null
+          gsc_integration_used: string | null
+          gsc_last_checked_at: string | null
+          gsc_last_crawled_at: string | null
+          id: string | null
+          indexnow_status: string | null
+          is_rented: boolean | null
+          last_indexnow_submission: string | null
+          last_scraped_at: string | null
+          monthly_rent_value: number | null
+          page_path: string | null
+          page_title: string | null
+          page_url: string | null
+          phone_number: string | null
+          site_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_pages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_status"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_pages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rank_rent_contract_status: {
         Row: {
