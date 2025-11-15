@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useIndexNow } from '@/hooks/useIndexNow';
+import { useGSCSitemaps } from '@/hooks/useGSCSitemaps';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -57,6 +58,7 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
   const [singleUrl, setSingleUrl] = useState('');
   const [bulkUrls, setBulkUrls] = useState('');
   const [includeAllPages, setIncludeAllPages] = useState(false);
+  const [isLoadingSitemapUrls, setIsLoadingSitemapUrls] = useState(false);
 
   const { 
     submissions, 
@@ -66,8 +68,13 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     submitUrls, 
     isSubmitting,
     regenerateKey,
-    isRegenerating 
+    isRegenerating,
+    validateKey,
+    isValidating,
+    isKeyValidated
   } = useIndexNow(siteId);
+
+  const { sitemaps, isLoading: isLoadingSitemaps } = useGSCSitemaps({ siteId });
 
   // Buscar páginas do site
   const { data: pages } = useQuery({
@@ -138,6 +145,48 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     setIncludeAllPages(false);
   };
 
+  const handleLoadFromSitemaps = async () => {
+    if (!sitemaps || sitemaps.length === 0) {
+      toast.error('Nenhum sitemap encontrado. Configure sitemaps na aba "Sitemaps" primeiro.');
+      return;
+    }
+
+    setIsLoadingSitemapUrls(true);
+    try {
+      const allUrls: string[] = [];
+      
+      for (const sitemap of sitemaps) {
+        try {
+          const response = await fetch(sitemap.sitemap_url);
+          const text = await response.text();
+          
+          const urlMatches = text.match(/<loc>(.*?)<\/loc>/g);
+          if (urlMatches) {
+            const urls = urlMatches.map(match => 
+              match.replace(/<\/?loc>/g, '').trim()
+            );
+            allUrls.push(...urls);
+          }
+        } catch (error) {
+          console.error(`Erro ao processar sitemap ${sitemap.sitemap_url}:`, error);
+        }
+      }
+
+      if (allUrls.length === 0) {
+        toast.error('Nenhuma URL encontrada nos sitemaps');
+        return;
+      }
+
+      const uniqueUrls = [...new Set(allUrls)];
+      setBulkUrls(uniqueUrls.join('\n'));
+      toast.success(`${uniqueUrls.length} URLs carregadas dos sitemaps`);
+    } catch (error) {
+      toast.error('Erro ao carregar URLs dos sitemaps');
+    } finally {
+      setIsLoadingSitemapUrls(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Card Informativo */}
@@ -165,17 +214,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
               <strong>Importante:</strong> Ao submeter uma URL ao IndexNow, ela é automaticamente compartilhada com TODOS os mecanismos de busca participantes!
             </AlertDescription>
           </Alert>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open('https://www.indexnow.org', '_blank')}
-              className="text-blue-700 border-blue-300 hover:bg-blue-100"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Documentação IndexNow
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
@@ -253,20 +291,40 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
                 </AlertDescription>
               </Alert>
 
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  if (siteKey?.indexnow_key) {
-                    const url = site.url.startsWith('http') ? site.url : `https://${site.url}`;
-                    window.open(`${url}/${siteKey.indexnow_key}.txt`, '_blank');
-                  }
-                }}
-                disabled={!siteKey?.indexnow_key}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Testar Arquivo de Verificação
-              </Button>
+              <div className="flex gap-2 items-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (siteKey?.indexnow_key) {
+                      const url = site.url.startsWith('http') ? site.url : `https://${site.url}`;
+                      window.open(`${url}/${siteKey.indexnow_key}.txt`, '_blank');
+                    }
+                  }}
+                  disabled={!siteKey?.indexnow_key}
+                >
+                  <ExternalLink className="h-3 w-3 mr-2" />
+                  Testar Arquivo
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => validateKey()}
+                  disabled={isValidating || !siteKey?.indexnow_key}
+                >
+                  {isValidating ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    'Validar Chave'
+                  )}
+                </Button>
+                {isKeyValidated && (
+                  <Badge className="bg-green-500 text-white">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Conectado
+                  </Badge>
+                )}
+              </div>
             </>
           )}
         </CardContent>
@@ -320,7 +378,22 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="bulkUrls">URLs (uma por linha)</Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="bulkUrls">URLs (uma por linha)</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLoadFromSitemaps}
+                disabled={isLoadingSitemapUrls || isLoadingSitemaps}
+              >
+                {isLoadingSitemapUrls ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-2" />
+                )}
+                Carregar dos Sitemaps
+              </Button>
+            </div>
             <Textarea
               id="bulkUrls"
               placeholder={`https://${site.url}/pagina-1\nhttps://${site.url}/pagina-2\nhttps://${site.url}/pagina-3`}

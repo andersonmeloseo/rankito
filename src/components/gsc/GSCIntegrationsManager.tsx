@@ -117,15 +117,15 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
           </TabsTrigger>
           <TabsTrigger value="indexing" variant="gsc" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
-            Indexação
-          </TabsTrigger>
-          <TabsTrigger value="schedules" variant="gsc" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Agendamentos
+            Indexar no Google
           </TabsTrigger>
           <TabsTrigger value="indexnow" variant="gsc" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             IndexNow
+          </TabsTrigger>
+          <TabsTrigger value="schedules" variant="gsc" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Agendamentos
           </TabsTrigger>
         </TabsList>
 
@@ -276,10 +276,6 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
           <GSCIndexingManager siteId={siteId} />
         </TabsContent>
 
-        <TabsContent value="schedules">
-          <GSCSitemapScheduler siteId={siteId} userId={userId} />
-        </TabsContent>
-
         <TabsContent value="indexnow">
           {site ? (
             <IndexNowManager siteId={siteId} site={site} />
@@ -288,6 +284,10 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
               Carregando informações do site...
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="schedules">
+          <GSCSitemapScheduler siteId={siteId} userId={userId} />
         </TabsContent>
       </Tabs>
 
