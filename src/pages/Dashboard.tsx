@@ -55,10 +55,8 @@ const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
   const [selectedSites, setSelectedSites] = useState<Set<string>>(new Set());
   const [searchParams, setSearchParams] = useSearchParams();
-  // 🔒 CRITICAL: Read directly from browser URL, not from React Router
   const [activeTab, setActiveTab] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('tab') || 'overview';
+    return searchParams.get('tab') || 'overview';
   });
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,6 +69,14 @@ const Dashboard = () => {
     setActiveTab(value);
     setSearchParams({ tab: value }, { replace: true });
   };
+
+  // Sync activeTab with URL on mount and URL changes
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab') || 'overview';
+    if (tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [location.search, searchParams, activeTab]);
 
   // Realtime leads
   const { newLeads, clearNewLeads } = useRealtimeLeads(user?.id);
