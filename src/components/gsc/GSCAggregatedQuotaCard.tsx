@@ -48,15 +48,17 @@ export function GSCAggregatedQuotaCard({ siteId }: GSCAggregatedQuotaCardProps) 
     );
   }
 
+  const usagePercent = quota.usage_percentage ?? 0;
+
   const getUsageColor = () => {
-    if (quota.usage_percentage >= 90) return "text-red-600";
-    if (quota.usage_percentage >= 70) return "text-yellow-600";
+    if (usagePercent >= 90) return "text-red-600";
+    if (usagePercent >= 70) return "text-yellow-600";
     return "text-green-600";
   };
 
   const getProgressColor = () => {
-    if (quota.usage_percentage >= 90) return "bg-red-600";
-    if (quota.usage_percentage >= 70) return "bg-yellow-600";
+    if (usagePercent >= 90) return "bg-red-600";
+    if (usagePercent >= 70) return "bg-yellow-600";
     return "bg-green-600";
   };
 
@@ -106,7 +108,7 @@ export function GSCAggregatedQuotaCard({ siteId }: GSCAggregatedQuotaCardProps) 
                 {formatNumber(quota.total_used_today)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {quota.usage_percentage.toFixed(1)}% utilizado
+                {usagePercent.toFixed(1)}% utilizado
               </p>
             </div>
           </div>
@@ -114,7 +116,7 @@ export function GSCAggregatedQuotaCard({ siteId }: GSCAggregatedQuotaCardProps) 
           {/* Barra de Progresso */}
           <div className="space-y-2">
             <Progress 
-              value={quota.usage_percentage} 
+              value={usagePercent} 
               className={`h-3 ${getProgressColor()}`}
             />
             <div className="flex items-center justify-between text-xs text-muted-foreground">
