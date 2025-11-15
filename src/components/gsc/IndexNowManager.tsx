@@ -110,10 +110,14 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     queryKey: ['all-page-ids-indexnow', siteId, searchTerm, statusFilter],
     queryFn: async () => {
       let query = supabase
-        .from('rank_rent_pages')
+        .from('pages_with_indexnow_status')
         .select('id, page_url')
         .eq('site_id', siteId)
         .eq('status', 'active');
+      
+      if (statusFilter !== 'all') {
+        query = query.eq('indexnow_status', statusFilter);
+      }
       
       if (searchTerm) {
         query = query.or(`page_path.ilike.%${searchTerm}%,page_title.ilike.%${searchTerm}%`);
@@ -128,24 +132,30 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
   });
 
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
-    queryKey: ['site-pages-indexnow', siteId, currentPage, searchTerm, sortBy],
+    queryKey: ['site-pages-indexnow', siteId, currentPage, searchTerm, statusFilter, sortBy],
     queryFn: async () => {
       const from = (currentPage - 1) * PAGES_PER_PAGE;
       const to = from + PAGES_PER_PAGE - 1;
 
       // Buscar contagem total
       let countQuery = supabase
-        .from('rank_rent_pages')
+        .from('pages_with_indexnow_status')
         .select('*', { count: 'exact', head: true })
         .eq('site_id', siteId)
         .eq('status', 'active');
 
       // Buscar dados paginados
       let dataQuery = supabase
-        .from('rank_rent_pages')
-        .select('id, page_url, page_title, created_at, gsc_indexation_status')
+        .from('pages_with_indexnow_status')
+        .select('id, page_url, page_title, page_path, created_at, gsc_indexation_status, indexnow_status, last_indexnow_submission')
         .eq('site_id', siteId)
         .eq('status', 'active');
+
+      // Aplicar filtro de status
+      if (statusFilter !== 'all') {
+        countQuery = countQuery.eq('indexnow_status', statusFilter);
+        dataQuery = dataQuery.eq('indexnow_status', statusFilter);
+      }
 
       // Aplicar filtro de busca
       if (searchTerm) {
@@ -182,36 +192,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     },
   });
 
-  const { data: indexNowStatusData } = useQuery({
-    queryKey: ['indexnow-pages-status', siteId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('indexnow_submissions')
-        .select('*')
-        .eq('site_id', siteId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const statusMap = new Map();
-      data?.forEach(submission => {
-        const payload = submission.request_payload as any;
-        const urls = payload?.urlList || [];
-        urls.forEach((url: string) => {
-          if (!statusMap.has(url)) {
-            statusMap.set(url, {
-              status: submission.status,
-              submitted_at: submission.created_at,
-              response_data: submission.response_data,
-            });
-          }
-        });
-      });
-
-      return statusMap;
-    },
-    enabled: !!siteId,
-  });
 
   const validateUrl = (url: string): boolean => {
     try {
@@ -240,30 +220,7 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     setSingleUrl('');
   };
 
-  // Aplicar filtro de status client-side
-  const filteredPages = useMemo(() => {
-    if (!pagesData?.pages) return [];
-    
-    if (statusFilter === "all") return pagesData.pages;
-    
-    return pagesData.pages.filter(page => {
-      const status = indexNowStatusData?.get(page.page_url);
-      
-      if (statusFilter === "submitted") {
-        return status?.status === 'success';
-      }
-      if (statusFilter === "not_submitted") {
-        return !status;
-      }
-      if (statusFilter === "error") {
-        return status?.status === 'error' || status?.status === 'failed';
-      }
-      
-      return true;
-    });
-  }, [pagesData?.pages, statusFilter, indexNowStatusData]);
-
-  const displayPages = filteredPages;
+  const displayPages = pagesData?.pages || [];
 
   const handleSelectAll = () => {
     if (selectAllMode === 'page') {
@@ -278,23 +235,11 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
   const handleSelectAllFromSite = () => {
     if (!allPageIds) return;
     
-    // Aplicar filtro de status aos IDs totais
-    let filteredIds = allPageIds;
-    if (statusFilter !== "all") {
-      filteredIds = allPageIds.filter(page => {
-        const status = indexNowStatusData?.get(page.page_url);
-        if (statusFilter === "submitted") return status?.status === 'success';
-        if (statusFilter === "not_submitted") return !status;
-        if (statusFilter === "error") return status?.status === 'error' || status?.status === 'failed';
-        return true;
-      });
-    }
-    
-    if (selectedPages.size === filteredIds.length && filteredIds.length > 0) {
+    if (selectedPages.size === allPageIds.length && allPageIds.length > 0) {
       setSelectedPages(new Set());
       setSelectAllMode('page');
     } else {
-      setSelectedPages(new Set(filteredIds.map(p => p.id)));
+      setSelectedPages(new Set(allPageIds.map(p => p.id)));
       setSelectAllMode('all');
     }
   };
@@ -678,24 +623,8 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
                 disabled={!allPageIds || allPageIds.length === 0}
               >
                 {selectAllMode === 'all' && selectedPages.size > 0
-                  ? `✓ Todas selecionadas (${(statusFilter !== "all" 
-                      ? allPageIds?.filter(p => {
-                          const status = indexNowStatusData?.get(p.page_url);
-                          if (statusFilter === "submitted") return status?.status === 'success';
-                          if (statusFilter === "not_submitted") return !status;
-                          if (statusFilter === "error") return status?.status === 'error';
-                          return true;
-                        }).length 
-                      : allPageIds?.length) || 0})`
-                  : `Selecionar TODAS as URLs (${(statusFilter !== "all" 
-                      ? allPageIds?.filter(p => {
-                          const status = indexNowStatusData?.get(p.page_url);
-                          if (statusFilter === "submitted") return status?.status === 'success';
-                          if (statusFilter === "not_submitted") return !status;
-                          if (statusFilter === "error") return status?.status === 'error';
-                          return true;
-                        }).length 
-                      : allPageIds?.length) || 0})`
+                  ? `✓ Todas selecionadas (${allPageIds?.length || 0})`
+                  : `Selecionar TODAS as URLs (${allPageIds?.length || 0})`
                 }
               </Button>
             </div>
@@ -748,70 +677,67 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {displayPages.map((page) => {
-                      const status = indexNowStatusData?.get(page.page_url);
-                      return (
-                        <TableRow key={page.id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedPages.has(page.id)}
-                              onCheckedChange={() => handleTogglePage(page.id)}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <a
-                                href={page.page_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline text-sm max-w-md truncate"
-                              >
-                                {page.page_url}
-                              </a>
-                              <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                            {page.page_title || "-"}
-                          </TableCell>
-                          <TableCell>
-                            {status?.status === 'success' ? (
-                              <Badge variant="outline" className="border-green-500 text-green-700">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Enviado
-                              </Badge>
-                            ) : status?.status === 'error' ? (
-                              <Badge variant="destructive">
-                                <XCircle className="h-3 w-3 mr-1" />
-                                Erro
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="border-gray-300">
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                Não Enviado
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {status?.submitted_at 
-                              ? formatDistanceToNow(new Date(status.submitted_at), { addSuffix: true, locale: ptBR })
-                              : "-"
-                            }
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => submitUrls({ urls: [page.page_url] })}
-                              disabled={isSubmitting}
+                    {displayPages.map((page: any) => (
+                      <TableRow key={page.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedPages.has(page.id)}
+                            onCheckedChange={() => handleTogglePage(page.id)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={page.page_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline text-sm max-w-md truncate"
                             >
-                              <Send className="h-3 w-3 mr-1" />
-                              Indexar
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                              {page.page_url}
+                            </a>
+                            <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                          {page.page_title || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {page.indexnow_status === 'submitted' ? (
+                            <Badge variant="outline" className="border-green-500 text-green-700">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Enviado
+                            </Badge>
+                          ) : page.indexnow_status === 'error' ? (
+                            <Badge variant="destructive">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Erro
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-gray-300">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Não Enviado
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {page.last_indexnow_submission 
+                            ? formatDistanceToNow(new Date(page.last_indexnow_submission), { addSuffix: true, locale: ptBR })
+                            : "-"
+                          }
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => submitUrls({ urls: [page.page_url] })}
+                            disabled={isSubmitting}
+                          >
+                            <Send className="h-3 w-3 mr-1" />
+                            Indexar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
