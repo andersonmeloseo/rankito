@@ -63,7 +63,12 @@ export function GSCClickableCard({
           {metrics.map((metric, index) => (
             <div key={index} className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{metric.label}</span>
-              <span className="text-sm font-semibold">{metric.value}</span>
+              <span 
+                className="text-sm font-semibold truncate max-w-[100px]" 
+                title={String(metric.value)}
+              >
+                {metric.value}
+              </span>
             </div>
           ))}
         </div>

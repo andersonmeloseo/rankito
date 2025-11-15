@@ -85,3 +85,15 @@ export const formatTrendText = (trend: ReturnType<typeof calculateTrend>): strin
   const sign = trend.isPositive ? '+' : '';
   return `${sign}${trend.percentage.toFixed(1)}%`;
 };
+
+export const formatNumber = (num: number): string | number => {
+  if (typeof num !== 'number' || isNaN(num)) return 0;
+  
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
+  }
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`;
+  }
+  return num;
+};
