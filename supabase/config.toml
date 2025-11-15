@@ -3,6 +3,9 @@ project_id = "jhzmgexprjnpgadkxjup"
 [functions.check-expired-trials]
 verify_jwt = false
 
+[functions.indexnow-validate-key]
+verify_jwt = true
+
 [functions.api-track]
 verify_jwt = false
 
