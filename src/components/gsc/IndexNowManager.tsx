@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,18 +18,20 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Zap,
+import { 
+  Zap, 
+  ExternalLink, 
+  Key, 
+  FileText, 
+  Loader2, 
+  CheckCircle2, 
+  XCircle, 
+  AlertCircle,
   Info,
-  ExternalLink,
-  Check,
-  X,
-  Clock,
-  Globe,
-  Key,
-  FileText,
-  Loader2,
+  Copy,
+  RefreshCw
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -52,22 +54,20 @@ const PLATFORMS = [
 ];
 
 export const IndexNowManager = ({ siteId, site }: IndexNowManagerProps) => {
-  const [apiKey, setApiKey] = useState('');
-  const [saveKey, setSaveKey] = useState(false);
   const [singleUrl, setSingleUrl] = useState('');
   const [bulkUrls, setBulkUrls] = useState('');
   const [includeAllPages, setIncludeAllPages] = useState(false);
 
-  const { submissions, isLoading, submitUrls, isSubmitting } = useIndexNow(siteId);
-
-  // Carregar API key do localStorage
-  useEffect(() => {
-    const savedKey = localStorage.getItem(`indexnow_key_${siteId}`);
-    if (savedKey) {
-      setApiKey(savedKey);
-      setSaveKey(true);
-    }
-  }, [siteId]);
+  const { 
+    submissions, 
+    isLoading, 
+    siteKey, 
+    isLoadingKey,
+    submitUrls, 
+    isSubmitting,
+    regenerateKey,
+    isRegenerating 
+  } = useIndexNow(siteId);
 
   // Buscar páginas do site
   const { data: pages } = useQuery({
@@ -82,14 +82,6 @@ export const IndexNowManager = ({ siteId, site }: IndexNowManagerProps) => {
     },
   });
 
-  const handleSaveKey = () => {
-    if (saveKey) {
-      localStorage.setItem(`indexnow_key_${siteId}`, apiKey);
-    } else {
-      localStorage.removeItem(`indexnow_key_${siteId}`);
-    }
-  };
-
   const validateUrl = (url: string): boolean => {
     try {
       const urlObj = new URL(url);
@@ -101,30 +93,28 @@ export const IndexNowManager = ({ siteId, site }: IndexNowManagerProps) => {
   };
 
   const handleSubmitSingle = () => {
-    if (!singleUrl.trim()) {
-      return;
-    }
+    if (!singleUrl.trim()) return;
 
     if (!validateUrl(singleUrl)) {
       alert(`A URL deve pertencer ao domínio: ${site.url}`);
       return;
     }
 
-    if (!apiKey.trim()) {
-      alert('Insira sua API Key do IndexNow');
+    if (!siteKey?.indexnow_key) {
+      alert('Chave IndexNow não configurada. Aguarde a geração automática.');
       return;
     }
 
-    handleSaveKey();
-    submitUrls({
-      urls: [singleUrl],
-      key: apiKey,
-      host: site.url,
-    });
+    submitUrls({ urls: [singleUrl] });
     setSingleUrl('');
   };
 
   const handleSubmitBulk = () => {
+    if (!siteKey?.indexnow_key) {
+      alert('Chave IndexNow não configurada. Aguarde a geração automática.');
+      return;
+    }
+
     let urlsToSubmit: string[] = [];
 
     if (includeAllPages && pages) {
@@ -143,17 +133,7 @@ export const IndexNowManager = ({ siteId, site }: IndexNowManagerProps) => {
       return;
     }
 
-    if (!apiKey.trim()) {
-      alert('Insira sua API Key do IndexNow');
-      return;
-    }
-
-    handleSaveKey();
-    submitUrls({
-      urls: urlsToSubmit,
-      key: apiKey,
-      host: site.url,
-    });
+    submitUrls({ urls: urlsToSubmit });
     setBulkUrls('');
     setIncludeAllPages(false);
   };

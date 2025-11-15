@@ -17,12 +17,30 @@ interface IndexNowSubmission {
 
 interface SubmitUrlsParams {
   urls: string[];
-  key: string;
-  host: string;
+}
+
+interface SiteKey {
+  indexnow_key: string | null;
+  site_url: string;
 }
 
 export const useIndexNow = (siteId: string) => {
   const queryClient = useQueryClient();
+
+  // Buscar chave do site
+  const { data: siteKey, isLoading: isLoadingKey } = useQuery({
+    queryKey: ['indexnow-key', siteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rank_rent_sites')
+        .select('indexnow_key, site_url')
+        .eq('id', siteId)
+        .single();
+
+      if (error) throw error;
+      return data as SiteKey;
+    },
+  });
 
   // Buscar histórico de submissões
   const { data: submissions, isLoading } = useQuery({
@@ -42,7 +60,7 @@ export const useIndexNow = (siteId: string) => {
 
   // Submeter URLs para IndexNow
   const submitUrls = useMutation({
-    mutationFn: async ({ urls, key, host }: SubmitUrlsParams) => {
+    mutationFn: async ({ urls }: SubmitUrlsParams) => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -51,9 +69,7 @@ export const useIndexNow = (siteId: string) => {
 
       const { data, error } = await supabase.functions.invoke('indexnow-submit', {
         body: { 
-          urls, 
-          key, 
-          host,
+          urls,
           siteId,
           userId: user.id
         },
@@ -85,10 +101,36 @@ export const useIndexNow = (siteId: string) => {
     },
   });
 
+  // Regenerar chave
+  const regenerateKey = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const { data, error } = await supabase.functions.invoke('indexnow-regenerate-key', {
+        body: { siteId },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Chave IndexNow regenerada com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['indexnow-key', siteId] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao regenerar chave: ${error.message}`);
+    },
+  });
+
   return {
     submissions,
     isLoading,
+    siteKey,
+    isLoadingKey,
     submitUrls: submitUrls.mutate,
     isSubmitting: submitUrls.isPending,
+    regenerateKey: regenerateKey.mutate,
+    isRegenerating: regenerateKey.isPending,
   };
 };
