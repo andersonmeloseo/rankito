@@ -11,7 +11,7 @@ import { GSCIndexingManager } from './GSCIndexingManager';
 import { GSCMonitoringDashboard } from './GSCMonitoringDashboard';
 import { GSCIndexingQueue } from './GSCIndexingQueue';
 import { GSCSitemapScheduler } from './GSCSitemapScheduler';
-import { IndexNowManager } from './IndexNowManager';
+import IndexNowManager from './IndexNowManager';
 import {
   AlertDialog,
   AlertDialogAction,
