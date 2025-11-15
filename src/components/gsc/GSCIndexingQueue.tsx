@@ -5,8 +5,10 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Calendar, Clock, AlertCircle, CheckCircle2, XCircle, Loader2, Trash2, Info, Shuffle } from "lucide-react";
+import { useState } from "react";
 import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
-import { useGSCQueueRebalance } from "@/hooks/useGSCQueueRebalance";
+import { useGSCQueueRebalance, type RebalancePreview } from "@/hooks/useGSCQueueRebalance";
+import { GSCRebalancePreviewDialog } from "./GSCRebalancePreviewDialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -19,7 +21,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
 
 interface GSCIndexingQueueProps {
   siteId: string;
@@ -27,9 +28,11 @@ interface GSCIndexingQueueProps {
 
 export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
   const { queueItems, batches, queueStats, isLoadingQueue, cancelBatch, removeFromQueue, clearAllPendingUrls } = useGSCIndexingQueue({ siteId });
-  const { rebalanceQueue, isRebalancing } = useGSCQueueRebalance(siteId);
+  const { rebalanceQueue, isRebalancing, previewRebalance } = useGSCQueueRebalance(siteId);
   const [batchToCancel, setBatchToCancel] = useState<string | null>(null);
   const [showClearAllDialog, setShowClearAllDialog] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [preview, setPreview] = useState<RebalancePreview | null>(null);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -338,6 +341,17 @@ export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <GSCRebalancePreviewDialog
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        preview={preview}
+        onConfirm={() => {
+          rebalanceQueue();
+          setShowPreview(false);
+        }}
+        isRebalancing={isRebalancing}
+      />
     </div>
   );
 };
