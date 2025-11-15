@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calendar, Clock, AlertCircle, CheckCircle2, XCircle, Loader2, Trash2, Info } from "lucide-react";
+import { Calendar, Clock, AlertCircle, CheckCircle2, XCircle, Loader2, Trash2, Info, Shuffle } from "lucide-react";
 import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
+import { useGSCQueueRebalance } from "@/hooks/useGSCQueueRebalance";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -26,6 +27,7 @@ interface GSCIndexingQueueProps {
 
 export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
   const { queueItems, batches, queueStats, isLoadingQueue, cancelBatch, removeFromQueue, clearAllPendingUrls } = useGSCIndexingQueue({ siteId });
+  const { rebalanceQueue, isRebalancing } = useGSCQueueRebalance(siteId);
   const [batchToCancel, setBatchToCancel] = useState<string | null>(null);
   const [showClearAllDialog, setShowClearAllDialog] = useState(false);
 
@@ -92,9 +94,17 @@ export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
         </Alert>
       )}
 
-      {/* Clear All Button */}
+      {/* Action Buttons */}
       {queueStats.pending > 0 && (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => rebalanceQueue()}
+            disabled={isRebalancing}
+          >
+            <Shuffle className="w-4 h-4 mr-2" />
+            {isRebalancing ? 'Rebalanceando...' : 'Rebalancear Fila'}
+          </Button>
           <Button
             variant="destructive"
             onClick={() => setShowClearAllDialog(true)}
