@@ -5,6 +5,7 @@ import {
   markIntegrationHealthy,
   isAuthError 
 } from '../_shared/gsc-helpers.ts';
+import { selectBestIntegration, logIntegrationUsage } from '../_shared/gsc-rotation-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

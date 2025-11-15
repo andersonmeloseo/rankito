@@ -835,6 +835,47 @@ export type Database = {
           },
         ]
       }
+      gsc_integration_usage_logs: {
+        Row: {
+          avg_response_time_ms: number | null
+          created_at: string
+          date: string
+          id: string
+          integration_id: string
+          quota_used_percent: number | null
+          urls_failed: number
+          urls_indexed: number
+        }
+        Insert: {
+          avg_response_time_ms?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          integration_id: string
+          quota_used_percent?: number | null
+          urls_failed?: number
+          urls_indexed?: number
+        }
+        Update: {
+          avg_response_time_ms?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          integration_id?: string
+          quota_used_percent?: number | null
+          urls_failed?: number
+          urls_indexed?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_integration_usage_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gsc_queue_execution_logs: {
         Row: {
           created_at: string
@@ -1124,6 +1165,7 @@ export type Database = {
           status: string | null
           submitted_at: string | null
           url: string
+          used_integration_id: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -1138,6 +1180,7 @@ export type Database = {
           status?: string | null
           submitted_at?: string | null
           url: string
+          used_integration_id?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -1152,6 +1195,7 @@ export type Database = {
           status?: string | null
           submitted_at?: string | null
           url?: string
+          used_integration_id?: string | null
         }
         Relationships: [
           {
@@ -1194,6 +1238,13 @@ export type Database = {
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_url_indexing_requests_used_integration_id_fkey"
+            columns: ["used_integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
             referencedColumns: ["id"]
           },
         ]

@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { getErrorMessage } from "@/utils/errorMessages";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
 import { GSCIntegrationHealthCard } from "./GSCIntegrationHealthCard";
+import { GSCLoadDistributionCard } from "./GSCLoadDistributionCard";
 
 interface GSCIndexingManagerProps {
   siteId: string;
