@@ -3191,6 +3191,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      reset_gsc_integration_health: { Args: never; Returns: undefined }
       update_contract_statuses: { Args: never; Returns: undefined }
     }
     Enums: {

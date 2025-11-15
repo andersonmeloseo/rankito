@@ -21,6 +21,7 @@ import {
 import { useGSCIndexing } from "@/hooks/useGSCIndexing";
 import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
 import { useGSCQueueLogs } from "@/hooks/useGSCQueueLogs";
+import { useAggregatedGSCQuota } from "@/hooks/useAggregatedGSCQuota";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Send, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle, ExternalLink, List, ChevronUp, ChevronDown, ChevronsUpDown, Zap, Activity } from "lucide-react";
@@ -29,6 +30,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/utils/errorMessages";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
+import { GSCIntegrationHealthCard } from "./GSCIntegrationHealthCard";
 
 interface GSCIndexingManagerProps {
   siteId: string;
@@ -77,6 +79,11 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
 
   const { addToQueue, isAddingToQueue, queueStats } = useGSCIndexingQueue({ siteId });
   const { latestLog, nextExecution, isLoading: isLoadingLogs } = useGSCQueueLogs();
+  
+  // Fetch aggregated quota with integration breakdown
+  const { data: aggregatedQuota, refetch: refetchAggregatedQuota } = useAggregatedGSCQuota({ 
+    siteId 
+  });
 
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
@@ -340,12 +347,6 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                 Solicite a indexação de URLs diretamente ao Google Search Console
                 {quota && ` (quota agregada: ${quota.limit} URLs/dia)`}
               </CardDescription>
-              {quota && quota.unhealthy_count && quota.unhealthy_count > 0 && (
-                <Badge variant="destructive" className="mt-2">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  {quota.unhealthy_count} integração(ões) temporariamente indisponível(is)
-                </Badge>
-              )}
             </div>
             <Button
               variant="outline"
@@ -422,6 +423,17 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Integration Health Status */}
+      {aggregatedQuota && aggregatedQuota.breakdown && (
+        <GSCIntegrationHealthCard 
+          integrations={aggregatedQuota.breakdown}
+          onHealthCheck={() => {
+            refetchQuota();
+            refetchAggregatedQuota();
+          }}
+        />
+      )}
 
       {/* Index Custom URL */}
       <Card>
