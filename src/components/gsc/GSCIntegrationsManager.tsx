@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddGSCIntegrationDialog } from './AddGSCIntegrationDialog';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
 import { GSCIndexingManager } from './GSCIndexingManager';
-import { GSCMonitoringDashboard } from './GSCMonitoringDashboard';
+import { GSCOverviewDashboard } from './GSCOverviewDashboard';
 import { GSCIndexingQueue } from './GSCIndexingQueue';
 import { GSCSitemapScheduler } from './GSCSitemapScheduler';
 import IndexNowManager from './IndexNowManager';
@@ -130,7 +130,12 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
         </TabsList>
 
         <TabsContent value="overview">
-          <GSCMonitoringDashboard siteId={siteId} userId={userId} />
+          <GSCOverviewDashboard 
+            siteId={siteId} 
+            userId={userId}
+            site={site || { url: '', name: 'Site sem nome' }}
+            onNavigateToTab={setActiveTab}
+          />
         </TabsContent>
 
         <TabsContent value="connections">
@@ -274,6 +279,10 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
 
         <TabsContent value="indexing">
           <GSCIndexingManager siteId={siteId} />
+        </TabsContent>
+
+        <TabsContent value="queue">
+          <GSCIndexingQueue siteId={siteId} />
         </TabsContent>
 
         <TabsContent value="indexnow">
