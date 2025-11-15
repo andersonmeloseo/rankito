@@ -32,8 +32,7 @@ import { getErrorMessage } from "@/utils/errorMessages";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
 import { GSCIntegrationHealthCard } from "./GSCIntegrationHealthCard";
 import { GSCLoadDistributionCard } from "./GSCLoadDistributionCard";
-import { useGSCActivity } from "@/hooks/useGSCActivity";
-import { GSCActivityTimeline } from "./GSCActivityTimeline";
+import { GSCIndexingHistory } from "./GSCIndexingHistory";
 
 interface GSCIndexingManagerProps {
   siteId: string;
@@ -87,8 +86,6 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const { data: aggregatedQuota, refetch: refetchAggregatedQuota } = useAggregatedGSCQuota({ 
     siteId 
   });
-  
-  const { activityTimeline, isLoading: isLoadingActivity } = useGSCActivity({ siteId });
 
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
@@ -758,60 +755,8 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         </CardContent>
       </Card>
 
-      {/* Recent Requests */}
-      {recentRequests && recentRequests.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Histórico Recente</CardTitle>
-            <CardDescription>
-              Últimas 10 solicitações de indexação
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[300px]">URL</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data/Hora</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium text-sm">
-                        <a
-                          href={request.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1"
-                        >
-                          {request.url}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(request.status, request.error_message)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(request.submitted_at)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Activity Timeline */}
-      {isLoadingActivity ? (
-        <Skeleton className="h-[500px]" />
-      ) : (
-        <GSCActivityTimeline activities={activityTimeline} />
-      )}
+      {/* Indexing History */}
+      <GSCIndexingHistory siteId={siteId} />
 
       {/* Batch Indexing Dialog */}
       <GSCBatchIndexingDialog
