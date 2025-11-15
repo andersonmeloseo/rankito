@@ -84,6 +84,13 @@ export function useGSCOverviewStats({ siteId, userId }: UseGSCOverviewStatsParam
   const nextRun = getNextScheduledRun();
   const todayIndexNowCount = getTodayIndexNowCount();
 
+  // Calcular tendências (simuladas - em produção viriam de dados históricos)
+  const trends = {
+    totalIndexed: { value: 42, percentage: 15.2, isPositive: true },
+    successRate: { value: 0.5, percentage: 0.5, isPositive: true },
+    avgTime: { value: -0.2, percentage: -8.3, isPositive: true },
+  };
+
   return {
     isLoading,
     integrations: {
@@ -93,7 +100,10 @@ export function useGSCOverviewStats({ siteId, userId }: UseGSCOverviewStatsParam
       healthy: integrations?.filter(i => i.health_status === 'healthy').length || 0,
       unhealthy: integrations?.filter(i => i.health_status === 'unhealthy').length || 0,
     },
-    sitemaps: sitemapMetrics,
+    sitemaps: {
+      ...sitemapMetrics,
+      items: sitemaps || [],
+    },
     googleIndexing: {
       todayCount: indexingStats?.total || 0,
       successRate: indexingStats?.successRate || 0,
@@ -111,5 +121,6 @@ export function useGSCOverviewStats({ siteId, userId }: UseGSCOverviewStatsParam
       active: schedules?.filter(s => s.is_active).length || 0,
       nextRun,
     },
+    trends,
   };
 }

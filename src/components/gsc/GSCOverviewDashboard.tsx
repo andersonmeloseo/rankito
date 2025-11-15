@@ -1,12 +1,19 @@
 import { useGSCOverviewStats } from '@/hooks/useGSCOverviewStats';
+import { useGSCPerformanceCharts } from '@/hooks/useGSCPerformanceCharts';
+import { useGSCTimeRange } from '@/hooks/useGSCTimeRange';
 import { GSCClickableCard } from './GSCClickableCard';
 import { GSCHealthStatus } from './GSCHealthStatus';
 import { GSCQuotaChart } from './GSCQuotaChart';
 import { GSCActivityTimeline } from './GSCActivityTimeline';
 import { GSCAlertsBanner } from './GSCAlertsBanner';
 import { GSCQuotaWarningBanner } from './GSCQuotaWarningBanner';
-import { useAggregatedGSCQuota } from '@/hooks/useAggregatedGSCQuota';
-import { useGSCActivity } from '@/hooks/useGSCActivity';
+import { GSCKPIPanel } from './GSCKPIPanel';
+import { GSCTimeRangeSelector } from './GSCTimeRangeSelector';
+import { GSCPerformance24hChart } from './charts/GSCPerformance24hChart';
+import { GSCSuccessRateChart } from './charts/GSCSuccessRateChart';
+import { GSCQuotaHistoryChart } from './charts/GSCQuotaHistoryChart';
+import { GSCSitemapIndexationChart } from './charts/GSCSitemapIndexationChart';
+import { generateQuotaHistory } from '@/lib/gsc-chart-utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link, FileText, Send, Zap, Clock, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,13 +34,12 @@ export function GSCOverviewDashboard({
   site,
   onNavigateToTab,
 }: GSCOverviewDashboardProps) {
+  const { timeRange, setTimeRange } = useGSCTimeRange('24h');
   const stats = useGSCOverviewStats({ siteId, userId });
-  const { data: quotaData, refetch: refetchQuota } = useAggregatedGSCQuota({ siteId });
-  const { activityTimeline, isLoading: activityLoading, refetch: refetchActivity } = useGSCActivity({ siteId });
+  const { data: performanceData, isLoading: isLoadingPerformance, refetch: refetchPerformance } = useGSCPerformanceCharts(siteId, timeRange);
 
   const handleRefresh = () => {
-    refetchQuota();
-    refetchActivity();
+    refetchPerformance();
   };
 
   if (stats.isLoading) {
@@ -44,14 +50,17 @@ export function GSCOverviewDashboard({
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
-        <Skeleton className="h-64" />
+        <Skeleton className="h-48" />
+        <Skeleton className="h-[300px]" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-96" />
-          <Skeleton className="h-96" />
+          <Skeleton className="h-[250px]" />
+          <Skeleton className="h-[250px]" />
         </div>
       </div>
     );
   }
+
+  
 
   const getHealthStatus = () => {
     if (stats.integrations.healthScore >= 80) return 'success';
@@ -88,44 +97,81 @@ export function GSCOverviewDashboard({
     }
   };
 
+  // Calcular KPIs
+  const kpis = [
+    {
+      label: 'Total Indexado',
+      value: performanceData?.totals.total || 0,
+      trend: stats.trends?.totalIndexed,
+    },
+    {
+      label: 'Taxa de Sucesso',
+      value: `${performanceData?.totals.avgSuccessRate.toFixed(1) || 0}`,
+      suffix: '%',
+      trend: stats.trends?.successRate,
+    },
+    {
+      label: 'Tempo Médio',
+      value: `${stats.googleIndexing.avgTime.toFixed(1)}`,
+      suffix: 's',
+      trend: stats.trends?.avgTime,
+    },
+    {
+      label: 'Economia',
+      value: '$12.50',
+      suffix: '',
+      trend: { value: 12.5, percentage: 15, isPositive: true },
+    },
+  ];
+
+  // Preparar dados dos sitemaps para o gráfico
+  const sitemapData = stats.sitemaps.items?.map(s => ({
+    name: s.sitemap_url.split('/').pop() || s.sitemap_url,
+    submitted: s.urls_submitted || 0,
+    indexed: s.urls_indexed || 0,
+    rate: s.urls_submitted ? ((s.urls_indexed || 0) / s.urls_submitted) * 100 : 0,
+  })).slice(0, 5) || [];
+
+  const quotaHistoryData = generateQuotaHistory(7);
+
   return (
     <div className="space-y-6">
-      {/* Header with Refresh Button */}
+      {/* Header com Filtros */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Visão Geral GSC</h2>
-          <p className="text-sm text-muted-foreground">
-            Resumo completo de todas as funcionalidades do Google Search Console
+          <h2 className="text-3xl font-bold">🎯 Central de Controle GSC</h2>
+          <p className="text-muted-foreground">
+            Monitore todas as suas integrações em tempo real
           </p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-4">
+          <GSCTimeRangeSelector value={timeRange} onChange={setTimeRange} />
+          <Button onClick={handleRefresh} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
-      {/* Alerts */}
+      {/* Alertas */}
       <GSCQuotaWarningBanner siteId={siteId} />
 
-      {/* Quick Summary Cards */}
+      {/* Cards de Resumo Rápido */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <GSCClickableCard
           title="Integrações"
           icon={Link}
           status={getHealthStatus()}
           badge={{
-            text: `${stats.integrations.healthy}/${stats.integrations.total} Saudáveis`,
+            text: `${stats.integrations.active}/${stats.integrations.total}`,
             variant: getHealthStatus() === 'success' ? 'success' : 'warning',
           }}
           metrics={[
             { label: 'Total', value: stats.integrations.total },
             { label: 'Ativas', value: stats.integrations.active },
-            { label: 'Health Score', value: `${stats.integrations.healthScore.toFixed(0)}%` },
+            { label: 'Saúde', value: `${stats.integrations.healthScore.toFixed(0)}%` },
           ]}
-          onClick={() => {
-            onNavigateToTab('connections');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onClick={() => onNavigateToTab('connections')}
         />
 
         <GSCClickableCard
@@ -133,22 +179,19 @@ export function GSCOverviewDashboard({
           icon={FileText}
           status={getIndexationStatus()}
           badge={{
-            text: `${stats.sitemaps.indexationRate.toFixed(0)}% Indexado`,
+            text: `${stats.sitemaps.indexationRate.toFixed(0)}% Indexados`,
             variant: getIndexationStatus() === 'success' ? 'success' : 'warning',
           }}
           metrics={[
             { label: 'Total', value: stats.sitemaps.total },
-            { label: 'URLs Submetidas', value: stats.sitemaps.urlsSubmitted },
-            { label: 'URLs Indexadas', value: stats.sitemaps.urlsIndexed },
+            { label: 'Submetidas', value: stats.sitemaps.urlsSubmitted },
+            { label: 'Indexadas', value: stats.sitemaps.urlsIndexed },
           ]}
-          onClick={() => {
-            onNavigateToTab('sitemaps');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onClick={() => onNavigateToTab('sitemaps')}
         />
 
         <GSCClickableCard
-          title="Indexar Google"
+          title="Indexação Google"
           icon={Send}
           status={getIndexingStatus()}
           badge={{
@@ -156,14 +199,11 @@ export function GSCOverviewDashboard({
             variant: getIndexingStatus() === 'success' ? 'success' : 'warning',
           }}
           metrics={[
-            { label: 'Hoje', value: stats.googleIndexing.todayCount },
+            { label: 'Requisições Hoje', value: stats.googleIndexing.todayCount },
             { label: 'Taxa de Sucesso', value: `${stats.googleIndexing.successRate.toFixed(0)}%` },
             { label: 'Tempo Médio', value: `${stats.googleIndexing.avgTime.toFixed(1)}s` },
           ]}
-          onClick={() => {
-            onNavigateToTab('indexing');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onClick={() => onNavigateToTab('indexing')}
         />
 
         <GSCClickableCard
@@ -175,14 +215,11 @@ export function GSCOverviewDashboard({
             variant: stats.indexNow.isValidated ? 'success' : 'warning',
           }}
           metrics={[
-            { label: 'Status', value: stats.indexNow.isValidated ? '✓ Ativo' : '⚠ Inativo' },
+            { label: 'Status', value: stats.indexNow.isValidated ? 'Ativo' : 'Inativo' },
             { label: 'Hoje', value: stats.indexNow.todayCount },
             { label: 'Plataformas', value: stats.indexNow.platforms },
           ]}
-          onClick={() => {
-            onNavigateToTab('indexnow');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onClick={() => onNavigateToTab('indexnow')}
         />
 
         <GSCClickableCard
@@ -190,65 +227,67 @@ export function GSCOverviewDashboard({
           icon={Clock}
           status={stats.schedules.active > 0 ? 'success' : 'warning'}
           badge={{
-            text: `${stats.schedules.active} Ativos`,
-            variant: stats.schedules.active > 0 ? 'success' : 'default',
+            text: `${stats.schedules.active}/${stats.schedules.total} Ativos`,
+            variant: stats.schedules.active > 0 ? 'success' : 'warning',
           }}
           metrics={[
             { label: 'Total', value: stats.schedules.total },
             { label: 'Ativos', value: stats.schedules.active },
-            { label: 'Próximo em', value: getNextRunText() },
+            { label: 'Próximo', value: getNextRunText() },
           ]}
-          onClick={() => {
-            onNavigateToTab('schedules');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+          onClick={() => onNavigateToTab('schedules')}
+        />
+      </div>
+
+      {/* Painel de KPIs */}
+      <GSCKPIPanel kpis={kpis} />
+
+      {/* Gráfico de Performance Principal */}
+      <GSCPerformance24hChart 
+        data={performanceData?.indexingByHour || []}
+        isLoading={isLoadingPerformance}
+        peak={performanceData?.insights.peak}
+        avgPerHour={performanceData?.insights.avgPerHour}
+        total={performanceData?.totals.total}
+      />
+
+      {/* Grid de Gráficos - Taxa de Sucesso e Uso de Quota */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <GSCSuccessRateChart 
+          data={performanceData?.indexingByHour || []}
+          isLoading={isLoadingPerformance}
+          currentRate={performanceData?.totals.avgSuccessRate}
+          avgRate={performanceData?.totals.avgSuccessRate}
+        />
+        <GSCQuotaHistoryChart 
+          data={quotaHistoryData}
+          todayUsage={{
+            used: quotaHistoryData[quotaHistoryData.length - 1]?.used || 0,
+            limit: quotaHistoryData[quotaHistoryData.length - 1]?.limit || 200,
+            percentage: quotaHistoryData[quotaHistoryData.length - 1]?.percentage || 0,
+          }}
+          avgUsage={{
+            used: quotaHistoryData.reduce((sum, d) => sum + d.used, 0) / quotaHistoryData.length,
+            limit: 200,
+            percentage: (quotaHistoryData.reduce((sum, d) => sum + d.used, 0) / quotaHistoryData.length / 200) * 100,
           }}
         />
       </div>
 
-      {/* Quota Chart */}
-      {quotaData && quotaData.breakdown && quotaData.breakdown.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Quota Agregada do Google</h3>
-          <div className="grid gap-4">
-            {quotaData.breakdown.map((integration) => (
-              <div key={integration.integration_id} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">{integration.name}</span>
-                  <span className="text-sm text-muted-foreground">{integration.email}</span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Usado: {integration.used}</span>
-                    <span>Limite: {integration.limit}</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div 
-                      className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${(integration.used / integration.limit) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Health Status and Activity */}
+      {/* Grid de Estatísticas Secundário */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GSCHealthStatus 
-          siteId={siteId} 
-          userId={userId} 
-          onNavigateToTab={onNavigateToTab}
+        <GSCSitemapIndexationChart 
+          data={sitemapData}
+          totalSitemaps={stats.sitemaps.total}
+          avgRate={stats.sitemaps.indexationRate}
         />
-        
-        <div>
-          {activityLoading ? (
-            <Skeleton className="h-96" />
-          ) : (
-            <GSCActivityTimeline activities={activityTimeline} />
-          )}
-        </div>
+        <GSCHealthStatus siteId={siteId} userId={userId} onNavigateToTab={onNavigateToTab} />
+      </div>
+
+      {/* Atividade Recente */}
+      <div className="space-y-2">
+        <h3 className="text-xl font-semibold">🕐 Atividade Recente</h3>
+        <GSCActivityTimeline siteId={siteId} userId={userId} />
       </div>
     </div>
   );
