@@ -24,7 +24,9 @@ import {
   Info,
   Copy,
   RefreshCw,
-  Send
+  Send,
+  Clock,
+  Activity
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -36,6 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 
 interface IndexNowManagerProps {
   siteId: string;
@@ -61,6 +64,8 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<string>("page_url");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectAllMode, setSelectAllMode] = useState<'page' | 'all'>('page');
   const PAGES_PER_PAGE = 50;
 
   const { 
@@ -76,6 +81,51 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     isValidating,
     isKeyValidated
   } = useIndexNow(siteId);
+
+  // Query para estatísticas do dia
+  const { data: todayStats, refetch: refetchStats } = useQuery({
+    queryKey: ['indexnow-today-stats', siteId],
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data } = await supabase
+        .from('indexnow_submissions')
+        .select('*')
+        .eq('site_id', siteId)
+        .gte('created_at', today.toISOString());
+      
+      const total = data?.reduce((sum, s) => sum + s.urls_count, 0) || 0;
+      const success = data?.filter(s => s.status === 'success').length || 0;
+      const successRate = data && data.length > 0 ? (success / data.length) * 100 : 0;
+      const lastSubmission = data?.[0]?.created_at;
+      
+      return { total, successRate, lastSubmission };
+    },
+    enabled: !!siteId,
+  });
+
+  // Query para buscar todos os IDs das páginas (para seleção total)
+  const { data: allPageIds } = useQuery({
+    queryKey: ['all-page-ids-indexnow', siteId, searchTerm, statusFilter],
+    queryFn: async () => {
+      let query = supabase
+        .from('rank_rent_pages')
+        .select('id, page_url')
+        .eq('site_id', siteId)
+        .eq('status', 'active');
+      
+      if (searchTerm) {
+        query = query.or(`page_path.ilike.%${searchTerm}%,page_title.ilike.%${searchTerm}%`);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      return data || [];
+    },
+    enabled: !!siteId,
+  });
 
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
     queryKey: ['site-pages-indexnow', siteId, currentPage, searchTerm, sortBy],
@@ -190,14 +240,62 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     setSingleUrl('');
   };
 
-  // Páginas já vêm filtradas e paginadas do servidor
-  const displayPages = pagesData?.pages || [];
+  // Aplicar filtro de status client-side
+  const filteredPages = useMemo(() => {
+    if (!pagesData?.pages) return [];
+    
+    if (statusFilter === "all") return pagesData.pages;
+    
+    return pagesData.pages.filter(page => {
+      const status = indexNowStatusData?.get(page.page_url);
+      
+      if (statusFilter === "submitted") {
+        return status?.status === 'success';
+      }
+      if (statusFilter === "not_submitted") {
+        return !status;
+      }
+      if (statusFilter === "error") {
+        return status?.status === 'error' || status?.status === 'failed';
+      }
+      
+      return true;
+    });
+  }, [pagesData?.pages, statusFilter, indexNowStatusData]);
+
+  const displayPages = filteredPages;
 
   const handleSelectAll = () => {
-    if (selectedPages.size === displayPages.length) {
+    if (selectAllMode === 'page') {
+      if (selectedPages.size === displayPages.length && displayPages.length > 0) {
+        setSelectedPages(new Set());
+      } else {
+        setSelectedPages(new Set(displayPages.map(p => p.id)));
+      }
+    }
+  };
+
+  const handleSelectAllFromSite = () => {
+    if (!allPageIds) return;
+    
+    // Aplicar filtro de status aos IDs totais
+    let filteredIds = allPageIds;
+    if (statusFilter !== "all") {
+      filteredIds = allPageIds.filter(page => {
+        const status = indexNowStatusData?.get(page.page_url);
+        if (statusFilter === "submitted") return status?.status === 'success';
+        if (statusFilter === "not_submitted") return !status;
+        if (statusFilter === "error") return status?.status === 'error' || status?.status === 'failed';
+        return true;
+      });
+    }
+    
+    if (selectedPages.size === filteredIds.length && filteredIds.length > 0) {
       setSelectedPages(new Set());
+      setSelectAllMode('page');
     } else {
-      setSelectedPages(new Set(displayPages.map(p => p.id)));
+      setSelectedPages(new Set(filteredIds.map(p => p.id)));
+      setSelectAllMode('all');
     }
   };
 
@@ -214,13 +312,56 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
   const handleIndexSelected = async () => {
     if (selectedPages.size === 0) return;
 
-    const selectedUrls = displayPages
-      .filter(p => selectedPages.has(p.id))
-      .map(p => p.page_url);
-
-    await submitUrls({ urls: selectedUrls });
+    // Buscar URLs das páginas selecionadas
+    let selectedUrls: string[];
+    
+    if (selectAllMode === 'all') {
+      const allPages = allPageIds?.filter(p => selectedPages.has(p.id)) || [];
+      selectedUrls = allPages.map(p => p.page_url);
+    } else {
+      selectedUrls = displayPages
+        .filter(p => selectedPages.has(p.id))
+        .map(p => p.page_url);
+    }
+    
+    if (selectedUrls.length === 0) return;
+    
+    // Enviar em lotes de 100 URLs
+    const BATCH_SIZE = 100;
+    const batches = [];
+    
+    for (let i = 0; i < selectedUrls.length; i += BATCH_SIZE) {
+      batches.push(selectedUrls.slice(i, i + BATCH_SIZE));
+    }
+    
+    if (batches.length > 1) {
+      toast.info(`Enviando ${selectedUrls.length} URLs em ${batches.length} lote(s)...`);
+    }
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (let i = 0; i < batches.length; i++) {
+      try {
+        await submitUrls({ urls: batches[i] });
+        successCount += batches[i].length;
+        if (batches.length > 1) {
+          toast.success(`Lote ${i + 1}/${batches.length} enviado (${batches[i].length} URLs)`);
+        }
+      } catch (error) {
+        errorCount += batches[i].length;
+        toast.error(`Erro no lote ${i + 1}/${batches.length}`);
+      }
+    }
+    
+    const finalMessage = errorCount > 0 
+      ? `${successCount} URLs enviadas, ${errorCount} falharam`
+      : `${successCount} URLs enviadas com sucesso`;
+    
+    toast.success(`✅ Indexação concluída!`, { description: finalMessage });
+    
     setSelectedPages(new Set());
-    toast.success(`${selectedUrls.length} URLs enviadas para indexação`);
+    setSelectAllMode('page');
   };
 
   const handleCopyKey = () => {
@@ -272,6 +413,62 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
                   {platform.name}
                 </Badge>
               ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card de Estatísticas do Dia */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Estatísticas do Dia
+              </CardTitle>
+              <CardDescription>
+                Acompanhe o desempenho das submissões IndexNow de hoje
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetchStats()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">URLs Submetidas Hoje</div>
+              <div className="text-2xl font-bold">{todayStats?.total || 0}</div>
+              <div className="text-xs text-muted-foreground">
+                Sem limite diário no IndexNow
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Taxa de Sucesso</div>
+              <div className="text-2xl font-bold text-green-600">
+                {todayStats?.successRate.toFixed(1)}%
+              </div>
+              <Progress value={todayStats?.successRate || 0} className="h-2" />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Último Envio
+              </div>
+              <div className="text-sm font-medium">
+                {todayStats?.lastSubmission 
+                  ? formatDistanceToNow(new Date(todayStats.lastSubmission), { 
+                      addSuffix: true, 
+                      locale: ptBR 
+                    })
+                  : "Nenhum envio hoje"
+                }
+              </div>
             </div>
           </div>
         </CardContent>
@@ -429,6 +626,18 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
               className="max-w-md flex-1"
             />
 
+            <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrar por status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="submitted">Enviado com Sucesso</SelectItem>
+                <SelectItem value="not_submitted">Não Enviado</SelectItem>
+                <SelectItem value="error">Erro no Envio</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={sortBy} onValueChange={(value) => { setSortBy(value); setCurrentPage(1); }}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Ordenar por" />
@@ -440,10 +649,83 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
               </SelectContent>
             </Select>
 
-            {(searchTerm || sortBy !== "page_url") && (
-              <Button variant="ghost" onClick={() => { setSearchTerm(""); setSortBy("page_url"); setCurrentPage(1); }}>
+            {(searchTerm || sortBy !== "page_url" || statusFilter !== "all") && (
+              <Button variant="ghost" onClick={() => { 
+                setSearchTerm(""); 
+                setSortBy("page_url"); 
+                setStatusFilter("all");
+                setCurrentPage(1); 
+              }}>
                 Limpar Filtros
               </Button>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between pb-3 border-b">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                checked={selectedPages.size === displayPages.length && displayPages.length > 0}
+                onCheckedChange={handleSelectAll}
+              />
+              <span className="text-sm text-muted-foreground">
+                Selecionar esta página ({displayPages.length} URLs)
+              </span>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleSelectAllFromSite}
+                disabled={!allPageIds || allPageIds.length === 0}
+              >
+                {selectAllMode === 'all' && selectedPages.size > 0
+                  ? `✓ Todas selecionadas (${(statusFilter !== "all" 
+                      ? allPageIds?.filter(p => {
+                          const status = indexNowStatusData?.get(p.page_url);
+                          if (statusFilter === "submitted") return status?.status === 'success';
+                          if (statusFilter === "not_submitted") return !status;
+                          if (statusFilter === "error") return status?.status === 'error';
+                          return true;
+                        }).length 
+                      : allPageIds?.length) || 0})`
+                  : `Selecionar TODAS as URLs (${(statusFilter !== "all" 
+                      ? allPageIds?.filter(p => {
+                          const status = indexNowStatusData?.get(p.page_url);
+                          if (statusFilter === "submitted") return status?.status === 'success';
+                          if (statusFilter === "not_submitted") return !status;
+                          if (statusFilter === "error") return status?.status === 'error';
+                          return true;
+                        }).length 
+                      : allPageIds?.length) || 0})`
+                }
+              </Button>
+            </div>
+            
+            {selectedPages.size > 0 && (
+              <div className="flex items-center gap-3">
+                <Badge variant="secondary">
+                  {selectedPages.size} selecionadas
+                </Badge>
+                
+                {selectAllMode === 'all' && (
+                  <Alert className="inline-flex items-center gap-2 py-1 px-3">
+                    <Info className="h-3 w-3" />
+                    <span className="text-xs">
+                      Envio em lotes de 100 URLs
+                    </span>
+                  </Alert>
+                )}
+                
+                <Button onClick={handleIndexSelected} size="sm" disabled={isSubmitting}>
+                  <Zap className="h-4 w-4 mr-2" />
+                  Indexar Selecionadas
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setSelectedPages(new Set());
+                  setSelectAllMode('page');
+                }}>
+                  Limpar Seleção
+                </Button>
+              </div>
             )}
           </div>
 
@@ -457,12 +739,7 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">
-                      <Checkbox
-                        checked={selectedPages.size === displayPages.length && displayPages.length > 0}
-                        onCheckedChange={handleSelectAll}
-                      />
-                      </TableHead>
+                      <TableHead className="w-12"></TableHead>
                       <TableHead>URL</TableHead>
                       <TableHead>Título</TableHead>
                       <TableHead>Status IndexNow</TableHead>
