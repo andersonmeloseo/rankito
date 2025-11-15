@@ -82,18 +82,12 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
 
   const { sitemaps, isLoading: isLoadingSitemaps } = useGSCSitemaps({ siteId });
 
-  // Buscar páginas do site
   const { data: pages, isLoading: isLoadingPages } = useQuery({
     queryKey: ['site-pages-indexnow', siteId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('rank_rent_pages')
-        .select(`
-          id,
-          page_url,
-          page_title,
-          created_at
-        `)
+        .select('id, page_url, page_title, created_at')
         .eq('site_id', siteId)
         .order('page_url', { ascending: true });
 
@@ -102,7 +96,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     },
   });
 
-  // Buscar status IndexNow das páginas
   const { data: indexNowStatusData } = useQuery({
     queryKey: ['indexnow-pages-status', siteId],
     queryFn: async () => {
@@ -114,7 +107,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
 
       if (error) throw error;
 
-      // Mapear por URL para pegar última submissão
       const statusMap = new Map();
       data?.forEach(submission => {
         const payload = submission.request_payload as any;
@@ -179,9 +171,7 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
           
           const urlMatches = text.match(/<loc>(.*?)<\/loc>/g);
           if (urlMatches) {
-            const urls = urlMatches.map(match => 
-              match.replace(/<\/?loc>/g, '')
-            );
+            const urls = urlMatches.map(match => match.replace(/<\/?loc>/g, ''));
             allUrls.push(...urls);
           }
         } catch (error) {
@@ -190,7 +180,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
       }
 
       if (allUrls.length > 0) {
-        // Submeter URLs diretamente
         await submitUrls({ urls: allUrls });
         toast.success(`${allUrls.length} URLs dos sitemaps enviadas para indexação`);
       } else {
@@ -203,13 +192,11 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     }
   };
 
-  // Filtrar e ordenar páginas
   const filteredAndSortedPages = useMemo(() => {
     if (!pages) return [];
 
     let filtered = pages;
 
-    // Filtrar por busca
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(p => 
@@ -218,7 +205,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
       );
     }
 
-    // Filtrar por status
     if (statusFilter !== "all") {
       filtered = filtered.filter(p => {
         const status = indexNowStatusData?.get(p.page_url);
@@ -229,7 +215,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
       });
     }
 
-    // Ordenar
     const sorted = [...filtered];
     if (sortBy === "page_url") {
       sorted.sort((a, b) => a.page_url.localeCompare(b.page_url));
@@ -250,7 +235,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     return sorted;
   }, [pages, searchTerm, statusFilter, sortBy, indexNowStatusData]);
 
-  // Paginação
   const paginatedPages = useMemo(() => {
     const start = (currentPage - 1) * PAGES_PER_PAGE;
     return filteredAndSortedPages.slice(start, start + PAGES_PER_PAGE);
@@ -304,7 +288,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
 
   return (
     <div className="space-y-6">
-      {/* Card 1: Informações IndexNow */}
       <Card>
         <CardHeader>
           <div className="flex items-start gap-4">
@@ -343,16 +326,13 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
         </CardContent>
       </Card>
 
-      {/* Card 2: Configuração da Chave */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="h-5 w-5" />
             Configuração da Chave IndexNow
           </CardTitle>
-          <CardDescription>
-            Gerencie sua chave de API do IndexNow
-          </CardDescription>
+          <CardDescription>Gerencie sua chave de API do IndexNow</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoadingKey ? (
@@ -365,11 +345,7 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
               <div className="space-y-2">
                 <Label>Chave Atual</Label>
                 <div className="flex gap-2">
-                  <Input
-                    value={siteKey.indexnow_key}
-                    readOnly
-                    className="font-mono text-sm"
-                  />
+                  <Input value={siteKey.indexnow_key} readOnly className="font-mono text-sm" />
                   <Button variant="outline" size="icon" onClick={handleCopyKey}>
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -381,15 +357,8 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
                   <ExternalLink className="h-3 w-3 mr-2" />
                   Testar Arquivo
                 </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={() => validateKey()}
-                  disabled={isValidating}
-                >
-                  {isValidating ? (
-                    <Loader2 className="h-3 w-3 animate-spin mr-2" />
-                  ) : null}
+                <Button variant="default" size="sm" onClick={() => validateKey()} disabled={isValidating}>
+                  {isValidating && <Loader2 className="h-3 w-3 animate-spin mr-2" />}
                   Validar Chave
                 </Button>
                 {isKeyValidated && (
@@ -409,70 +378,46 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <div><strong>PASSO 1:</strong> Crie um arquivo chamado <code className="bg-blue-100 px-1 rounded">{siteKey?.indexnow_key}.txt</code></div>
-                  <div><strong>PASSO 2:</strong> Cole este conteúdo no arquivo:</div>
-                  <pre className="bg-blue-100 p-2 rounded mt-1 text-xs overflow-x-auto">
-                    {siteKey?.indexnow_key}
-                  </pre>
-                  <div><strong>PASSO 3:</strong> Hospede o arquivo na raiz do seu domínio:</div>
-                  <code className="bg-blue-100 px-1 rounded">{site.url}/{siteKey?.indexnow_key}.txt</code>
+                  <strong>Importante:</strong> Crie um arquivo chamado <code className="bg-muted px-1 rounded">{siteKey.indexnow_key}.txt</code> na 
+                  raiz do seu site contendo apenas a chave acima. Exemplo: <code className="bg-muted px-1 rounded">{site.url}/{siteKey.indexnow_key}.txt</code>
                 </AlertDescription>
               </Alert>
 
-              <div className="flex gap-2 items-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (siteKey?.indexnow_key) {
-                      const url = site.url.startsWith('http') ? site.url : `https://${site.url}`;
-                      window.open(`${url}/${siteKey.indexnow_key}.txt`, '_blank');
-                    }
-                  }}
-                  disabled={!siteKey?.indexnow_key}
-                >
-                  <ExternalLink className="h-3 w-3 mr-2" />
-                  Testar Arquivo
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => validateKey()}
-                  disabled={isValidating || !siteKey?.indexnow_key}
-                >
-                  {isValidating ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    'Validar Chave'
-                  )}
-                </Button>
-                {isKeyValidated && (
-                  <Badge className="bg-green-500 text-white">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Conectado
-                  </Badge>
+              <Button variant="outline" onClick={() => regenerateKey()} disabled={isRegenerating}>
+                {isRegenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Regenerando...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Regenerar Chave
+                  </>
                 )}
-              </div>
+              </Button>
             </>
+          ) : (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Nenhuma chave encontrada. Uma chave será gerada automaticamente.</AlertDescription>
+            </Alert>
           )}
         </CardContent>
       </Card>
 
-      {/* Card de Indexação Rápida */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            Indexação Rápida
+            Indexar URL Individual
           </CardTitle>
-          <CardDescription>
-            Submeta uma URL individual para indexação imediata
-          </CardDescription>
+          <CardDescription>Envie uma URL específica para indexação via IndexNow</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="singleUrl">URL para Indexar</Label>
-            <div className="flex gap-2">
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="singleUrl">URL Completa</Label>
               <Input
                 id="singleUrl"
                 type="url"
@@ -481,159 +426,312 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
                 onChange={(e) => setSingleUrl(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmitSingle()}
               />
-              <Button onClick={handleSubmitSingle} disabled={isSubmitting || !singleUrl.trim()}>
-                {isSubmitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Indexar'
-                )}
-              </Button>
             </div>
+            <Button onClick={handleSubmitSingle} disabled={isSubmitting || !singleUrl.trim() || !siteKey?.indexnow_key}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Solicitar Indexação
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Card de Indexação em Lote */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Indexação em Lote
-          </CardTitle>
-          <CardDescription>
-            Submeta múltiplas URLs de uma vez (máximo 10.000 URLs)
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Páginas do Site</CardTitle>
+              <CardDescription>Selecione páginas para indexação em lote via IndexNow</CardDescription>
+            </div>
+            <div className="flex items-center gap-3">
+              {selectedPages.size > 0 && (
+                <>
+                  <Badge variant="secondary">
+                    {selectedPages.size} de {filteredAndSortedPages.length} selecionadas
+                  </Badge>
+                  <Button onClick={handleIndexSelected} size="sm" disabled={isSubmitting}>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Indexar Selecionadas
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedPages(new Set())}>
+                    Limpar Seleção
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="bulkUrls">URLs (uma por linha)</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLoadFromSitemaps}
-                disabled={isLoadingSitemapUrls || isLoadingSitemaps}
-              >
-                {isLoadingSitemapUrls ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4 mr-2" />
-                )}
-                Carregar dos Sitemaps
-              </Button>
-            </div>
-            <Textarea
-              id="bulkUrls"
-              placeholder={`https://${site.url}/pagina-1\nhttps://${site.url}/pagina-2\nhttps://${site.url}/pagina-3`}
-              value={bulkUrls}
-              onChange={(e) => setBulkUrls(e.target.value)}
-              rows={8}
-              className="font-mono text-sm"
+          <div className="flex flex-wrap gap-3">
+            <Input
+              placeholder="🔍 Buscar por URL ou título..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              className="max-w-md flex-1"
             />
+            
+            <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="submitted">Enviado</SelectItem>
+                <SelectItem value="not_submitted">Não Enviado</SelectItem>
+                <SelectItem value="error">Erro</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={(value) => { setSortBy(value); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="page_url">URL (A-Z)</SelectItem>
+                <SelectItem value="submitted_at_desc">Enviado (Mais Recente)</SelectItem>
+                <SelectItem value="submitted_at_asc">Enviado (Mais Antigo)</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {(searchTerm || statusFilter !== "all" || sortBy !== "page_url") && (
+              <Button variant="ghost" onClick={() => { setSearchTerm(""); setStatusFilter("all"); setSortBy("page_url"); setCurrentPage(1); }}>
+                Limpar Filtros
+              </Button>
+            )}
           </div>
 
-          {pages && pages.length > 0 && (
-            <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
-              <Checkbox
-                id="includeAllPages"
-                checked={includeAllPages}
-                onCheckedChange={(checked) => setIncludeAllPages(checked as boolean)}
-              />
-              <Label htmlFor="includeAllPages" className="cursor-pointer">
-                Incluir todas as {pages.length} páginas registradas no site
-              </Label>
+          {isLoadingPages ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+            </div>
+          ) : paginatedPages.length > 0 ? (
+            <>
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedPages.size === paginatedPages.length && paginatedPages.length > 0}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      </TableHead>
+                      <TableHead>URL</TableHead>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Status IndexNow</TableHead>
+                      <TableHead>Última Submissão</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedPages.map((page) => {
+                      const status = indexNowStatusData?.get(page.page_url);
+                      return (
+                        <TableRow key={page.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedPages.has(page.id)}
+                              onCheckedChange={() => handleTogglePage(page.id)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={page.page_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline text-sm max-w-md truncate"
+                              >
+                                {page.page_url}
+                              </a>
+                              <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                            {page.page_title || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {status?.status === 'success' ? (
+                              <Badge variant="outline" className="border-green-500 text-green-700">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Enviado
+                              </Badge>
+                            ) : status?.status === 'error' ? (
+                              <Badge variant="destructive">
+                                <XCircle className="h-3 w-3 mr-1" />
+                                Erro
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-gray-300">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Não Enviado
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {status?.submitted_at 
+                              ? formatDistanceToNow(new Date(status.submitted_at), { addSuffix: true, locale: ptBR })
+                              : "-"
+                            }
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => submitUrls({ urls: [page.page_url] })}
+                              disabled={isSubmitting}
+                            >
+                              <Send className="h-3 w-3 mr-1" />
+                              Indexar
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando {((currentPage - 1) * PAGES_PER_PAGE) + 1} a {Math.min(currentPage * PAGES_PER_PAGE, filteredAndSortedPages.length)} de {filteredAndSortedPages.length} páginas
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                      Anterior
+                    </Button>
+                    <span className="flex items-center px-3 text-sm">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                      Próxima
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>Nenhuma página encontrada</p>
             </div>
           )}
-
-          <Button
-            onClick={handleSubmitBulk}
-            disabled={isSubmitting || (!bulkUrls.trim() && !includeAllPages)}
-            className="w-full"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Submetendo...
-              </>
-            ) : (
-              <>
-                <Zap className="h-4 w-4 mr-2" />
-                Submeter URLs em Lote
-              </>
-            )}
-          </Button>
         </CardContent>
       </Card>
 
-      {/* Card de Histórico */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Histórico de Submissões
+            Carregar URLs dos Sitemaps
           </CardTitle>
-          <CardDescription>
-            Últimas 50 submissões ao IndexNow
-          </CardDescription>
+          <CardDescription>Indexe todas as URLs descobertas nos seus sitemaps do Google Search Console</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Esta ação irá buscar todas as URLs dos seus sitemaps cadastrados no Google Search Console
+                e enviá-las para indexação via IndexNow.
+              </AlertDescription>
+            </Alert>
+            
+            <Button onClick={handleLoadFromSitemaps} disabled={isLoadingSitemapUrls || isLoadingSitemaps || !sitemaps?.length}>
+              {isLoadingSitemapUrls ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Carregando URLs...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Carregar e Indexar URLs dos Sitemaps
+                </>
+              )}
+            </Button>
+
+            {sitemaps && sitemaps.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                {sitemaps.length} sitemap(s) encontrado(s)
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Histórico de Submissões</CardTitle>
+          <CardDescription>Últimas 50 tentativas de indexação via IndexNow</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
             </div>
-          ) : !submissions || submissions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Nenhuma submissão realizada ainda</p>
-            </div>
-          ) : (
-            <div className="rounded-md border">
+          ) : submissions && submissions.length > 0 ? (
+            <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data</TableHead>
-                    <TableHead>URLs</TableHead>
+                    <TableHead>URLs Enviadas</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Código</TableHead>
                     <TableHead>Resposta</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {submissions.map((submission) => (
+                  {submissions.slice(0, 50).map((submission) => (
                     <TableRow key={submission.id}>
                       <TableCell className="text-sm">
-                        {formatDistanceToNow(new Date(submission.created_at), {
-                          addSuffix: true,
-                          locale: ptBR,
-                        })}
+                        {formatDistanceToNow(new Date(submission.created_at), { addSuffix: true, locale: ptBR })}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{submission.urls_count} URLs</Badge>
+                        <Badge variant="outline">
+                          {submission.urls_count} URL{submission.urls_count > 1 ? 's' : ''}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {submission.status === 'success' ? (
-                          <div className="flex items-center gap-2 text-green-600">
-                            <CheckCircle2 className="h-4 w-4" />
-                            <span className="text-sm font-medium">Sucesso</span>
-                          </div>
+                          <Badge variant="outline" className="border-green-500 text-green-700">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Sucesso
+                          </Badge>
                         ) : (
-                          <div className="flex items-center gap-2 text-red-600">
-                            <XCircle className="h-4 w-4" />
-                            <span className="text-sm font-medium">Falha</span>
-                          </div>
+                          <Badge variant="destructive">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Erro
+                          </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {submission.status_code ? `HTTP ${submission.status_code}` : '-'}
-                        {submission.response_data && (
-                          <div className="text-xs mt-1 truncate max-w-[200px]">
-                            {submission.response_data}
-                          </div>
-                        )}
+                      <TableCell>
+                        <code className="text-xs bg-muted px-2 py-1 rounded">
+                          {submission.status_code || '-'}
+                        </code>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                        {submission.response_data || '-'}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>Nenhuma submissão encontrada</p>
             </div>
           )}
         </CardContent>
