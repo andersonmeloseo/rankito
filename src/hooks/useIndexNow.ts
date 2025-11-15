@@ -123,6 +123,47 @@ export const useIndexNow = (siteId: string) => {
     },
   });
 
+  // Validar chave IndexNow
+  const validateKey = useMutation({
+    mutationFn: async () => {
+      if (!siteKey?.indexnow_key || !siteKey?.site_url) {
+        throw new Error('Chave ou URL do site não disponível');
+      }
+
+      const siteUrl = siteKey.site_url.startsWith('http') ? siteKey.site_url : `https://${siteKey.site_url}`;
+      const keyFileUrl = `${siteUrl}/${siteKey.indexnow_key}.txt`;
+      
+      try {
+        const response = await fetch(keyFileUrl);
+        
+        if (!response.ok) {
+          throw new Error(`Arquivo não encontrado (HTTP ${response.status})`);
+        }
+
+        const content = await response.text();
+        const isValid = content.trim() === siteKey.indexnow_key;
+
+        if (!isValid) {
+          throw new Error('Conteúdo do arquivo não corresponde à chave');
+        }
+
+        return { valid: true };
+      } catch (error) {
+        throw new Error(
+          error instanceof Error 
+            ? error.message 
+            : 'Erro ao validar chave'
+        );
+      }
+    },
+    onSuccess: () => {
+      toast.success('✓ Chave validada com sucesso! IndexNow está conectado.');
+    },
+    onError: (error: Error) => {
+      toast.error(`Validação falhou: ${error.message}`);
+    },
+  });
+
   return {
     submissions,
     isLoading,
@@ -132,5 +173,9 @@ export const useIndexNow = (siteId: string) => {
     isSubmitting: submitUrls.isPending,
     regenerateKey: regenerateKey.mutate,
     isRegenerating: regenerateKey.isPending,
+    validateKey: validateKey.mutate,
+    isValidating: validateKey.isPending,
+    validationError: validateKey.error,
+    isKeyValidated: validateKey.isSuccess,
   };
 };
