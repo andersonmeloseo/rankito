@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,6 +82,14 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     isKeyValidated
   } = useIndexNow(siteId);
 
+  // Validação automática da chave ao carregar
+  useEffect(() => {
+    if (siteKey?.indexnow_key && !isKeyValidated && !isValidating) {
+      console.log('🔍 Auto-validando chave IndexNow...');
+      validateKey();
+    }
+  }, [siteKey?.indexnow_key, isKeyValidated, isValidating, validateKey]);
+
   // Query para estatísticas do dia
   const { data: todayStats, refetch: refetchStats } = useQuery({
     queryKey: ['indexnow-today-stats', siteId],
@@ -163,15 +171,17 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
         dataQuery = dataQuery.or(`page_path.ilike.%${searchTerm}%,page_title.ilike.%${searchTerm}%`);
       }
 
-      // Aplicar ordenação
-      const sortOptions: Record<string, { column: string; ascending: boolean }> = {
-        'page_path': { column: 'page_path', ascending: true },
-        'page_url': { column: 'page_url', ascending: true },
-        'created_at_desc': { column: 'created_at', ascending: false },
-        'created_at_asc': { column: 'created_at', ascending: true },
-      };
+    // Aplicar ordenação
+    const sortOptions: Record<string, { column: string; ascending: boolean }> = {
+      'page_path': { column: 'page_path', ascending: true },
+      'page_url': { column: 'page_url', ascending: true },
+      'created_at_desc': { column: 'created_at', ascending: false },
+      'created_at_asc': { column: 'created_at', ascending: true },
+      'submitted_at_desc': { column: 'last_indexnow_submission', ascending: false },
+      'submitted_at_asc': { column: 'last_indexnow_submission', ascending: true },
+    };
 
-      const sort = sortOptions[sortBy] || sortOptions['page_url'];
+    const sort = sortOptions[sortBy] || sortOptions['page_url'];
       dataQuery = dataQuery
         .order(sort.column, { ascending: sort.ascending })
         .range(from, to);
@@ -213,6 +223,25 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
 
     if (!siteKey?.indexnow_key) {
       toast.error('Chave IndexNow não configurada. Aguarde a geração automática.');
+      return;
+    }
+
+    // Verificar se a URL já foi submetida
+    const alreadySubmitted = displayPages.find(
+      p => p.page_url === singleUrl && p.indexnow_status === 'submitted'
+    );
+
+    if (alreadySubmitted) {
+      toast.warning('⚠️ Esta URL já foi enviada anteriormente', {
+        description: `Última submissão: ${alreadySubmitted.last_indexnow_submission ? new Date(alreadySubmitted.last_indexnow_submission).toLocaleDateString('pt-BR') : 'Data desconhecida'}`,
+        action: {
+          label: 'Enviar mesmo assim',
+          onClick: () => {
+            submitUrls({ urls: [singleUrl] });
+            setSingleUrl('');
+          }
+        }
+      });
       return;
     }
 
@@ -271,31 +300,55 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     
     if (selectedUrls.length === 0) return;
     
+    // Filtrar URLs que já foram submetidas
+    const notSubmittedUrls = selectedUrls.filter(url => {
+      const page = displayPages.find(p => p.page_url === url);
+      return !page || page.indexnow_status !== 'submitted';
+    });
+
+    const alreadySubmittedCount = selectedUrls.length - notSubmittedUrls.length;
+
+    if (alreadySubmittedCount > 0) {
+      toast.warning(`⚠️ ${alreadySubmittedCount} URLs já foram enviadas e serão ignoradas`, {
+        description: `${notSubmittedUrls.length} URLs novas serão processadas`,
+      });
+    }
+
+    if (notSubmittedUrls.length === 0) {
+      toast.info('Todas as URLs selecionadas já foram enviadas anteriormente');
+      return;
+    }
+    
     // Enviar em lotes de 100 URLs
     const BATCH_SIZE = 100;
     const batches = [];
     
-    for (let i = 0; i < selectedUrls.length; i += BATCH_SIZE) {
-      batches.push(selectedUrls.slice(i, i + BATCH_SIZE));
+    for (let i = 0; i < notSubmittedUrls.length; i += BATCH_SIZE) {
+      batches.push(notSubmittedUrls.slice(i, i + BATCH_SIZE));
     }
     
-    if (batches.length > 1) {
-      toast.info(`Enviando ${selectedUrls.length} URLs em ${batches.length} lote(s)...`);
-    }
+    // Criar toast persistente para progresso
+    const progressToastId = toast.loading(`Preparando envio de ${notSubmittedUrls.length} URLs...`);
     
     let successCount = 0;
     let errorCount = 0;
     
     for (let i = 0; i < batches.length; i++) {
+      toast.loading(`Processando lote ${i + 1} de ${batches.length} (${batches[i].length} URLs)...`, {
+        id: progressToastId
+      });
+      
       try {
         await submitUrls({ urls: batches[i] });
         successCount += batches[i].length;
-        if (batches.length > 1) {
-          toast.success(`Lote ${i + 1}/${batches.length} enviado (${batches[i].length} URLs)`);
-        }
+        toast.loading(`✓ Lote ${i + 1}/${batches.length} concluído | ${successCount}/${notSubmittedUrls.length} URLs processadas`, {
+          id: progressToastId
+        });
       } catch (error) {
         errorCount += batches[i].length;
-        toast.error(`Erro no lote ${i + 1}/${batches.length}`);
+        toast.loading(`⚠ Lote ${i + 1}/${batches.length} com erro | ${successCount}/${notSubmittedUrls.length} URLs processadas`, {
+          id: progressToastId
+        });
       }
     }
     
@@ -303,7 +356,9 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
       ? `${successCount} URLs enviadas, ${errorCount} falharam`
       : `${successCount} URLs enviadas com sucesso`;
     
-    toast.success(`✅ Indexação concluída!`, { description: finalMessage });
+    toast.success(`✓ Processamento concluído: ${finalMessage}`, {
+      id: progressToastId
+    });
     
     setSelectedPages(new Set());
     setSelectAllMode('page');
