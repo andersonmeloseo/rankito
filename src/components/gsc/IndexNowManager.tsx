@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIndexNow } from '@/hooks/useIndexNow';
 import { useGSCSitemaps } from '@/hooks/useGSCSitemaps';
 import { useQuery } from '@tanstack/react-query';
@@ -23,7 +24,8 @@ import {
   AlertCircle,
   Info,
   Copy,
-  RefreshCw
+  RefreshCw,
+  Send
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -56,9 +58,13 @@ const PLATFORMS = [
 
 export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) {
   const [singleUrl, setSingleUrl] = useState('');
-  const [bulkUrls, setBulkUrls] = useState('');
-  const [includeAllPages, setIncludeAllPages] = useState(false);
+  const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("page_url");
   const [isLoadingSitemapUrls, setIsLoadingSitemapUrls] = useState(false);
+  const PAGES_PER_PAGE = 50;
 
   const { 
     submissions, 
@@ -77,16 +83,56 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
   const { sitemaps, isLoading: isLoadingSitemaps } = useGSCSitemaps({ siteId });
 
   // Buscar páginas do site
-  const { data: pages } = useQuery({
-    queryKey: ['site-pages', siteId],
+  const { data: pages, isLoading: isLoadingPages } = useQuery({
+    queryKey: ['site-pages-indexnow', siteId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('rank_rent_pages')
-        .select('page_url')
-        .eq('site_id', siteId);
+        .select(`
+          id,
+          page_url,
+          page_title,
+          created_at
+        `)
+        .eq('site_id', siteId)
+        .order('page_url', { ascending: true });
+
       if (error) throw error;
-      return data;
+      return data || [];
     },
+  });
+
+  // Buscar status IndexNow das páginas
+  const { data: indexNowStatusData } = useQuery({
+    queryKey: ['indexnow-pages-status', siteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('indexnow_submissions')
+        .select('*')
+        .eq('site_id', siteId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Mapear por URL para pegar última submissão
+      const statusMap = new Map();
+      data?.forEach(submission => {
+        const payload = submission.request_payload as any;
+        const urls = payload?.urlList || [];
+        urls.forEach((url: string) => {
+          if (!statusMap.has(url)) {
+            statusMap.set(url, {
+              status: submission.status,
+              submitted_at: submission.created_at,
+              response_data: submission.response_data,
+            });
+          }
+        });
+      });
+
+      return statusMap;
+    },
+    enabled: !!siteId,
   });
 
   const validateUrl = (url: string): boolean => {
@@ -103,12 +149,12 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     if (!singleUrl.trim()) return;
 
     if (!validateUrl(singleUrl)) {
-      alert(`A URL deve pertencer ao domínio: ${site.url}`);
+      toast.error(`A URL deve pertencer ao domínio: ${site.url}`);
       return;
     }
 
     if (!siteKey?.indexnow_key) {
-      alert('Chave IndexNow não configurada. Aguarde a geração automática.');
+      toast.error('Chave IndexNow não configurada. Aguarde a geração automática.');
       return;
     }
 
@@ -116,38 +162,9 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     setSingleUrl('');
   };
 
-  const handleSubmitBulk = () => {
-    if (!siteKey?.indexnow_key) {
-      alert('Chave IndexNow não configurada. Aguarde a geração automática.');
-      return;
-    }
-
-    let urlsToSubmit: string[] = [];
-
-    if (includeAllPages && pages) {
-      urlsToSubmit = pages.map(p => p.page_url);
-    } else {
-      const lines = bulkUrls.split('\n').filter(line => line.trim());
-      urlsToSubmit = lines.filter(validateUrl);
-
-      if (lines.length !== urlsToSubmit.length) {
-        alert(`${lines.length - urlsToSubmit.length} URL(s) inválida(s) foram ignoradas`);
-      }
-    }
-
-    if (urlsToSubmit.length === 0) {
-      alert('Nenhuma URL válida para submeter');
-      return;
-    }
-
-    submitUrls({ urls: urlsToSubmit });
-    setBulkUrls('');
-    setIncludeAllPages(false);
-  };
-
   const handleLoadFromSitemaps = async () => {
     if (!sitemaps || sitemaps.length === 0) {
-      toast.error('Nenhum sitemap encontrado. Configure sitemaps na aba "Sitemaps" primeiro.');
+      toast.error('Nenhum sitemap encontrado');
       return;
     }
 
@@ -163,7 +180,7 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
           const urlMatches = text.match(/<loc>(.*?)<\/loc>/g);
           if (urlMatches) {
             const urls = urlMatches.map(match => 
-              match.replace(/<\/?loc>/g, '').trim()
+              match.replace(/<\/?loc>/g, '')
             );
             allUrls.push(...urls);
           }
@@ -172,14 +189,13 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
         }
       }
 
-      if (allUrls.length === 0) {
+      if (allUrls.length > 0) {
+        // Submeter URLs diretamente
+        await submitUrls({ urls: allUrls });
+        toast.success(`${allUrls.length} URLs dos sitemaps enviadas para indexação`);
+      } else {
         toast.error('Nenhuma URL encontrada nos sitemaps');
-        return;
       }
-
-      const uniqueUrls = [...new Set(allUrls)];
-      setBulkUrls(uniqueUrls.join('\n'));
-      toast.success(`${uniqueUrls.length} URLs carregadas dos sitemaps`);
     } catch (error) {
       toast.error('Erro ao carregar URLs dos sitemaps');
     } finally {
@@ -187,100 +203,212 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     }
   };
 
+  // Filtrar e ordenar páginas
+  const filteredAndSortedPages = useMemo(() => {
+    if (!pages) return [];
+
+    let filtered = pages;
+
+    // Filtrar por busca
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(p => 
+        p.page_url.toLowerCase().includes(term) ||
+        p.page_title?.toLowerCase().includes(term)
+      );
+    }
+
+    // Filtrar por status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(p => {
+        const status = indexNowStatusData?.get(p.page_url);
+        if (statusFilter === "submitted") return status?.status === 'success';
+        if (statusFilter === "not_submitted") return !status;
+        if (statusFilter === "error") return status?.status === 'error';
+        return true;
+      });
+    }
+
+    // Ordenar
+    const sorted = [...filtered];
+    if (sortBy === "page_url") {
+      sorted.sort((a, b) => a.page_url.localeCompare(b.page_url));
+    } else if (sortBy === "submitted_at_desc") {
+      sorted.sort((a, b) => {
+        const aDate = indexNowStatusData?.get(a.page_url)?.submitted_at || "";
+        const bDate = indexNowStatusData?.get(b.page_url)?.submitted_at || "";
+        return bDate.localeCompare(aDate);
+      });
+    } else if (sortBy === "submitted_at_asc") {
+      sorted.sort((a, b) => {
+        const aDate = indexNowStatusData?.get(a.page_url)?.submitted_at || "";
+        const bDate = indexNowStatusData?.get(b.page_url)?.submitted_at || "";
+        return aDate.localeCompare(bDate);
+      });
+    }
+
+    return sorted;
+  }, [pages, searchTerm, statusFilter, sortBy, indexNowStatusData]);
+
+  // Paginação
+  const paginatedPages = useMemo(() => {
+    const start = (currentPage - 1) * PAGES_PER_PAGE;
+    return filteredAndSortedPages.slice(start, start + PAGES_PER_PAGE);
+  }, [filteredAndSortedPages, currentPage]);
+
+  const totalPages = Math.ceil(filteredAndSortedPages.length / PAGES_PER_PAGE);
+
+  const handleSelectAll = () => {
+    if (selectedPages.size === paginatedPages.length) {
+      setSelectedPages(new Set());
+    } else {
+      setSelectedPages(new Set(paginatedPages.map(p => p.id)));
+    }
+  };
+
+  const handleTogglePage = (pageId: string) => {
+    const newSelected = new Set(selectedPages);
+    if (newSelected.has(pageId)) {
+      newSelected.delete(pageId);
+    } else {
+      newSelected.add(pageId);
+    }
+    setSelectedPages(newSelected);
+  };
+
+  const handleIndexSelected = async () => {
+    if (selectedPages.size === 0) return;
+
+    const selectedUrls = paginatedPages
+      .filter(p => selectedPages.has(p.id))
+      .map(p => p.page_url);
+
+    await submitUrls({ urls: selectedUrls });
+    setSelectedPages(new Set());
+    toast.success(`${selectedUrls.length} URLs enviadas para indexação`);
+  };
+
+  const handleCopyKey = () => {
+    if (siteKey?.indexnow_key) {
+      navigator.clipboard.writeText(siteKey.indexnow_key);
+      toast.success('Chave copiada!');
+    }
+  };
+
+  const handleTestFile = () => {
+    if (siteKey?.indexnow_key) {
+      const keyFileUrl = `${site.url.startsWith('http') ? site.url : `https://${site.url}`}/${siteKey.indexnow_key}.txt`;
+      window.open(keyFileUrl, '_blank');
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Card Informativo */}
-      <Card className="border-blue-200 bg-blue-50">
+      {/* Card 1: Informações IndexNow */}
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-900">
-            <Zap className="h-5 w-5" />
-            O que é IndexNow?
-          </CardTitle>
-          <CardDescription className="text-blue-700">
-            Protocolo que notifica instantaneamente os mecanismos de busca sobre atualizações no seu conteúdo
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {PLATFORMS.map((platform) => (
-              <Badge key={platform.name} className={`${platform.color} text-white`}>
-                {platform.name}
-              </Badge>
-            ))}
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-primary/10 rounded-lg">
+              <Zap className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <CardTitle>IndexNow - Indexação Instantânea</CardTitle>
+              <CardDescription className="mt-2">
+                IndexNow é um protocolo que permite notificar mecanismos de busca sobre mudanças em seu site instantaneamente.
+                Ao submeter uma URL, ela é compartilhada automaticamente com todas as plataformas suportadas.
+              </CardDescription>
+            </div>
           </div>
-          <Alert className="bg-blue-100 border-blue-300">
-            <Info className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-900">
-              <strong>Importante:</strong> Ao submeter uma URL ao IndexNow, ela é automaticamente compartilhada com TODOS os mecanismos de busca participantes!
+        </CardHeader>
+        <CardContent>
+          <Alert className="mb-4">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Compartilhamento Automático:</strong> Ao submeter uma URL via IndexNow, ela é automaticamente 
+              compartilhada com todos os mecanismos de busca participantes, incluindo Microsoft Bing, Yandex, Naver, e outros.
             </AlertDescription>
           </Alert>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Plataformas Suportadas:</p>
+            <div className="flex flex-wrap gap-2">
+              {PLATFORMS.map((platform) => (
+                <Badge key={platform.name} variant="outline" className="gap-1">
+                  <span className={`h-2 w-2 rounded-full ${platform.color}`} />
+                  {platform.name}
+                </Badge>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Card de Chave IndexNow */}
+      {/* Card 2: Configuração da Chave */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Sua Chave IndexNow
-              </CardTitle>
-              <CardDescription>
-                Chave gerada automaticamente pelo sistema
-              </CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => regenerateKey()}
-              disabled={isRegenerating}
-            >
-              {isRegenerating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Regenerar
-                </>
-              )}
-            </Button>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="h-5 w-5" />
+            Configuração da Chave IndexNow
+          </CardTitle>
+          <CardDescription>
+            Gerencie sua chave de API do IndexNow
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoadingKey ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin" />
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-20 w-full" />
             </div>
-          ) : (
+          ) : siteKey?.indexnow_key ? (
             <>
               <div className="space-y-2">
                 <Label>Chave Atual</Label>
                 <div className="flex gap-2">
                   <Input
-                    value={siteKey?.indexnow_key || 'Gerando...'}
+                    value={siteKey.indexnow_key}
                     readOnly
                     className="font-mono text-sm"
                   />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      if (siteKey?.indexnow_key) {
-                        navigator.clipboard.writeText(siteKey.indexnow_key);
-                        toast.success('Chave copiada!');
-                      }
-                    }}
-                    disabled={!siteKey?.indexnow_key}
-                  >
+                  <Button variant="outline" size="icon" onClick={handleCopyKey}>
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
-              <Alert className="bg-blue-50 border-blue-200">
-                <FileText className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800 space-y-2">
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleTestFile}>
+                  <ExternalLink className="h-3 w-3 mr-2" />
+                  Testar Arquivo
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={() => validateKey()}
+                  disabled={isValidating}
+                >
+                  {isValidating ? (
+                    <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                  ) : null}
+                  Validar Chave
+                </Button>
+                {isKeyValidated && (
+                  <Badge className="bg-green-500">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Conectado
+                  </Badge>
+                )}
+                {isKeyValidated === false && (
+                  <Badge variant="destructive">
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Não validado
+                  </Badge>
+                )}
+              </div>
+
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
                   <div><strong>PASSO 1:</strong> Crie um arquivo chamado <code className="bg-blue-100 px-1 rounded">{siteKey?.indexnow_key}.txt</code></div>
                   <div><strong>PASSO 2:</strong> Cole este conteúdo no arquivo:</div>
                   <pre className="bg-blue-100 p-2 rounded mt-1 text-xs overflow-x-auto">
