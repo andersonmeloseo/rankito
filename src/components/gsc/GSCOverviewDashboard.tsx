@@ -1,6 +1,7 @@
 import { useGSCOverviewStats } from '@/hooks/useGSCOverviewStats';
 import { useGSCPerformanceCharts } from '@/hooks/useGSCPerformanceCharts';
 import { useGSCTimeRange } from '@/hooks/useGSCTimeRange';
+import { useGSCActivity } from '@/hooks/useGSCActivity';
 import { GSCClickableCard } from './GSCClickableCard';
 import { GSCHealthStatus } from './GSCHealthStatus';
 import { GSCQuotaChart } from './GSCQuotaChart';
@@ -37,9 +38,11 @@ export function GSCOverviewDashboard({
   const { timeRange, setTimeRange } = useGSCTimeRange('24h');
   const stats = useGSCOverviewStats({ siteId, userId });
   const { data: performanceData, isLoading: isLoadingPerformance, refetch: refetchPerformance } = useGSCPerformanceCharts(siteId, timeRange);
+  const { activityTimeline, isLoading: isLoadingActivities, refetch: refetchActivities } = useGSCActivity({ siteId });
 
   const handleRefresh = () => {
     refetchPerformance();
+    refetchActivities();
   };
 
   if (stats.isLoading) {
@@ -287,7 +290,11 @@ export function GSCOverviewDashboard({
       {/* Atividade Recente */}
       <div className="space-y-2">
         <h3 className="text-xl font-semibold">🕐 Atividade Recente</h3>
-        <GSCActivityTimeline siteId={siteId} userId={userId} />
+        {isLoadingActivities ? (
+          <Skeleton className="h-[400px]" />
+        ) : (
+          <GSCActivityTimeline activities={activityTimeline || []} />
+        )}
       </div>
     </div>
   );
