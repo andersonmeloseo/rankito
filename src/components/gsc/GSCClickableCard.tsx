@@ -7,6 +7,7 @@ interface Metric {
   label: string;
   value: string | number;
   trend?: 'up' | 'down' | 'neutral';
+  tooltip?: string;
 }
 
 interface GSCClickableCardProps {
@@ -62,10 +63,15 @@ export function GSCClickableCard({
         <div className="space-y-2">
           {metrics.map((metric, index) => (
             <div key={index} className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{metric.label}</span>
+              <span 
+                className="text-xs text-muted-foreground"
+                title={metric.tooltip}
+              >
+                {metric.label}
+              </span>
               <span 
                 className="text-sm font-semibold truncate max-w-[100px]" 
-                title={String(metric.value)}
+                title={metric.tooltip || String(metric.value)}
               >
                 {metric.value}
               </span>
