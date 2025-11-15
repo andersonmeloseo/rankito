@@ -22,7 +22,7 @@ const LandingPageContent = () => {
   useEffect(() => {
     const checkAuthAndRedirect = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (session && window.location.pathname === '/') {
         navigate('/dashboard', { replace: true });
       }
     };
