@@ -32,6 +32,8 @@ import { getErrorMessage } from "@/utils/errorMessages";
 import { GSCBatchIndexingDialog } from "./GSCBatchIndexingDialog";
 import { GSCIntegrationHealthCard } from "./GSCIntegrationHealthCard";
 import { GSCLoadDistributionCard } from "./GSCLoadDistributionCard";
+import { useGSCActivity } from "@/hooks/useGSCActivity";
+import { GSCActivityTimeline } from "./GSCActivityTimeline";
 
 interface GSCIndexingManagerProps {
   siteId: string;
@@ -85,6 +87,8 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const { data: aggregatedQuota, refetch: refetchAggregatedQuota } = useAggregatedGSCQuota({ 
     siteId 
   });
+  
+  const { activityTimeline, isLoading: isLoadingActivity } = useGSCActivity({ siteId });
 
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
@@ -802,6 +806,12 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         </Card>
       )}
 
+      {/* Activity Timeline */}
+      {isLoadingActivity ? (
+        <Skeleton className="h-[500px]" />
+      ) : (
+        <GSCActivityTimeline activities={activityTimeline} />
+      )}
 
       {/* Batch Indexing Dialog */}
       <GSCBatchIndexingDialog
