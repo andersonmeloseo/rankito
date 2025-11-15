@@ -15,6 +15,92 @@ interface DistributionResult {
   skipped_urls: number;
   distribution: Record<string, number>;
   message: string;
+  days_needed: number;
+}
+
+interface QueueItem {
+  integration_id: string;
+  url: string;
+  page_id: string | null;
+  scheduled_for: string;
+  status: string;
+  attempts: number;
+}
+
+interface DailyCapacity {
+  day: number;
+  integrations: Array<{
+    integration_id: string;
+    name: string;
+    available_slots: number;
+  }>;
+  total_capacity: number;
+}
+
+/**
+ * Calcula capacidade disponível por dia para cada integração
+ */
+function calculateDailyCapacity(
+  integrations: Array<any>,
+  day: number
+): DailyCapacity {
+  const dailyIntegrations = integrations
+    .map(int => ({
+      integration_id: int.integration_id,
+      name: int.name,
+      available_slots: day === 0 
+        ? int.remaining_today  // Hoje: usa quota restante
+        : int.daily_limit      // Dias futuros: quota completa (200)
+    }))
+    .filter(int => int.available_slots > 0);
+
+  const total_capacity = dailyIntegrations.reduce(
+    (sum, int) => sum + int.available_slots, 
+    0
+  );
+
+  return { day, integrations: dailyIntegrations, total_capacity };
+}
+
+/**
+ * Distribui URLs de forma "greedy" - preenche contas com mais espaço primeiro
+ */
+function distributeUrlsGreedy(
+  urls: Array<{ url: string; page_id?: string }>,
+  dailyCapacity: DailyCapacity,
+  startDate: Date
+): Array<QueueItem> {
+  const queueItems: Array<QueueItem> = [];
+  let urlIndex = 0;
+
+  // Ordenar integrações por espaço disponível (maior primeiro)
+  const sortedIntegrations = [...dailyCapacity.integrations]
+    .sort((a, b) => b.available_slots - a.available_slots);
+
+  // Distribuir URLs preenchendo cada conta completamente
+  for (const integration of sortedIntegrations) {
+    let slotsUsed = 0;
+
+    while (slotsUsed < integration.available_slots && urlIndex < urls.length) {
+      const url = urls[urlIndex];
+      const scheduledDate = new Date(startDate);
+      scheduledDate.setDate(scheduledDate.getDate() + dailyCapacity.day);
+
+      queueItems.push({
+        integration_id: integration.integration_id,
+        url: url.url,
+        page_id: url.page_id || null,
+        scheduled_for: scheduledDate.toISOString().split('T')[0],
+        status: 'pending',
+        attempts: 0,
+      });
+
+      slotsUsed++;
+      urlIndex++;
+    }
+  }
+
+  return queueItems;
 }
 
 /**
@@ -35,71 +121,66 @@ export function useGSCSmartDistribution(siteId: string) {
         throw new Error('Nenhuma URL fornecida');
       }
 
-      // Verificar quota disponível
-      if (!quota || quota.estimated_capacity_today === 0) {
-        throw new Error('Nenhuma integração GSC disponível ou quota esgotada hoje');
-      }
-
-      if (urls.length > quota.estimated_capacity_today) {
-        toast.warning(
-          `Você tem ${urls.length} URLs mas apenas ${quota.estimated_capacity_today} slots disponíveis hoje. ` +
-          `As URLs excedentes serão programadas para os próximos dias.`
-        );
-      }
-
-      // Buscar integrações saudáveis com quota disponível
-      const availableIntegrations = quota.integrations.filter(
+      // Buscar integrações saudáveis
+      const healthyIntegrations = quota.integrations.filter(
         i => i.is_active && 
-             (i.health_status === 'healthy' || i.health_status === null) && 
-             i.remaining_today > 0
+             (i.health_status === 'healthy' || i.health_status === null)
       );
 
-      if (availableIntegrations.length === 0) {
-        throw new Error('Nenhuma integração saudável com quota disponível');
+      if (healthyIntegrations.length === 0) {
+        throw new Error('Nenhuma integração saudável disponível');
       }
 
-      // Ordenar por quota restante (maior primeiro) para balanceamento
-      availableIntegrations.sort((a, b) => b.remaining_today - a.remaining_today);
+      console.log(`🎯 Distribuição inteligente iniciada: ${urls.length} URLs para ${healthyIntegrations.length} integrações`);
 
-      console.log(`🎯 Distribuindo ${urls.length} URLs entre ${availableIntegrations.length} integrações`);
-
+      // Calcular capacidade por dia até distribuir todas as URLs
+      const queueItems: QueueItem[] = [];
       const distribution: Record<string, number> = {};
-      const queueItems: any[] = [];
+      let remainingUrls = [...urls];
       let currentDay = 0;
-      let urlsProcessedToday = 0;
+      const maxDays = 30; // Limite de segurança
 
-      // Distribuir URLs usando round-robin
-      for (let i = 0; i < urls.length; i++) {
-        const url = urls[i];
-        
-        // Calcular qual integração deve receber esta URL
-        const integrationIndex = i % availableIntegrations.length;
-        const integration = availableIntegrations[integrationIndex];
+      while (remainingUrls.length > 0 && currentDay < maxDays) {
+        // Calcular capacidade para este dia
+        const dailyCapacity = calculateDailyCapacity(
+          healthyIntegrations, 
+          currentDay
+        );
 
-        // Verificar se precisamos mudar de dia
-        const urlsDistributedForThisIntegration = Math.floor(i / availableIntegrations.length);
-        if (urlsDistributedForThisIntegration >= integration.daily_limit) {
+        console.log(`📅 Dia ${currentDay}: Capacidade total = ${dailyCapacity.total_capacity}`);
+
+        if (dailyCapacity.total_capacity === 0) {
+          // Se não tem capacidade, ir para próximo dia
           currentDay++;
-          urlsProcessedToday = 0;
+          continue;
         }
 
-        // Calcular data de agendamento
-        const scheduledDate = new Date();
-        scheduledDate.setDate(scheduledDate.getDate() + currentDay);
-        scheduledDate.setHours(0, 0, 0, 0);
+        // Distribuir URLs usando algoritmo greedy
+        const urlsToDistribute = remainingUrls.slice(0, dailyCapacity.total_capacity);
+        const dayQueueItems = distributeUrlsGreedy(
+          urlsToDistribute,
+          dailyCapacity,
+          new Date()
+        );
 
-        queueItems.push({
-          integration_id: integration.integration_id,
-          url: url.url,
-          page_id: url.page_id || null,
-          scheduled_for: scheduledDate.toISOString().split('T')[0],
-          status: 'pending',
-          attempts: 0,
+        queueItems.push(...dayQueueItems);
+
+        // Contabilizar distribuição
+        dayQueueItems.forEach(item => {
+          const integration = healthyIntegrations.find(
+            i => i.integration_id === item.integration_id
+          );
+          if (integration) {
+            distribution[integration.name] = (distribution[integration.name] || 0) + 1;
+          }
         });
 
-        distribution[integration.name] = (distribution[integration.name] || 0) + 1;
-        urlsProcessedToday++;
+        // Remover URLs distribuídas
+        remainingUrls = remainingUrls.slice(dailyCapacity.total_capacity);
+        currentDay++;
       }
+
+      const daysNeeded = currentDay;
 
       // Inserir em lote na fila
       const { error: insertError } = await supabase
@@ -111,7 +192,11 @@ export function useGSCSmartDistribution(siteId: string) {
         throw new Error(`Erro ao adicionar URLs à fila: ${insertError.message}`);
       }
 
-      console.log('✅ URLs distribuídas com sucesso:', distribution);
+      console.log('✅ Distribuição inteligente concluída:', {
+        total_urls: urls.length,
+        days_needed: daysNeeded,
+        distribution,
+      });
 
       // Invalidar queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota', siteId] });
@@ -124,15 +209,22 @@ export function useGSCSmartDistribution(siteId: string) {
         queued_urls: queueItems.length,
         skipped_urls: 0,
         distribution,
-        message: `${urls.length} URLs distribuídas entre ${availableIntegrations.length} integrações GSC`,
+        days_needed: daysNeeded,
+        message: daysNeeded === 1 
+          ? `${urls.length} URLs agendadas para HOJE usando ${Object.keys(distribution).length} contas`
+          : `${urls.length} URLs distribuídas inteligentemente em ${daysNeeded} dia(s)`,
       };
     },
     onSuccess: (result) => {
+      const distributionDetails = Object.entries(result.distribution)
+        .map(([name, count]) => `• ${name}: ${count} URLs`)
+        .join('\n');
+
+      const description = `📊 Distribuição por conta:\n${distributionDetails}\n\n⏰ URLs serão enviadas em ${result.days_needed} dia(s)`;
+
       toast.success(result.message, {
-        description: Object.entries(result.distribution)
-          .map(([name, count]) => `${name}: ${count} URLs`)
-          .join('\n'),
-        duration: 5000,
+        description,
+        duration: 8000,
       });
     },
     onError: (error: Error) => {
