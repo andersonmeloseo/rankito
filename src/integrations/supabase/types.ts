@@ -1184,6 +1184,81 @@ export type Database = {
           },
         ]
       }
+      indexnow_submissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          request_payload: Json | null
+          response_data: string | null
+          site_id: string
+          status: string
+          status_code: number | null
+          updated_at: string | null
+          urls_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          request_payload?: Json | null
+          response_data?: string | null
+          site_id: string
+          status: string
+          status_code?: number | null
+          updated_at?: string | null
+          urls_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          request_payload?: Json | null
+          response_data?: string | null
+          site_id?: string
+          status?: string
+          status_code?: number | null
+          updated_at?: string | null
+          urls_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indexnow_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_aggregated_quota_status"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "indexnow_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indexnow_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "indexnow_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indexnow_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           approved_at: string | null

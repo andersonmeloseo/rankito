@@ -806,9 +806,9 @@ const SiteDetails = () => {
                   Relatórios
                 </ClickUpTabTrigger>
                 
-                <ClickUpTabTrigger value="gsc" icon={Search}>
-                  Google Search Console
-                </ClickUpTabTrigger>
+          <ClickUpTabTrigger value="gsc" icon={Search}>
+            Indexador
+          </ClickUpTabTrigger>
                 
                 <ClickUpTabTrigger value="plugin" icon={Plug}>
                   Plugin WordPress
@@ -1409,7 +1409,11 @@ const SiteDetails = () => {
             {userData?.id && siteId ? (
               <GSCIntegrationsManager 
                 siteId={siteId} 
-                userId={userData.id} 
+                userId={userData.id}
+                site={{
+                  url: site.site_url,
+                  name: site.site_name
+                }}
               />
             ) : (
               <Card>

@@ -11,6 +11,7 @@ import { GSCIndexingManager } from './GSCIndexingManager';
 import { GSCMonitoringDashboard } from './GSCMonitoringDashboard';
 import { GSCIndexingQueue } from './GSCIndexingQueue';
 import { GSCSitemapScheduler } from './GSCSitemapScheduler';
+import { IndexNowManager } from './IndexNowManager';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,14 +36,19 @@ import {
   BarChart3,
   ListOrdered,
   Clock,
+  Zap,
 } from 'lucide-react';
 
 interface GSCIntegrationsManagerProps {
   siteId: string;
   userId: string;
+  site?: {
+    url: string;
+    name: string;
+  };
 }
 
-export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManagerProps) => {
+export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrationsManagerProps) => {
   const {
     integrations,
     isLoading,
@@ -96,7 +102,7 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
   return (
     <>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 max-w-5xl">
+        <TabsList className="grid w-full grid-cols-6 max-w-6xl">
           <TabsTrigger value="overview" variant="gsc" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Visão Geral
@@ -116,6 +122,10 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
           <TabsTrigger value="schedules" variant="gsc" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
             Agendamentos
+          </TabsTrigger>
+          <TabsTrigger value="indexnow" variant="gsc" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            IndexNow
           </TabsTrigger>
         </TabsList>
 
@@ -268,6 +278,16 @@ export const GSCIntegrationsManager = ({ siteId, userId }: GSCIntegrationsManage
 
         <TabsContent value="schedules">
           <GSCSitemapScheduler siteId={siteId} userId={userId} />
+        </TabsContent>
+
+        <TabsContent value="indexnow">
+          {site ? (
+            <IndexNowManager siteId={siteId} site={site} />
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Carregando informações do site...
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
