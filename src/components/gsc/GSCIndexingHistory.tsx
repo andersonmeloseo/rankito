@@ -49,6 +49,7 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
   const getStatusBadge = (status: string | null) => {
     switch (status) {
       case 'completed':
+      case 'success':
         return <Badge variant="success">Concluído</Badge>;
       case 'failed':
         return <Badge variant="destructive">Falhou</Badge>;
