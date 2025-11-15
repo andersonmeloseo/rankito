@@ -24,6 +24,9 @@ verify_jwt = true
 [functions.indexnow-submit]
 verify_jwt = true
 
+[functions.indexnow-regenerate-key]
+verify_jwt = true
+
 [functions.api-external-leads]
 verify_jwt = false
 

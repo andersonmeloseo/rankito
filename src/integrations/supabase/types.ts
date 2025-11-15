@@ -1884,6 +1884,7 @@ export type Database = {
           created_at: string
           created_by_user_id: string
           id: string
+          indexnow_key: string | null
           is_rented: boolean | null
           location: string
           monthly_rent_value: number | null
@@ -1910,6 +1911,7 @@ export type Database = {
           created_at?: string
           created_by_user_id: string
           id?: string
+          indexnow_key?: string | null
           is_rented?: boolean | null
           location: string
           monthly_rent_value?: number | null
@@ -1936,6 +1938,7 @@ export type Database = {
           created_at?: string
           created_by_user_id?: string
           id?: string
+          indexnow_key?: string | null
           is_rented?: boolean | null
           location?: string
           monthly_rent_value?: number | null
@@ -3032,6 +3035,7 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
+      generate_indexnow_key: { Args: never; Returns: string }
       get_event_distribution: {
         Args: {
           device_filter?: string

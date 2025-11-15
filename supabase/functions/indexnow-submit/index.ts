@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { urls, key, host, siteId, userId } = await req.json();
+    const { urls, siteId, userId } = await req.json();
 
     console.log('IndexNow submission request:', { urlsCount: urls?.length, host, siteId });
 
