@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useGSCSmartDistribution } from "./useGSCSmartDistribution";
 
 interface QueueItem {
   id: string;
@@ -35,6 +36,7 @@ interface UseGSCIndexingQueueParams {
 export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { distributeUrls } = useGSCSmartDistribution(siteId || '');
 
   // Fetch queue items (agregado de todas integrações do site) - Limitado a 100 para performance
   const { data: queueData, isLoading: isLoadingQueue } = useQuery({
@@ -79,100 +81,20 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
     refetchInterval: 10000,
   });
 
-  // Add URLs to queue mutation (agora usa site_id e distribui entre integrações automaticamente)
+  // Add URLs to queue mutation (usa distribuição inteligente)
   const addToQueue = useMutation({
     mutationFn: async ({
       urls,
-      distribution,
     }: {
       urls: { url: string; page_id?: string }[];
-      distribution: 'fast' | 'even';
+      distribution?: 'fast' | 'even'; // Mantido para compatibilidade, mas não usado
     }) => {
       if (!siteId) throw new Error('No site selected');
 
-      // Buscar todas integrações ativas do site
-      const { data: integrations, error: intError } = await supabase
-        .from('google_search_console_integrations')
-        .select('id')
-        .eq('site_id', siteId)
-        .eq('is_active', true);
+      console.log(`📤 Adicionando ${urls.length} URLs à fila usando distribuição inteligente`);
 
-      if (intError || !integrations || integrations.length === 0) {
-        throw new Error('Nenhuma integração ativa encontrada para este site');
-      }
-
-      // Escolher primeira integração (ou implementar round-robin)
-      const integrationId = integrations[0].id;
-
-      // Verificar URLs duplicadas já na fila
-      const { data: existingQueue } = await supabase
-        .from('gsc_indexing_queue')
-        .select('url, integration_id, scheduled_for')
-        .in('url', urls.map(u => u.url))
-        .eq('integration_id', integrationId)
-        .in('status', ['pending', 'processing']);
-
-      // Calcular data de agendamento para comparação
-      const today = new Date();
-      const scheduledDate = today.toISOString().split('T')[0];
-
-      // Filtrar URLs que já existem na fila
-      const uniqueUrls = urls.filter(u => 
-        !existingQueue?.some(eq => 
-          eq.url === u.url && 
-          eq.integration_id === integrationId &&
-          (distribution === 'fast' ? eq.scheduled_for === scheduledDate : true)
-        )
-      );
-
-      // Se todas as URLs foram filtradas
-      if (uniqueUrls.length === 0) {
-        throw new Error('Todas as URLs já estão na fila de indexação');
-      }
-
-      // Criar batch
-      const { data: batch, error: batchError } = await supabase
-        .from('gsc_indexing_batches')
-        .insert({
-          integration_id: integrationId,
-          total_urls: uniqueUrls.length,
-          status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (batchError) throw new Error(batchError.message);
-
-      // Calcular datas de agendamento
-      const queueItems = uniqueUrls.map((item, index) => {
-        let scheduledDate = new Date(today);
-
-        if (distribution === 'even') {
-          // Distribuir uniformemente: 200 URLs por dia
-          const dayOffset = Math.floor(index / 200);
-          scheduledDate.setDate(scheduledDate.getDate() + dayOffset);
-        }
-        // Se 'fast', todas as URLs são agendadas para hoje
-
-        return {
-          integration_id: integrationId,
-          page_id: item.page_id || null,
-          url: item.url,
-          scheduled_for: scheduledDate.toISOString().split('T')[0],
-          batch_id: batch.id,
-          status: 'pending',
-        };
-      });
-
-      // Inserir na fila
-      const { error: queueError } = await supabase
-        .from('gsc_indexing_queue')
-        .insert(queueItems);
-
-      if (queueError) throw new Error(queueError.message);
-
-      // Atualizar status GSC das páginas para "submitted"
-      const pageIds = uniqueUrls
+      // Atualizar status GSC das páginas para "submitted" ANTES de distribuir
+      const pageIds = urls
         .map(u => u.page_id)
         .filter(Boolean);
       
@@ -186,23 +108,20 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
           .in('id', pageIds);
       }
 
+      // Usar distribuição inteligente diretamente
+      // Nota: distributeUrls já exibe seu próprio toast de sucesso com detalhes da distribuição
+      await distributeUrls({ siteId, urls });
+
+      // Retornar formato compatível para onSuccess (mesmo que não seja usado)
       return { 
-        batch, 
-        totalUrls: uniqueUrls.length,
-        duplicateCount: urls.length - uniqueUrls.length,
-        originalCount: urls.length
+        totalUrls: urls.length,
+        success: true
       };
     },
-    onSuccess: (data) => {
-      const hasWarnings = data.duplicateCount > 0;
-      
-      toast({
-        title: hasWarnings ? "URLs adicionadas com avisos" : "URLs adicionadas à fila!",
-        description: hasWarnings
-          ? `${data.totalUrls} URLs adicionadas, ${data.duplicateCount} já estavam na fila`
-          : `${data.totalUrls} URLs foram agendadas para indexação.`,
-        variant: hasWarnings ? "default" : "default",
-      });
+    onSuccess: () => {
+      // O toast já é exibido pelo useGSCSmartDistribution, então só invalidamos as queries
+      queryClient.invalidateQueries({ queryKey: ['site-pages', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-pending-count', siteId] });
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', siteId] });
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-batches', siteId] });
       queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota', siteId] });
