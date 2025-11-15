@@ -20,11 +20,36 @@ export const useGSCPerformanceCharts = (siteId: string, timeRange: TimeRange = '
   return useQuery({
     queryKey: ['gsc-performance-charts', siteId, timeRange],
     queryFn: async () => {
+      // Primeiro buscar todas as integrações do site
+      const { data: integrations } = await supabase
+        .from('google_search_console_integrations')
+        .select('id')
+        .eq('site_id', siteId)
+        .eq('is_active', true);
+
+      if (!integrations || integrations.length === 0) {
+        return {
+          indexingByHour: [],
+          totals: {
+            google: 0,
+            indexnow: 0,
+            total: 0,
+            avgSuccessRate: 0,
+          },
+          insights: {
+            peak: { hour: '00:00', count: 0 },
+            avgPerHour: 0,
+          },
+        };
+      }
+
+      const integrationIds = integrations.map(i => i.id);
+
       // Buscar requisições de indexação Google
       const { data: googleRequests } = await supabase
         .from('gsc_url_indexing_requests')
         .select('created_at, status')
-        .eq('integration_id', siteId)
+        .in('integration_id', integrationIds)
         .gte('created_at', startDate.toISOString())
         .order('created_at');
 
@@ -58,7 +83,7 @@ export const useGSCPerformanceCharts = (siteId: string, timeRange: TimeRange = '
         if (hourlyData.has(hourLabel)) {
           const data = hourlyData.get(hourLabel);
           data.google++;
-          if (req.status === 'completed') data.googleSuccess++;
+          if (req.status === 'success') data.googleSuccess++;
         }
       });
 
@@ -85,7 +110,7 @@ export const useGSCPerformanceCharts = (siteId: string, timeRange: TimeRange = '
       // Calcular totais
       const totalGoogle = googleRequests?.length || 0;
       const totalIndexNow = indexNowSubmissions?.reduce((sum, s) => sum + (s.urls_count || 1), 0) || 0;
-      const totalSuccess = (googleRequests?.filter(r => r.status === 'completed').length || 0) +
+      const totalSuccess = (googleRequests?.filter(r => r.status === 'success').length || 0) +
                           (indexNowSubmissions?.filter(s => s.status === 'success').reduce((sum, s) => sum + (s.urls_count || 1), 0) || 0);
 
       const avgSuccessRate = totalGoogle + totalIndexNow > 0 

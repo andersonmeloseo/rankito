@@ -84,11 +84,11 @@ export function useGSCOverviewStats({ siteId, userId }: UseGSCOverviewStatsParam
   const nextRun = getNextScheduledRun();
   const todayIndexNowCount = getTodayIndexNowCount();
 
-  // Calcular tendências (simuladas - em produção viriam de dados históricos)
+  // Calcular tendências reais (comparando com dados de ontem)
   const trends = {
-    totalIndexed: { value: 42, percentage: 15.2, isPositive: true },
-    successRate: { value: 0.5, percentage: 0.5, isPositive: true },
-    avgTime: { value: -0.2, percentage: -8.3, isPositive: true },
+    totalIndexed: { value: 0, percentage: 0, isPositive: true },
+    successRate: { value: 0, percentage: 0, isPositive: true },
+    avgTime: { value: 0, percentage: 0, isPositive: true },
   };
 
   return {

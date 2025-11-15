@@ -30,8 +30,8 @@ export const GSCKPIPanel = ({ kpis }: Props) => {
 
   return (
     <Card className="p-6">
-      <h3 className="text-xl font-semibold mb-4">📊 Métricas Agregadas</h3>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <h3 className="text-xl font-semibold mb-4 tracking-tight">Métricas Agregadas</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {kpis.map((kpi, index) => (
           <div key={index} className="space-y-2">
             <div className="text-sm text-muted-foreground">{kpi.label}</div>

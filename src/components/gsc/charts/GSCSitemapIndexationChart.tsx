@@ -36,7 +36,7 @@ export const GSCSitemapIndexationChart = ({ data, isLoading, totalSitemaps, avgR
   return (
     <Card className="p-6">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold">📋 Indexação de Sitemaps</h3>
+        <h3 className="text-lg font-semibold">Indexação de Sitemaps</h3>
         <div className="flex gap-6 mt-2 text-sm text-muted-foreground">
           {totalSitemaps !== undefined && (
             <span>

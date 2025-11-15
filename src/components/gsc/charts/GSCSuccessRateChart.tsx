@@ -34,7 +34,7 @@ export const GSCSuccessRateChart = ({ data, isLoading, currentRate, avgRate }: P
   return (
     <Card className="p-6">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold">📈 Taxa de Sucesso</h3>
+        <h3 className="text-lg font-semibold">Taxa de Sucesso</h3>
         <div className="flex gap-6 mt-2 text-sm text-muted-foreground">
           {currentRate !== undefined && (
             <span>
