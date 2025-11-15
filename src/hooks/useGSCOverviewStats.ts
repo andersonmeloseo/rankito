@@ -73,11 +73,13 @@ export function useGSCOverviewStats({ siteId, userId }: UseGSCOverviewStatsParam
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    return submissions.filter(s => {
-      const submissionDate = new Date(s.created_at);
-      submissionDate.setHours(0, 0, 0, 0);
-      return submissionDate.getTime() === today.getTime();
-    }).length;
+    return submissions
+      .filter(s => {
+        const submissionDate = new Date(s.created_at);
+        submissionDate.setHours(0, 0, 0, 0);
+        return submissionDate.getTime() === today.getTime();
+      })
+      .reduce((sum, s) => sum + Number(s.urls_count || 0), 0);
   };
 
   const sitemapMetrics = calculateSitemapMetrics();
@@ -115,7 +117,7 @@ export function useGSCOverviewStats({ siteId, userId }: UseGSCOverviewStatsParam
       isValidated: !!siteKey?.indexnow_key,
       todayCount: todayIndexNowCount,
       platforms: 7,
-      totalSubmissions: submissions?.length || 0,
+      totalSubmissions: submissions?.reduce((sum, s) => sum + Number(s.urls_count || 0), 0) || 0,
     },
     schedules: {
       total: schedules?.length || 0,

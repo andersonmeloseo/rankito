@@ -178,13 +178,13 @@ export function GSCOverviewDashboard({
           icon={FileText}
           status={getIndexationStatus()}
           badge={{
-            text: `${(stats.sitemaps.indexationRate || 0).toFixed(0)}% Indexados`,
+            text: `${(stats.sitemaps.indexationRate || 0).toFixed(0)}% Enviados`,
             variant: getIndexationStatus() === 'success' ? 'success' : 'warning',
           }}
           metrics={[
             { label: 'Total', value: formatNumber(stats.sitemaps.total) },
             { label: 'Submetidas', value: formatNumber(stats.sitemaps.urlsSubmitted) },
-            { label: 'Indexadas', value: formatNumber(stats.sitemaps.urlsIndexed) },
+            { label: 'Enviadas', value: formatNumber(stats.sitemaps.urlsIndexed) },
           ]}
           onClick={() => onNavigateToTab('sitemaps')}
         />
@@ -214,7 +214,11 @@ export function GSCOverviewDashboard({
             variant: stats.indexNow.isValidated ? 'success' : 'default',
           }}
           metrics={[
-            { label: 'Hoje', value: formatNumber(stats.indexNow.todayCount) },
+            { 
+              label: 'Hoje', 
+              value: formatNumber(stats.indexNow.todayCount),
+              tooltip: 'Total de URLs enviadas hoje para IndexNow'
+            },
             { label: 'Plataformas', value: formatNumber(stats.indexNow.platforms) },
             { label: 'Total', value: formatNumber(stats.indexNow.totalSubmissions) },
           ]}
