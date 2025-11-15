@@ -28,7 +28,7 @@ export const GSCPerformance24hChart = ({ data, isLoading, peak, avgPerHour, tota
   return (
     <Card className="p-6">
       <div className="mb-4">
-        <h3 className="text-2xl font-semibold">📊 Performance de Indexação</h3>
+        <h3 className="text-lg font-semibold">Requisições de Indexação</h3>
         <div className="flex gap-6 mt-2 text-sm text-muted-foreground">
           {peak && (
             <span>

@@ -33,7 +33,7 @@ export const GSCQuotaHistoryChart = ({ data, isLoading, todayUsage, avgUsage }: 
   return (
     <Card className="p-6">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold">💾 Uso de Quota</h3>
+        <h3 className="text-lg font-semibold">Histórico de Quota</h3>
         <div className="flex gap-6 mt-2 text-sm text-muted-foreground">
           {todayUsage && (
             <span>

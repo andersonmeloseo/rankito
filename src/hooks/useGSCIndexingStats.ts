@@ -73,7 +73,7 @@ export function useGSCIndexingStats(siteId: string | null) {
 
       const total = requests?.length || 0;
       const success = requests?.filter(r => r.status === 'success').length || 0;
-      const failed = requests?.filter(r => r.status === 'failed').length || 0;
+      const failed = requests?.filter(r => r.status === 'error').length || 0;
       const pending = requests?.filter(r => r.status === 'pending').length || 0;
       const successRate = total > 0 ? (success / total) * 100 : 0;
 

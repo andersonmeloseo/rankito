@@ -16,6 +16,7 @@ import { GSCQuotaHistoryChart } from './charts/GSCQuotaHistoryChart';
 import { GSCSitemapIndexationChart } from './charts/GSCSitemapIndexationChart';
 import { generateQuotaHistory } from '@/lib/gsc-chart-utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 import { Link, FileText, Send, Zap, Clock, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -63,8 +64,6 @@ export function GSCOverviewDashboard({
     );
   }
 
-  
-
   const getHealthStatus = () => {
     if (stats.integrations.healthScore >= 80) return 'success';
     if (stats.integrations.healthScore >= 50) return 'warning';
@@ -100,30 +99,24 @@ export function GSCOverviewDashboard({
     }
   };
 
-  // Calcular KPIs
+  // KPIs agregados
   const kpis = [
     {
-      label: 'Total Indexado',
+      label: 'Requisições Totais',
       value: performanceData?.totals.total || 0,
       trend: stats.trends?.totalIndexed,
     },
     {
       label: 'Taxa de Sucesso',
-      value: `${performanceData?.totals.avgSuccessRate.toFixed(1) || 0}`,
+      value: performanceData?.totals.avgSuccessRate.toFixed(1) || 0,
       suffix: '%',
       trend: stats.trends?.successRate,
     },
     {
-      label: 'Tempo Médio',
-      value: `${stats.googleIndexing.avgTime.toFixed(1)}`,
+      label: 'Tempo Médio Resposta',
+      value: stats.googleIndexing.avgTime.toFixed(1),
       suffix: 's',
       trend: stats.trends?.avgTime,
-    },
-    {
-      label: 'Economia',
-      value: '$12.50',
-      suffix: '',
-      trend: { value: 12.5, percentage: 15, isPositive: true },
     },
   ];
 
@@ -139,15 +132,15 @@ export function GSCOverviewDashboard({
 
   return (
     <div className="space-y-6">
-      {/* Header com Filtros */}
+      {/* Header com seletor de tempo */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">🎯 Central de Controle GSC</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl font-bold tracking-tight">Central de Controle GSC</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             Monitore todas as suas integrações em tempo real
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <GSCTimeRangeSelector value={timeRange} onChange={setTimeRange} />
           <Button onClick={handleRefresh} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -214,24 +207,24 @@ export function GSCOverviewDashboard({
           icon={Zap}
           status={stats.indexNow.isValidated ? 'success' : 'warning'}
           badge={{
-            text: stats.indexNow.isValidated ? 'Validado' : 'Não Validado',
-            variant: stats.indexNow.isValidated ? 'success' : 'warning',
+            text: stats.indexNow.isValidated ? 'Configurado' : 'Não configurado',
+            variant: stats.indexNow.isValidated ? 'success' : 'default',
           }}
           metrics={[
-            { label: 'Status', value: stats.indexNow.isValidated ? 'Ativo' : 'Inativo' },
             { label: 'Hoje', value: stats.indexNow.todayCount },
             { label: 'Plataformas', value: stats.indexNow.platforms },
+            { label: 'Total', value: stats.indexNow.totalSubmissions },
           ]}
           onClick={() => onNavigateToTab('indexnow')}
         />
 
         <GSCClickableCard
-          title="Agendamentos"
+          title="Schedules"
           icon={Clock}
-          status={stats.schedules.active > 0 ? 'success' : 'warning'}
+          status={stats.schedules.active > 0 ? 'success' : 'info'}
           badge={{
-            text: `${stats.schedules.active}/${stats.schedules.total} Ativos`,
-            variant: stats.schedules.active > 0 ? 'success' : 'warning',
+            text: `${stats.schedules.active} Ativos`,
+            variant: stats.schedules.active > 0 ? 'success' : 'default',
           }}
           metrics={[
             { label: 'Total', value: stats.schedules.total },
@@ -242,58 +235,58 @@ export function GSCOverviewDashboard({
         />
       </div>
 
-      {/* Painel de KPIs */}
+      {/* KPIs Agregados */}
       <GSCKPIPanel kpis={kpis} />
 
-      {/* Gráfico de Performance Principal */}
-      <GSCPerformance24hChart 
-        data={performanceData?.indexingByHour || []}
-        isLoading={isLoadingPerformance}
-        peak={performanceData?.insights.peak}
-        avgPerHour={performanceData?.insights.avgPerHour}
-        total={performanceData?.totals.total}
-      />
-
-      {/* Grid de Gráficos - Taxa de Sucesso e Uso de Quota */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GSCSuccessRateChart 
-          data={performanceData?.indexingByHour || []}
-          isLoading={isLoadingPerformance}
-          currentRate={performanceData?.totals.avgSuccessRate}
-          avgRate={performanceData?.totals.avgSuccessRate}
-        />
-        <GSCQuotaHistoryChart 
-          data={quotaHistoryData}
-          todayUsage={{
-            used: quotaHistoryData[quotaHistoryData.length - 1]?.used || 0,
-            limit: quotaHistoryData[quotaHistoryData.length - 1]?.limit || 200,
-            percentage: quotaHistoryData[quotaHistoryData.length - 1]?.percentage || 0,
-          }}
-          avgUsage={{
-            used: quotaHistoryData.reduce((sum, d) => sum + d.used, 0) / quotaHistoryData.length,
-            limit: 200,
-            percentage: (quotaHistoryData.reduce((sum, d) => sum + d.used, 0) / quotaHistoryData.length / 200) * 100,
-          }}
-        />
+      {/* Gráficos de Performance */}
+      <div className="space-y-2">
+        <h3 className="text-xl font-semibold tracking-tight">Performance de Indexação</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <GSCPerformance24hChart
+            data={performanceData?.indexingByHour || []}
+            isLoading={isLoadingPerformance}
+            peak={performanceData?.insights.peak}
+            avgPerHour={performanceData?.insights.avgPerHour}
+            total={performanceData?.totals.total}
+          />
+          <GSCSuccessRateChart
+            data={performanceData?.indexingByHour || []}
+            isLoading={isLoadingPerformance}
+            currentRate={performanceData?.totals.avgSuccessRate}
+          />
+        </div>
       </div>
 
-      {/* Grid de Estatísticas Secundário */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GSCSitemapIndexationChart 
-          data={sitemapData}
-          totalSitemaps={stats.sitemaps.total}
-          avgRate={stats.sitemaps.indexationRate}
-        />
-        <GSCHealthStatus siteId={siteId} userId={userId} onNavigateToTab={onNavigateToTab} />
+      {/* Health Status e Quota */}
+      <div className="space-y-2">
+        <h3 className="text-xl font-semibold tracking-tight">Status e Quota</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <GSCQuotaHistoryChart
+            data={quotaHistoryData}
+            isLoading={false}
+          />
+          <GSCSitemapIndexationChart
+            data={sitemapData}
+            isLoading={stats.isLoading}
+            totalSitemaps={stats.sitemaps.total}
+          />
+        </div>
       </div>
 
       {/* Atividade Recente */}
       <div className="space-y-2">
-        <h3 className="text-xl font-semibold">🕐 Atividade Recente</h3>
+        <h3 className="text-xl font-semibold tracking-tight">Atividade Recente</h3>
         {isLoadingActivities ? (
           <Skeleton className="h-[400px]" />
+        ) : activityTimeline && activityTimeline.length > 0 ? (
+          <GSCActivityTimeline activities={activityTimeline} />
         ) : (
-          <GSCActivityTimeline activities={activityTimeline || []} />
+          <Card className="p-12 text-center">
+            <div className="text-muted-foreground">
+              <p className="text-lg font-medium">Nenhuma atividade recente</p>
+              <p className="text-sm mt-2">As atividades aparecerão aqui quando houver movimentação</p>
+            </div>
+          </Card>
         )}
       </div>
     </div>
