@@ -53,7 +53,7 @@ export function useGSCAggregatedQuota(siteId: string | null) {
         const { count: successCount } = await supabase
           .from('gsc_url_indexing_requests')
           .select('*', { count: 'exact', head: true })
-          .eq('used_integration_id', integration.id)
+          .eq('integration_id', integration.id)
           .eq('status', 'success')
           .gte('created_at', today.toISOString());
 
@@ -61,7 +61,7 @@ export function useGSCAggregatedQuota(siteId: string | null) {
         const { count: totalCount } = await supabase
           .from('gsc_url_indexing_requests')
           .select('*', { count: 'exact', head: true })
-          .eq('used_integration_id', integration.id)
+          .eq('integration_id', integration.id)
           .gte('created_at', today.toISOString());
 
         const used = successCount || 0;

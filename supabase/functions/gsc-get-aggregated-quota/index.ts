@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
           .from('gsc_url_indexing_requests')
           .select('*', { count: 'exact', head: true })
           .eq('integration_id', integration.id)
-          .gte('submitted_at', today.toISOString());
+          .gte('created_at', today.toISOString());
 
         if (error) {
           console.error('Error fetching usage for integration:', integration.id, error);
@@ -88,37 +88,34 @@ Deno.serve(async (req) => {
         const used = count || 0;
         const remaining = DAILY_QUOTA_LIMIT - used;
 
-        // Marcar como unhealthy se quota exceder 90% ou estiver negativo
+        // Marcar como unhealthy se quota esgotada
         let actualHealthStatus = integration.health_status || 'healthy';
-        if (remaining < 0 || used > DAILY_QUOTA_LIMIT * 0.9) {
+        
+        // Quota completamente esgotada
+        if (used >= DAILY_QUOTA_LIMIT) {
           actualHealthStatus = 'unhealthy';
           
-          // ⚡ Atualizar com verificação atômica (previne race conditions)
+          // Atualizar no banco apenas se mudou
           if (integration.health_status !== 'unhealthy') {
             const cooldownEnd = new Date(Date.now() + 60 * 60 * 1000);
-            const now = new Date().toISOString();
             
-            const { data: updated, error: updateError } = await supabase
+            await supabase
               .from('google_search_console_integrations')
               .update({ 
                 health_status: 'unhealthy',
-                last_error: `Quota excedida: ${used}/${DAILY_QUOTA_LIMIT}`,
+                last_error: `Quota diária esgotada: ${used}/${DAILY_QUOTA_LIMIT}`,
                 health_check_at: cooldownEnd.toISOString(),
                 consecutive_failures: (integration.consecutive_failures || 0) + 1,
               })
               .eq('id', integration.id)
-              // 🔒 CRÍTICO: Só atualiza se não estiver em cooldown ativo
-              .or(`health_check_at.is.null,health_check_at.lt.${now}`)
-              .select()
-              .single();
+              .eq('health_status', integration.health_status); // Previne race condition
             
-            if (!updateError && updated) {
-              console.log(`🚨 Integration ${integration.id} marked unhealthy (cooldown until ${cooldownEnd.toISOString()})`);
-              actualHealthStatus = 'unhealthy';
-            } else if (!updated) {
-              console.log(`⏳ Integration ${integration.id} already in cooldown, skipping update`);
-            }
+            console.log(`[${correlationId}] ⚠️ Integration ${integration.connection_name} marked unhealthy: ${used}/${DAILY_QUOTA_LIMIT}`);
           }
+        }
+        // Aviso quando perto do limite (95%)
+        else if (used >= DAILY_QUOTA_LIMIT * 0.95) {
+          console.log(`[${correlationId}] ⚠️ Integration ${integration.connection_name} near limit: ${used}/${DAILY_QUOTA_LIMIT}`);
         }
 
         return {
