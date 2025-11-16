@@ -43,12 +43,6 @@ export function useGSCSmartDistribution(siteId: string) {
         throw new Error('Dados de quota não disponíveis');
       }
 
-      // Validar distribuição
-      const validation = validateDistribution(urls, quota.breakdown);
-      if (!validation.valid) {
-        throw new Error(validation.error);
-      }
-
       // Converter integrações para formato do engine
       const integrations: Integration[] = quota.breakdown
         .filter(i => i.health_status === 'healthy' || i.health_status === null)
@@ -62,6 +56,12 @@ export function useGSCSmartDistribution(siteId: string) {
           health_status: i.health_status,
           consecutive_failures: 0,
         }));
+
+      // Validar distribuição
+      const validation = validateDistribution(urls, integrations);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
 
       // Executar distribuição usando engine
       const result = distributeUrls(urls, integrations, 'greedy');
