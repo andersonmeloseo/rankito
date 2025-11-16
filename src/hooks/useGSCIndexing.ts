@@ -53,7 +53,7 @@ export function useGSCIndexing({ siteId }: UseGSCIndexingParams) {
       // Buscar histórico recente de todas integrações
       const { data: requests, error: requestsError } = await supabase
         .from('gsc_url_indexing_requests')
-        .select('*, google_search_console_integrations!inner(site_id)')
+        .select('*, google_search_console_integrations!gsc_url_indexing_requests_integration_id_fkey(site_id)')
         .eq('google_search_console_integrations.site_id', siteId)
         .order('submitted_at', { ascending: false })
         .limit(20);
