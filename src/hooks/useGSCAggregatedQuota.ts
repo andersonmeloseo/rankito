@@ -12,6 +12,7 @@ interface IntegrationQuota {
   used_today: number;
   remaining_today: number;
   success_rate: number;
+  consecutive_failures: number;
 }
 
 interface AggregatedQuota {
@@ -38,7 +39,7 @@ export function useGSCAggregatedQuota(siteId: string | null) {
       // Buscar todas as integrações do site
       const { data: integrations, error: integrationsError } = await supabase
         .from('google_search_console_integrations')
-        .select('id, connection_name, google_email, is_active, health_status')
+        .select('id, connection_name, google_email, is_active, health_status, consecutive_failures')
         .eq('site_id', siteId);
 
       if (integrationsError || !integrations) {
@@ -78,6 +79,7 @@ export function useGSCAggregatedQuota(siteId: string | null) {
           used_today: used,
           remaining_today: Math.max(0, remaining),
           success_rate,
+          consecutive_failures: integration.consecutive_failures || 0,
         };
       });
 
