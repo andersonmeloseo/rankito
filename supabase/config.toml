@@ -98,3 +98,6 @@ verify_jwt = true
 
 [functions.gsc-request-indexing]
 verify_jwt = true
+
+[functions.gsc-health-check]
+verify_jwt = false

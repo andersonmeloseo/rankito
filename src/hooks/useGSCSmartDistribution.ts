@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useGSCAggregatedQuota } from './useGSCAggregatedQuota';
-import { distributeUrls, validateDistribution, type Integration } from '@/lib/gsc-distribution-engine';
+import { useAggregatedGSCQuota } from './useAggregatedGSCQuota';
+import { distributeUrls, validateDistribution, previewDistribution, type Integration, type DistributionPreview } from '@/lib/gsc-distribution-engine';
 import { createLogger, Logger } from '@/lib/logger';
+import { useState } from 'react';
 
 const logger = createLogger({ operation: 'smart-distribution' });
 
@@ -28,7 +29,8 @@ interface DistributionResult {
  */
 export function useGSCSmartDistribution(siteId: string) {
   const queryClient = useQueryClient();
-  const { data: quota } = useGSCAggregatedQuota(siteId);
+  const { data: quota } = useAggregatedGSCQuota({ siteId });
+  const [preview, setPreview] = useState<DistributionPreview | null>(null);
 
   const distributeUrlsMutation = useMutation({
     mutationFn: async ({ siteId, urls }: DistributeUrlsParams): Promise<DistributionResult> => {
@@ -37,24 +39,28 @@ export function useGSCSmartDistribution(siteId: string) {
 
       log.info(`Iniciando distribuição: ${urls.length} URLs`);
 
+      if (!quota) {
+        throw new Error('Dados de quota não disponíveis');
+      }
+
       // Validar distribuição
-      const validation = validateDistribution(urls, quota.integrations);
+      const validation = validateDistribution(urls, quota.breakdown);
       if (!validation.valid) {
         throw new Error(validation.error);
       }
 
       // Converter integrações para formato do engine
-      const integrations: Integration[] = quota.integrations
-        .filter(i => i.is_active && (i.health_status === 'healthy' || i.health_status === null))
+      const integrations: Integration[] = quota.breakdown
+        .filter(i => i.health_status === 'healthy' || i.health_status === null)
         .map(i => ({
           integration_id: i.integration_id,
           name: i.name,
           email: i.email,
-          remaining_today: i.remaining_today,
-          daily_limit: i.daily_limit,
-          is_active: i.is_active,
+          remaining_today: i.remaining,
+          daily_limit: i.limit,
+          is_active: true,
           health_status: i.health_status,
-          consecutive_failures: i.consecutive_failures || 0,
+          consecutive_failures: 0,
         }));
 
       // Executar distribuição usando engine
@@ -111,9 +117,49 @@ export function useGSCSmartDistribution(siteId: string) {
     },
   });
 
+  const generatePreview = async (urls: Array<{ url: string; page_id?: string }>) => {
+    const log = logger.child({ siteId, operation: 'preview-distribution' });
+    
+    try {
+      log.info('Generating distribution preview', { urlCount: urls.length });
+
+      if (!quota) {
+        throw new Error('Quota data not available');
+      }
+
+      const integrations: Integration[] = quota.breakdown
+        .filter(i => i.health_status === 'healthy' || !i.health_status)
+        .map(i => ({
+          integration_id: i.integration_id,
+          name: i.name,
+          email: i.email,
+          remaining_today: i.remaining,
+          daily_limit: i.limit,
+          is_active: true,
+          health_status: i.health_status,
+          consecutive_failures: 0,
+        }));
+
+      const preview = previewDistribution(urls, integrations, 'greedy');
+      setPreview(preview);
+      
+      log.info('Preview generated', { 
+        daysNeeded: preview.daysNeeded,
+        accountsUsed: preview.summary.accountsUsed 
+      });
+
+      return preview;
+    } catch (error) {
+      log.error('Failed to generate preview', error);
+      throw error;
+    }
+  };
+
   return {
     distributeUrls: distributeUrlsMutation.mutate,
     isDistributing: distributeUrlsMutation.isPending,
     result: distributeUrlsMutation.data,
+    generatePreview,
+    preview,
   };
 }
