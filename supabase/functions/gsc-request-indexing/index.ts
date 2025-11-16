@@ -217,6 +217,51 @@ Deno.serve(async (req) => {
         if (!indexingResponse.ok) {
           console.error('❌ GSC Indexing API Error:', indexingData);
           
+          // 🔥 NOVO: Detectar rate limiting (429) e aplicar backoff
+          const isRateLimited = indexingResponse.status === 429 || 
+                                indexingData.error?.status === 429 ||
+                                indexingData.error?.message?.includes('rate limit') ||
+                                indexingData.error?.message?.includes('quota exceeded') ||
+                                indexingData.error?.code === 429;
+          
+          if (isRateLimited) {
+            console.log('⏱️ Rate limit detected - Applying exponential backoff');
+            
+            const attemptCount = integration.consecutive_failures || 0;
+            const backoffMs = Math.min(30000, 2000 * Math.pow(2, attemptCount)); // Max 30s
+            
+            // Não marcar como unhealthy em throttle temporário, apenas 'checking'
+            await supabase
+              .from('google_search_console_integrations')
+              .update({ 
+                health_status: 'checking',
+                last_error: `Rate limited (attempt ${attemptCount + 1}/3)`,
+                health_check_at: new Date(Date.now() + backoffMs).toISOString(),
+                consecutive_failures: attemptCount + 1,
+              })
+              .eq('id', integration.id);
+            
+            // Reagendar URL na fila com delay se ainda houver tentativas
+            if (attemptCount < 2) { // Max 3 tentativas (0, 1, 2)
+              await supabase
+                .from('gsc_indexing_queue')
+                .insert({
+                  integration_id: integration.id,
+                  url,
+                  page_id: page_id || null,
+                  status: 'pending',
+                  scheduled_for: new Date(Date.now() + backoffMs).toISOString(),
+                  attempts: attemptCount + 1,
+                  error_message: `Rate limited - Retry ${attemptCount + 1}/3`,
+                });
+              
+              console.log(`📅 URL rescheduled for retry in ${backoffMs}ms`);
+            }
+            
+            lastError = { message: 'Rate limited', code: 429 };
+            continue; // Tentar próxima integração
+          }
+          
           // Se erro de autenticação, marcar como unhealthy e tentar próxima
           if (isAuthError(indexingData)) {
             await markIntegrationUnhealthy(
@@ -232,9 +277,17 @@ Deno.serve(async (req) => {
 
         console.log('✅ Indexing requested successfully with', integration.connection_name);
         
-        // Marcar integração como healthy (se estava unhealthy)
-        if (integration.health_status === 'unhealthy') {
-          await markIntegrationHealthy(integration.id);
+        // Marcar integração como healthy e resetar consecutive_failures
+        if (integration.health_status === 'unhealthy' || integration.health_status === 'checking') {
+          await supabase
+            .from('google_search_console_integrations')
+            .update({
+              health_status: 'healthy',
+              last_error: null,
+              health_check_at: null,
+              consecutive_failures: 0,
+            })
+            .eq('id', integration.id);
         }
 
         // Salvar request no banco
