@@ -13,7 +13,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('🚀 GSC Get Aggregated Quota - Request received');
+    const correlationId = req.headers.get('x-correlation-id') || 
+                          `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+    
+    console.log(`[${correlationId}] 🚀 GSC Get Aggregated Quota - Request received`);
 
     // Verificar autenticação
     const authHeader = req.headers.get('Authorization');
@@ -39,11 +42,18 @@ Deno.serve(async (req) => {
     if (!site_id) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameter: site_id' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'x-correlation-id': correlationId 
+          } 
+        }
       );
     }
 
-    console.log('📋 Fetching aggregated quota for site:', site_id);
+    console.log(`[${correlationId}] 📋 Fetching aggregated quota for site:`, site_id);
 
     // Buscar todas integrações ativas do site
     const { data: integrations, error: integrationsError } = await supabase

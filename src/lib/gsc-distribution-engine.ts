@@ -44,6 +44,36 @@ export interface DistributionResult {
   totalUrls: number;
 }
 
+export interface DistributionPreview {
+  totalUrls: number;
+  daysNeeded: number;
+  distributionByDay: Array<{
+    day: number;
+    date: string;
+    accounts: Array<{
+      name: string;
+      email: string;
+      urls: number;
+      capacity: number;
+      percentage: number;
+    }>;
+    totalUrls: number;
+  }>;
+  summary: {
+    todayUrls: number;
+    futureUrls: number;
+    accountsUsed: number;
+  };
+}
+
+interface DailyCapacityCalculation {
+  capacities: Array<{
+    integration_id: string;
+    available: number;
+  }>;
+  totalCapacity: number;
+}
+
 /**
  * Calcula capacidade disponível por dia para cada integração
  */

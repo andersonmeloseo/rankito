@@ -22,12 +22,15 @@ Deno.serve(async (req) => {
 
   try {
     const startTime = Date.now();
-    console.log('🚀 GSC Request Indexing - Request received at', new Date().toISOString());
+    const correlationId = req.headers.get('x-correlation-id') || 
+                          `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+    
+    console.log(`[${correlationId}] 🚀 GSC Request Indexing - Request received at`, new Date().toISOString());
 
     // Verificar autenticação
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.error('❌ Missing authorization header');
+      console.error(`[${correlationId}] ❌ Missing authorization header`);
       throw new Error('Missing authorization header');
     }
 
@@ -40,24 +43,31 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
     
     if (authError || !user) {
-      console.error('❌ Invalid authentication:', authError);
+      console.error(`[${correlationId}] ❌ Invalid authentication:`, authError);
       throw new Error('Invalid authentication');
     }
 
-    console.log('✅ User authenticated:', user.id);
+    console.log(`[${correlationId}] ✅ User authenticated:`, user.id);
 
     // Parse request body
     const { site_id, url, page_id, request_type = 'URL_UPDATED' } = await req.json();
 
     if (!site_id || !url) {
-      console.error('❌ Missing required fields');
+      console.error(`[${correlationId}] ❌ Missing required fields`);
       return new Response(
         JSON.stringify({ error: 'Missing required fields: site_id, url' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'x-correlation-id': correlationId 
+          } 
+        }
       );
     }
 
-    console.log('📋 Request params:', { 
+    console.log(`[${correlationId}] 📋 Request params:`, { 
       site_id, 
       url, 
       page_id: page_id || 'none',
