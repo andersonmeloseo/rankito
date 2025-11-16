@@ -102,7 +102,7 @@ export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
         <div className="flex justify-end gap-2">
           <Button
             variant="outline"
-            onClick={() => rebalanceQueue()}
+            onClick={() => rebalanceQueue(siteId)}
             disabled={isRebalancing}
           >
             <Shuffle className="w-4 h-4 mr-2" />
@@ -347,7 +347,7 @@ export const GSCIndexingQueue = ({ siteId }: GSCIndexingQueueProps) => {
         onClose={() => setShowPreview(false)}
         preview={preview}
         onConfirm={() => {
-          rebalanceQueue();
+          rebalanceQueue(siteId);
           setShowPreview(false);
         }}
         isRebalancing={isRebalancing}
