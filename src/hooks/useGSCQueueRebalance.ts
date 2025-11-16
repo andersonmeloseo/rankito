@@ -51,7 +51,7 @@ export function useGSCQueueRebalance(siteId: string) {
         url,
         page_id,
         integration_id,
-        google_search_console_integrations!inner(site_id)
+        google_search_console_integrations!gsc_indexing_queue_integration_id_fkey(site_id)
       `)
       .eq('google_search_console_integrations.site_id', siteId)
       .eq('status', 'pending');
