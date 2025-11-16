@@ -57,7 +57,14 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
       return data as QueueItem[];
     },
     enabled: !!siteId,
-    refetchInterval: 10000, // Refetch a cada 10 segundos
+    refetchInterval: (query) => {
+      // ⚡ Refetch dinâmico baseado no estado da fila
+      const data = query.state.data;
+      if (!data || data.length === 0) return 60000; // 60s quando vazia
+      
+      const hasPending = data.some(item => item.status === 'pending');
+      return hasPending ? 15000 : 30000; // 15s se pendente, 30s se não
+    },
   });
 
   // Fetch batches (agregado de todas integrações do site)
@@ -78,7 +85,16 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
       return data as Batch[];
     },
     enabled: !!siteId,
-    refetchInterval: 10000,
+    refetchInterval: (query) => {
+      // ⚡ Refetch dinâmico baseado no estado dos batches
+      const data = query.state.data;
+      if (!data || data.length === 0) return 60000; // 60s quando vazio
+      
+      const hasActive = data.some(batch => 
+        batch.status === 'processing' || batch.status === 'queued'
+      );
+      return hasActive ? 10000 : 30000; // 10s se ativo, 30s se não
+    },
   });
 
   // Add URLs to queue mutation (usa distribuição inteligente)

@@ -83,16 +83,31 @@ Deno.serve(async (req) => {
         if (remaining < 0 || used > DAILY_QUOTA_LIMIT * 0.9) {
           actualHealthStatus = 'unhealthy';
           
-          // Atualizar no banco se necessário
+          // ⚡ Atualizar com verificação atômica (previne race conditions)
           if (integration.health_status !== 'unhealthy') {
-            await supabase
+            const cooldownEnd = new Date(Date.now() + 60 * 60 * 1000);
+            const now = new Date().toISOString();
+            
+            const { data: updated, error: updateError } = await supabase
               .from('google_search_console_integrations')
               .update({ 
                 health_status: 'unhealthy',
                 last_error: `Quota excedida: ${used}/${DAILY_QUOTA_LIMIT}`,
-                health_check_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1h cooldown
+                health_check_at: cooldownEnd.toISOString(),
+                consecutive_failures: (integration.consecutive_failures || 0) + 1,
               })
-              .eq('id', integration.id);
+              .eq('id', integration.id)
+              // 🔒 CRÍTICO: Só atualiza se não estiver em cooldown ativo
+              .or(`health_check_at.is.null,health_check_at.lt.${now}`)
+              .select()
+              .single();
+            
+            if (!updateError && updated) {
+              console.log(`🚨 Integration ${integration.id} marked unhealthy (cooldown until ${cooldownEnd.toISOString()})`);
+              actualHealthStatus = 'unhealthy';
+            } else if (!updated) {
+              console.log(`⏳ Integration ${integration.id} already in cooldown, skipping update`);
+            }
           }
         }
 
