@@ -158,8 +158,8 @@ Deno.serve(async (req) => {
           .from('gsc_url_indexing_requests')
           .select('*', { count: 'exact', head: true })
           .eq('integration_id', integration.id)
-          .gte('submitted_at', `${today}T00:00:00Z`)
-          .lte('submitted_at', `${today}T23:59:59Z`);
+          .gte('created_at', `${today}T00:00:00Z`)
+          .lte('created_at', `${today}T23:59:59Z`);
 
         const remainingQuota = DAILY_QUOTA_LIMIT - (todayCount || 0);
 

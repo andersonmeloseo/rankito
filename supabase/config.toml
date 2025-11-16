@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.gsc-process-indexing-queue]
 verify_jwt = false
 
+[functions.gsc-process-indexing-queue.schedule]
+every = "30 minutes"
+
 [functions.gsc-check-indexation-status]
 verify_jwt = false
 
@@ -101,3 +104,6 @@ verify_jwt = true
 
 [functions.gsc-health-check]
 verify_jwt = false
+
+[functions.gsc-health-check.schedule]
+every = "15 minutes"
