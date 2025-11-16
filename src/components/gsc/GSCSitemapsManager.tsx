@@ -35,7 +35,9 @@ import {
 import { useGSCSitemaps } from "@/hooks/useGSCSitemaps";
 import { useDiscoverSitemaps } from "@/hooks/useDiscoverSitemaps";
 import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
+import { useGSCSmartDistribution } from "@/hooks/useGSCSmartDistribution";
 import { SitemapUrlsList } from "./SitemapUrlsList";
+import { GSCManualDistributionDialog } from "./GSCManualDistributionDialog";
 import { Plus, RefreshCw, Trash2, FileText, CheckCircle2, AlertTriangle, XCircle, ExternalLink, Search, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -58,6 +60,8 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
   const [selectedSubmittedSitemaps, setSelectedSubmittedSitemaps] = useState<Set<string>>(new Set());
   const [isResubmittingBatch, setIsResubmittingBatch] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showDistributionDialog, setShowDistributionDialog] = useState(false);
+  const [urlsToDistribute, setUrlsToDistribute] = useState<Array<{ url: string }>>([]);
 
   const {
     sitemaps,
@@ -85,6 +89,7 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
   } = useDiscoverSitemaps({ siteId, userId });
 
   const { addToQueue } = useGSCIndexingQueue({ siteId });
+  const { distributeUrlsManual } = useGSCSmartDistribution(siteId);
 
   // Fetch site URL for auto-discovery
   const { data: siteData } = useQuery({
@@ -132,9 +137,15 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
   };
 
   const handleAddUrlsToQueue = (urls: string[]) => {
-    addToQueue.mutate({
-      urls: urls.map(url => ({ url })),
-      distribution: urls.length > 200 ? 'even' : 'fast',
+    setUrlsToDistribute(urls.map(url => ({ url })));
+    setShowDistributionDialog(true);
+  };
+
+  const handleConfirmDistribution = (distribution: Record<string, number>) => {
+    distributeUrlsManual({ 
+      siteId, 
+      urls: urlsToDistribute, 
+      manualDistribution: distribution 
     });
   };
 
@@ -638,6 +649,15 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog de Distribuição Manual */}
+      <GSCManualDistributionDialog
+        open={showDistributionDialog}
+        onOpenChange={setShowDistributionDialog}
+        urls={urlsToDistribute}
+        siteId={siteId}
+        onConfirm={handleConfirmDistribution}
+      />
     </>
   );
 }

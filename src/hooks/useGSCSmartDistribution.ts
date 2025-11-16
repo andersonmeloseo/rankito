@@ -155,9 +155,107 @@ export function useGSCSmartDistribution(siteId: string) {
     }
   };
 
+  // Distribuição manual: Usuário escolhe quais contas e quantas URLs por conta
+  const distributeUrlsManualMutation = useMutation({
+    mutationFn: async ({ 
+      siteId, 
+      urls, 
+      manualDistribution 
+    }: {
+      siteId: string;
+      urls: Array<{ url: string; page_id?: string }>;
+      manualDistribution: Record<string, number>; // integration_id -> qtd URLs
+    }): Promise<DistributionResult> => {
+      const correlationId = Logger.generateCorrelationId();
+      const log = logger.child({ correlationId, siteId });
+
+      log.info(`Iniciando distribuição manual: ${urls.length} URLs`, { distribution: manualDistribution });
+
+      const queueItems: any[] = [];
+      const urlsCopy = [...urls];
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Criar queue items baseado na distribuição manual
+      for (const [integrationId, count] of Object.entries(manualDistribution)) {
+        if (count > 0) {
+          const urlsForThisIntegration = urlsCopy.splice(0, count);
+          
+          urlsForThisIntegration.forEach(({ url, page_id }) => {
+            queueItems.push({
+              integration_id: integrationId,
+              url,
+              page_id: page_id || null,
+              scheduled_for: today,
+              status: 'pending',
+            });
+          });
+        }
+      }
+
+      log.info(`Distribuição manual calculada: ${queueItems.length} URLs`);
+
+      // Inserir em lote na fila
+      const { error: insertError } = await supabase
+        .from('gsc_indexing_queue')
+        .insert(queueItems);
+
+      if (insertError) {
+        log.error('Erro ao inserir na fila', insertError);
+        throw new Error(`Erro ao adicionar URLs à fila: ${insertError.message}`);
+      }
+
+      log.info('Distribuição manual concluída com sucesso');
+
+      // Invalidar queries relacionadas
+      queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-load-distribution', siteId] });
+
+      // Contar URLs por nome de integração para o resumo
+      const distribution: Record<string, number> = {};
+      if (quota) {
+        Object.entries(manualDistribution).forEach(([integrationId, count]) => {
+          const integration = quota.breakdown.find(i => i.integration_id === integrationId);
+          if (integration) {
+            distribution[integration.name] = count;
+          }
+        });
+      }
+
+      return {
+        success: true,
+        total_urls: urls.length,
+        queued_urls: queueItems.length,
+        skipped_urls: 0,
+        distribution,
+        days_needed: 1,
+        message: `${urls.length} URLs distribuídas manualmente em ${Object.keys(manualDistribution).length} conta(s)`,
+      };
+    },
+    onSuccess: (result) => {
+      const distributionDetails = Object.entries(result.distribution)
+        .map(([name, count]) => `• ${name}: ${count} URLs`)
+        .join('\n');
+
+      const description = `📊 Distribuição manual:\n${distributionDetails}`;
+
+      toast.success(result.message, {
+        description,
+        duration: 8000,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error('Erro na distribuição manual de URLs', {
+        description: error.message,
+        duration: 5000,
+      });
+    },
+  });
+
   return {
     distributeUrls: distributeUrlsMutation.mutate,
-    isDistributing: distributeUrlsMutation.isPending,
+    distributeUrlsManual: distributeUrlsManualMutation.mutate,
+    isDistributing: distributeUrlsMutation.isPending || distributeUrlsManualMutation.isPending,
     result: distributeUrlsMutation.data,
     generatePreview,
     preview,
