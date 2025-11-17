@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home } from "lucide-react";
+import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Breadcrumb,
@@ -36,6 +36,7 @@ import { useGlobalEcommerceMetrics } from "@/hooks/useGlobalEcommerceMetrics";
 import { EcommerceOverviewCards } from "@/components/dashboard/EcommerceOverviewCards";
 import { TopProjectsByRevenue } from "@/components/dashboard/TopProjectsByRevenue";
 import { RevenueEvolutionChart } from "@/components/dashboard/RevenueEvolutionChart";
+import { EcommerceTab } from "@/components/dashboard/ecommerce/EcommerceTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
 import { Header } from "@/components/layout/Header";
@@ -337,6 +338,10 @@ const Dashboard = () => {
                     Financeiro
                   </ClickUpTabTrigger>
                   
+                  <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
+                    E-commerce
+                  </ClickUpTabTrigger>
+                  
                   <ClickUpTabTrigger value="clients" icon={Users}>
                     Clientes
                   </ClickUpTabTrigger>
@@ -434,6 +439,10 @@ const Dashboard = () => {
               <GlobalFinancialTable sitesMetrics={sitesMetrics} />
               <GlobalCostSettings userId={user.id} />
               <PaymentsList userId={user.id} />
+            </TabsContent>
+
+            <TabsContent value="ecommerce" className="space-y-8">
+              <EcommerceTab />
             </TabsContent>
 
             <TabsContent value="clients" className="space-y-8">
