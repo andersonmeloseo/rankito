@@ -27,6 +27,7 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
   const queryClient = useQueryClient();
 
   // Limpar cache ao montar o componente
+  // Limpar cache apenas na primeira montagem
   useEffect(() => {
     try {
       localStorage.removeItem('top-projects-cache');
@@ -35,7 +36,7 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
     }
     
     queryClient.invalidateQueries({ queryKey: ["top-projects-performance"] });
-  }, [queryClient]);
+  }, []); // Array vazio = roda apenas UMA VEZ
 
   const { data: topProjects, isLoading } = useQuery({
     queryKey: ["top-projects-performance", userId],
@@ -46,60 +47,67 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
       const { data: sites, error: sitesError } = await supabase
         .from("rank_rent_sites")
         .select("id, site_name, site_url, is_rented")
-        .eq("owner_user_id", userId);
+        .eq("created_by_user_id", userId);
 
-      if (sitesError) throw sitesError;
+      if (sitesError) {
+        console.error('❌ Erro ao buscar sites:', sitesError);
+        throw sitesError;
+      }
+
+      console.log('📊 Sites encontrados:', sites?.length);
+
       if (!sites || sites.length === 0) {
-        console.log('⚠️ Nenhum site encontrado para o usuário');
+        console.log('⚠️ Nenhum site encontrado');
         return [];
       }
-      
-      console.log('📊 Sites encontrados:', sites.length, sites.map(s => s.site_name));
 
-      // Buscar conversões dos últimos 30 dias
+      const siteIds = sites.map(s => s.id);
+      
+      // Data 30 dias atrás
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+      // Buscar conversões dos últimos 30 dias
       const { data: conversions, error: conversionsError } = await supabase
         .from("rank_rent_conversions")
         .select("site_id, event_type")
-        .in("site_id", sites.map(s => s.id))
+        .in("site_id", siteIds)
         .gte("created_at", thirtyDaysAgo.toISOString());
 
-      if (conversionsError) throw conversionsError;
-      
+      if (conversionsError) {
+        console.error('❌ Erro ao buscar conversões:', conversionsError);
+        throw conversionsError;
+      }
+
       console.log('📈 Conversões encontradas:', conversions?.length);
 
       // Agregar métricas por site
-      const performanceMap = new Map<string, ProjectPerformance>();
-
-      sites.forEach(site => {
+      const projectMetrics = sites.map(site => {
         const siteConversions = conversions?.filter(c => c.site_id === site.id) || [];
         
-        performanceMap.set(site.id, {
+        const totalConversions = siteConversions.length;
+        const pageViews = siteConversions.filter(c => c.event_type === 'page_view').length;
+        const conversionEvents = siteConversions.filter(c => c.event_type !== 'page_view').length;
+
+        return {
           site_id: site.id,
           site_name: site.site_name,
           site_url: site.site_url,
-          is_rented: site.is_rented || false,
-          total_conversions: siteConversions.length,
-          page_views: siteConversions.filter(c => c.event_type === 'page_view').length,
-          conversion_events: siteConversions.filter(c => 
-            c.event_type === 'whatsapp_click' || 
-            c.event_type === 'phone_click' || 
-            c.event_type === 'email_click' ||
-            c.event_type === 'button_click'
-          ).length,
-        });
+          is_rented: site.is_rented,
+          total_conversions: totalConversions,
+          page_views: pageViews,
+          conversion_events: conversionEvents,
+        };
       });
 
       // Ordenar por total de conversões e pegar top 5
-      const result = Array.from(performanceMap.values())
+      const topProjects = projectMetrics
         .sort((a, b) => b.total_conversions - a.total_conversions)
         .slice(0, 5);
-      
-      console.log('🎯 Top 5 projetos calculados:', result);
-      
-      return result;
+
+      console.log('🎯 Top 5 projetos calculados:', topProjects);
+
+      return topProjects;
     },
     enabled: !!userId,
     refetchOnMount: true,
@@ -108,12 +116,17 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
     gcTime: 0,
   });
 
-  console.log('🖼️ Renderizando TopProjectsPerformance:', { 
-    userId, 
-    projectsCount: topProjects?.length,
-    isLoading,
-    projects: topProjects
-  });
+  // Log detalhado para diagnóstico
+  useEffect(() => {
+    if (topProjects && !isLoading) {
+      console.log('🖼️ Renderizando TopProjectsPerformance:', { 
+        userId, 
+        projectsCount: topProjects?.length,
+        isLoading,
+        projects: topProjects
+      });
+    }
+  }, [topProjects, isLoading, userId]);
 
   if (isLoading) {
     return (
@@ -174,7 +187,7 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
   };
 
   return (
-    <Card>
+    <Card key={topProjects?.map(p => p.site_id).join('-') || 'loading'}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
