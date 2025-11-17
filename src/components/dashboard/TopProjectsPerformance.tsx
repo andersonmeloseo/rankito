@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Eye, MousePointerClick, ExternalLink } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, Eye, MousePointerClick, ExternalLink, RefreshCw } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +23,7 @@ interface ProjectPerformance {
 
 export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: topProjects, isLoading } = useQuery({
     queryKey: ["top-projects-performance", userId],
@@ -75,6 +77,10 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
         .slice(0, 5);
     },
     enabled: !!userId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   if (isLoading) {
@@ -138,11 +144,23 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <TrendingUp className="w-5 h-5" />
-          Top Projetos por Performance
-          <Badge variant="outline" className="ml-auto">Últimos 30 dias</Badge>
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <TrendingUp className="w-5 h-5" />
+            Top Projetos por Performance
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">Últimos 30 dias</Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["top-projects-performance"] })}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
