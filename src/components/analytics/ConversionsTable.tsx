@@ -21,7 +21,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const [deviceFilter, setDeviceFilter] = useState("all");
   const [sortConfig, setSortConfig] = useState<{
-    key: "created_at" | "event_type" | "page_path" | "device" | "browser" | "city";
+    key: "created_at" | "event_type" | "page_path" | "device" | "browser" | "city" | "is_ecommerce_event";
     direction: "asc" | "desc";
   }>({ key: "created_at", direction: "desc" });
   const itemsPerPage = 20;
@@ -117,6 +117,10 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
       case "city":
         aValue = a.city || "Desconhecido";
         bValue = b.city || "Desconhecido";
+        break;
+      case "is_ecommerce_event":
+        aValue = a.is_ecommerce_event ? 1 : 0;
+        bValue = b.is_ecommerce_event ? 1 : 0;
         break;
         default:
           return 0;
@@ -318,8 +322,17 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                     onClick={() => handleSort("event_type")}
                   >
                     <div className="flex items-center">
-                      Tipo
+                      Tipo de Evento
                       <SortIcon columnKey="event_type" />
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort("is_ecommerce_event")}
+                  >
+                    <div className="flex items-center">
+                      Categoria
+                      <SortIcon columnKey="is_ecommerce_event" />
                     </div>
                   </TableHead>
                   <TableHead 
@@ -380,6 +393,17 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                         <Badge variant={getEventBadgeVariant(conv.event_type)}>
                           {conv.event_type.replace("_", " ")}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {conv.is_ecommerce_event ? (
+                          <Badge variant="success" className="gap-1">
+                            🛒 E-commerce
+                          </Badge>
+                        ) : (
+                          <Badge variant="info" className="gap-1">
+                            💬 Conversão
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Tooltip>

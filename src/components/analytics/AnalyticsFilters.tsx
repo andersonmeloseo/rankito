@@ -11,11 +11,13 @@ interface AnalyticsFiltersProps {
   period: string;
   eventType: string;
   device: string;
+  conversionType: string;
   customStartDate?: Date;
   customEndDate?: Date;
   onPeriodChange: (value: string) => void;
   onEventTypeChange: (value: string) => void;
   onDeviceChange: (value: string) => void;
+  onConversionTypeChange: (value: string) => void;
   onCustomStartDateChange: (date: Date | undefined) => void;
   onCustomEndDateChange: (date: Date | undefined) => void;
 }
@@ -24,11 +26,13 @@ export const AnalyticsFilters = ({
   period,
   eventType,
   device,
+  conversionType,
   customStartDate,
   customEndDate,
   onPeriodChange,
   onEventTypeChange,
   onDeviceChange,
+  onConversionTypeChange,
   onCustomStartDateChange,
   onCustomEndDateChange,
 }: AnalyticsFiltersProps) => {
@@ -123,6 +127,20 @@ export const AnalyticsFilters = ({
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="desktop">Desktop</SelectItem>
                 <SelectItem value="mobile">Mobile</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">Tipo de Conversão</label>
+            <Select value={conversionType} onValueChange={onConversionTypeChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Eventos</SelectItem>
+                <SelectItem value="ecommerce">🛒 Apenas E-commerce</SelectItem>
+                <SelectItem value="normal">💬 Apenas Conversões Normais</SelectItem>
               </SelectContent>
             </Select>
           </div>
