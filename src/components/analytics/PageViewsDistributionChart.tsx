@@ -19,6 +19,14 @@ const COLORS = [
 ];
 
 export const PageViewsDistributionChart = ({ data, isLoading }: PageViewsDistributionChartProps) => {
+  // ✅ LOG DE DIAGNÓSTICO 3: Dados recebidos pelo componente
+  console.log('🎨 [PageViewsDistributionChart] Recebeu dados:', {
+    data,
+    isLoading,
+    dataLength: data?.length,
+    firstItem: data?.[0]
+  });
+
   if (isLoading) {
     return (
       <Card className="shadow-lg border-border/50 backdrop-blur-sm">
@@ -55,7 +63,10 @@ export const PageViewsDistributionChart = ({ data, isLoading }: PageViewsDistrib
   };
 
   return (
-    <Card className="shadow-lg border-border/50 backdrop-blur-sm">
+    <Card 
+      key={JSON.stringify(data)} 
+      className="shadow-lg border-border/50 backdrop-blur-sm"
+    >
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <PieChartIcon className="h-5 w-5" />
