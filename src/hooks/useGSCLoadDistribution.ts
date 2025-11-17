@@ -51,7 +51,7 @@ export function useGSCLoadDistribution(siteId: string | null) {
           const { data: successData, error: successError } = await supabase
             .from('gsc_url_indexing_requests')
             .select('id, created_at')
-            .eq('used_integration_id', integration.id)
+            .eq('integration_id', integration.id)
             .eq('status', 'success')
             .gte('created_at', today.toISOString());
 
@@ -59,7 +59,7 @@ export function useGSCLoadDistribution(siteId: string | null) {
           const { data: failedData, error: failedError } = await supabase
             .from('gsc_url_indexing_requests')
             .select('id')
-            .eq('used_integration_id', integration.id)
+            .eq('integration_id', integration.id)
             .eq('status', 'failed')
             .gte('created_at', today.toISOString());
 

@@ -56,7 +56,7 @@ export const useGSCIndexingHistory = ({
       }
 
       if (filters.integrationId) {
-        query = query.eq('used_integration_id', filters.integrationId);
+        query = query.eq('integration_id', filters.integrationId);
       }
 
       if (filters.searchTerm) {

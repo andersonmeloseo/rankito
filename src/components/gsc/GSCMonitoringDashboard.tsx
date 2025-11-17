@@ -1,5 +1,4 @@
 import { Skeleton } from '@/components/ui/skeleton';
-import { GSCMetricsCards } from './GSCMetricsCards';
 import { GSCQuotaChart } from './GSCQuotaChart';
 import { GSCActivityTimeline } from './GSCActivityTimeline';
 import { GSCAlertsBanner } from './GSCAlertsBanner';
@@ -26,11 +25,6 @@ export const GSCMonitoringDashboard = ({ siteId, userId }: GSCMonitoringDashboar
   if (isLoadingStats) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
         <Skeleton className="h-[400px]" />
         <Skeleton className="h-[500px]" />
       </div>
@@ -44,9 +38,6 @@ export const GSCMonitoringDashboard = ({ siteId, userId }: GSCMonitoringDashboar
       
       {/* Alerts Banner */}
       <GSCAlertsBanner alerts={aggregatedStats?.alerts} />
-      
-      {/* Metrics Cards */}
-      <GSCMetricsCards stats={aggregatedStats} />
       
       {/* Quota Chart */}
       <GSCQuotaChart data={aggregatedStats?.quotaHistory} />
