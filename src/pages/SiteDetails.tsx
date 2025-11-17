@@ -56,6 +56,7 @@ import { Footer } from "@/components/layout/Footer";
 import { ReportsTab } from "@/components/reports/ReportsTab";
 import { GSCIntegrationsManager } from "@/components/gsc/GSCIntegrationsManager";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -813,6 +814,10 @@ const SiteDetails = () => {
                 <ClickUpTabTrigger value="plugin" icon={Plug}>
                   Plugin WordPress
                 </ClickUpTabTrigger>
+                
+                <ClickUpTabTrigger value="pixel-tracking" icon={Globe}>
+                  Pixel & E-commerce
+                </ClickUpTabTrigger>
               </TabsList>
             </div>
           </div>
@@ -1434,6 +1439,16 @@ const SiteDetails = () => {
               trackingToken={site.tracking_token}
               trackingPixelInstalled={site.tracking_pixel_installed}
               siteName={site.site_name}
+            />
+          </TabsContent>
+
+          {/* Pixel & E-commerce Tab */}
+          <TabsContent value="pixel-tracking">
+            <PixelTrackingTab 
+              siteId={siteId || ""}
+              trackingToken={site.tracking_token}
+              siteName={site.site_name}
+              pixelInstalled={site.tracking_pixel_installed}
             />
           </TabsContent>
 

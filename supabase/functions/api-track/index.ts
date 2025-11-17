@@ -101,7 +101,18 @@ serve(async (req) => {
       metadata 
     } = await req.json();
 
-    console.log('Tracking event:', { token, site_name, page_url, event_type });
+    // Detectar se é evento e-commerce
+    const ecommerceEvents = [
+      'product_view', 
+      'add_to_cart', 
+      'remove_from_cart', 
+      'begin_checkout', 
+      'purchase', 
+      'search'
+    ];
+    const isEcommerceEvent = ecommerceEvents.includes(event_type);
+
+    console.log('Tracking event:', { token, site_name, page_url, event_type, is_ecommerce: isEcommerceEvent });
 
     // Validate required fields
     if (!page_url || !event_type) {
@@ -299,6 +310,7 @@ serve(async (req) => {
         page_path,
         event_type,
         cta_text,
+        is_ecommerce_event: isEcommerceEvent,
         metadata: { 
           ...metadata, 
           device,
