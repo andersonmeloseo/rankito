@@ -25,17 +25,36 @@ export const useGSCIndexingHistory = ({
   return useQuery({
     queryKey: ['gsc-indexing-history', siteId, filters, page, perPage],
     queryFn: async () => {
+      // Buscar IDs das integrações do site
+      const { data: integrations, error: integrationsError } = await supabase
+        .from('google_search_console_integrations')
+        .select('id')
+        .eq('site_id', siteId);
+
+      if (integrationsError) throw integrationsError;
+
+      const integrationIds = integrations?.map(i => i.id) || [];
+
+      // Se não tem integrações, retornar vazio
+      if (integrationIds.length === 0) {
+        return {
+          requests: [],
+          totalCount: 0,
+          totalPages: 0
+        };
+      }
+
+      // Buscar requests das integrações
       let query = supabase
         .from('gsc_url_indexing_requests')
         .select(`
           *,
           integration:google_search_console_integrations!gsc_url_indexing_requests_integration_id_fkey(
             connection_name,
-            google_email,
-            site_id
+            google_email
           )
         `, { count: 'exact' })
-        .eq('integration.site_id', siteId)
+        .in('integration_id', integrationIds)
         .order('created_at', { ascending: false });
 
       // Apply filters
