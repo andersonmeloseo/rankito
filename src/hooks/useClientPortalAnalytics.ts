@@ -136,6 +136,13 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         return acc;
       }, {});
 
+      // ✅ LOG DE DIAGNÓSTICO 1: Após cálculo de deviceStats
+      console.log('🔍 [useClientPortalAnalytics] deviceStats calculado:', {
+        deviceStats,
+        asArray: Object.values(deviceStats || {}),
+        totalConversions: conversions?.filter(c => c.event_type === 'page_view').length
+      });
+
       // Group by location
       const geoStats = conversions?.reduce((acc: any, conv) => {
         const city = conv.city || 'Unknown';

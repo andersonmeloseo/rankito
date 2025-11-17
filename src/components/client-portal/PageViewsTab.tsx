@@ -47,6 +47,14 @@ export const PageViewsTab = ({ analytics, siteIds }: PageViewsTabProps) => {
       : '0',
   }));
 
+  // ✅ LOG DE DIAGNÓSTICO 2: Após mapeamento
+  console.log('📊 [PageViewsTab] deviceDistributionData preparado:', {
+    analyticsDeviceStats: analytics.deviceStats,
+    totalDeviceViews,
+    deviceDistributionData,
+    length: deviceDistributionData?.length
+  });
+
   // Filter page views only
   const pageViewsOnly = (analytics.conversions || []).filter(
     (c: any) => c.event_type === 'page_view'
