@@ -814,7 +814,8 @@ export const useAnalytics = ({
     };
     
     pageViewsList.forEach((pv: any) => {
-      const device = pv.device || 'Desktop';
+      const deviceRaw = (pv.metadata as any)?.device || 'desktop';
+      const device = deviceRaw.charAt(0).toUpperCase() + deviceRaw.slice(1);
       if (deviceCounts[device] !== undefined) {
         deviceCounts[device]++;
       }
