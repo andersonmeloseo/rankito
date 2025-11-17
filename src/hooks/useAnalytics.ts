@@ -213,7 +213,7 @@ export const useAnalytics = ({
 
       // Agrupar por dia
       const grouped = data?.reduce((acc: any, conv) => {
-        const date = new Date(conv.created_at).toLocaleDateString("pt-BR");
+        const date = new Date(conv.created_at).toISOString().split("T")[0];
         if (!acc[date]) {
           acc[date] = { date, pageViews: 0, conversions: 0 };
         }
@@ -226,8 +226,7 @@ export const useAnalytics = ({
       }, {});
 
       return Object.values(grouped || {}).sort((a: any, b: any) => 
-        new Date(a.date.split("/").reverse().join("-")).getTime() - 
-        new Date(b.date.split("/").reverse().join("-")).getTime()
+        new Date(a.date).getTime() - new Date(b.date).getTime()
       );
     },
     enabled: !!siteId,
