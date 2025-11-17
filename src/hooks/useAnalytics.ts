@@ -316,11 +316,7 @@ export const useAnalytics = ({
         .lte("created_at", endDate)
         .order("created_at", { ascending: false });
 
-      // Aplicar limite apenas se não for "todo período"
-      if (period !== "all") {
-        query = query.limit(100);
-      }
-
+      // Buscar todas as conversões do período - paginação no frontend
       if (eventType !== "all" && eventType !== "page_view") {
         query = query.eq("event_type", eventType as any);
       }
