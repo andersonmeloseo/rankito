@@ -11,7 +11,8 @@ import { GSCIndexingHistory } from "./GSCIndexingHistory";
 import { GSCSimpleBatchDialog } from "./GSCSimpleBatchDialog";
 import { GSCPageTableFilters } from "./GSCPageTableFilters";
 import { GSCErrorLog } from "./GSCErrorLog";
-import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight, ExternalLink, Send, CheckCircle2, XCircle, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, FileText, AlertTriangle, History as HistoryIcon } from "lucide-react";
+import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight, ExternalLink, Send, CheckCircle2, XCircle, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, FileText, AlertTriangle, History as HistoryIcon, Clock } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState, useMemo } from "react";
@@ -60,6 +61,14 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
     queryKey: ['site-pages-gsc', siteId],
     queryFn: async () => {
+      // Buscar IDs das integrações do site
+      const { data: integrations } = await supabase
+        .from("google_search_console_integrations")
+        .select("id")
+        .eq("site_id", siteId);
+
+      const integrationIds = integrations?.map(i => i.id) || [];
+
       const { data, error } = await supabase
         .from('rank_rent_pages')
         .select(`
@@ -67,7 +76,6 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
           page_url, 
           page_path,
           page_title,
-          gsc_indexing_queue!left(status, processed_at),
           gsc_url_indexing_requests!left(status, submitted_at, integration_id)
         `)
         .eq('site_id', siteId)
@@ -75,14 +83,19 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
       
       if (error) throw error;
       
-      // Transform data to include latest status and submission
-      return (data || []).map(page => {
-        const queueStatus = Array.isArray(page.gsc_indexing_queue) && page.gsc_indexing_queue.length > 0 
-          ? page.gsc_indexing_queue[0].status 
-          : null;
-        const queueProcessedAt = Array.isArray(page.gsc_indexing_queue) && page.gsc_indexing_queue.length > 0
-          ? page.gsc_indexing_queue[0].processed_at
-          : null;
+      // Transform data to include latest status and submission + queue status
+      return await Promise.all((data || []).map(async page => {
+        // Buscar status da fila para esta URL
+        const { data: queueData } = await supabase
+          .from('gsc_indexing_queue')
+          .select('status, created_at')
+          .eq('url', page.page_url)
+          .in('integration_id', integrationIds)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const queueStatus = queueData?.status || null;
         
         const requests = Array.isArray(page.gsc_url_indexing_requests) 
           ? page.gsc_url_indexing_requests 
@@ -92,11 +105,16 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         )[0];
         
         const requestStatus = latestRequest?.status;
-        const submittedAt = latestRequest?.submitted_at || queueProcessedAt;
+        const submittedAt = latestRequest?.submitted_at;
         const integrationId = latestRequest?.integration_id;
         
-        // Determine final status (prefer request status over queue status)
-        const finalStatus = requestStatus || queueStatus || 'not_submitted';
+        // Determine final status with priority: queue status (pending/processing) > request status > not_submitted
+        let finalStatus = 'not_submitted';
+        if (queueStatus === 'pending' || queueStatus === 'processing') {
+          finalStatus = queueStatus;
+        } else if (requestStatus) {
+          finalStatus = requestStatus;
+        }
         
         return {
           id: page.id,
@@ -104,10 +122,11 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
           page_path: page.page_path,
           page_title: page.page_title,
           gsc_status: finalStatus,
+          queue_status: queueStatus,
           last_submission: submittedAt,
           gsc_integration_used: integrationId,
         };
-      });
+      }));
     },
   });
 
@@ -278,45 +297,72 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   };
 
   const getStatusBadge = (status: string) => {
+    let badge;
+    let tooltipText;
+
     switch (status) {
       case 'completed':
       case 'indexed':
-        return (
+      case 'success':
+        badge = (
           <Badge className="bg-green-500/10 text-green-700 hover:bg-green-500/20 border-green-200">
             <CheckCircle2 className="h-3 w-3 mr-1" />
-            Indexado
+            Enviado
           </Badge>
         );
+        tooltipText = "URL já foi enviada ao Google Search Console com sucesso";
+        break;
       case 'failed':
       case 'error':
-        return (
+        badge = (
           <Badge className="bg-red-500/10 text-red-700 hover:bg-red-500/20 border-red-200">
             <XCircle className="h-3 w-3 mr-1" />
             Falhou
           </Badge>
         );
+        tooltipText = "Erro ao enviar. Verifique o Log de Erros para reenviar";
+        break;
       case 'pending':
-        return (
-          <Badge className="bg-yellow-500/10 text-yellow-700 hover:bg-yellow-500/20 border-yellow-200">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            Pendente
+        badge = (
+          <Badge className="bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 border-blue-200">
+            <Clock className="h-3 w-3 mr-1" />
+            Pendente na Fila
           </Badge>
         );
+        tooltipText = "Aguardando processamento automático (próximo processamento em ~30 min)";
+        break;
       case 'processing':
-        return (
-          <Badge className="bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 border-blue-200">
-            <Activity className="h-3 w-3 mr-1" />
+        badge = (
+          <Badge className="bg-purple-500/10 text-purple-700 hover:bg-purple-500/20 border-purple-200">
+            <Activity className="h-3 w-3 mr-1 animate-spin" />
             Processando
           </Badge>
         );
+        tooltipText = "Sendo enviado ao Google Search Console neste momento";
+        break;
       default:
-        return (
+        badge = (
           <Badge variant="outline" className="text-muted-foreground">
             <Info className="h-3 w-3 mr-1" />
-            Não Submetido
+            Não Enviado
           </Badge>
         );
+        tooltipText = "URL ainda não foi submetida ao Google Search Console";
+        break;
     }
+
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {badge}
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{tooltipText}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   };
 
   const getQuotaColorClass = () => {
