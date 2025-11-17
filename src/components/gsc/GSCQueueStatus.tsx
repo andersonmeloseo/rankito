@@ -1,12 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, Activity, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, Activity, CheckCircle2, XCircle, AlertCircle, Play, Loader2 } from "lucide-react";
 import { useGSCQueueLogs } from "@/hooks/useGSCQueueLogs";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface GSCQueueStatusProps {
   siteId: string;
@@ -14,6 +16,7 @@ interface GSCQueueStatusProps {
 
 export function GSCQueueStatus({ siteId }: GSCQueueStatusProps) {
   const { latestLog, nextExecution, isLoading: isLoadingLogs } = useGSCQueueLogs();
+  const queryClient = useQueryClient();
 
   // Fetch pending URLs count
   const { data: pendingCount, isLoading: isLoadingPending } = useQuery({
@@ -41,6 +44,44 @@ export function GSCQueueStatus({ siteId }: GSCQueueStatusProps) {
     refetchInterval: 30000,
   });
 
+  const processNowMutation = useMutation({
+    mutationFn: async () => {
+      console.log('🚀 Manual queue processing triggered');
+      
+      const { data, error } = await supabase.functions.invoke(
+        'gsc-process-indexing-queue',
+        { 
+          body: { scheduled: false }
+        }
+      );
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (result) => {
+      console.log('✅ Queue processed successfully:', result);
+      
+      toast.success('Fila processada com sucesso!', {
+        description: `${result.total_processed || 0} URLs enviadas, ${result.total_failed || 0} falharam`,
+        duration: 5000,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-queue-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-queue-pending-count', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['site-pages-gsc', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-error-logs', siteId] });
+    },
+    onError: (error: any) => {
+      console.error('❌ Error processing queue:', error);
+      
+      toast.error('Erro ao processar fila', {
+        description: error.message || 'Ocorreu um erro ao tentar processar a fila de indexação',
+        duration: 7000,
+      });
+    }
+  });
+
   const isLoading = isLoadingLogs || isLoadingPending;
 
   // Calculate time until next execution
@@ -59,10 +100,32 @@ export function GSCQueueStatus({ siteId }: GSCQueueStatusProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5" />
-          Status da Fila de Processamento
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Status da Fila de Processamento
+          </CardTitle>
+          
+          <Button
+            onClick={() => processNowMutation.mutate()}
+            disabled={processNowMutation.isPending || pendingCount === 0}
+            variant="outline"
+            size="sm"
+            className="transition-all active:scale-[0.98]"
+          >
+            {processNowMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processando...
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                Processar Agora
+              </>
+            )}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
