@@ -9,7 +9,7 @@ import { useGSCIndexing } from "@/hooks/useGSCIndexing";
 import { GSCIndexingHistory } from "./GSCIndexingHistory";
 import { GSCSimpleBatchDialog } from "./GSCSimpleBatchDialog";
 import { PageTableFilters } from "@/components/reports/PageTableFilters";
-import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight, ExternalLink, Send, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState, useMemo } from "react";
@@ -31,18 +31,56 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [showBatchDialog, setShowBatchDialog] = useState(false);
 
-  // Fetch site pages
+  // Fetch site pages with GSC status
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
-    queryKey: ['site-pages', siteId],
+    queryKey: ['site-pages-gsc', siteId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('rank_rent_pages')
-        .select('id, page_url, page_path')
+        .select(`
+          id, 
+          page_url, 
+          page_path,
+          page_title,
+          gsc_indexing_queue!left(status, processed_at),
+          gsc_url_indexing_requests!left(status, submitted_at)
+        `)
         .eq('site_id', siteId)
         .order('page_path');
       
       if (error) throw error;
-      return data || [];
+      
+      // Transform data to include latest status and submission
+      return (data || []).map(page => {
+        const queueStatus = Array.isArray(page.gsc_indexing_queue) && page.gsc_indexing_queue.length > 0 
+          ? page.gsc_indexing_queue[0].status 
+          : null;
+        const queueProcessedAt = Array.isArray(page.gsc_indexing_queue) && page.gsc_indexing_queue.length > 0
+          ? page.gsc_indexing_queue[0].processed_at
+          : null;
+        
+        const requests = Array.isArray(page.gsc_url_indexing_requests) 
+          ? page.gsc_url_indexing_requests 
+          : [];
+        const latestRequest = requests.sort((a, b) => 
+          new Date(b.submitted_at || 0).getTime() - new Date(a.submitted_at || 0).getTime()
+        )[0];
+        
+        const requestStatus = latestRequest?.status;
+        const submittedAt = latestRequest?.submitted_at || queueProcessedAt;
+        
+        // Determine final status (prefer request status over queue status)
+        const finalStatus = requestStatus || queueStatus || 'not_submitted';
+        
+        return {
+          id: page.id,
+          page_url: page.page_url,
+          page_path: page.page_path,
+          page_title: page.page_title,
+          gsc_status: finalStatus,
+          last_submission: submittedAt,
+        };
+      });
     },
   });
 
@@ -114,10 +152,57 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
 
   const handleIndexSelected = () => {
     if (selectedPages.size === 0) {
-      toast.error("Selecione pelo menos uma URL");
+      toast.error("Selecione pelo menos uma URL para indexar");
       return;
     }
     setShowBatchDialog(true);
+  };
+
+  const handleIndexSingle = (url: string) => {
+    setSelectedPages(new Set([url]));
+    setShowBatchDialog(true);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'indexed':
+        return (
+          <Badge className="bg-green-500/10 text-green-700 hover:bg-green-500/20 border-green-200">
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Indexado
+          </Badge>
+        );
+      case 'failed':
+      case 'error':
+        return (
+          <Badge className="bg-red-500/10 text-red-700 hover:bg-red-500/20 border-red-200">
+            <XCircle className="h-3 w-3 mr-1" />
+            Falhou
+          </Badge>
+        );
+      case 'pending':
+        return (
+          <Badge className="bg-yellow-500/10 text-yellow-700 hover:bg-yellow-500/20 border-yellow-200">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Pendente
+          </Badge>
+        );
+      case 'processing':
+        return (
+          <Badge className="bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 border-blue-200">
+            <Activity className="h-3 w-3 mr-1" />
+            Processando
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="text-muted-foreground">
+            <Info className="h-3 w-3 mr-1" />
+            Não Submetido
+          </Badge>
+        );
+    }
   };
 
   const getQuotaColorClass = () => {
@@ -220,13 +305,18 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                       <TableHead className="w-12">
                         <Checkbox
                           checked={
-                            paginatedPages.length > 0 && 
-                            paginatedPages.every(p => selectedPages.has(p.page_url))
+                            pageSize === 999999
+                              ? selectedPages.size === filteredPages.length && filteredPages.length > 0
+                              : paginatedPages.every(p => selectedPages.has(p.page_url)) && paginatedPages.length > 0
                           }
                           onCheckedChange={handleToggleAll}
                         />
                       </TableHead>
                       <TableHead>URL</TableHead>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Status GSC</TableHead>
+                      <TableHead>Última Submissão</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -238,8 +328,42 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                             onCheckedChange={() => handleTogglePage(page.page_url)}
                           />
                         </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {page.page_path}
+                        <TableCell>
+                          <a 
+                            href={page.page_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline font-mono text-sm transition-colors"
+                          >
+                            {page.page_path}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {page.page_title || <span className="text-muted-foreground italic">Sem título</span>}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(page.gsc_status)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {page.last_submission 
+                            ? formatDistanceToNow(new Date(page.last_submission), { 
+                                addSuffix: true, 
+                                locale: ptBR 
+                              })
+                            : <span className="italic">Nunca</span>
+                          }
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleIndexSingle(page.page_url)}
+                            className="h-8"
+                          >
+                            <Send className="h-3 w-3 mr-1" />
+                            Indexar
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
