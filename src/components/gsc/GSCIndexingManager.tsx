@@ -4,12 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useGSCIndexing } from "@/hooks/useGSCIndexing";
 import { GSCIndexingHistory } from "./GSCIndexingHistory";
 import { GSCSimpleBatchDialog } from "./GSCSimpleBatchDialog";
 import { GSCPageTableFilters } from "./GSCPageTableFilters";
-import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight, ExternalLink, Send, CheckCircle2, XCircle, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { GSCErrorLog } from "./GSCErrorLog";
+import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight, ExternalLink, Send, CheckCircle2, XCircle, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, FileText, AlertTriangle, History as HistoryIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState, useMemo } from "react";
@@ -23,6 +25,9 @@ interface GSCIndexingManagerProps {
 
 export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const { quota, resetAt, refetchQuota, isLoadingQuota } = useGSCIndexing({ siteId });
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState("pages");
   
   // States for URL table
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
@@ -370,6 +375,25 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         </CardContent>
       </Card>
 
+      {/* Tabs System */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="pages" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Páginas para Indexar
+          </TabsTrigger>
+          <TabsTrigger value="errors" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Log de Erros
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <HistoryIcon className="h-4 w-4" />
+            Histórico Completo
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: Páginas para Indexar */}
+        <TabsContent value="pages">
       {/* Tabela de URLs para Indexar */}
       <Card>
         <CardHeader>
@@ -558,9 +582,21 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
 
-      {/* Histórico com TODOS os Filtros */}
-      <GSCIndexingHistory siteId={siteId} />
+        {/* Tab 2: Log de Erros */}
+        <TabsContent value="errors">
+          <GSCErrorLog siteId={siteId} />
+        </TabsContent>
+
+        {/* Tab 3: Histórico Completo */}
+        <TabsContent value="history">
+          <GSCIndexingHistory siteId={siteId} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Histórico duplicado - deletar esta linha */}
+      {/* GSCIndexingHistory siteId={siteId} */}
 
       {/* Dialog de Batch Indexing */}
       {showBatchDialog && (

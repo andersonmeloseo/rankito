@@ -33,10 +33,10 @@ interface GSCPageTableFiltersProps {
 }
 
 const STATUS_OPTIONS = [
-  { value: "completed", label: "✅ Indexado" },
-  { value: "pending", label: "⏳ Pendente" },
-  { value: "failed", label: "❌ Falha" },
-  { value: "not_submitted", label: "⚪ Não Submetido" },
+  { value: "completed", label: "Enviado" },
+  { value: "pending", label: "Pendente" },
+  { value: "failed", label: "Falha" },
+  { value: "not_submitted", label: "Não Enviado" },
 ];
 
 const DATE_OPTIONS = [
