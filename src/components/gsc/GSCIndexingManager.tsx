@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useGSCIndexing } from "@/hooks/useGSCIndexing";
 import { GSCIndexingHistory } from "./GSCIndexingHistory";
 import { GSCSimpleBatchDialog } from "./GSCSimpleBatchDialog";
-import { PageTableFilters } from "@/components/reports/PageTableFilters";
+import { GSCPageTableFilters } from "./GSCPageTableFilters";
 import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight, ExternalLink, Send, CheckCircle2, XCircle, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,6 +32,24 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const [showBatchDialog, setShowBatchDialog] = useState(false);
   const [sortField, setSortField] = useState<'page_path' | 'page_title' | 'gsc_status' | 'last_submission' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [integrationFilter, setIntegrationFilter] = useState<string | null>(null);
+
+  // Buscar integrações GSC do projeto
+  const { data: integrations = [] } = useQuery({
+    queryKey: ["gsc-integrations", siteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("google_search_console_integrations")
+        .select("id, connection_name, google_email")
+        .eq("site_id", siteId)
+        .eq("is_active", true);
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Fetch site pages with GSC status
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
@@ -45,7 +63,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
           page_path,
           page_title,
           gsc_indexing_queue!left(status, processed_at),
-          gsc_url_indexing_requests!left(status, submitted_at)
+          gsc_url_indexing_requests!left(status, submitted_at, integration_id)
         `)
         .eq('site_id', siteId)
         .order('page_path');
@@ -70,6 +88,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         
         const requestStatus = latestRequest?.status;
         const submittedAt = latestRequest?.submitted_at || queueProcessedAt;
+        const integrationId = latestRequest?.integration_id;
         
         // Determine final status (prefer request status over queue status)
         const finalStatus = requestStatus || queueStatus || 'not_submitted';
@@ -81,6 +100,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
           page_title: page.page_title,
           gsc_status: finalStatus,
           last_submission: submittedAt,
+          gsc_integration_used: integrationId,
         };
       });
     },
@@ -90,13 +110,53 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const filteredPages = useMemo(() => {
     if (!pagesData) return [];
     
-    // Apply search filter
     let result = pagesData;
+    
+    // Apply search filter
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       result = result.filter(page => 
         page.page_url.toLowerCase().includes(search) ||
-        page.page_path.toLowerCase().includes(search)
+        (page.page_title && page.page_title.toLowerCase().includes(search))
+      );
+    }
+    
+    // Apply status filter
+    if (statusFilter.length > 0) {
+      result = result.filter(page => {
+        const status = page.gsc_status || 'not_submitted';
+        return statusFilter.includes(status);
+      });
+    }
+    
+    // Apply date filter
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      result = result.filter(page => {
+        if (!page.last_submission) {
+          return dateFilter === 'never';
+        }
+        
+        if (dateFilter === 'never') {
+          return false;
+        }
+        
+        const submissionDate = new Date(page.last_submission);
+        const hoursDiff = (now.getTime() - submissionDate.getTime()) / (1000 * 60 * 60);
+        
+        switch(dateFilter) {
+          case '24h': return hoursDiff <= 24;
+          case '7d': return hoursDiff <= 168;
+          case '30d': return hoursDiff <= 720;
+          default: return true;
+        }
+      });
+    }
+    
+    // Apply integration filter
+    if (integrationFilter) {
+      result = result.filter(page => 
+        page.gsc_integration_used === integrationFilter
       );
     }
     
@@ -124,7 +184,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
     }
     
     return result;
-  }, [pagesData, searchTerm, sortField, sortDirection]);
+  }, [pagesData, searchTerm, statusFilter, dateFilter, integrationFilter, sortField, sortDirection]);
 
   const paginatedPages = useMemo(() => {
     if (pageSize === 999999) return filteredPages;
@@ -322,24 +382,30 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
           <div className="space-y-4">
             {/* Filtros */}
       {/* Filtros e Botão de Ação */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <PageTableFilters
-            searchTerm={searchTerm}
-            onSearchChange={handleSearchChange}
-            pageSize={pageSize}
-            onPageSizeChange={handlePageSizeChange}
-            totalResults={pagesData?.length || 0}
-            filteredResults={filteredPages.length}
-          />
+      <div className="space-y-4">
+        <GSCPageTableFilters
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          pageSize={pageSize}
+          onPageSizeChange={handlePageSizeChange}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          dateFilter={dateFilter}
+          onDateFilterChange={setDateFilter}
+          integrationFilter={integrationFilter}
+          onIntegrationFilterChange={setIntegrationFilter}
+          totalResults={pagesData?.length || 0}
+          filteredResults={filteredPages.length}
+          integrations={integrations}
+        />
+        <div className="flex justify-end">
+          <Button
+            onClick={handleIndexSelected}
+            disabled={selectedPages.size === 0}
+          >
+            Indexar no GSC
+          </Button>
         </div>
-        <Button
-          onClick={handleIndexSelected}
-          disabled={selectedPages.size === 0}
-          className="shrink-0"
-        >
-          Indexar no GSC
-        </Button>
       </div>
 
             {isLoadingPages ? (
