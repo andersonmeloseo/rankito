@@ -11,6 +11,7 @@ import { GSCIndexingHistory } from "./GSCIndexingHistory";
 import { GSCSimpleBatchDialog } from "./GSCSimpleBatchDialog";
 import { GSCPageTableFilters } from "./GSCPageTableFilters";
 import { GSCErrorLog } from "./GSCErrorLog";
+import { GSCQueueStatus } from "./GSCQueueStatus";
 import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight, ExternalLink, Send, CheckCircle2, XCircle, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, FileText, AlertTriangle, History as HistoryIcon, Clock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
@@ -376,50 +377,56 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
 
   return (
     <div className="space-y-8">
-      {/* Card Simples de Quota */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Quota Disponível
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoadingQuota ? (
-            <Skeleton className="h-16" />
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Badge className={getQuotaColorClass()}>
-                    {quota?.remaining || 0} URLs disponíveis hoje
-                  </Badge>
-                  {quota && (
-                    <span className="text-sm text-muted-foreground">
-                      {quota.used} / {quota.limit} usadas
-                    </span>
-                  )}
+      {/* Grid com 2 cards lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Card Simples de Quota */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Quota Disponível
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingQuota ? (
+              <Skeleton className="h-16" />
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Badge className={getQuotaColorClass()}>
+                      {quota?.remaining || 0} URLs disponíveis hoje
+                    </Badge>
+                    {quota && (
+                      <span className="text-sm text-muted-foreground">
+                        {quota.used} / {quota.limit} usadas
+                      </span>
+                    )}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => refetchQuota()}
+                    disabled={isLoadingQuota}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Atualizar
+                  </Button>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => refetchQuota()}
-                  disabled={isLoadingQuota}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Atualizar
-                </Button>
-              </div>
-              
-              {resetAt && (
-                <p className="text-xs text-muted-foreground mt-3">
-                  Reseta em {formatDistanceToNow(new Date(resetAt), { locale: ptBR, addSuffix: true })}
-                </p>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+                
+                {resetAt && (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Reseta em {formatDistanceToNow(new Date(resetAt), { locale: ptBR, addSuffix: true })}
+                  </p>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Card de Status da Fila */}
+        <GSCQueueStatus siteId={siteId} />
+      </div>
 
       {/* Tabs System */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
