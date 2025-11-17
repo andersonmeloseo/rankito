@@ -436,11 +436,11 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                           </TooltipContent>
                         </Tooltip>
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm max-w-[200px] truncate">
-                          {conv.cta_text || "-"}
-                        </div>
-                      </TableCell>
+                <TableCell>
+                  <div className="text-sm max-w-[200px] truncate">
+                    {conv.metadata?.cta_text || "-"}
+                  </div>
+                </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <DeviceIcon className={`w-4 h-4 ${deviceInfo.color}`} />
