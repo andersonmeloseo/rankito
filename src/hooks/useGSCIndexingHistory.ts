@@ -107,15 +107,32 @@ export const useGSCIndexingStats = (siteId: string) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      // Buscar IDs das integrações do site
+      const { data: integrations, error: integrationsError } = await supabase
+        .from('google_search_console_integrations')
+        .select('id')
+        .eq('site_id', siteId);
+
+      if (integrationsError) throw integrationsError;
+
+      const integrationIds = integrations?.map(i => i.id) || [];
+
+      // Se não tem integrações, retornar zeros
+      if (integrationIds.length === 0) {
+        return {
+          todayTotal: 0,
+          todaySuccess: 0,
+          todayFailed: 0,
+          successRate: 0,
+          avgResponseTime: '0.0'
+        };
+      }
+
+      // Buscar requests das integrações usando .in()
       const { data: todayRequests, error: todayError } = await supabase
         .from('gsc_url_indexing_requests')
-        .select(`
-          *,
-          integration:google_search_console_integrations!gsc_url_indexing_requests_integration_id_fkey(
-            site_id
-          )
-        `)
-        .eq('integration.site_id', siteId)
+        .select('*')
+        .in('integration_id', integrationIds)
         .gte('created_at', today.toISOString());
 
       if (todayError) throw todayError;
