@@ -3,7 +3,6 @@ import { useGSCPerformanceCharts } from '@/hooks/useGSCPerformanceCharts';
 import { useGSCTimeRange } from '@/hooks/useGSCTimeRange';
 import { useGSCActivity } from '@/hooks/useGSCActivity';
 import { useGSCAggregatedQuota } from '@/hooks/useGSCAggregatedQuota';
-import { GSCClickableCard } from './GSCClickableCard';
 import { GSCHealthStatus } from './GSCHealthStatus';
 import { GSCQuotaChart } from './GSCQuotaChart';
 import { GSCActivityTimeline } from './GSCActivityTimeline';
@@ -19,7 +18,7 @@ import { GSCAggregatedQuotaCard } from './GSCAggregatedQuotaCard';
 import { generateQuotaHistory, formatNumber } from '@/lib/gsc-chart-utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
-import { Link, FileText, Send, Zap, Clock, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface GSCOverviewDashboardProps {
@@ -52,11 +51,6 @@ export function GSCOverviewDashboard({
   if (stats.isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
         <Skeleton className="h-48" />
         <Skeleton className="h-[300px]" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -66,41 +60,6 @@ export function GSCOverviewDashboard({
       </div>
     );
   }
-
-  const getHealthStatus = () => {
-    if (stats.integrations.healthScore >= 80) return 'success';
-    if (stats.integrations.healthScore >= 50) return 'warning';
-    return 'error';
-  };
-
-  const getIndexationStatus = () => {
-    if (stats.sitemaps.indexationRate >= 90) return 'success';
-    if (stats.sitemaps.indexationRate >= 70) return 'warning';
-    return 'error';
-  };
-
-  const getIndexingStatus = () => {
-    if (stats.googleIndexing.successRate >= 95) return 'success';
-    if (stats.googleIndexing.successRate >= 80) return 'warning';
-    return 'error';
-  };
-
-  const getNextRunText = () => {
-    if (!stats.schedules.nextRun) return 'Nenhum';
-    const date = new Date(stats.schedules.nextRun);
-    const now = new Date();
-    const diffMs = date.getTime() - now.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (diffHours > 24) {
-      return `${Math.floor(diffHours / 24)}d`;
-    } else if (diffHours > 0) {
-      return `${diffHours}h ${diffMins}m`;
-    } else {
-      return `${diffMins}m`;
-    }
-  };
 
   // KPIs agregados
   const kpis = [
@@ -154,93 +113,6 @@ export function GSCOverviewDashboard({
 
       {/* Alertas */}
       <GSCQuotaWarningBanner siteId={siteId} />
-
-      {/* Cards de Resumo Rápido */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <GSCClickableCard
-          title="Integrações"
-          icon={Link}
-          status={getHealthStatus()}
-          badge={{
-            text: `${formatNumber(stats.integrations.active)}/${formatNumber(stats.integrations.total)}`,
-            variant: getHealthStatus() === 'success' ? 'success' : 'warning',
-          }}
-          metrics={[
-            { label: 'Total', value: formatNumber(stats.integrations.total) },
-            { label: 'Ativas', value: formatNumber(stats.integrations.active) },
-            { label: 'Saúde', value: `${(stats.integrations.healthScore || 0).toFixed(0)}%` },
-          ]}
-          onClick={() => onNavigateToTab('connections')}
-        />
-
-        <GSCClickableCard
-          title="Sitemaps"
-          icon={FileText}
-          status={getIndexationStatus()}
-          badge={{
-            text: `${(stats.sitemaps.indexationRate || 0).toFixed(0)}% Enviados`,
-            variant: getIndexationStatus() === 'success' ? 'success' : 'warning',
-          }}
-          metrics={[
-            { label: 'Total', value: formatNumber(stats.sitemaps.total) },
-            { label: 'Submetidas', value: formatNumber(stats.sitemaps.urlsSubmitted) },
-            { label: 'Enviadas', value: formatNumber(stats.sitemaps.urlsIndexed) },
-          ]}
-          onClick={() => onNavigateToTab('sitemaps')}
-        />
-
-        <GSCClickableCard
-          title="Indexação Google"
-          icon={Send}
-          status={getIndexingStatus()}
-          badge={{
-            text: `${(stats.googleIndexing.successRate || 0).toFixed(0)}% Sucesso`,
-            variant: getIndexingStatus() === 'success' ? 'success' : 'warning',
-          }}
-          metrics={[
-            { label: 'Requisições Hoje', value: formatNumber(stats.googleIndexing.todayCount) },
-            { label: 'Taxa de Sucesso', value: `${(stats.googleIndexing.successRate || 0).toFixed(0)}%` },
-            { label: 'Tempo Médio', value: `${(stats.googleIndexing.avgTime || 0).toFixed(1)}s` },
-          ]}
-          onClick={() => onNavigateToTab('indexing')}
-        />
-
-        <GSCClickableCard
-          title="IndexNow"
-          icon={Zap}
-          status={stats.indexNow.isValidated ? 'success' : 'warning'}
-          badge={{
-            text: stats.indexNow.isValidated ? 'Configurado' : 'Não configurado',
-            variant: stats.indexNow.isValidated ? 'success' : 'default',
-          }}
-          metrics={[
-            { 
-              label: 'Hoje', 
-              value: formatNumber(stats.indexNow.todayCount),
-              tooltip: 'Total de URLs enviadas hoje para IndexNow'
-            },
-            { label: 'Plataformas', value: formatNumber(stats.indexNow.platforms) },
-            { label: 'Total', value: formatNumber(stats.indexNow.totalSubmissions) },
-          ]}
-          onClick={() => onNavigateToTab('indexnow')}
-        />
-
-        <GSCClickableCard
-          title="Schedules"
-          icon={Clock}
-          status={stats.schedules.active > 0 ? 'success' : 'info'}
-          badge={{
-            text: `${formatNumber(stats.schedules.active)} Ativos`,
-            variant: stats.schedules.active > 0 ? 'success' : 'default',
-          }}
-          metrics={[
-            { label: 'Total', value: formatNumber(stats.schedules.total) },
-            { label: 'Ativos', value: formatNumber(stats.schedules.active) },
-            { label: 'Próximo', value: getNextRunText() },
-          ]}
-          onClick={() => onNavigateToTab('schedules')}
-        />
-      </div>
 
       {/* KPIs Agregados */}
       <GSCKPIPanel kpis={kpis} />
