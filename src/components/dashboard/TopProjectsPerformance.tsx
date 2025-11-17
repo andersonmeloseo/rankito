@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 interface TopProjectsPerformanceProps {
   userId: string;
@@ -25,9 +26,23 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Limpar cache ao montar o componente
+  useEffect(() => {
+    try {
+      localStorage.removeItem('top-projects-cache');
+      sessionStorage.clear();
+    } catch (e) {
+      console.error('❌ Erro ao limpar cache:', e);
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ["top-projects-performance"] });
+  }, [queryClient]);
+
   const { data: topProjects, isLoading } = useQuery({
-    queryKey: ["top-projects-performance", userId],
+    queryKey: ["top-projects-performance", userId, Date.now()],
     queryFn: async () => {
+      console.log('🔍 Buscando dados com userId:', userId);
+      
       // Buscar sites do usuário
       const { data: sites, error: sitesError } = await supabase
         .from("rank_rent_sites")
@@ -35,7 +50,12 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
         .eq("owner_user_id", userId);
 
       if (sitesError) throw sitesError;
-      if (!sites || sites.length === 0) return [];
+      if (!sites || sites.length === 0) {
+        console.log('⚠️ Nenhum site encontrado para o usuário');
+        return [];
+      }
+      
+      console.log('📊 Sites encontrados:', sites.length, sites.map(s => s.site_name));
 
       // Buscar conversões dos últimos 30 dias
       const thirtyDaysAgo = new Date();
@@ -48,6 +68,8 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
         .gte("created_at", thirtyDaysAgo.toISOString());
 
       if (conversionsError) throw conversionsError;
+      
+      console.log('📈 Conversões encontradas:', conversions?.length);
 
       // Agregar métricas por site
       const performanceMap = new Map<string, ProjectPerformance>();
@@ -72,15 +94,26 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
       });
 
       // Ordenar por total de conversões e pegar top 5
-      return Array.from(performanceMap.values())
+      const result = Array.from(performanceMap.values())
         .sort((a, b) => b.total_conversions - a.total_conversions)
         .slice(0, 5);
+      
+      console.log('🎯 Top 5 projetos calculados:', result);
+      
+      return result;
     },
     enabled: !!userId,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     staleTime: 0,
     gcTime: 0,
+  });
+
+  console.log('🖼️ Renderizando TopProjectsPerformance:', { 
+    userId, 
+    projectsCount: topProjects?.length,
+    isLoading,
+    projects: topProjects
   });
 
   if (isLoading) {
