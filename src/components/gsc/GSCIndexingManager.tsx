@@ -281,14 +281,26 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         <CardContent>
           <div className="space-y-4">
             {/* Filtros */}
-            <PageTableFilters
-              searchTerm={searchTerm}
-              onSearchChange={handleSearchChange}
-              pageSize={pageSize}
-              onPageSizeChange={handlePageSizeChange}
-              totalResults={pagesData?.length || 0}
-              filteredResults={filteredPages.length}
-            />
+      {/* Filtros e Botão de Ação */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1">
+          <PageTableFilters
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+            pageSize={pageSize}
+            onPageSizeChange={handlePageSizeChange}
+            totalResults={pagesData?.length || 0}
+            filteredResults={filteredPages.length}
+          />
+        </div>
+        <Button
+          onClick={handleIndexSelected}
+          disabled={selectedPages.size === 0}
+          className="shrink-0"
+        >
+          Indexar no GSC
+        </Button>
+      </div>
 
             {isLoadingPages ? (
               <Skeleton className="h-64" />
@@ -370,18 +382,12 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                   </TableBody>
                 </Table>
 
-                {/* Footer com contador e botão */}
-                <div className="flex justify-between items-center pt-4">
-                  <span className="text-sm text-muted-foreground">
-                    {selectedPages.size} {selectedPages.size === 1 ? 'selecionada' : 'selecionadas'}
-                  </span>
-                  <Button
-                    onClick={handleIndexSelected}
-                    disabled={selectedPages.size === 0}
-                  >
-                    🚀 Indexar no GSC
-                  </Button>
-                </div>
+          {/* Contador de selecionadas */}
+          <div className="pt-4">
+            <span className="text-sm text-muted-foreground">
+              {selectedPages.size} {selectedPages.size === 1 ? 'selecionada' : 'selecionadas'}
+            </span>
+          </div>
 
                 {/* Paginação */}
                 {pageSize !== 999999 && totalPages > 1 && (
