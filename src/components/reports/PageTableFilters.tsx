@@ -42,6 +42,7 @@ export const PageTableFilters = ({
             <SelectItem value="50">50</SelectItem>
             <SelectItem value="100">100</SelectItem>
             <SelectItem value="200">200</SelectItem>
+            <SelectItem value="999999">Todas</SelectItem>
           </SelectContent>
         </Select>
         <span className="text-sm text-muted-foreground whitespace-nowrap">

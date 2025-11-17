@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 interface IndexingStats {
-  total: number;
-  success: number;
-  failed: number;
-  pending: number;
+  todayTotal: number;
+  todaySuccess: number;
+  todayFailed: number;
+  todayPending: number;
   successRate: number;
   avgResponseTime: number;
 }
@@ -16,10 +16,10 @@ export function useGSCIndexingStats(siteId: string | null) {
     queryFn: async (): Promise<IndexingStats> => {
       if (!siteId) {
         return {
-          total: 0,
-          success: 0,
-          failed: 0,
-          pending: 0,
+          todayTotal: 0,
+          todaySuccess: 0,
+          todayFailed: 0,
+          todayPending: 0,
           successRate: 0,
           avgResponseTime: 0,
         };
@@ -34,10 +34,10 @@ export function useGSCIndexingStats(siteId: string | null) {
 
       if (!integrations || integrations.length === 0) {
         return {
-          total: 0,
-          success: 0,
-          failed: 0,
-          pending: 0,
+          todayTotal: 0,
+          todaySuccess: 0,
+          todayFailed: 0,
+          todayPending: 0,
           successRate: 0,
           avgResponseTime: 0,
         };
@@ -62,10 +62,10 @@ export function useGSCIndexingStats(siteId: string | null) {
       if (error) {
         console.error('Error fetching indexing stats:', error);
         return {
-          total: 0,
-          success: 0,
-          failed: 0,
-          pending: 0,
+          todayTotal: 0,
+          todaySuccess: 0,
+          todayFailed: 0,
+          todayPending: 0,
           successRate: 0,
           avgResponseTime: 0,
         };
@@ -93,10 +93,10 @@ export function useGSCIndexingStats(siteId: string | null) {
       }
 
       return {
-        total,
-        success,
-        failed,
-        pending,
+        todayTotal: total,
+        todaySuccess: success,
+        todayFailed: failed,
+        todayPending: pending,
         successRate,
         avgResponseTime,
       };
