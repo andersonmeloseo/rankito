@@ -137,6 +137,18 @@ export function useDiscoverSitemaps({ siteId, userId }: DiscoverSitemapsParams) 
     );
   };
 
+  // Remove individual sitemap
+  const removeSitemap = (sitemapUrl: string) => {
+    setDiscoveredSitemaps(prev => prev.filter(s => s.url !== sitemapUrl));
+    
+    // Remove from expanded if exists
+    setExpandedSitemaps(prev => {
+      const newExpanded = { ...prev };
+      delete newExpanded[sitemapUrl];
+      return newExpanded;
+    });
+  };
+
   // Get selected sitemaps
   const selectedSitemaps = discoveredSitemaps.filter(s => s.selected);
 
@@ -158,6 +170,7 @@ export function useDiscoverSitemaps({ siteId, userId }: DiscoverSitemapsParams) 
     autoDiscover: autoDiscover.mutate,
     toggleSitemapSelection,
     toggleSelectAll,
+    removeSitemap,
     reset,
   };
 }
