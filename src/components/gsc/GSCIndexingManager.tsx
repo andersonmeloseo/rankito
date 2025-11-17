@@ -9,7 +9,7 @@ import { useGSCIndexing } from "@/hooks/useGSCIndexing";
 import { GSCIndexingHistory } from "./GSCIndexingHistory";
 import { GSCSimpleBatchDialog } from "./GSCSimpleBatchDialog";
 import { PageTableFilters } from "@/components/reports/PageTableFilters";
-import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight, ExternalLink, Send, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight, ExternalLink, Send, CheckCircle2, XCircle, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState, useMemo } from "react";
@@ -30,6 +30,8 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
   const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [sortField, setSortField] = useState<'page_path' | 'page_title' | 'gsc_status' | 'last_submission' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Fetch site pages with GSC status
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
@@ -84,17 +86,45 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
     },
   });
 
-  // Filter and paginate pages
+  // Filter and sort pages
   const filteredPages = useMemo(() => {
     if (!pagesData) return [];
-    if (!searchTerm) return pagesData;
     
-    const search = searchTerm.toLowerCase();
-    return pagesData.filter(page => 
-      page.page_url.toLowerCase().includes(search) ||
-      page.page_path.toLowerCase().includes(search)
-    );
-  }, [pagesData, searchTerm]);
+    // Apply search filter
+    let result = pagesData;
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      result = result.filter(page => 
+        page.page_url.toLowerCase().includes(search) ||
+        page.page_path.toLowerCase().includes(search)
+      );
+    }
+    
+    // Apply sorting
+    if (sortField) {
+      result = [...result].sort((a, b) => {
+        let aValue = a[sortField];
+        let bValue = b[sortField];
+        
+        // Handle null/undefined
+        if (!aValue) aValue = '';
+        if (!bValue) bValue = '';
+        
+        // Convert to string for comparison
+        const aStr = String(aValue).toLowerCase();
+        const bStr = String(bValue).toLowerCase();
+        
+        // Compare
+        if (sortDirection === 'asc') {
+          return aStr.localeCompare(bStr);
+        } else {
+          return bStr.localeCompare(aStr);
+        }
+      });
+    }
+    
+    return result;
+  }, [pagesData, searchTerm, sortField, sortDirection]);
 
   const paginatedPages = useMemo(() => {
     if (pageSize === 999999) return filteredPages;
@@ -161,6 +191,25 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const handleIndexSingle = (url: string) => {
     setSelectedPages(new Set([url]));
     setShowBatchDialog(true);
+  };
+
+  const handleSort = (field: 'page_path' | 'page_title' | 'gsc_status' | 'last_submission') => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 ml-1" />
+      : <ArrowDown className="h-4 w-4 ml-1" />;
   };
 
   const getStatusBadge = (status: string) => {
@@ -256,15 +305,6 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                   Reseta em {formatDistanceToNow(new Date(resetAt), { locale: ptBR, addSuffix: true })}
                 </p>
               )}
-
-              <Alert className="mt-4">
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  <strong>Como indexar páginas:</strong> Vá para a aba "Páginas do Site", 
-                  selecione as páginas desejadas e use a ação em lote "Indexar no GSC". 
-                  A fila é processada automaticamente a cada 30 minutos.
-                </AlertDescription>
-              </Alert>
             </>
           )}
         </CardContent>
@@ -324,10 +364,42 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
                           onCheckedChange={handleToggleAll}
                         />
                       </TableHead>
-                      <TableHead>URL</TableHead>
-                      <TableHead>Título</TableHead>
-                      <TableHead>Status GSC</TableHead>
-                      <TableHead>Última Submissão</TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleSort('page_path')}
+                      >
+                        <div className="flex items-center">
+                          URL
+                          {getSortIcon('page_path')}
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleSort('page_title')}
+                      >
+                        <div className="flex items-center">
+                          Título
+                          {getSortIcon('page_title')}
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleSort('gsc_status')}
+                      >
+                        <div className="flex items-center">
+                          Status GSC
+                          {getSortIcon('gsc_status')}
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleSort('last_submission')}
+                      >
+                        <div className="flex items-center">
+                          Última Submissão
+                          {getSortIcon('last_submission')}
+                        </div>
+                      </TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
