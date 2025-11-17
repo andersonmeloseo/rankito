@@ -13,6 +13,7 @@ interface GlobalEcommerceMetrics {
     revenue: number;
     orders: number;
     aov: number;
+    views: number;
   }>;
   revenueEvolution: Array<{
     date: string;
@@ -91,12 +92,18 @@ export const useGlobalEcommerceMetrics = (userId: string | undefined) => {
       const topProjects = Array.from(siteMetrics.entries())
         .map(([siteId, metrics]) => {
           const site = sites.find(s => s.id === siteId);
+          // Count views for this site
+          const siteViews = conversions.filter(
+            c => c.site_id === siteId && c.event_type === 'product_view'
+          ).length;
+          
           return {
             siteId,
             siteName: site?.site_name || 'Site Desconhecido',
             revenue: metrics.revenue,
             orders: metrics.orders,
-            aov: metrics.orders > 0 ? metrics.revenue / metrics.orders : 0
+            aov: metrics.orders > 0 ? metrics.revenue / metrics.orders : 0,
+            views: siteViews
           };
         })
         .sort((a, b) => b.revenue - a.revenue)
