@@ -185,7 +185,7 @@ export const useAnalytics = ({
 
   // Timeline (últimos N dias)
   const { data: timeline, isLoading: timelineLoading } = useQuery({
-    queryKey: ["analytics-timeline", siteId, startDate, endDate, eventType, device],
+    queryKey: ["analytics-timeline", siteId, startDate, endDate, eventType, device, conversionType],
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_conversions")
@@ -200,6 +200,12 @@ export const useAnalytics = ({
 
       if (device !== "all") {
         query = query.filter('metadata->>device', 'eq', device);
+      }
+
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
       }
 
       const { data, error } = await query;
@@ -229,20 +235,37 @@ export const useAnalytics = ({
 
   // Distribuição de eventos
   const { data: events, isLoading: eventsLoading } = useQuery({
-    queryKey: ["analytics-events", siteId, startDate, endDate, device],
+    queryKey: ["analytics-events", siteId, startDate, endDate, device, conversionType],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_event_distribution", {
-        site_uuid: siteId,
-        start_date: startDate,
-        end_date: endDate,
-        device_filter: device,
-      });
+      let query = supabase
+        .from("rank_rent_conversions")
+        .select("event_type")
+        .eq("site_id", siteId)
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (device !== "all") {
+        query = query.filter('metadata->>device', 'eq', device);
+      }
+
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
-      return (data || []).map((item) => ({
-        name: item.event_type.replace("_", " ").toUpperCase(),
-        value: Number(item.count),
+      const eventCounts: Record<string, number> = {};
+      data?.forEach(conv => {
+        eventCounts[conv.event_type] = (eventCounts[conv.event_type] || 0) + 1;
+      });
+
+      return Object.entries(eventCounts).map(([event_type, count]) => ({
+        name: event_type.replace(/_/g, " ").toUpperCase(),
+        value: count,
       }));
     },
     enabled: !!siteId,
@@ -250,7 +273,7 @@ export const useAnalytics = ({
 
   // Top páginas
   const { data: topPages, isLoading: topPagesLoading } = useQuery({
-    queryKey: ["analytics-top-pages", siteId, startDate, endDate, eventType, device],
+    queryKey: ["analytics-top-pages", siteId, startDate, endDate, eventType, device, conversionType],
     queryFn: async () => {
       // Se eventType não for 'all', precisamos filtrar no cliente
       // porque a função SQL não suporta esse filtro
@@ -265,6 +288,12 @@ export const useAnalytics = ({
 
         if (device !== "all") {
           query = query.filter('metadata->>device', 'eq', device);
+        }
+
+        if (conversionType === "ecommerce") {
+          query = query.eq("is_ecommerce_event", true);
+        } else if (conversionType === "normal") {
+          query = query.eq("is_ecommerce_event", false);
         }
 
         query = query.limit(50000);
@@ -285,36 +314,64 @@ export const useAnalytics = ({
           .slice(0, 10);
       }
 
-      // Para 'all', usar a função SQL otimizada
-      const { data, error } = await supabase.rpc("get_top_pages", {
-        site_uuid: siteId,
-        start_date: startDate,
-        end_date: endDate,
-        device_filter: device,
-        limit_count: 10,
-      });
+      // Para 'all', usar query direta com filtro de conversionType
+      let query = supabase
+        .from("rank_rent_conversions")
+        .select("page_path, event_type")
+        .eq("site_id", siteId)
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
 
+      if (device !== "all") {
+        query = query.filter('metadata->>device', 'eq', device);
+      }
+
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+
+      query = query.limit(50000);
+
+      const { data, error } = await query;
       if (error) throw error;
 
-      return (data || []).map((item) => ({
-        page: item.page,
-        count: Number(item.page_views) + Number(item.conversions),
-      }));
+      const grouped = data?.reduce((acc: any, conv) => {
+        if (!acc[conv.page_path]) {
+          acc[conv.page_path] = { page: conv.page_path, count: 0 };
+        }
+        acc[conv.page_path].count++;
+        return acc;
+      }, {});
+
+      return Object.values(grouped || {})
+        .sort((a: any, b: any) => b.count - a.count)
+        .slice(0, 10);
     },
     enabled: !!siteId,
   });
 
   // Métricas do período anterior para comparação
   const { data: previousMetrics } = useQuery({
-    queryKey: ["analytics-previous-metrics", siteId, previousStart, previousEnd],
+    queryKey: ["analytics-previous-metrics", siteId, previousStart, previousEnd, conversionType],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("rank_rent_conversions")
         .select("*")
         .eq("site_id", siteId)
         .gte("created_at", previousStart)
-        .lte("created_at", previousEnd)
-        .limit(50000);
+        .lte("created_at", previousEnd);
+
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+
+      query = query.limit(50000);
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -333,7 +390,7 @@ export const useAnalytics = ({
 
   // Lista completa de conversões (últimas 100, ou todas se período = "all")
   const { data: conversions, isLoading: conversionsLoading } = useQuery({
-    queryKey: ["analytics-conversions", siteId, startDate, endDate, eventType, device, period],
+    queryKey: ["analytics-conversions", siteId, startDate, endDate, eventType, device, conversionType, period],
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_conversions")
@@ -353,6 +410,12 @@ export const useAnalytics = ({
         query = query.filter('metadata->>device', 'eq', device);
       }
 
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+
       const { data, error } = await query;
       if (error) throw error;
 
@@ -363,7 +426,7 @@ export const useAnalytics = ({
 
   // Timeline de Conversões - Query dedicada sem limite para gráficos
   const { data: conversionsForTimeline, isLoading: timelineConversionsLoading } = useQuery({
-    queryKey: ["analytics-conversions-timeline", siteId, startDate, endDate, device],
+    queryKey: ["analytics-conversions-timeline", siteId, startDate, endDate, device, conversionType],
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_conversions")
@@ -378,6 +441,12 @@ export const useAnalytics = ({
         query = query.filter('metadata->>device', 'eq', device);
       }
 
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+
       const { data, error } = await query;
       if (error) throw error;
 
@@ -388,7 +457,7 @@ export const useAnalytics = ({
 
   // Lista de page views separada
   const { data: pageViewsList, isLoading: pageViewsLoading } = useQuery({
-    queryKey: ["analytics-page-views", siteId, period, startDate, endDate, device],
+    queryKey: ["analytics-page-views", siteId, period, startDate, endDate, device, conversionType],
     queryFn: async () => {
       console.log('🔍 PageViewsList Query Debug:', {
         siteId,
@@ -423,6 +492,12 @@ export const useAnalytics = ({
         query = query.filter('metadata->>device', 'eq', device);
       }
 
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+
       const { data, error } = await query;
       
       console.log('🔍 PageViewsList Query Result:', {
@@ -442,26 +517,55 @@ export const useAnalytics = ({
 
   // Dados para funil de conversão
   const { data: funnelData } = useQuery({
-    queryKey: ["analytics-funnel", siteId, startDate, endDate, device],
+    queryKey: ["analytics-funnel", siteId, startDate, endDate, device, conversionType],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_funnel_metrics", {
-        site_uuid: siteId,
-        start_date: startDate,
-        end_date: endDate,
-        device_filter: device,
-      });
+      // Query direta para page views
+      let pageViewsQuery = supabase
+        .from("rank_rent_conversions")
+        .select("*", { count: 'exact', head: true })
+        .eq("site_id", siteId)
+        .eq("event_type", "page_view")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
 
-      if (error) throw error;
-
-      const result = data?.[0];
-      if (!result) {
-        return { pageViews: 0, interactions: 0, conversions: 0 };
+      if (device !== "all") {
+        pageViewsQuery = pageViewsQuery.filter('metadata->>device', 'eq', device);
       }
 
+      if (conversionType === "ecommerce") {
+        pageViewsQuery = pageViewsQuery.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        pageViewsQuery = pageViewsQuery.eq("is_ecommerce_event", false);
+      }
+
+      // Query direta para conversões
+      let conversionsQuery = supabase
+        .from("rank_rent_conversions")
+        .select("*", { count: 'exact', head: true })
+        .eq("site_id", siteId)
+        .neq("event_type", "page_view")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (device !== "all") {
+        conversionsQuery = conversionsQuery.filter('metadata->>device', 'eq', device);
+      }
+
+      if (conversionType === "ecommerce") {
+        conversionsQuery = conversionsQuery.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        conversionsQuery = conversionsQuery.eq("is_ecommerce_event", false);
+      }
+
+      const [{ count: pageViews }, { count: conversions }] = await Promise.all([
+        pageViewsQuery,
+        conversionsQuery,
+      ]);
+
       return {
-        pageViews: Number(result.page_views),
-        interactions: Number(result.interactions),
-        conversions: Number(result.conversions),
+        pageViews: pageViews || 0,
+        interactions: conversions || 0,
+        conversions: conversions || 0,
       };
     },
     enabled: !!siteId,
@@ -469,9 +573,9 @@ export const useAnalytics = ({
 
   // Heatmap por hora do dia
   const { data: hourlyData } = useQuery({
-    queryKey: ["analytics-hourly", siteId, startDate, endDate],
+    queryKey: ["analytics-hourly", siteId, startDate, endDate, conversionType],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("rank_rent_conversions")
         .select("created_at")
         .eq("site_id", siteId)
@@ -479,7 +583,13 @@ export const useAnalytics = ({
         .gte("created_at", startDate)
         .lte("created_at", endDate);
 
-      if (error) throw error;
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+
+      const { data, error } = await query;
 
       const hourCounts = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }));
       
@@ -495,19 +605,25 @@ export const useAnalytics = ({
 
   // Sparkline data (últimos 7 dias)
   const { data: sparklineData } = useQuery({
-    queryKey: ["analytics-sparkline", siteId],
+    queryKey: ["analytics-sparkline", siteId, conversionType],
     queryFn: async () => {
       const last7Days = startOfDay(subDays(new Date(), 7)).toISOString();
       const now = endOfDay(new Date()).toISOString();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("rank_rent_conversions")
         .select("created_at, event_type")
         .eq("site_id", siteId)
         .gte("created_at", last7Days)
         .lte("created_at", now);
 
-      if (error) throw error;
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+
+      const { data, error } = await query;
 
       const dailyCounts = Array.from({ length: 7 }, (_, i) => {
         const date = subDays(new Date(), 6 - i);
@@ -541,16 +657,22 @@ export const useAnalytics = ({
 
   // Conversion rate over time
   const { data: conversionRateData } = useQuery({
-    queryKey: ["analytics-conversion-rate", siteId, startDate, endDate],
+    queryKey: ["analytics-conversion-rate", siteId, startDate, endDate, conversionType],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("rank_rent_conversions")
         .select("created_at, event_type")
         .eq("site_id", siteId)
         .gte("created_at", startDate)
         .lte("created_at", endDate);
 
-      if (error) throw error;
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+
+      const { data, error } = await query;
 
       const dailyStats: Record<string, { pageViews: number; conversions: number }> = {};
       
@@ -580,7 +702,7 @@ export const useAnalytics = ({
 
   // Timeline comparativa de Page Views
   const { data: pageViewsTimeline, isLoading: pageViewsTimelineLoading } = useQuery({
-    queryKey: ["analytics-pageviews-timeline", siteId, startDate, endDate, device],
+    queryKey: ["analytics-pageviews-timeline", siteId, startDate, endDate, device, conversionType],
     queryFn: async () => {
       let currentQuery = supabase
         .from("rank_rent_conversions")
@@ -601,6 +723,14 @@ export const useAnalytics = ({
       if (device !== "all") {
         currentQuery = currentQuery.filter('metadata->>device', 'eq', device);
         previousQuery = previousQuery.filter('metadata->>device', 'eq', device);
+      }
+
+      if (conversionType === "ecommerce") {
+        currentQuery = currentQuery.eq("is_ecommerce_event", true);
+        previousQuery = previousQuery.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        currentQuery = currentQuery.eq("is_ecommerce_event", false);
+        previousQuery = previousQuery.eq("is_ecommerce_event", false);
       }
 
       const [{ data: currentData }, { data: previousData }] = await Promise.all([
@@ -635,7 +765,7 @@ export const useAnalytics = ({
 
   // Top Referrers
   const { data: topReferrers, isLoading: topReferrersLoading } = useQuery({
-    queryKey: ["analytics-top-referrers", siteId, startDate, endDate, device],
+    queryKey: ["analytics-top-referrers", siteId, startDate, endDate, device, conversionType],
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_conversions")
@@ -647,6 +777,12 @@ export const useAnalytics = ({
 
       if (device !== "all") {
         query = query.filter('metadata->>device', 'eq', device);
+      }
+
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
       }
 
       const { data, error } = await query;
@@ -673,7 +809,7 @@ export const useAnalytics = ({
 
   // Page Performance (views + conversions por página)
   const { data: pagePerformance, isLoading: pagePerformanceLoading } = useQuery({
-    queryKey: ["analytics-page-performance", siteId, startDate, endDate, device],
+    queryKey: ["analytics-page-performance", siteId, startDate, endDate, device, conversionType],
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_conversions")
@@ -684,6 +820,12 @@ export const useAnalytics = ({
 
       if (device !== "all") {
         query = query.filter('metadata->>device', 'eq', device);
+      }
+
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
       }
 
       const { data, error } = await query;
