@@ -20,6 +20,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
   const [searchTerm, setSearchTerm] = useState("");
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const [deviceFilter, setDeviceFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortConfig, setSortConfig] = useState<{
     key: "created_at" | "event_type" | "page_path" | "device" | "browser" | "city" | "is_ecommerce_event";
     direction: "asc" | "desc";
@@ -37,6 +38,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
     setSearchTerm("");
     setEventTypeFilter("all");
     setDeviceFilter("all");
+    setCategoryFilter("all");
     setCurrentPage(1);
   };
 
@@ -85,7 +87,11 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
         (deviceFilter === "tablet" && (convDevice.includes("tablet") || convDevice.includes("ipad"))) ||
         (deviceFilter === "desktop" && !convDevice.includes("mobile") && !convDevice.includes("tablet") && !convDevice.includes("android") && !convDevice.includes("iphone") && !convDevice.includes("ipad"));
       
-      return matchesSearch && matchesEventType && matchesDevice;
+      const matchesCategory = categoryFilter === "all" || 
+        (categoryFilter === "ecommerce" && conv.is_ecommerce_event === true) ||
+        (categoryFilter === "normal" && conv.is_ecommerce_event === false);
+      
+      return matchesSearch && matchesEventType && matchesDevice && matchesCategory;
     }) || [];
 
     // Apply sorting
@@ -180,7 +186,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
     });
   };
 
-  const hasActiveFilters = searchTerm !== "" || eventTypeFilter !== "all" || deviceFilter !== "all";
+  const hasActiveFilters = searchTerm !== "" || eventTypeFilter !== "all" || deviceFilter !== "all" || categoryFilter !== "all";
 
   const getEventBadgeVariant = (eventType: string): "default" | "secondary" | "outline" | "destructive" => {
     switch (eventType) {
@@ -295,6 +301,19 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                 <SelectItem value="mobile">Mobile</SelectItem>
                 <SelectItem value="desktop">Desktop</SelectItem>
                 <SelectItem value="tablet">Tablet</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={categoryFilter} onValueChange={(value) => {
+              setCategoryFilter(value);
+              setCurrentPage(1);
+            }}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as categorias</SelectItem>
+                <SelectItem value="ecommerce">🛒 E-commerce</SelectItem>
+                <SelectItem value="normal">💬 Conversões Normais</SelectItem>
               </SelectContent>
             </Select>
             {hasActiveFilters && (
