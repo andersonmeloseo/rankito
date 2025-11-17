@@ -37,10 +37,14 @@ export const PageViewsTab = ({ analytics, siteIds }: PageViewsTabProps) => {
     analyticsTopPageViews: analytics.topPageViews?.length
   });
 
-  // Prepare data for device distribution
+  // Prepare data for device distribution with percentage calculation
+  const totalDeviceViews = (analytics.deviceStats || []).reduce((sum: number, d: any) => sum + d.count, 0);
   const deviceDistributionData = (analytics.deviceStats || []).map((d: any) => ({
-    device: d.device,
-    views: d.count,
+    name: d.device,
+    value: d.count,
+    percentage: totalDeviceViews > 0 
+      ? ((d.count / totalDeviceViews) * 100).toFixed(1) 
+      : '0',
   }));
 
   // Filter page views only
