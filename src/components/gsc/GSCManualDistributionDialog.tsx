@@ -42,9 +42,9 @@ export function GSCManualDistributionDialog({
   const totalUrls = urls.length;
   
   // Filtrar apenas contas saudáveis com capacidade disponível
-  const availableAccounts = quota?.breakdown.filter(
+  const availableAccounts = (quota?.breakdown || []).filter(
     acc => (acc.health_status === 'healthy' || !acc.health_status) && acc.remaining > 0
-  ) || [];
+  );
 
   // Inicializar seleção de contas (todas saudáveis selecionadas por padrão)
   useEffect(() => {
