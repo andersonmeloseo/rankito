@@ -8,6 +8,7 @@ interface UseAnalyticsParams {
   period: string;
   eventType: string;
   device: string;
+  conversionType: string;
   customStartDate?: Date;
   customEndDate?: Date;
 }
@@ -17,6 +18,7 @@ export const useAnalytics = ({
   period,
   eventType,
   device,
+  conversionType,
   customStartDate,
   customEndDate,
 }: UseAnalyticsParams) => {
@@ -61,12 +63,14 @@ export const useAnalytics = ({
 
   // Métricas principais
   const { data: metrics, isLoading: metricsLoading } = useQuery({
-    queryKey: ["analytics-metrics", siteId, startDate, endDate, eventType, device, period],
+    queryKey: ["analytics-metrics", siteId, startDate, endDate, eventType, device, conversionType, period],
     queryFn: async () => {
       // Query base com filtros
       const baseFilters = {
         site_id: siteId,
         ...(eventType !== "all" && { event_type: eventType }),
+        ...(conversionType === "ecommerce" && { is_ecommerce_event: true }),
+        ...(conversionType === "normal" && { is_ecommerce_event: false }),
       };
 
       // 1. Visitantes únicos (buscar todos os IPs sem limite)
@@ -80,6 +84,12 @@ export const useAnalytics = ({
 
       if (device !== "all") {
         uniqueVisitorsQuery = uniqueVisitorsQuery.filter('metadata->>device', 'eq', device);
+      }
+      
+      if (conversionType === "ecommerce") {
+        uniqueVisitorsQuery = uniqueVisitorsQuery.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        uniqueVisitorsQuery = uniqueVisitorsQuery.eq("is_ecommerce_event", false);
       }
 
       const { data: ipsData, error: ipsError } = await uniqueVisitorsQuery;
@@ -98,6 +108,12 @@ export const useAnalytics = ({
       if (device !== "all") {
         uniquePagesQuery = uniquePagesQuery.filter('metadata->>device', 'eq', device);
       }
+      
+      if (conversionType === "ecommerce") {
+        uniquePagesQuery = uniquePagesQuery.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        uniquePagesQuery = uniquePagesQuery.eq("is_ecommerce_event", false);
+      }
 
       const { data: pagesData, error: pagesError } = await uniquePagesQuery;
       if (pagesError) throw pagesError;
@@ -114,6 +130,12 @@ export const useAnalytics = ({
 
       if (device !== "all") {
         pageViewsQuery = pageViewsQuery.filter('metadata->>device', 'eq', device);
+      }
+      
+      if (conversionType === "ecommerce") {
+        pageViewsQuery = pageViewsQuery.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        pageViewsQuery = pageViewsQuery.eq("is_ecommerce_event", false);
       }
 
       const { count: pageViews, error: pvError } = await pageViewsQuery;
@@ -134,6 +156,12 @@ export const useAnalytics = ({
 
       if (device !== "all") {
         conversionsQuery = conversionsQuery.filter('metadata->>device', 'eq', device);
+      }
+      
+      if (conversionType === "ecommerce") {
+        conversionsQuery = conversionsQuery.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        conversionsQuery = conversionsQuery.eq("is_ecommerce_event", false);
       }
 
       const { count: conversions, error: convError } = await conversionsQuery;

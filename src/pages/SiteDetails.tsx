@@ -97,9 +97,10 @@ const SiteDetails = () => {
   const [fetchingTitles, setFetchingTitles] = useState(false);
   
   // Analytics States
-  const [analyticsPeriod, setAnalyticsPeriod] = useState("0");
+  const [analyticsPeriod, setAnalyticsPeriod] = useState("30");
   const [analyticsEventType, setAnalyticsEventType] = useState("all");
   const [analyticsDevice, setAnalyticsDevice] = useState("all");
+  const [analyticsConversionType, setAnalyticsConversionType] = useState("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
   
@@ -385,6 +386,7 @@ const SiteDetails = () => {
     period: analyticsPeriod,
     eventType: analyticsEventType,
     device: analyticsDevice,
+    conversionType: analyticsConversionType,
     customStartDate,
     customEndDate,
   });
@@ -1262,6 +1264,8 @@ const SiteDetails = () => {
               onEventTypeChange={setAnalyticsEventType}
               device={analyticsDevice}
               onDeviceChange={setAnalyticsDevice}
+              conversionType={analyticsConversionType}
+              onConversionTypeChange={setAnalyticsConversionType}
               customStartDate={customStartDate}
               onCustomStartDateChange={setCustomStartDate}
               customEndDate={customEndDate}
