@@ -121,12 +121,13 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         return acc;
       }, {});
 
-      // Group by device/user_agent
-      const deviceStats = conversions?.reduce((acc: any, conv) => {
-        const ua = conv.user_agent || 'Unknown';
-        let device = 'Desktop';
-        if (ua.includes('Mobile')) device = 'Mobile';
-        if (ua.includes('Tablet')) device = 'Tablet';
+    // Group by device from metadata (only page_views)
+    const deviceStats = conversions
+      ?.filter((conv) => conv.event_type === 'page_view')
+      ?.reduce((acc: any, conv) => {
+        const metadata = conv.metadata as any;
+        const deviceRaw = metadata?.device || 'desktop';
+        const device = deviceRaw.charAt(0).toUpperCase() + deviceRaw.slice(1);
         
         if (!acc[device]) {
           acc[device] = { device, count: 0 };
