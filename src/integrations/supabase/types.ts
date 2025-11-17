@@ -1459,6 +1459,7 @@ export type Database = {
           event_type: Database["public"]["Enums"]["event_type"]
           id: string
           ip_address: string | null
+          is_ecommerce_event: boolean | null
           metadata: Json | null
           page_id: string | null
           page_path: string
@@ -1477,6 +1478,7 @@ export type Database = {
           event_type: Database["public"]["Enums"]["event_type"]
           id?: string
           ip_address?: string | null
+          is_ecommerce_event?: boolean | null
           metadata?: Json | null
           page_id?: string | null
           page_path: string
@@ -1495,6 +1497,7 @@ export type Database = {
           event_type?: Database["public"]["Enums"]["event_type"]
           id?: string
           ip_address?: string | null
+          is_ecommerce_event?: boolean | null
           metadata?: Json | null
           page_id?: string | null
           page_path?: string
