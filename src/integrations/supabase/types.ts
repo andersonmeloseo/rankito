@@ -3244,6 +3244,12 @@ export type Database = {
         | "whatsapp_click"
         | "form_submit"
         | "button_click"
+        | "product_view"
+        | "add_to_cart"
+        | "remove_from_cart"
+        | "begin_checkout"
+        | "purchase"
+        | "search"
       external_source_type:
         | "wordpress"
         | "webhook"
@@ -3392,6 +3398,12 @@ export const Constants = {
         "whatsapp_click",
         "form_submit",
         "button_click",
+        "product_view",
+        "add_to_cart",
+        "remove_from_cart",
+        "begin_checkout",
+        "purchase",
+        "search",
       ],
       external_source_type: [
         "wordpress",
