@@ -32,6 +32,10 @@ import { GlobalCostSettings } from "@/components/rank-rent/financial/GlobalCostS
 import { PaymentAlerts } from "@/components/rank-rent/financial/PaymentAlerts";
 import { PaymentsList } from "@/components/rank-rent/financial/PaymentsList";
 import { useGlobalFinancialMetrics } from "@/hooks/useGlobalFinancialMetrics";
+import { useGlobalEcommerceMetrics } from "@/hooks/useGlobalEcommerceMetrics";
+import { EcommerceOverviewCards } from "@/components/dashboard/EcommerceOverviewCards";
+import { TopProjectsByRevenue } from "@/components/dashboard/TopProjectsByRevenue";
+import { RevenueEvolutionChart } from "@/components/dashboard/RevenueEvolutionChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
 import { Header } from "@/components/layout/Header";
@@ -77,6 +81,9 @@ const Dashboard = () => {
   const { data: limits, isLoading: limitsLoading } = useSubscriptionLimits();
 
   const { sitesMetrics, summary, isLoading: financialLoading } = useGlobalFinancialMetrics(user?.id || "");
+
+  // Global e-commerce metrics
+  const { data: ecommerceMetrics, isLoading: ecommerceLoading } = useGlobalEcommerceMetrics(user?.id);
 
   // Buscar perfil completo do usuário
   const { data: profile } = useQuery({
@@ -347,6 +354,28 @@ const Dashboard = () => {
               ) : (
                 <>
                   <OverviewCards userId={user.id} />
+                  
+                  {/* E-commerce Overview Cards */}
+                  <EcommerceOverviewCards
+                    totalRevenue={ecommerceMetrics?.totalRevenue || 0}
+                    globalAOV={ecommerceMetrics?.globalAOV || 0}
+                    activeSites={ecommerceMetrics?.activeSites || 0}
+                    totalSites={allSites?.length || 0}
+                    totalOrders={ecommerceMetrics?.totalOrders || 0}
+                    isLoading={ecommerceLoading}
+                  />
+                  
+                  {/* E-commerce Charts Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <RevenueEvolutionChart 
+                      data={ecommerceMetrics?.revenueEvolution || []}
+                      isLoading={ecommerceLoading}
+                    />
+                    <TopProjectsByRevenue 
+                      projects={ecommerceMetrics?.topProjects || []}
+                      isLoading={ecommerceLoading}
+                    />
+                  </div>
                   
                   {/* CRM & Financial Summaries */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
