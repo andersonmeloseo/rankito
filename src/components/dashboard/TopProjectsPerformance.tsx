@@ -30,7 +30,6 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
   useEffect(() => {
     try {
       localStorage.removeItem('top-projects-cache');
-      sessionStorage.clear();
     } catch (e) {
       console.error('❌ Erro ao limpar cache:', e);
     }
@@ -39,7 +38,7 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
   }, [queryClient]);
 
   const { data: topProjects, isLoading } = useQuery({
-    queryKey: ["top-projects-performance", userId, Date.now()],
+    queryKey: ["top-projects-performance", userId],
     queryFn: async () => {
       console.log('🔍 Buscando dados com userId:', userId);
       
