@@ -1165,7 +1165,6 @@ export type Database = {
           status: string | null
           submitted_at: string | null
           url: string
-          used_integration_id: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -1180,7 +1179,6 @@ export type Database = {
           status?: string | null
           submitted_at?: string | null
           url: string
-          used_integration_id?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -1195,7 +1193,6 @@ export type Database = {
           status?: string | null
           submitted_at?: string | null
           url?: string
-          used_integration_id?: string | null
         }
         Relationships: [
           {
@@ -1238,13 +1235,6 @@ export type Database = {
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gsc_url_indexing_requests_used_integration_id_fkey"
-            columns: ["used_integration_id"]
-            isOneToOne: false
-            referencedRelation: "google_search_console_integrations"
             referencedColumns: ["id"]
           },
         ]
