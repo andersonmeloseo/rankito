@@ -16,8 +16,9 @@ interface ErrorLog {
   id: string;
   url: string;
   status: string;
-  submitted_at: string | null;
+  created_at: string;
   error_message: string | null;
+  attempts: number;
   integration_id: string;
   integration?: {
     connection_name: string;
@@ -33,7 +34,7 @@ export function GSCErrorLog({ siteId }: GSCErrorLogProps) {
   const [selectedErrors, setSelectedErrors] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
-  // Buscar apenas URLs que falharam
+  // Buscar apenas URLs que falharam na fila de indexação
   const { data: errorLogs, isLoading } = useQuery<ErrorLog[]>({
     queryKey: ["gsc-error-logs", siteId],
     queryFn: async () => {
@@ -49,15 +50,16 @@ export function GSCErrorLog({ siteId }: GSCErrorLogProps) {
 
       const integrationIds = integrations.map((i: any) => i.id);
 
-      // Buscar apenas requests com status failed/error
+      // Buscar URLs com status 'failed' em gsc_indexing_queue
       const { data, error } = await supabase
-        .from("gsc_url_indexing_requests")
+        .from("gsc_indexing_queue")
         .select(`
           id,
           url,
           status,
-          submitted_at,
+          created_at,
           error_message,
+          attempts,
           integration_id,
           integration:google_search_console_integrations(
             connection_name,
@@ -65,8 +67,8 @@ export function GSCErrorLog({ siteId }: GSCErrorLogProps) {
           )
         `)
         .in("integration_id", integrationIds)
-        .in("status", ["failed", "error"])
-        .order("submitted_at", { ascending: false })
+        .eq("status", "failed")
+        .order("created_at", { ascending: false })
         .limit(100);
 
       if (error) throw error;
@@ -78,7 +80,18 @@ export function GSCErrorLog({ siteId }: GSCErrorLogProps) {
   // Mutation para reenviar URLs com erro
   const retryMutation = useMutation({
     mutationFn: async (selectedLogs: ErrorLog[]) => {
-      // Agrupar URLs por integration_id para manter a mesma integração que falhou
+      const selectedIds = selectedLogs.map(log => log.id);
+      const urls = selectedLogs.map(log => log.url);
+
+      // PASSO 1: Deletar registros antigos com status 'failed'
+      const { error: deleteError } = await supabase
+        .from("gsc_indexing_queue")
+        .delete()
+        .in("id", selectedIds);
+
+      if (deleteError) throw deleteError;
+
+      // PASSO 2: Agrupar URLs por integration_id para manter a mesma integração
       const urlsByIntegration = selectedLogs.reduce((acc, log) => {
         const integrationId = log.integration_id;
         if (!acc[integrationId]) {
@@ -88,21 +101,22 @@ export function GSCErrorLog({ siteId }: GSCErrorLogProps) {
         return acc;
       }, {} as Record<string, string[]>);
 
-      // Inserir na fila de indexação mantendo a mesma integração
+      // PASSO 3: Inserir novos registros com status 'pending'
       const queueItems = Object.entries(urlsByIntegration).flatMap(([integrationId, urls]) =>
         urls.map((url) => ({
           integration_id: integrationId,
           url: url,
           scheduled_for: new Date().toISOString().split("T")[0],
           status: "pending",
+          attempts: 0,
         }))
       );
 
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from("gsc_indexing_queue")
         .insert(queueItems);
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
       return queueItems.length;
     },
@@ -123,7 +137,7 @@ export function GSCErrorLog({ siteId }: GSCErrorLogProps) {
   const removeMutation = useMutation({
     mutationFn: async (requestIds: string[]) => {
       const { error } = await supabase
-        .from("gsc_url_indexing_requests")
+        .from("gsc_indexing_queue")
         .delete()
         .in("id", requestIds);
 
@@ -268,6 +282,7 @@ export function GSCErrorLog({ siteId }: GSCErrorLogProps) {
                 <TableHead>URL</TableHead>
                 <TableHead>Integração GSC</TableHead>
                 <TableHead>Data da Falha</TableHead>
+                <TableHead className="text-center">Tentativas</TableHead>
                 <TableHead>Mensagem de Erro</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -306,13 +321,16 @@ export function GSCErrorLog({ siteId }: GSCErrorLogProps) {
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-muted-foreground">
-                      {log.submitted_at
-                        ? formatDistanceToNow(new Date(log.submitted_at), {
-                            addSuffix: true,
-                            locale: ptBR,
-                          })
-                        : "N/A"}
+                      {formatDistanceToNow(new Date(log.created_at), {
+                        addSuffix: true,
+                        locale: ptBR,
+                      })}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline">
+                      {log.attempts} tentativa{log.attempts !== 1 ? 's' : ''}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm max-w-xs truncate" title={log.error_message || "Erro desconhecido"}>
