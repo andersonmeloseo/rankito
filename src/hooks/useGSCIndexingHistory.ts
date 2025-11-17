@@ -29,11 +29,9 @@ export const useGSCIndexingHistory = ({
         .from('gsc_url_indexing_requests')
         .select(`
           *,
-          used_integration:google_search_console_integrations!gsc_url_indexing_requests_used_integration_id_fkey(
-            connection_name,
-            google_email
-          ),
           integration:google_search_console_integrations!gsc_url_indexing_requests_integration_id_fkey(
+            connection_name,
+            google_email,
             site_id
           )
         `, { count: 'exact' })
