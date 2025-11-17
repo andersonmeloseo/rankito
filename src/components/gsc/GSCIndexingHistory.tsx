@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ExternalLink, Search, Download, RefreshCw } from "lucide-react";
 import { useGSCIndexingHistory, useGSCIndexingStats, GSCIndexingHistoryFilters } from "@/hooks/useGSCIndexingHistory";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GSCIndexingHistoryProps {
   siteId: string;
@@ -21,6 +25,7 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
   const [perPage] = useState(20);
   const [filters, setFilters] = useState<GSCIndexingHistoryFilters>({});
   const [searchInput, setSearchInput] = useState("");
+  const [showOnlyFailed, setShowOnlyFailed] = useState(false);
 
   const { data: historyData, isLoading, refetch } = useGSCIndexingHistory({
     siteId,
@@ -30,6 +35,54 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
   });
 
   const { data: stats, isLoading: isLoadingStats } = useGSCIndexingStats(siteId);
+
+  // Hook para buscar attempts de URLs falhadas da fila
+  const { data: queueAttempts } = useQuery({
+    queryKey: ['gsc-queue-attempts', siteId, historyData?.requests],
+    queryFn: async () => {
+      if (!historyData?.requests) return {};
+      
+      const failedUrls = historyData.requests
+        .filter(r => r.status === 'failed')
+        .map(r => r.url);
+      
+      if (failedUrls.length === 0) return {};
+      
+      // Buscar IDs das integrações
+      const { data: integrations } = await supabase
+        .from('google_search_console_integrations')
+        .select('id')
+        .eq('site_id', siteId);
+      
+      const integrationIds = integrations?.map(i => i.id) || [];
+      
+      // Buscar attempts da fila
+      const { data: queueData } = await supabase
+        .from('gsc_indexing_queue')
+        .select('url, attempts')
+        .in('url', failedUrls)
+        .in('integration_id', integrationIds);
+      
+      // Mapear URL -> attempts
+      const attemptsMap: Record<string, number> = {};
+      queueData?.forEach(item => {
+        attemptsMap[item.url] = item.attempts;
+      });
+      
+      return attemptsMap;
+    },
+    enabled: !!historyData?.requests && historyData.requests.length > 0,
+  });
+
+  // Auto-aplicar filtro quando toggle muda
+  useEffect(() => {
+    if (showOnlyFailed) {
+      setFilters(prev => ({ ...prev, status: 'failed' }));
+    } else {
+      setFilters(prev => ({ ...prev, status: undefined }));
+    }
+    setPage(1);
+  }, [showOnlyFailed]);
 
   const handleSearch = () => {
     setFilters(prev => ({ ...prev, searchTerm: searchInput }));
@@ -136,9 +189,25 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
             </Button>
           </div>
 
+          {/* Toggle "Apenas Falhadas" */}
+          <div className="flex items-center space-x-2 px-4 py-2 border rounded-md bg-muted/20">
+            <Switch
+              id="show-only-failed"
+              checked={showOnlyFailed}
+              onCheckedChange={setShowOnlyFailed}
+            />
+            <Label 
+              htmlFor="show-only-failed" 
+              className="text-sm cursor-pointer whitespace-nowrap"
+            >
+              Apenas Falhadas
+            </Label>
+          </div>
+
           <Select 
             value={filters.status || 'all'} 
             onValueChange={(value) => handleFilterChange('status', value)}
+            disabled={showOnlyFailed}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Status" />
@@ -186,17 +255,18 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
 
         {/* Table */}
         <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
+        <Table>
+          <TableHeader>
+            <TableRow>
               <TableHead>URL</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Tentativas</TableHead>
               <TableHead>Conta GSC Utilizada</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Data/Hora</TableHead>
               <TableHead className="text-right">Detalhes</TableHead>
-              </TableRow>
-            </TableHeader>
+            </TableRow>
+          </TableHeader>
             <TableBody>
               {historyData?.requests && historyData.requests.length > 0 ? (
                 historyData.requests.map((request) => (
@@ -214,6 +284,25 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
                       </a>
                     </TableCell>
                     <TableCell>{getStatusBadge(request.status)}</TableCell>
+                    
+                    {/* Coluna de Tentativas */}
+                    <TableCell>
+                      {request.status === 'failed' ? (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                          {queueAttempts?.[request.url] 
+                            ? `${queueAttempts[request.url]} tentativa${queueAttempts[request.url] > 1 ? 's' : ''}`
+                            : '1 tentativa'
+                          }
+                        </Badge>
+                      ) : request.status === 'success' ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          1 tentativa
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    
                     <TableCell>
                       <div className="text-sm">
                         {request.integration ? (
@@ -260,8 +349,11 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Nenhuma requisição encontrada
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    {showOnlyFailed 
+                      ? "Nenhuma URL com falha encontrada"
+                      : "Nenhuma requisição encontrada"
+                    }
                   </TableCell>
                 </TableRow>
               )}
