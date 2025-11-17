@@ -216,13 +216,13 @@ export const GSCIndexingHistory = ({ siteId }: GSCIndexingHistoryProps) => {
                     <TableCell>{getStatusBadge(request.status)}</TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {request.used_integration ? (
+                        {request.integration ? (
                           <>
                             <div className="font-medium">
-                              {request.used_integration.connection_name}
+                              {request.integration.connection_name}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {request.used_integration.google_email}
+                              {request.integration.google_email}
                             </div>
                           </>
                         ) : (
