@@ -3,6 +3,12 @@ project_id = "jhzmgexprjnpgadkxjup"
 [functions.check-expired-trials]
 verify_jwt = false
 
+[functions.gsc-fetch-properties]
+verify_jwt = true
+
+[functions.gsc-test-connection]
+verify_jwt = false
+
 [functions.indexnow-validate-key]
 verify_jwt = true
 

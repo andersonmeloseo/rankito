@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ExternalLink, CheckCircle2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 interface GSCPropertySelectorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   properties: string[];
-  currentUrl: string | null;
+  currentUrl?: string;
   onSelect: (url: string) => void;
 }
 
@@ -21,7 +21,7 @@ export function GSCPropertySelectorDialog({
   currentUrl,
   onSelect,
 }: GSCPropertySelectorDialogProps) {
-  const [selectedUrl, setSelectedUrl] = useState<string>(currentUrl || properties[0] || '');
+  const [selectedUrl, setSelectedUrl] = useState<string>(currentUrl || properties[0] || "");
 
   const handleConfirm = () => {
     if (selectedUrl) {
@@ -34,69 +34,94 @@ export function GSCPropertySelectorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>🔍 Selecionar Propriedade do Google Search Console</DialogTitle>
+          <DialogTitle>Selecionar Propriedade do Google Search Console</DialogTitle>
           <DialogDescription>
-            Selecione a propriedade correta cadastrada no GSC para este projeto
+            Escolha a propriedade GSC correta para este projeto
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {properties.length === 0 ? (
-            <Alert>
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <p className="font-semibold mb-2">⚠️ Nenhuma Propriedade Disponível</p>
-                <p className="text-sm mb-2">
-                  A Service Account não tem acesso a nenhuma propriedade no Google Search Console.
-                </p>
-                <ol className="text-sm space-y-1 list-decimal list-inside">
-                  <li>Acesse o <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1">Google Search Console <ExternalLink className="h-3 w-3" /></a></li>
-                  <li>Adicione/verifique sua propriedade (se ainda não fez)</li>
-                  <li>Vá em Configurações → Usuários e permissões</li>
-                  <li>Adicione o email da Service Account como PROPRIETÁRIO</li>
-                  <li>Aguarde 2-3 minutos e teste novamente</li>
-                </ol>
+                <div className="space-y-2">
+                  <p className="font-semibold">Nenhuma propriedade encontrada</p>
+                  <p className="text-sm">
+                    A Service Account não tem acesso a nenhuma propriedade no Google Search Console.
+                  </p>
+                  <div className="space-y-1 text-sm mt-3">
+                    <p className="font-medium">Passos para resolver:</p>
+                    <ol className="list-decimal list-inside space-y-1 ml-2">
+                      <li>Acesse o <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">Google Search Console <ExternalLink className="h-3 w-3" /></a></li>
+                      <li>Selecione sua propriedade</li>
+                      <li>Vá em <strong>Configurações → Usuários e permissões</strong></li>
+                      <li>Clique em <strong>ADICIONAR USUÁRIO</strong></li>
+                      <li>Cole o email da Service Account</li>
+                      <li>Selecione permissão <strong>PROPRIETÁRIO</strong></li>
+                      <li>Aguarde 2-3 minutos e tente novamente</li>
+                    </ol>
+                  </div>
+                </div>
               </AlertDescription>
             </Alert>
           ) : (
             <>
-              <Alert>
-                <AlertDescription>
-                  <p className="text-sm">
-                    Encontramos {properties.length} propriedade(s) cadastrada(s) no GSC para esta Service Account.
-                    Selecione a URL <strong>exata</strong> que corresponde a este projeto.
-                  </p>
-                </AlertDescription>
-              </Alert>
-
-              <RadioGroup value={selectedUrl} onValueChange={setSelectedUrl}>
-                <div className="space-y-2">
-                  {properties.map((url) => (
-                    <div key={url} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                      <RadioGroupItem value={url} id={url} />
-                      <Label htmlFor={url} className="flex-1 cursor-pointer font-mono text-sm">
-                        {url}
-                        {url === currentUrl && (
-                          <span className="ml-2 text-xs text-green-600 inline-flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3" /> Atual
-                          </span>
-                        )}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </RadioGroup>
-
               {currentUrl && !properties.includes(currentUrl) && (
                 <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <p className="font-semibold">⚠️ URL Configurada Não Encontrada</p>
+                    <p className="font-semibold">URL configurada não encontrada</p>
                     <p className="text-sm mt-1">
-                      A URL atualmente configurada (<code className="font-mono">{currentUrl}</code>) não está
-                      disponível nas propriedades do GSC. Selecione uma das opções acima.
+                      A URL <code className="bg-muted px-1 py-0.5 rounded">{currentUrl}</code> não está
+                      disponível nas propriedades desta Service Account.
                     </p>
                   </AlertDescription>
                 </Alert>
               )}
+
+              <div className="space-y-3">
+                <Label>Propriedades disponíveis ({properties.length}):</Label>
+                <RadioGroup value={selectedUrl} onValueChange={setSelectedUrl}>
+                  <div className="space-y-2">
+                    {properties.map((url) => (
+                      <div
+                        key={url}
+                        className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
+                          selectedUrl === url
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <RadioGroupItem value={url} id={url} />
+                        <Label
+                          htmlFor={url}
+                          className="flex-1 cursor-pointer flex items-center gap-2"
+                        >
+                          <span className="font-mono text-sm">{url}</span>
+                          {url === currentUrl && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                              Atual
+                            </span>
+                          )}
+                        </Label>
+                        <CheckCircle2
+                          className={`h-4 w-4 ${
+                            selectedUrl === url ? 'text-primary' : 'text-muted-foreground/20'
+                          }`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <Alert>
+                <AlertDescription className="text-sm">
+                  <strong>Dica:</strong> Escolha a URL que corresponde exatamente ao formato
+                  cadastrado no Google Search Console (com ou sem barra final, com ou sem www).
+                </AlertDescription>
+              </Alert>
             </>
           )}
         </div>
