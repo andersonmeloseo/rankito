@@ -108,12 +108,42 @@ export function useGSCSitemaps({ siteId }: UseGSCSitemapsParams) {
       });
       queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps', siteId] });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao submeter sitemap",
-        description: error.message,
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      // Detectar erro de permissões e mostrar instruções
+      const isPermissionError = error.message?.includes('Permissões Insuficientes') || 
+                                error.message?.includes('403') || 
+                                error.message?.includes('forbidden');
+      
+      if (isPermissionError) {
+        toast({
+          title: "⚠️ Permissões Insuficientes no GSC",
+          description: "A Service Account precisa ser adicionada como Proprietário no Google Search Console. Veja as instruções no console.",
+          variant: "destructive",
+          duration: 10000,
+        });
+        
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('📋 COMO RESOLVER O ERRO DE PERMISSÕES DO GSC:');
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('1. Acesse: https://search.google.com/search-console');
+        console.error('2. Selecione sua propriedade no GSC');
+        console.error('3. Clique em "Configurações" (ícone de engrenagem)');
+        console.error('4. Vá em "Usuários e permissões"');
+        console.error('5. Clique em "ADICIONAR USUÁRIO"');
+        console.error('6. Cole o email da Service Account (verifique na integração)');
+        console.error('7. Selecione permissão "PROPRIETÁRIO" (obrigatório!)');
+        console.error('8. Clique em "Adicionar"');
+        console.error('9. Aguarde 2-3 minutos para propagação');
+        console.error('10. Tente novamente');
+        console.error('═══════════════════════════════════════════════════════════');
+      } else {
+        toast({
+          title: "Erro ao submeter sitemap",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps', siteId] });
     },
   });
 
