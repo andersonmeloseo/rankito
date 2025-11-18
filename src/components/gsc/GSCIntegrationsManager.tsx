@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddGSCIntegrationDialog } from './AddGSCIntegrationDialog';
+import { EditGSCIntegrationDialog } from './EditGSCIntegrationDialog';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
 import { GSCIndexingManager } from './GSCIndexingManager';
 import { GSCOverviewDashboard } from './GSCOverviewDashboard';
@@ -25,6 +26,7 @@ import {
 import {
   Plus,
   Trash2,
+  Edit,
   Link as LinkIcon,
   CheckCircle2,
   XCircle,
@@ -54,12 +56,16 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
     isLoading,
     planLimits,
     createIntegration,
+    updateIntegration,
     deleteIntegration,
     isCreating,
+    isUpdating,
     isDeleting,
   } = useGSCIntegrations(siteId, userId);
 
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [integrationToEdit, setIntegrationToEdit] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
@@ -71,6 +77,20 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
       serviceAccountJson: data.serviceAccountJson,
     });
     setShowAddDialog(false);
+  };
+
+  const handleEditClick = (integration: any) => {
+    setIntegrationToEdit(integration);
+    setShowEditDialog(true);
+  };
+
+  const handleUpdate = (data: any) => {
+    updateIntegration.mutate({
+      integrationId: data.integrationId,
+      connectionName: data.connectionName,
+      serviceAccountJson: data.serviceAccountJson,
+    });
+    setShowEditDialog(false);
   };
 
   const handleDeleteClick = (integrationId: string) => {
@@ -244,6 +264,15 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
 
                       <div className="flex gap-2">
                         <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditClick(integration)}
+                          disabled={isUpdating}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </Button>
+                        <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => handleDeleteClick(integration.id)}
@@ -308,6 +337,16 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
         onAdd={handleAdd}
         isLoading={isCreating}
       />
+
+      {integrationToEdit && (
+        <EditGSCIntegrationDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          integration={integrationToEdit}
+          onUpdate={handleUpdate}
+          isLoading={isUpdating}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

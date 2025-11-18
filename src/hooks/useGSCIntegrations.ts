@@ -155,6 +155,42 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
     },
   });
 
+  // Atualizar integração existente
+  const updateIntegration = useMutation({
+    mutationFn: async (input: {
+      integrationId: string;
+      connectionName: string;
+      serviceAccountJson: any;
+    }) => {
+      const updates: any = {
+        connection_name: input.connectionName,
+        service_account_json: input.serviceAccountJson,
+        google_email: input.serviceAccountJson.client_email,
+        health_status: 'checking',
+        last_error: null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await supabase
+        .from('google_search_console_integrations')
+        .update(updates)
+        .eq('id', input.integrationId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as GSCIntegration;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gsc-integrations'] });
+      toast.success('✅ Integração atualizada com sucesso!');
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error, 'gsc');
+      toast.error(`Erro ao atualizar integração: ${message.description}`);
+    },
+  });
+
   // Deletar integração
   const deleteIntegration = useMutation({
     mutationFn: async (integrationId: string) => {
@@ -177,42 +213,15 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
     },
   });
 
-  // Atualizar integração
-  const updateIntegration = useMutation({
-    mutationFn: async ({ 
-      id, 
-      updates 
-    }: { 
-      id: string; 
-      updates: Partial<GSCIntegration> 
-    }) => {
-      const { error } = await supabase
-        .from('google_search_console_integrations')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gsc-integrations', siteId] });
-      toast.success('Integração atualizada!');
-    },
-    onError: (error: any) => {
-      const errorMsg = getErrorMessage(error, 'atualizar integração GSC');
-      toast.error(errorMsg.title, { description: errorMsg.description });
-    },
-  });
-
   return {
     integrations: integrations || [],
     planLimits,
     isLoading,
     createIntegration,
-    deleteIntegration,
     updateIntegration,
+    deleteIntegration,
     isCreating: createIntegration.isPending,
-    isDeleting: deleteIntegration.isPending,
     isUpdating: updateIntegration.isPending,
+    isDeleting: deleteIntegration.isPending,
   };
 };
