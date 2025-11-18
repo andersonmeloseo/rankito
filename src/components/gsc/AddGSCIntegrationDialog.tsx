@@ -5,17 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle2, XCircle, Info, ExternalLink, Loader2, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, Loader2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { GSCPropertySelectorDialog } from "./GSCPropertySelectorDialog";
 
 interface AddGSCIntegrationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   siteId: string;
-  onAdd: (data: { connectionName: string; serviceAccountJson: any }) => void;
+  siteUrl: string;
+  onAdd: (data: { connectionName: string; serviceAccountJson: any; gscPropertyUrl?: string }) => void;
   isLoading?: boolean;
 }
 
@@ -23,25 +24,15 @@ export function AddGSCIntegrationDialog({
   open,
   onOpenChange,
   siteId,
+  siteUrl,
   onAdd,
   isLoading = false,
 }: AddGSCIntegrationDialogProps) {
   const [connectionName, setConnectionName] = useState("");
   const [jsonInput, setJsonInput] = useState("");
-  const [gscPropertyUrl, setGscPropertyUrl] = useState("");
-  const [jsonValidation, setJsonValidation] = useState<{
-    valid: boolean;
-    error?: string;
-    clientEmail?: string;
-  }>({ valid: false });
-  const [isTestingConnection, setIsTestingConnection] = useState(false);
-  const [connectionTestResult, setConnectionTestResult] = useState<{
-    status: 'idle' | 'testing' | 'success' | 'warning' | 'error';
-    message?: string;
-    details?: any;
-  }>({ status: 'idle' });
-  const [propertySelectorOpen, setPropertySelectorOpen] = useState(false);
-  const [availableProperties, setAvailableProperties] = useState<string[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState("");
+  const [jsonValidation, setJsonValidation] = useState<{ valid: boolean; error?: string; clientEmail?: string }>({ valid: false });
+  const [testResult, setTestResult] = useState<any>({ status: 'idle' });
 
   const validateJSON = (input: string) => {
     if (!input.trim()) {
@@ -53,484 +44,183 @@ export function AddGSCIntegrationDialog({
       const parsed = JSON.parse(input);
       
       if (parsed.type !== "service_account") {
-        setJsonValidation({
-          valid: false,
-          error: 'O campo "type" deve ser "service_account"',
-        });
+        setJsonValidation({ valid: false, error: 'O campo "type" deve ser "service_account"' });
         return;
       }
 
-      const requiredFields = [
-        "project_id",
-        "private_key_id",
-        "private_key",
-        "client_email",
-        "client_id",
-        "auth_uri",
-        "token_uri",
-      ];
+      const requiredFields = ["project_id", "private_key_id", "private_key", "client_email", "client_id", "auth_uri", "token_uri"];
 
       for (const field of requiredFields) {
         if (!parsed[field]) {
-          setJsonValidation({
-            valid: false,
-            error: `Campo obrigatório ausente: ${field}`,
-          });
+          setJsonValidation({ valid: false, error: `Campo obrigatório ausente: ${field}` });
           return;
         }
       }
 
-      setJsonValidation({
-        valid: true,
-        clientEmail: parsed.client_email,
-      });
+      setJsonValidation({ valid: true, clientEmail: parsed.client_email });
     } catch (err) {
-      setJsonValidation({
-        valid: false,
-        error: "JSON inválido. Verifique a formatação.",
-      });
+      setJsonValidation({ valid: false, error: "JSON inválido. Verifique a formatação." });
     }
   };
 
   const handleJSONChange = (value: string) => {
     setJsonInput(value);
     validateJSON(value);
+    setTestResult({ status: 'idle' });
+    setSelectedProperty("");
+  };
+
+  const handleTestAndDetect = async () => {
+    if (!jsonValidation.valid) {
+      toast.error('Corrija o JSON antes de testar');
+      return;
+    }
+
+    setTestResult({ status: 'testing' });
+
+    try {
+      const parsedJson = JSON.parse(jsonInput);
+
+      const { data, error } = await supabase.functions.invoke('gsc-test-and-detect', {
+        body: { service_account_json: parsedJson, configured_property_url: null, site_url: siteUrl },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Falha no teste');
+
+      const results = data.results;
+      
+      if (results.property_detection?.suggested_url) {
+        setSelectedProperty(results.property_detection.suggested_url);
+      } else if (results.available_properties?.length === 1) {
+        setSelectedProperty(results.available_properties[0]);
+      }
+
+      setTestResult({
+        status: results.overall_status,
+        authentication: results.authentication,
+        available_properties: results.available_properties || [],
+        property_detection: results.property_detection,
+        apis: results.apis,
+        suggestions: results.suggestions || [],
+      });
+
+      if (results.overall_status === 'healthy') {
+        toast.success('Conexão testada com sucesso!');
+      } else if (results.overall_status === 'warning') {
+        toast.warning('Conexão estabelecida com avisos');
+      } else {
+        toast.error('Problemas detectados na conexão');
+      }
+    } catch (error) {
+      console.error('Test error:', error);
+      toast.error('Erro ao testar conexão');
+      setTestResult({ status: 'error', suggestions: ['❌ Erro ao comunicar com o servidor'] });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!connectionName.trim()) {
+      toast.error('Nome da conexão é obrigatório');
       return;
     }
 
     if (!jsonValidation.valid) {
+      toast.error('JSON da Service Account é inválido');
+      return;
+    }
+
+    if (testResult.status !== 'success' && testResult.status !== 'warning' && testResult.status !== 'healthy') {
+      toast.error('Teste a conexão antes de salvar');
+      return;
+    }
+
+    if (!selectedProperty) {
+      toast.error('Selecione uma propriedade GSC');
       return;
     }
 
     const parsedJson = JSON.parse(jsonInput);
-    onAdd({
-      connectionName: connectionName.trim(),
-      serviceAccountJson: parsedJson,
-    });
+    onAdd({ connectionName: connectionName.trim(), serviceAccountJson: parsedJson, gscPropertyUrl: selectedProperty });
   };
 
-  const handleTestConnection = async () => {
-    if (!jsonValidation.valid) {
-      toast.error('Corrija o JSON antes de testar a conexão');
-      return;
-    }
-
-    setIsTestingConnection(true);
-    setConnectionTestResult({ status: 'testing' });
-
-    try {
-      const parsedJson = JSON.parse(jsonInput);
-
-      // Chamar nova edge function de teste
-      const { data: testData, error: testError } = await supabase.functions.invoke(
-        'gsc-test-connection',
-        {
-          body: {
-            service_account_json: parsedJson,
-            property_url: gscPropertyUrl || null,
-            site_url: await getSiteUrl(),
-          },
-        }
-      );
-
-      if (testError) {
-        console.error('Test connection error:', testError);
-        setConnectionTestResult({
-          status: 'error',
-          message: testError.message || 'Falha ao testar conexão',
-        });
-        return;
-      }
-
-      if (!testData.success) {
-        setConnectionTestResult({
-          status: 'error',
-          message: testData.message || 'Teste falhou',
-          details: testData,
-        });
-        return;
-      }
-
-      // Armazenar propriedades disponíveis
-      setAvailableProperties(testData.data.available_properties || []);
-
-      // Determinar status baseado no resultado
-      if (testData.status === 'warning') {
-        setConnectionTestResult({
-          status: 'warning',
-          message: testData.message,
-          details: testData,
-        });
-        toast.warning('Conexão OK, mas há avisos de configuração');
-      } else {
-        setConnectionTestResult({
-          status: 'success',
-          message: testData.message,
-          details: testData,
-        });
-        toast.success('Conexão testada com sucesso!');
-        
-        // Auto-preencher URL sugerida se disponível
-        if (testData.data.suggested_url && !gscPropertyUrl) {
-          setGscPropertyUrl(testData.data.suggested_url);
-        }
-      }
-    } catch (error) {
-      console.error('Error testing connection:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      setConnectionTestResult({
-        status: 'error',
-        message: 'Erro ao testar conexão: ' + errorMessage,
-      });
-      toast.error('Erro ao testar conexão');
-    } finally {
-      setIsTestingConnection(false);
-    }
-  };
-
-  const getSiteUrl = async () => {
-    const { data } = await supabase
-      .from('rank_rent_sites')
-      .select('site_url')
-      .eq('id', siteId)
-      .single();
-    return data?.site_url || '';
-  };
-
-  const handleDetectProperties = () => {
-    if (availableProperties.length > 0) {
-      setPropertySelectorOpen(true);
-    } else {
-      toast.error('Teste a conexão primeiro para detectar propriedades');
-    }
-  };
-
-  const handlePropertySelect = (url: string) => {
-    setGscPropertyUrl(url);
-    toast.success('Propriedade selecionada');
-  };
-
-  const handleClose = () => {
-    setConnectionName("");
-    setJsonInput("");
-    setGscPropertyUrl("");
-    setJsonValidation({ valid: false });
-    setConnectionTestResult({ status: 'idle' });
-    setAvailableProperties([]);
-    onOpenChange(false);
+  const getStatusBadge = () => {
+    if (testResult.status === 'idle') return null;
+    if (testResult.status === 'testing') return <Badge variant="outline"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Testando...</Badge>;
+    if (testResult.status === 'healthy' || testResult.status === 'success') return <Badge variant="default" className="bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" />Conexão OK</Badge>;
+    if (testResult.status === 'warning') return <Badge variant="default" className="bg-yellow-600"><AlertTriangle className="h-3 w-3 mr-1" />Avisos</Badge>;
+    return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Erro</Badge>;
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Adicionar Integração Google Search Console</DialogTitle>
-          <DialogDescription>
-            Configure uma Service Account do Google Cloud para conectar ao Search Console
-          </DialogDescription>
+          <DialogTitle>Adicionar Integração GSC</DialogTitle>
+          <DialogDescription>Configure uma nova integração com Google Search Console usando Service Account</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Connection Name */}
           <div className="space-y-2">
-            <Label htmlFor="connection-name">
-              Nome da Conexão <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="connection-name"
-              placeholder="Ex: Conta Principal, Backup, etc."
-              value={connectionName}
-              onChange={(e) => setConnectionName(e.target.value)}
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Um nome amigável para identificar esta integração
-            </p>
+            <Label htmlFor="connectionName">Nome da Conexão</Label>
+            <Input id="connectionName" value={connectionName} onChange={(e) => setConnectionName(e.target.value)} placeholder="Ex: Principal, Backup, etc." required />
           </div>
 
-          {/* Service Account JSON */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="service-account-json">
-                JSON da Service Account <span className="text-red-500">*</span>
-              </Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleTestConnection}
-                disabled={!jsonValidation.valid || isTestingConnection}
-              >
-                {isTestingConnection ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Testando...
-                  </>
-                ) : (
-                  <>
-                    🧪 Testar Conexão
-                  </>
-                )}
-              </Button>
+              <Label htmlFor="serviceAccountJson">Service Account JSON</Label>
+              {jsonValidation.valid && <Badge variant="outline" className="text-green-600"><CheckCircle2 className="h-3 w-3 mr-1" />JSON válido</Badge>}
             </div>
-            <Textarea
-              id="service-account-json"
-              placeholder='Cole aqui o JSON completo da Service Account...'
-              value={jsonInput}
-              onChange={(e) => handleJSONChange(e.target.value)}
-              className="font-mono text-sm min-h-[300px]"
-              required
-            />
-            
-            {/* Validation Badge */}
-            {jsonInput && (
-              <div className="flex items-center gap-2 mt-2">
-                {jsonValidation.valid ? (
-                  <>
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-600 font-medium">
-                      JSON válido • {jsonValidation.clientEmail}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="h-4 w-4 text-red-600" />
-                    <span className="text-sm text-red-600 font-medium">
-                      {jsonValidation.error || "JSON inválido"}
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
+            <Textarea id="serviceAccountJson" value={jsonInput} onChange={(e) => handleJSONChange(e.target.value)} placeholder='Cole o JSON completo da Service Account aqui...' className="font-mono text-xs min-h-[200px]" required />
+            {jsonValidation.error && <Alert variant="destructive"><XCircle className="h-4 w-4" /><AlertDescription>{jsonValidation.error}</AlertDescription></Alert>}
+            {jsonValidation.valid && jsonValidation.clientEmail && <Alert><CheckCircle2 className="h-4 w-4 text-green-600" /><AlertDescription>Email: <code className="text-xs">{jsonValidation.clientEmail}</code></AlertDescription></Alert>}
           </div>
 
-          {/* Connection Test Result */}
-          {connectionTestResult.status !== 'idle' && (
-            <Alert 
-              variant={
-                connectionTestResult.status === 'success' ? 'default' :
-                connectionTestResult.status === 'warning' ? 'default' :
-                'destructive'
-              }
-              className={
-                connectionTestResult.status === 'success' ? 'border-green-600 bg-green-50 dark:bg-green-950' :
-                connectionTestResult.status === 'warning' ? 'border-yellow-600 bg-yellow-50 dark:bg-yellow-950' :
-                ''
-              }
-            >
-              <AlertDescription>
-                <div className="space-y-2">
-                  <p className="font-semibold">{connectionTestResult.message}</p>
-                  
-                  {connectionTestResult.details && (
-                    <Collapsible>
-                      <CollapsibleTrigger className="text-sm underline hover:no-underline">
-                        Ver detalhes técnicos
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="mt-2 space-y-1 text-sm border-t pt-2">
-                          <p className="flex items-center gap-2">
-                            <span className="font-medium">Search Console API:</span>
-                            {connectionTestResult.details.search_console_api?.active ? 
-                              <span className="text-green-600">✅ Ativa</span> : 
-                              <span className="text-destructive">❌ {connectionTestResult.details.search_console_api?.error || 'Inativa'}</span>
-                            }
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <span className="font-medium">Web Search Indexing API:</span>
-                            {connectionTestResult.details.indexing_api?.active ? 
-                              <span className="text-green-600">✅ Ativa</span> : 
-                              <span className="text-destructive">❌ {connectionTestResult.details.indexing_api?.error || 'Inativa'}</span>
-                            }
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <span className="font-medium">Permissões GSC:</span>
-                            {connectionTestResult.details.gsc_permissions?.valid ? 
-                              <span className="text-green-600">✅ {connectionTestResult.details.gsc_permissions.level}</span> : 
-                              <span className="text-destructive">❌ {connectionTestResult.details.gsc_permissions?.error || 'Sem permissão'}</span>
-                            }
-                          </p>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  )}
+          <Button type="button" onClick={handleTestAndDetect} disabled={!jsonValidation.valid || testResult.status === 'testing'} className="w-full" variant="outline">
+            {testResult.status === 'testing' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Testando Conexão...</> : <><Search className="mr-2 h-4 w-4" />Testar e Detectar Propriedades</>}
+          </Button>
+
+          {testResult.status !== 'idle' && testResult.status !== 'testing' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between"><span className="text-sm font-medium">Status da Conexão:</span>{getStatusBadge()}</div>
+
+              {testResult.available_properties && testResult.available_properties.length > 0 && (
+                <div className="space-y-3">
+                  <Label>Propriedades GSC Disponíveis ({testResult.available_properties.length})</Label>
+                  <RadioGroup value={selectedProperty} onValueChange={setSelectedProperty}>
+                    {testResult.available_properties.map((property: string) => (
+                      <div key={property} className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                        <RadioGroupItem value={property} id={property} />
+                        <Label htmlFor={property} className="flex-1 cursor-pointer">
+                          <code className="text-sm">{property}</code>
+                          {property === testResult.property_detection?.suggested_url && <Badge variant="outline" className="ml-2 text-green-600">Sugerida</Badge>}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
                 </div>
-              </AlertDescription>
-            </Alert>
+              )}
+
+              {testResult.suggestions && testResult.suggestions.length > 0 && (
+                <Alert variant={testResult.status === 'error' ? 'destructive' : 'default'}>
+                  <AlertDescription className="space-y-1">
+                    {testResult.suggestions.map((suggestion: string, idx: number) => <div key={idx} className="text-sm">{suggestion}</div>)}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
           )}
 
-          {/* Tutorial Alert */}
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription className="space-y-4">
-              <p className="font-semibold text-base">📋 Como obter o JSON da Service Account e conectar no Search Console:</p>
-              
-              {/* Alert sobre 2 APIs */}
-              <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
-                <p className="text-sm font-semibold text-orange-800 flex items-center gap-2">
-                  <XCircle className="h-4 w-4" />
-                  Atenção: Você precisa ativar DUAS APIs diferentes no Google Cloud
-                </p>
-                <ul className="text-xs text-orange-700 mt-2 space-y-1 pl-5">
-                  <li>✅ <strong>Search Console API</strong> - Para gerenciar sitemaps</li>
-                  <li>✅ <strong>Web Search Indexing API</strong> - Para indexar URLs individuais</li>
-                </ul>
-              </div>
-              
-              <div className="space-y-4 text-sm">
-                {/* Etapa 1 */}
-                <div className="space-y-1">
-                  <p className="font-semibold">1. Criar Projeto no Google Cloud</p>
-                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
-                    <li>
-                      Acesse{" "}
-                      <a
-                        href="https://console.cloud.google.com/projectcreate?previousPage=%2Fiam-admin%2Fserviceaccounts%2Fdetails%2F109369789572842041989%2Fkeys%3Fproject%3Dgen-lang-client-0310873852&organizationId=0"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline inline-flex items-center gap-1"
-                      >
-                        Google Cloud Console
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </li>
-                    <li><strong>Crie um novo projeto</strong> (dê um nome ao seu projeto)</li>
-                  </ul>
-                </div>
-
-                {/* Etapa 2 - PRIMEIRA API */}
-                <div className="space-y-1 border-l-4 border-blue-500 pl-3">
-                  <p className="font-semibold text-blue-600">2. 🔌 Ativar Search Console API (1ª API)</p>
-                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
-                    <li>
-                      Acesse{" "}
-                      <a
-                        href="https://console.cloud.google.com/marketplace/product/google/searchconsole.googleapis.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline inline-flex items-center gap-1"
-                      >
-                        Search Console API no Marketplace
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </li>
-                    <li><strong>Selecione o projeto</strong> que você criou na etapa anterior</li>
-                    <li>Clique em <strong>"Ativar"</strong> e aguarde a confirmação</li>
-                    <li className="text-blue-600 font-medium">✅ Esta API é usada para gerenciar sitemaps e propriedades</li>
-                  </ul>
-                </div>
-
-                {/* Etapa 3 - SEGUNDA API (CRÍTICA) */}
-                <div className="space-y-1 border-l-4 border-red-500 pl-3">
-                  <p className="font-semibold text-red-600">3. 🚨 Ativar Web Search Indexing API (2ª API - OBRIGATÓRIA)</p>
-                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
-                    <li>
-                      Acesse{" "}
-                      <a
-                        href="https://console.cloud.google.com/apis/library/indexing.googleapis.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline inline-flex items-center gap-1"
-                      >
-                        Web Search Indexing API no Marketplace
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </li>
-                    <li><strong>Selecione o mesmo projeto</strong> da etapa anterior</li>
-                    <li>Clique em <strong>"Ativar"</strong> e aguarde a confirmação (pode levar alguns minutos)</li>
-                    <li className="text-red-600 font-bold">⚠️ Sem esta API, a indexação individual de URLs NÃO funcionará</li>
-                    <li className="text-orange-600">💡 Esta API é separada da Search Console API e ambas são necessárias</li>
-                  </ul>
-                </div>
-
-                {/* Etapa 4 */}
-                <div className="space-y-1">
-                  <p className="font-semibold">4. 👤 Criar Conta de Serviço</p>
-                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
-                    <li>No menu lateral, vá em <code className="bg-muted px-1 py-0.5 rounded text-xs">IAM e Admin</code> → <code className="bg-muted px-1 py-0.5 rounded text-xs">Contas de Serviço</code></li>
-                    <li>Clique em <strong>"+ Criar Conta de Serviço"</strong></li>
-                    <li>Dê um nome (normalmente o nome do seu site)</li>
-                    <li>Clique em <strong>"Criar e Continuar"</strong> e depois <strong>"Concluir"</strong></li>
-                    <li>Verifique que o email foi criado e o status está <strong>ativado</strong></li>
-                  </ul>
-                </div>
-
-                {/* Etapa 5 */}
-                <div className="space-y-1">
-                  <p className="font-semibold">5. 🔑 Gerar Chave JSON</p>
-                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
-                    <li>Na lista de contas de serviço, localize o email que você criou</li>
-                    <li>Clique nos <strong>três pontos</strong> (Ações) e depois em <strong>"Gerenciar Chaves"</strong></li>
-                    <li>Clique em <strong>"Adicionar Chave"</strong> → <strong>"Criar Nova Chave"</strong></li>
-                    <li>Escolha o formato <strong>"JSON"</strong></li>
-                    <li><strong>Salve o arquivo JSON</strong> que será baixado automaticamente</li>
-                    <li>Cole o conteúdo completo do arquivo JSON no campo acima</li>
-                  </ul>
-                </div>
-
-                {/* Etapa 6 - CRÍTICA */}
-                <div className="space-y-1 border-l-4 border-orange-500 pl-3">
-                  <p className="font-semibold text-orange-600">6. 🚨 Adicionar Permissões no Search Console (CRÍTICO)</p>
-                  <ul className="list-disc list-inside pl-4 space-y-1 text-muted-foreground">
-                    <li>
-                      Acesse{" "}
-                      <a
-                        href="https://search.google.com/search-console"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline inline-flex items-center gap-1"
-                      >
-                        Google Search Console
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </li>
-                    <li><strong>Busque pelo seu domínio</strong> na lista de propriedades</li>
-                    <li>No menu lateral (final da página), clique em <strong>"Configurações"</strong></li>
-                    <li>Clique em <strong>"Usuários e Permissões"</strong></li>
-                    <li>Clique em <strong>"Adicionar Usuário"</strong></li>
-                    <li>Cole o <strong>email da Service Account</strong> (client_email do JSON) no campo "Endereço de Email"</li>
-                    <li>Selecione a permissão <strong>"Proprietário"</strong></li>
-                    <li>Clique em <strong>"Adicionar"</strong></li>
-                  </ul>
-                </div>
-              </div>
-            </AlertDescription>
-          </Alert>
-
-          {/* Actions */}
-          <div className="flex gap-3 justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isLoading}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoading || !connectionName.trim() || !jsonValidation.valid}
-            >
-              {isLoading ? "Salvando..." : "Salvar e Conectar"}
+          <div className="flex gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading} className="flex-1">Cancelar</Button>
+            <Button type="submit" disabled={isLoading || !connectionName.trim() || !jsonValidation.valid || !selectedProperty || (testResult.status !== 'healthy' && testResult.status !== 'success' && testResult.status !== 'warning')} className="flex-1">
+              {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : 'Adicionar Integração'}
             </Button>
           </div>
         </form>
       </DialogContent>
-
-      {/* Property Selector Dialog */}
-      <GSCPropertySelectorDialog
-        open={propertySelectorOpen}
-        onOpenChange={setPropertySelectorOpen}
-        properties={availableProperties}
-        currentUrl={gscPropertyUrl}
-        onSelect={handlePropertySelect}
-      />
     </Dialog>
   );
 }
