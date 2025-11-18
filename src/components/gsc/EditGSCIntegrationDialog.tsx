@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle2, XCircle, Info, ExternalLink, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Info, Loader2, Search, ExternalLink, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { GSCPropertySelectorDialog } from "./GSCPropertySelectorDialog";
 
 interface EditGSCIntegrationDialogProps {
   open: boolean;
@@ -19,8 +20,14 @@ interface EditGSCIntegrationDialogProps {
     connection_name: string;
     service_account_json: any;
     google_email?: string;
+    gsc_property_url?: string | null;
   };
-  onUpdate: (data: { integrationId: string; connectionName: string; serviceAccountJson: any }) => void;
+  onUpdate: (data: { 
+    integrationId: string; 
+    connectionName: string; 
+    serviceAccountJson: any;
+    gscPropertyUrl?: string | null;
+  }) => void;
   isLoading?: boolean;
 }
 
@@ -39,6 +46,7 @@ export function EditGSCIntegrationDialog({
 }: EditGSCIntegrationDialogProps) {
   const [connectionName, setConnectionName] = useState("");
   const [jsonInput, setJsonInput] = useState("");
+  const [gscPropertyUrl, setGscPropertyUrl] = useState("");
   const [jsonValidation, setJsonValidation] = useState<{
     valid: boolean;
     error?: string;
@@ -46,11 +54,14 @@ export function EditGSCIntegrationDialog({
   }>({ valid: false });
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [connectionTestResult, setConnectionTestResult] = useState<ValidationResult>({ status: 'idle' });
+  const [propertySelectorOpen, setPropertySelectorOpen] = useState(false);
+  const [availableProperties, setAvailableProperties] = useState<string[]>([]);
 
   // Preencher campos com dados atuais da integração
   useEffect(() => {
     if (open && integration) {
       setConnectionName(integration.connection_name);
+      setGscPropertyUrl(integration.gsc_property_url || "");
       const jsonString = JSON.stringify(integration.service_account_json, null, 2);
       setJsonInput(jsonString);
       validateJSON(jsonString);
@@ -153,7 +164,17 @@ export function EditGSCIntegrationDialog({
       if (error) throw error;
 
       const { validation } = data;
-      
+
+      // Armazenar propriedades disponíveis
+      if (validation.property_detection?.available_properties) {
+        setAvailableProperties(validation.property_detection.available_properties);
+        
+        // Auto-sugerir URL se detectada
+        if (validation.property_detection.suggested_url && !gscPropertyUrl) {
+          setGscPropertyUrl(validation.property_detection.suggested_url);
+        }
+      }
+
       if (validation.overall_status === 'healthy') {
         setConnectionTestResult({
           status: 'success',
@@ -200,11 +221,25 @@ export function EditGSCIntegrationDialog({
       integrationId: integration.id,
       connectionName: connectionName.trim(),
       serviceAccountJson: parsedJson,
+      gscPropertyUrl: gscPropertyUrl || null,
     });
   };
 
   const handleClose = () => {
     onOpenChange(false);
+  };
+
+  const handleDetectProperties = () => {
+    if (availableProperties.length > 0) {
+      setPropertySelectorOpen(true);
+    } else {
+      toast.error('Teste a conexão primeiro para detectar propriedades disponíveis');
+    }
+  };
+
+  const handlePropertySelect = (url: string) => {
+    setGscPropertyUrl(url);
+    toast.success('Propriedade selecionada com sucesso');
   };
 
   return (
@@ -341,6 +376,79 @@ export function EditGSCIntegrationDialog({
             </Alert>
           )}
 
+          {/* Property URL Configuration */}
+          {connectionTestResult.status !== 'idle' && (
+            <div className="space-y-4">
+              {/* Property URL Mismatch Alert */}
+              {connectionTestResult.details?.property_detection?.url_matches === false && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    <p className="font-semibold mb-2">⚠️ URL Incompatível Detectada</p>
+                    <div className="text-sm space-y-1">
+                      {connectionTestResult.details.property_detection.configured_url && (
+                        <p>
+                          <strong>URL Configurada:</strong>{' '}
+                          <code className="bg-background/50 px-1 py-0.5 rounded">
+                            {connectionTestResult.details.property_detection.configured_url}
+                          </code>
+                        </p>
+                      )}
+                      {connectionTestResult.details.property_detection.suggested_url && (
+                        <p>
+                          <strong>URL Sugerida:</strong>{' '}
+                          <code className="bg-background/50 px-1 py-0.5 rounded">
+                            {connectionTestResult.details.property_detection.suggested_url}
+                          </code>
+                        </p>
+                      )}
+                      <p className="mt-2">
+                        {connectionTestResult.details.property_detection.available_properties?.length > 0 ? (
+                          <>
+                            Encontramos {connectionTestResult.details.property_detection.available_properties.length} propriedade(s) disponível(eis).
+                            Use o botão "Detectar Propriedades" abaixo para selecionar a correta.
+                          </>
+                        ) : (
+                          'Nenhuma propriedade disponível. Adicione a Service Account como proprietário no GSC.'
+                        )}
+                      </p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Manual Property URL Input */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="gsc-property-url">
+                    URL da Propriedade GSC
+                    <Info className="inline h-3 w-3 ml-1 text-muted-foreground" />
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDetectProperties}
+                    disabled={availableProperties.length === 0}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Detectar Propriedades
+                  </Button>
+                </div>
+                <Input
+                  id="gsc-property-url"
+                  placeholder="https://exemplo.com.br ou https://www.exemplo.com.br/"
+                  value={gscPropertyUrl}
+                  onChange={(e) => setGscPropertyUrl(e.target.value)}
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  URL exata cadastrada no Google Search Console (com/sem www, com/sem barra final).
+                  Deixe vazio para usar a URL do site automaticamente.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
@@ -360,6 +468,15 @@ export function EditGSCIntegrationDialog({
           </div>
         </form>
       </DialogContent>
+
+      {/* Property Selector Dialog */}
+      <GSCPropertySelectorDialog
+        open={propertySelectorOpen}
+        onOpenChange={setPropertySelectorOpen}
+        properties={availableProperties}
+        currentUrl={gscPropertyUrl}
+        onSelect={handlePropertySelect}
+      />
     </Dialog>
   );
 }

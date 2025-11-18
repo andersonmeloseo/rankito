@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getIntegrationWithValidToken } from '../_shared/gsc-helpers.ts';
+import { comparePropertyUrl } from '../_shared/gsc-property-detector.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,6 +51,12 @@ Deno.serve(async (req) => {
       search_console_api: { active: false, error: null as string | null },
       indexing_api: { active: false, error: null as string | null },
       gsc_permissions: { valid: false, level: null as string | null, error: null as string | null },
+      property_detection: {
+        available_properties: [] as string[],
+        configured_url: null as string | null,
+        url_matches: false,
+        suggested_url: null as string | null,
+      },
       overall_status: 'unhealthy' as 'healthy' | 'degraded' | 'unhealthy',
     };
 
@@ -143,6 +150,37 @@ Deno.serve(async (req) => {
       }
     } else {
       results.gsc_permissions.error = 'No GSC property URL configured';
+    }
+
+    // Test 4: Property Detection
+    try {
+      console.log('🔍 Detecting GSC properties...');
+      
+      // Get site URL for comparison
+      const { data: siteData } = await supabase
+        .from('rank_rent_sites')
+        .select('site_url')
+        .eq('id', integration.site_id)
+        .single();
+
+      const siteUrl = siteData?.site_url || '';
+      
+      const propertyDetection = await comparePropertyUrl(
+        integration.access_token,
+        integration.gsc_property_url,
+        siteUrl
+      );
+      
+      results.property_detection = propertyDetection;
+      console.log('✅ Property Detection:', propertyDetection);
+    } catch (error) {
+      console.error('❌ Property Detection Error:', error);
+      results.property_detection = {
+        available_properties: [],
+        configured_url: integration.gsc_property_url,
+        url_matches: false,
+        suggested_url: null,
+      };
     }
 
     // Determine overall status
