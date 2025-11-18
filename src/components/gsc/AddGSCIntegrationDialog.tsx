@@ -5,7 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, XCircle, Info, ExternalLink } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CheckCircle2, XCircle, Info, ExternalLink, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface AddGSCIntegrationDialogProps {
   open: boolean;
@@ -29,6 +32,12 @@ export function AddGSCIntegrationDialog({
     error?: string;
     clientEmail?: string;
   }>({ valid: false });
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState<{
+    status: 'idle' | 'testing' | 'success' | 'warning' | 'error';
+    message?: string;
+    details?: any;
+  }>({ status: 'idle' });
 
   const validateJSON = (input: string) => {
     if (!input.trim()) {
@@ -102,10 +111,83 @@ export function AddGSCIntegrationDialog({
     });
   };
 
+  const handleTestConnection = async () => {
+    if (!jsonValidation.valid) {
+      toast.error('Corrija o JSON antes de testar a conexão');
+      return;
+    }
+
+    setIsTestingConnection(true);
+    setConnectionTestResult({ status: 'testing' });
+
+    try {
+      // Criar integração temporária para teste
+      const parsedJson = JSON.parse(jsonInput);
+      const { data: tempIntegration, error: createError } = await supabase
+        .from('google_search_console_integrations')
+        .insert({
+          site_id: siteId,
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          connection_name: '__temp_test_connection__',
+          service_account_json: parsedJson,
+          google_email: parsedJson.client_email,
+          is_active: false,
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      // Chamar edge function de validação
+      const { data, error } = await supabase.functions.invoke('gsc-validate-apis', {
+        body: { integration_id: tempIntegration.id }
+      });
+
+      // Deletar integração temporária
+      await supabase
+        .from('google_search_console_integrations')
+        .delete()
+        .eq('id', tempIntegration.id);
+
+      if (error) throw error;
+
+      const { validation } = data;
+      
+      if (validation.overall_status === 'healthy') {
+        setConnectionTestResult({
+          status: 'success',
+          message: '✅ Conexão validada com sucesso! Todas as APIs estão funcionando.',
+          details: validation
+        });
+      } else if (validation.overall_status === 'degraded') {
+        setConnectionTestResult({
+          status: 'warning',
+          message: '⚠️ Conexão parcial. Algumas APIs não estão disponíveis.',
+          details: validation
+        });
+      } else {
+        setConnectionTestResult({
+          status: 'error',
+          message: '❌ Falha na conexão. Verifique as permissões.',
+          details: validation
+        });
+      }
+
+    } catch (err: any) {
+      setConnectionTestResult({
+        status: 'error',
+        message: `❌ Erro ao testar: ${err.message || 'Erro desconhecido'}`
+      });
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
   const handleClose = () => {
     setConnectionName("");
     setJsonInput("");
     setJsonValidation({ valid: false });
+    setConnectionTestResult({ status: 'idle' });
     onOpenChange(false);
   };
 
@@ -139,9 +221,29 @@ export function AddGSCIntegrationDialog({
 
           {/* Service Account JSON */}
           <div className="space-y-2">
-            <Label htmlFor="service-account-json">
-              JSON da Service Account <span className="text-red-500">*</span>
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="service-account-json">
+                JSON da Service Account <span className="text-red-500">*</span>
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleTestConnection}
+                disabled={!jsonValidation.valid || isTestingConnection}
+              >
+                {isTestingConnection ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Testando...
+                  </>
+                ) : (
+                  <>
+                    🧪 Testar Conexão
+                  </>
+                )}
+              </Button>
+            </div>
             <Textarea
               id="service-account-json"
               placeholder='Cole aqui o JSON completo da Service Account...'
@@ -172,6 +274,61 @@ export function AddGSCIntegrationDialog({
               </div>
             )}
           </div>
+
+          {/* Connection Test Result */}
+          {connectionTestResult.status !== 'idle' && (
+            <Alert 
+              variant={
+                connectionTestResult.status === 'success' ? 'default' :
+                connectionTestResult.status === 'warning' ? 'default' :
+                'destructive'
+              }
+              className={
+                connectionTestResult.status === 'success' ? 'border-green-600 bg-green-50 dark:bg-green-950' :
+                connectionTestResult.status === 'warning' ? 'border-yellow-600 bg-yellow-50 dark:bg-yellow-950' :
+                ''
+              }
+            >
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p className="font-semibold">{connectionTestResult.message}</p>
+                  
+                  {connectionTestResult.details && (
+                    <Collapsible>
+                      <CollapsibleTrigger className="text-sm underline hover:no-underline">
+                        Ver detalhes técnicos
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mt-2 space-y-1 text-sm border-t pt-2">
+                          <p className="flex items-center gap-2">
+                            <span className="font-medium">Search Console API:</span>
+                            {connectionTestResult.details.search_console_api?.active ? 
+                              <span className="text-green-600">✅ Ativa</span> : 
+                              <span className="text-destructive">❌ {connectionTestResult.details.search_console_api?.error || 'Inativa'}</span>
+                            }
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <span className="font-medium">Web Search Indexing API:</span>
+                            {connectionTestResult.details.indexing_api?.active ? 
+                              <span className="text-green-600">✅ Ativa</span> : 
+                              <span className="text-destructive">❌ {connectionTestResult.details.indexing_api?.error || 'Inativa'}</span>
+                            }
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <span className="font-medium">Permissões GSC:</span>
+                            {connectionTestResult.details.gsc_permissions?.valid ? 
+                              <span className="text-green-600">✅ {connectionTestResult.details.gsc_permissions.level}</span> : 
+                              <span className="text-destructive">❌ {connectionTestResult.details.gsc_permissions?.error || 'Sem permissão'}</span>
+                            }
+                          </p>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Tutorial Alert */}
           <Alert>
