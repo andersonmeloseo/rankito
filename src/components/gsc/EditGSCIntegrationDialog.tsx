@@ -70,7 +70,7 @@ export function EditGSCIntegrationDialog({
   }, [open, integration]);
 
   const validateJSON = (input: string) => {
-    if (!input.trim()) {
+    if (!input || !input.trim()) {
       setJsonValidation({ valid: false });
       return;
     }
