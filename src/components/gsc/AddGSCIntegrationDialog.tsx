@@ -125,76 +125,95 @@ export function AddGSCIntegrationDialog({
     setConnectionTestResult({ status: 'testing' });
 
     try {
-      // Criar integração temporária para teste
       const parsedJson = JSON.parse(jsonInput);
-      const { data: tempIntegration, error: createError } = await supabase
-        .from('google_search_console_integrations')
-        .insert({
-          site_id: siteId,
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          connection_name: '__temp_test_connection__',
-          service_account_json: parsedJson,
-          google_email: parsedJson.client_email,
-          is_active: false,
-        })
-        .select()
-        .single();
 
-      if (createError) throw createError;
-
-      // Chamar edge function de validação
-      const { data, error } = await supabase.functions.invoke('gsc-validate-apis', {
-        body: { integration_id: tempIntegration.id }
-      });
-
-      // Deletar integração temporária
-      await supabase
-        .from('google_search_console_integrations')
-        .delete()
-        .eq('id', tempIntegration.id);
-
-      if (error) throw error;
-
-      const { validation } = data;
-      
-      // Armazenar propriedades disponíveis
-      if (validation.property_detection?.available_properties) {
-        setAvailableProperties(validation.property_detection.available_properties);
-        
-        // Auto-sugerir URL se detectada
-        if (validation.property_detection.suggested_url && !gscPropertyUrl) {
-          setGscPropertyUrl(validation.property_detection.suggested_url);
+      // Chamar nova edge function de teste
+      const { data: testData, error: testError } = await supabase.functions.invoke(
+        'gsc-test-connection',
+        {
+          body: {
+            service_account_json: parsedJson,
+            property_url: gscPropertyUrl || null,
+            site_url: await getSiteUrl(),
+          },
         }
-      }
-      
-      if (validation.overall_status === 'healthy') {
-        setConnectionTestResult({
-          status: 'success',
-          message: '✅ Conexão validada com sucesso! Todas as APIs estão funcionando.',
-          details: validation
-        });
-      } else if (validation.overall_status === 'degraded') {
-        setConnectionTestResult({
-          status: 'warning',
-          message: '⚠️ Conexão parcial. Algumas APIs não estão disponíveis.',
-          details: validation
-        });
-      } else {
+      );
+
+      if (testError) {
+        console.error('Test connection error:', testError);
         setConnectionTestResult({
           status: 'error',
-          message: '❌ Falha na conexão. Verifique as permissões.',
-          details: validation
+          message: testError.message || 'Falha ao testar conexão',
         });
+        return;
       }
 
-    } catch (err: any) {
+      if (!testData.success) {
+        setConnectionTestResult({
+          status: 'error',
+          message: testData.message || 'Teste falhou',
+          details: testData,
+        });
+        return;
+      }
+
+      // Armazenar propriedades disponíveis
+      setAvailableProperties(testData.data.available_properties || []);
+
+      // Determinar status baseado no resultado
+      if (testData.status === 'warning') {
+        setConnectionTestResult({
+          status: 'warning',
+          message: testData.message,
+          details: testData,
+        });
+        toast.warning('Conexão OK, mas há avisos de configuração');
+      } else {
+        setConnectionTestResult({
+          status: 'success',
+          message: testData.message,
+          details: testData,
+        });
+        toast.success('Conexão testada com sucesso!');
+        
+        // Auto-preencher URL sugerida se disponível
+        if (testData.data.suggested_url && !gscPropertyUrl) {
+          setGscPropertyUrl(testData.data.suggested_url);
+        }
+      }
+    } catch (error) {
+      console.error('Error testing connection:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       setConnectionTestResult({
         status: 'error',
-        message: `❌ Erro ao testar: ${err.message || 'Erro desconhecido'}`
+        message: 'Erro ao testar conexão: ' + errorMessage,
       });
+      toast.error('Erro ao testar conexão');
     } finally {
       setIsTestingConnection(false);
     }
+  };
+
+  const getSiteUrl = async () => {
+    const { data } = await supabase
+      .from('rank_rent_sites')
+      .select('site_url')
+      .eq('id', siteId)
+      .single();
+    return data?.site_url || '';
+  };
+
+  const handleDetectProperties = () => {
+    if (availableProperties.length > 0) {
+      setPropertySelectorOpen(true);
+    } else {
+      toast.error('Teste a conexão primeiro para detectar propriedades');
+    }
+  };
+
+  const handlePropertySelect = (url: string) => {
+    setGscPropertyUrl(url);
+    toast.success('Propriedade selecionada');
   };
 
   const handleClose = () => {
@@ -205,19 +224,6 @@ export function AddGSCIntegrationDialog({
     setConnectionTestResult({ status: 'idle' });
     setAvailableProperties([]);
     onOpenChange(false);
-  };
-
-  const handleDetectProperties = () => {
-    if (availableProperties.length > 0) {
-      setPropertySelectorOpen(true);
-    } else {
-      toast.error('Teste a conexão primeiro para detectar propriedades disponíveis');
-    }
-  };
-
-  const handlePropertySelect = (url: string) => {
-    setGscPropertyUrl(url);
-    toast.success('Propriedade selecionada com sucesso');
   };
 
   return (
