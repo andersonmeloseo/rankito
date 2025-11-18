@@ -15,6 +15,7 @@ interface EditGSCIntegrationDialogProps {
   onOpenChange: (open: boolean) => void;
   integration: {
     id: string;
+    site_id: string;
     connection_name: string;
     service_account_json: any;
     google_email?: string;
@@ -126,7 +127,7 @@ export function EditGSCIntegrationDialog({
       const { data: tempIntegration, error: createError } = await supabase
         .from('google_search_console_integrations')
         .insert({
-          site_id: integration.id, // Usamos o ID da integração apenas para referência temp
+          site_id: integration.site_id, // ID do site (não da integração!)
           user_id: (await supabase.auth.getUser()).data.user?.id,
           connection_name: '__temp_test_connection__',
           service_account_json: parsedJson,
