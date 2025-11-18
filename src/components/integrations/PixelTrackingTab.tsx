@@ -21,6 +21,7 @@ export const PixelTrackingTab = ({
         trackingToken={trackingToken}
         siteName={siteName}
         pixelInstalled={pixelInstalled}
+        siteId={siteId}
       />
       
       <InstallationGuide trackingToken={trackingToken} />
