@@ -340,6 +340,7 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         siteId={siteId}
+        siteUrl={site?.url || ''}
         onAdd={handleAdd}
         isLoading={isCreating}
       />
@@ -349,6 +350,7 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
           open={showEditDialog}
           onOpenChange={setShowEditDialog}
           integration={integrationToEdit}
+          siteUrl={site?.url || ''}
           onUpdate={handleUpdate}
           isLoading={isUpdating}
         />
