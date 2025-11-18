@@ -2,6 +2,7 @@ import {
   LayoutDashboard, 
   Briefcase, 
   Send, 
+  ShoppingCart,
   DollarSign, 
   Users, 
   BarChart3 
@@ -15,6 +16,7 @@ const featureIcons = [
   LayoutDashboard,
   Briefcase,
   Send,
+  ShoppingCart,
   DollarSign,
   Users,
   BarChart3
@@ -24,6 +26,7 @@ const featureScreenshots = [
   "/images/screenshots/dashboard-overview.png",
   "/images/screenshots/crm-pipeline.png",
   "/images/screenshots/gsc-monitoring.png",
+  "/images/screenshots/ecommerce-tracking.png",
   "/images/screenshots/financial-performance.png",
   "/images/screenshots/client-portal.png",
   "/images/screenshots/analytics-charts.png",
@@ -50,12 +53,15 @@ export const FeaturesSection = () => {
         <div className="grid lg:grid-cols-2 gap-12 max-w-7xl mx-auto">
           {t.features.items.map((feature, index) => {
             const Icon = featureIcons[index];
-            const isHighlight = index === 2; // GSC feature
+            const isGSCHighlight = index === 2; // GSC feature
+            const isEcommerceHighlight = index === 3; // E-commerce feature
             return (
               <Card
                 key={index}
                 className={`flex flex-col transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
-                  isHighlight ? "border-2 border-blue-500 shadow-lg" : ""
+                  isGSCHighlight ? "border-2 border-blue-500 shadow-lg" : ""
+                } ${
+                  isEcommerceHighlight ? "border-2 border-orange-500 shadow-lg bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20" : ""
                 }`}
               >
                 <CardHeader>
@@ -67,7 +73,11 @@ export const FeaturesSection = () => {
                       <CardTitle className="text-2xl">{feature.title}</CardTitle>
                     </div>
                     {feature.badge && (
-                      <Badge className="bg-yellow-500 text-white hover:bg-yellow-500">
+                      <Badge className={`text-white hover:opacity-90 ${
+                        isEcommerceHighlight 
+                          ? "bg-gradient-to-r from-orange-500 to-yellow-500" 
+                          : "bg-yellow-500 hover:bg-yellow-500"
+                      }`}>
                         {feature.badge}
                       </Badge>
                     )}
