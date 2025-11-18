@@ -57,7 +57,7 @@ export function useTestPluginConnection() {
           toast.warning(
             `⚠️ Sem eventos recentes`,
             {
-              description: `Último evento detectado há ${minutesAgo} minutos. Verifique se o plugin está ativo.`,
+              description: `Último evento detectado há ${minutesAgo} minutos. Verifique se o rastreamento está ativo.`,
             }
           );
         } else {
@@ -74,7 +74,7 @@ export function useTestPluginConnection() {
       }
     } catch (error) {
       console.error('Erro ao testar conexão:', error);
-      const errorMsg = getErrorMessage(error, 'testar conexão do plugin');
+      const errorMsg = getErrorMessage(error, 'testar rastreamento');
       toast.error(
         errorMsg.title,
         {
