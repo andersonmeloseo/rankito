@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle2, XCircle, Info, ExternalLink, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Info, ExternalLink, Loader2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { GSCPropertySelectorDialog } from "./GSCPropertySelectorDialog";
 
 interface AddGSCIntegrationDialogProps {
   open: boolean;
@@ -27,6 +28,7 @@ export function AddGSCIntegrationDialog({
 }: AddGSCIntegrationDialogProps) {
   const [connectionName, setConnectionName] = useState("");
   const [jsonInput, setJsonInput] = useState("");
+  const [gscPropertyUrl, setGscPropertyUrl] = useState("");
   const [jsonValidation, setJsonValidation] = useState<{
     valid: boolean;
     error?: string;
@@ -38,6 +40,8 @@ export function AddGSCIntegrationDialog({
     message?: string;
     details?: any;
   }>({ status: 'idle' });
+  const [propertySelectorOpen, setPropertySelectorOpen] = useState(false);
+  const [availableProperties, setAvailableProperties] = useState<string[]>([]);
 
   const validateJSON = (input: string) => {
     if (!input.trim()) {
@@ -153,6 +157,16 @@ export function AddGSCIntegrationDialog({
 
       const { validation } = data;
       
+      // Armazenar propriedades disponíveis
+      if (validation.property_detection?.available_properties) {
+        setAvailableProperties(validation.property_detection.available_properties);
+        
+        // Auto-sugerir URL se detectada
+        if (validation.property_detection.suggested_url && !gscPropertyUrl) {
+          setGscPropertyUrl(validation.property_detection.suggested_url);
+        }
+      }
+      
       if (validation.overall_status === 'healthy') {
         setConnectionTestResult({
           status: 'success',
@@ -186,9 +200,24 @@ export function AddGSCIntegrationDialog({
   const handleClose = () => {
     setConnectionName("");
     setJsonInput("");
+    setGscPropertyUrl("");
     setJsonValidation({ valid: false });
     setConnectionTestResult({ status: 'idle' });
+    setAvailableProperties([]);
     onOpenChange(false);
+  };
+
+  const handleDetectProperties = () => {
+    if (availableProperties.length > 0) {
+      setPropertySelectorOpen(true);
+    } else {
+      toast.error('Teste a conexão primeiro para detectar propriedades disponíveis');
+    }
+  };
+
+  const handlePropertySelect = (url: string) => {
+    setGscPropertyUrl(url);
+    toast.success('Propriedade selecionada com sucesso');
   };
 
   return (
@@ -487,6 +516,15 @@ export function AddGSCIntegrationDialog({
           </div>
         </form>
       </DialogContent>
+
+      {/* Property Selector Dialog */}
+      <GSCPropertySelectorDialog
+        open={propertySelectorOpen}
+        onOpenChange={setPropertySelectorOpen}
+        properties={availableProperties}
+        currentUrl={gscPropertyUrl}
+        onSelect={handlePropertySelect}
+      />
     </Dialog>
   );
 }

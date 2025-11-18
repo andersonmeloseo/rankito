@@ -161,6 +161,7 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
       integrationId: string;
       connectionName: string;
       serviceAccountJson: any;
+      gscPropertyUrl?: string | null;
     }) => {
       const updates: any = {
         connection_name: input.connectionName,
@@ -170,6 +171,11 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
         last_error: null,
         updated_at: new Date().toISOString(),
       };
+
+      // Atualizar URL da propriedade se fornecida
+      if (input.gscPropertyUrl !== undefined) {
+        updates.gsc_property_url = input.gscPropertyUrl || null;
+      }
 
       const { data, error } = await supabase
         .from('google_search_console_integrations')
