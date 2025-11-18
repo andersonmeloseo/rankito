@@ -197,6 +197,19 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
           badge: 'Exclusivo',
         },
         {
+          title: 'E-commerce Tracking',
+          description: 'Rastreie vendas, produtos e receita diretamente nos seus sites rank & rent com a primeira ferramenta do mundo com tracking de e-commerce para rank & rent.',
+          benefits: [
+            'Primeira plataforma do mundo com tracking de e-commerce para rank & rent',
+            'Rastreamento automático de visualizações de produtos',
+            'Captura de adições ao carrinho e checkouts',
+            'Atribuição de receita por produto e página',
+            'Funil completo: visualização → carrinho → compra',
+            'Integração com Shopify, WooCommerce e sites HTML'
+          ],
+          badge: '🌍 Pioneira Mundial',
+        },
+        {
           title: 'Financeiro Completo',
           description: 'Planilhas desorganizadas e sem saber se está lucrando ou perdendo? Registre receitas, custos, pagamentos e calcule ROI automaticamente. Saiba exatamente quanto cada site está gerando.',
           benefits: [
@@ -457,6 +470,19 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
             'Múltiples cuentas GSC',
           ],
           badge: 'Exclusivo',
+        },
+        {
+          title: 'E-commerce Tracking',
+          description: 'Rastrea ventas, productos e ingresos directamente en tus sitios rank & rent con la primera herramienta del mundo con tracking de e-commerce para rank & rent.',
+          benefits: [
+            'Primera plataforma del mundo con tracking de e-commerce para rank & rent',
+            'Rastreo automático de visualizaciones de productos',
+            'Captura de adiciones al carrito y checkouts',
+            'Atribución de ingresos por producto y página',
+            'Embudo completo: visualización → carrito → compra',
+            'Integración con Shopify, WooCommerce y sitios HTML'
+          ],
+          badge: '🌍 Primera Mundial',
         },
         {
           title: 'Financiero Completo',
@@ -721,6 +747,19 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
           badge: 'Exclusive',
         },
         {
+          title: 'E-commerce Tracking',
+          description: 'Track sales, products, and revenue directly on your rank & rent sites with the world\'s first e-commerce tracking tool for rank & rent.',
+          benefits: [
+            'World\'s first platform with e-commerce tracking for rank & rent',
+            'Automatic product view tracking',
+            'Capture add-to-cart and checkout events',
+            'Revenue attribution per product and page',
+            'Complete funnel: view → cart → purchase',
+            'Integration with Shopify, WooCommerce, and HTML sites'
+          ],
+          badge: '🌍 World First',
+        },
+        {
           title: 'Complete Financial',
           description: "Disorganized spreadsheets and not knowing if you're profiting or losing? Record revenue, costs, payments and calculate ROI automatically. Know exactly how much each site is generating.",
           benefits: [
@@ -983,6 +1022,19 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
           badge: 'Exclusif',
         },
         {
+          title: 'E-commerce Tracking',
+          description: 'Suivez les ventes, produits et revenus directement sur vos sites rank & rent avec le premier outil au monde avec tracking e-commerce pour rank & rent.',
+          benefits: [
+            'Première plateforme au monde avec tracking e-commerce pour rank & rent',
+            'Suivi automatique des vues de produits',
+            'Capture des ajouts au panier et checkouts',
+            'Attribution des revenus par produit et page',
+            'Entonnoir complet : vue → panier → achat',
+            'Intégration avec Shopify, WooCommerce et sites HTML'
+          ],
+          badge: '🌍 Première Mondiale',
+        },
+        {
           title: 'Finance Complète',
           description: 'Feuilles de calcul désorganisées et sans savoir si vous gagnez ou perdez? Enregistrez revenus, coûts, paiements et calculez le ROI automatiquement. Sachez exactement combien génère chaque site.',
           benefits: [
@@ -1243,6 +1295,19 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
             'Múltiplas contas GSC',
           ],
           badge: 'Exclusivo',
+        },
+        {
+          title: 'E-commerce Tracking',
+          description: 'Rastreia vendas, produtos e receita diretamente nos teus sites rank & rent com a primeira ferramenta do mundo com tracking de e-commerce para rank & rent.',
+          benefits: [
+            'Primeira plataforma do mundo com tracking de e-commerce para rank & rent',
+            'Rastreamento automático de visualizações de produtos',
+            'Captura de adições ao carrinho e checkouts',
+            'Atribuição de receita por produto e página',
+            'Funil completo: visualização → carrinho → compra',
+            'Integração com Shopify, WooCommerce e sites HTML'
+          ],
+          badge: '🌍 Pioneira Mundial',
         },
         {
           title: 'Financeiro Completo',
