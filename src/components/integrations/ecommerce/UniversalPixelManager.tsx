@@ -1,22 +1,26 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Download, FileCode, CheckCircle2, AlertCircle } from "lucide-react";
+import { Copy, Download, FileCode, CheckCircle2, AlertCircle, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useTestPluginConnection } from "@/hooks/useTestPluginConnection";
 
 interface UniversalPixelManagerProps {
   trackingToken: string;
   siteName: string;
   pixelInstalled: boolean;
+  siteId: string;
 }
 
 export const UniversalPixelManager = ({
   trackingToken,
   siteName,
-  pixelInstalled
+  pixelInstalled,
+  siteId
 }: UniversalPixelManagerProps) => {
   const [copiedToken, setCopiedToken] = useState(false);
+  const { testConnection, isTestingConnection } = useTestPluginConnection();
 
   const pixelCode = `<!-- Rankito Universal Tracking Pixel -->
 <script>
@@ -142,6 +146,16 @@ export const UniversalPixelManager = ({
             >
               <Download className="h-4 w-4" />
               Baixar Arquivo
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => testConnection(siteId, siteName)}
+              disabled={isTestingConnection}
+              className="gap-2 flex-1"
+            >
+              <Activity className="h-4 w-4" />
+              {isTestingConnection ? "Testando..." : "Testar Conexão"}
             </Button>
           </div>
         </div>
