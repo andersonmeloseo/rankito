@@ -278,15 +278,35 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
               setEventTypeFilter(value);
               setCurrentPage(1);
             }}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Tipo de evento" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="whatsapp_click">WhatsApp</SelectItem>
-                <SelectItem value="phone_click">Telefone</SelectItem>
-                <SelectItem value="email_click">Email</SelectItem>
-                <SelectItem value="form_submit">Formulário</SelectItem>
+                
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                  💬 Conversões Normais
+                </div>
+                <SelectItem value="whatsapp_click">WhatsApp Click</SelectItem>
+                <SelectItem value="phone_click">Telefone Click</SelectItem>
+                <SelectItem value="email_click">Email Click</SelectItem>
+                <SelectItem value="button_click">Botão Click</SelectItem>
+                <SelectItem value="form_submit">Formulário Enviado</SelectItem>
+                
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">
+                  🛒 E-commerce
+                </div>
+                <SelectItem value="product_view">Visualização de Produto</SelectItem>
+                <SelectItem value="add_to_cart">Adicionar ao Carrinho</SelectItem>
+                <SelectItem value="remove_from_cart">Remover do Carrinho</SelectItem>
+                <SelectItem value="begin_checkout">Iniciar Checkout</SelectItem>
+                <SelectItem value="purchase">Compra Realizada</SelectItem>
+                <SelectItem value="search">Busca no Site</SelectItem>
+                
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">
+                  📄 Outros
+                </div>
+                <SelectItem value="page_view">Visualização de Página</SelectItem>
               </SelectContent>
             </Select>
             <Select value={deviceFilter} onValueChange={(value) => {
