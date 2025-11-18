@@ -133,11 +133,15 @@ export const useGlobalFinancialMetrics = (userId: string) => {
     const totalSites = sitesMetrics.length;
     const profitable = sitesMetrics.filter(s => s.monthly_profit > 0).length;
 
+    const totalRevenue = sitesMetrics.reduce((sum, s) => sum + s.monthly_revenue, 0);
+    const totalCosts = sitesMetrics.reduce((sum, s) => sum + s.monthly_costs, 0);
+    const totalProfit = sitesMetrics.reduce((sum, s) => sum + s.monthly_profit, 0);
+
     return {
-      totalRevenue: sitesMetrics.reduce((sum, s) => sum + s.monthly_revenue, 0),
-      totalCosts: sitesMetrics.reduce((sum, s) => sum + s.monthly_costs, 0),
-      totalProfit: sitesMetrics.reduce((sum, s) => sum + s.monthly_profit, 0),
-      avgROI: totalSites > 0 ? sitesMetrics.reduce((sum, s) => sum + s.roi_percentage, 0) / totalSites : 0,
+      totalRevenue,
+      totalCosts,
+      totalProfit,
+      avgROI: totalCosts > 0 ? (totalProfit / totalCosts) * 100 : 0,
       totalSitesWithMetrics: totalSites,
       profitableSites: profitable,
       unprofitableSites: totalSites - profitable,
