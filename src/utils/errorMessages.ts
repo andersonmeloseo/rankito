@@ -185,14 +185,14 @@ export const CONTEXT_ERRORS = {
   },
   plugin: {
     not_installed: {
-      title: 'Plugin não detectado',
-      description: 'O plugin de rastreamento não está instalado ou não está funcionando.',
-      action: 'Instale o plugin e aguarde alguns minutos'
+      title: 'Rastreamento não detectado',
+      description: 'O código de rastreamento não está instalado ou não está enviando dados.',
+      action: 'Verifique a instalação do pixel ou aguarde alguns minutos'
     },
     connection_failed: {
       title: 'Falha na conexão',
-      description: 'Não foi possível conectar ao site para verificar o plugin.',
-      action: 'Verifique se o site está online'
+      description: 'Não foi possível verificar o rastreamento.',
+      action: 'Tente novamente em alguns instantes'
     }
   },
   tracking: {
