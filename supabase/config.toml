@@ -3,10 +3,10 @@ project_id = "jhzmgexprjnpgadkxjup"
 [functions.check-expired-trials]
 verify_jwt = false
 
-[functions.gsc-fetch-properties]
+[functions.gsc-test-and-detect]
 verify_jwt = true
 
-[functions.gsc-test-connection]
+[functions.gsc-validate-apis]
 verify_jwt = false
 
 [functions.indexnow-validate-key]
@@ -22,9 +22,6 @@ verify_jwt = false
 every = "30 minutes"
 
 [functions.gsc-check-indexation-status]
-verify_jwt = false
-
-[functions.gsc-validate-apis]
 verify_jwt = false
 
 [functions.gsc-get-quota]
