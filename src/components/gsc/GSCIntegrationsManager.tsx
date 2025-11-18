@@ -13,6 +13,7 @@ import { GSCOverviewDashboard } from './GSCOverviewDashboard';
 import { GSCIndexingQueue } from './GSCIndexingQueue';
 import { GSCSitemapScheduler } from './GSCSitemapScheduler';
 import IndexNowManager from './IndexNowManager';
+import { GSCQuickTest } from './GSCQuickTest';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -180,6 +181,11 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {/* Quick Test */}
+          {integrations && integrations.length > 0 && site && (
+            <GSCQuickTest siteId={siteId} siteUrl={site.url} />
+          )}
+
           {/* Plan Limits Info */}
           {planLimits && (
             <Alert>
