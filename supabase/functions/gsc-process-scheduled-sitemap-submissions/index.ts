@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { getIntegrationWithValidToken } from '../_shared/gsc-jwt-auth.ts';
 
 console.log('🕐 GSC Scheduled Sitemap Submissions - CRON Job Started');
