@@ -157,6 +157,29 @@ Deno.serve(async (req) => {
     console.error('❌ Error in gsc-submit-sitemap:', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     const errorDetails = error instanceof Error ? error.toString() : String(error);
+    
+    // Detectar erro de permissão 403 e fornecer instruções claras
+    if (errorMessage.includes('403') || errorMessage.includes('insufficient permission') || errorMessage.includes('forbidden')) {
+      return new Response(
+        JSON.stringify({
+          error: '⚠️ Permissões Insuficientes no Google Search Console',
+          message: 'A Service Account não tem permissões para submeter sitemaps nesta propriedade.',
+          instructions: [
+            '1. Acesse Google Search Console: https://search.google.com/search-console',
+            '2. Selecione sua propriedade no GSC',
+            '3. Vá em Configurações > Usuários e permissões',
+            '4. Clique em "ADICIONAR USUÁRIO"',
+            '5. Cole o email da Service Account (veja na configuração da integração)',
+            '6. Selecione permissão "PROPRIETÁRIO" (obrigatório!)',
+            '7. Aguarde 2-3 minutos para propagação',
+            '8. Tente novamente submeter o sitemap'
+          ],
+          details: errorDetails,
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ 
         error: errorMessage,
