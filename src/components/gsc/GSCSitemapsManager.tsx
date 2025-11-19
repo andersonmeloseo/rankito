@@ -27,6 +27,7 @@ import { Search, FileText, Trash2, Loader2, Send, CheckCircle2, AlertTriangle, X
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GSCSitemapsManagerProps {
   siteId: string;
@@ -61,58 +62,38 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
     const selectedSitemaps = discoveredSitemaps.filter(s => s.selected);
     if (selectedSitemaps.length === 0) return;
 
+    console.log("📤 [GSCSitemapsManager] handleSubmitSelected INICIADO");
+    console.log(`📋 [GSCSitemapsManager] Sitemaps selecionados:`, selectedSitemaps.map(s => s.url));
+
     setIsSubmitting(true);
 
     try {
-      // Coletar todas as URLs dos sitemaps selecionados
-      let allUrls: string[] = [];
+      // Chamar Edge Function para extrair URLs dos sitemaps
+      console.log("🔄 [GSCSitemapsManager] Chamando Edge Function extract-sitemap-urls...");
       
-      for (const sitemap of selectedSitemaps) {
-        try {
-          const response = await fetch(sitemap.url);
-          const text = await response.text();
-          
-          // Extrair URLs usando regex
-          const urlMatches = text.match(/<loc>\s*([^<]+)\s*<\/loc>/g);
-          if (urlMatches) {
-            const urls = urlMatches.map(match => 
-              match.replace(/<\/?loc>/g, '').trim()
-            );
-            console.log(`🔍 URLs extraídas de ${sitemap.name}:`, urls.length);
-            allUrls = [...allUrls, ...urls];
-          }
-        } catch (error) {
-          console.error("Erro ao buscar URLs do sitemap:", sitemap.name, error);
-        }
+      const { data, error } = await supabase.functions.invoke('extract-sitemap-urls', {
+        body: { sitemap_urls: selectedSitemaps.map(s => s.url) }
+      });
+
+      if (error) {
+        console.error("❌ [GSCSitemapsManager] Erro na Edge Function:", error);
+        throw error;
       }
 
-      if (allUrls.length === 0) {
-        toast({
-          title: "❌ Nenhuma URL encontrada",
-          description: "Não foi possível extrair URLs dos sitemaps selecionados",
-          variant: "destructive"
-        });
-        setIsSubmitting(false);
-        return;
+      if (!data.success) {
+        throw new Error(data.error || "Falha ao extrair URLs");
       }
 
-      // Remover duplicatas dentro do array
-      const uniqueUrls = Array.from(new Set(allUrls));
-      const duplicatesRemoved = allUrls.length - uniqueUrls.length;
-
-      if (duplicatesRemoved > 0) {
-        console.log(`🔄 ${duplicatesRemoved} URLs duplicadas removidas`);
-      }
-
-      console.log(`📤 [GSCSitemapsManager] Enviando ${uniqueUrls.length} URLs únicas para distribuição`);
-      console.log(`📋 [GSCSitemapsManager] Primeiras 5 URLs:`, uniqueUrls.slice(0, 5));
+      console.log(`✅ [GSCSitemapsManager] ${data.total} URLs extraídas com sucesso`);
+      console.log(`🔄 [GSCSitemapsManager] ${data.duplicates_removed} duplicatas removidas`);
+      console.log(`📋 [GSCSitemapsManager] Primeiras 5 URLs:`, data.urls.slice(0, 5));
 
       // Adicionar URLs à fila de indexação
       console.log(`🔄 [GSCSitemapsManager] Chamando addToQueue.mutateAsync...`);
       
       try {
         const result = await addToQueue.mutateAsync({
-          urls: uniqueUrls.map(url => ({ url }))
+          urls: data.urls.map((url: string) => ({ url }))
         });
 
         console.log(`✅ [GSCSitemapsManager] addToQueue completou com sucesso:`, result);
