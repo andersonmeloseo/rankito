@@ -78,11 +78,6 @@ export function AddGSCIntegrationDialog({
   };
 
   const handleTestAndDetect = async () => {
-    if (!jsonValidation.valid) {
-      toast.error('Corrija o JSON antes de testar');
-      return;
-    }
-
     setTestResult({ status: 'testing' });
 
     try {
