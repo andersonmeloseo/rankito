@@ -2,11 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
-import { Clock, CheckCircle2, XCircle, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Loader2, AlertCircle, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useGSCIndexing } from "@/hooks/useGSCIndexing";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useState, useMemo } from "react";
 
 interface GSCIndexingQueueTabProps {
   siteId: string;
@@ -15,6 +19,36 @@ interface GSCIndexingQueueTabProps {
 export function GSCIndexingQueueTab({ siteId }: GSCIndexingQueueTabProps) {
   const { queueItems, queueStats, isLoadingQueue } = useGSCIndexingQueue({ siteId });
   const { quota, resetAt } = useGSCIndexing({ siteId });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(50);
+
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status) {
+      case 'completed': return 'default';
+      case 'failed': return 'destructive';
+      case 'processing': return 'default';
+      default: return 'secondary';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle2 className="h-3 w-3 mr-1" />;
+      case 'failed': return <XCircle className="h-3 w-3 mr-1" />;
+      case 'processing': return <Loader2 className="h-3 w-3 mr-1 animate-spin" />;
+      default: return <Clock className="h-3 w-3 mr-1" />;
+    }
+  };
+
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return queueItems.slice(startIndex, endIndex);
+  }, [queueItems, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(queueItems.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, queueItems.length);
 
   if (isLoadingQueue) {
     return (
@@ -81,9 +115,85 @@ export function GSCIndexingQueueTab({ siteId }: GSCIndexingQueueTabProps) {
               <p>Nenhuma URL na fila</p>
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">
-              Total de {queueItems.length} URLs na fila de indexação
-            </div>
+            <>
+              <TooltipProvider>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>URL</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Agendado Para</TableHead>
+                      <TableHead>Criado em</TableHead>
+                      <TableHead>Tentativas</TableHead>
+                      <TableHead>Erro</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="max-w-md truncate">
+                          <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                            {item.url}
+                          </a>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusVariant(item.status)}>
+                            {getStatusIcon(item.status)}
+                            {item.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(item.scheduled_for), 'dd/MM/yyyy', { locale: ptBR })}
+                        </TableCell>
+                        <TableCell>
+                          {formatDistanceToNow(new Date(item.created_at), { locale: ptBR, addSuffix: true })}
+                        </TableCell>
+                        <TableCell>{item.attempts}</TableCell>
+                        <TableCell>
+                          {item.error_message && (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <AlertCircle className="h-4 w-4 text-red-500" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-md">
+                                <p className="text-xs">{item.error_message}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TooltipProvider>
+              
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {startIndex + 1}-{endIndex} de {queueItems.length}
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => p - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="px-4 py-2 text-sm">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => p + 1)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
