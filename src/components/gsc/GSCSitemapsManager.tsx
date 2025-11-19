@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useGSCSitemaps } from "@/hooks/useGSCSitemaps";
 import { useDiscoverSitemaps } from "@/hooks/useDiscoverSitemaps";
+import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
 import { Search, FileText, Trash2, Loader2, Send, CheckCircle2, AlertTriangle, XCircle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -38,6 +39,7 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { sitemaps, isLoading, submitSitemap } = useGSCSitemaps({ siteId });
+  const { addToQueue } = useGSCIndexingQueue({ siteId });
 
   const {
     discoveredSitemaps,
@@ -60,25 +62,59 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
     if (selectedSitemaps.length === 0) return;
 
     setIsSubmitting(true);
-    let successCount = 0;
 
-    for (const sitemap of selectedSitemaps) {
-      try {
-        await submitSitemap.mutateAsync({ sitemap_url: sitemap.url });
-        successCount++;
-      } catch (error) {
-        console.error("Erro ao enviar:", sitemap.name, error);
+    try {
+      // Coletar todas as URLs dos sitemaps selecionados
+      let allUrls: string[] = [];
+      
+      for (const sitemap of selectedSitemaps) {
+        try {
+          const response = await fetch(sitemap.url);
+          const text = await response.text();
+          
+          // Extrair URLs usando regex
+          const urlMatches = text.match(/<loc>\s*([^<]+)\s*<\/loc>/g);
+          if (urlMatches) {
+            const urls = urlMatches.map(match => 
+              match.replace(/<\/?loc>/g, '').trim()
+            );
+            allUrls = [...allUrls, ...urls];
+          }
+        } catch (error) {
+          console.error("Erro ao buscar URLs do sitemap:", sitemap.name, error);
+        }
       }
-    }
 
-    setIsSubmitting(false);
+      if (allUrls.length === 0) {
+        toast({
+          title: "❌ Nenhuma URL encontrada",
+          description: "Não foi possível extrair URLs dos sitemaps selecionados",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
 
-    if (successCount > 0) {
-      toast({
-        title: "✅ Sitemaps enviados ao GSC",
-        description: `${successCount} sitemap${successCount > 1 ? 's foram' : ' foi'} enviado${successCount > 1 ? 's' : ''} com sucesso`,
+      // Adicionar URLs à fila de indexação
+      await addToQueue.mutateAsync({
+        urls: allUrls.map(url => ({ url }))
       });
+
+      toast({
+        title: "✅ URLs adicionadas à fila",
+        description: `${allUrls.length} URL${allUrls.length > 1 ? 's foram adicionadas' : ' foi adicionada'} à fila de indexação`,
+      });
+      
       reset();
+    } catch (error) {
+      console.error("Erro ao processar sitemaps:", error);
+      toast({
+        title: "❌ Erro ao processar",
+        description: "Ocorreu um erro ao adicionar URLs à fila",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -168,7 +204,7 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
                     ) : (
                       <>
                         <Send className="h-4 w-4 mr-2" />
-                        Enviar {selectedSitemaps.length} ao GSC
+                        Adicionar {selectedSitemaps.length} à Fila
                       </>
                     )}
                   </Button>
