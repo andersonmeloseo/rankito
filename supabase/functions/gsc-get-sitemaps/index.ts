@@ -130,10 +130,9 @@ Deno.serve(async (req) => {
         gsc_status: gscSitemap.warnings > 0 ? 'warning' : gscSitemap.errors > 0 ? 'error' : 'success',
         gsc_last_submitted: gscSitemap.lastSubmitted,
         gsc_last_downloaded: gscSitemap.lastDownloaded,
-        urls_submitted: content.submitted || 0,
-        urls_indexed: content.indexed || 0,
-        gsc_errors_count: gscSitemap.errors || 0,
-        gsc_warnings_count: gscSitemap.warnings || 0,
+        page_count: parseInt(content.submitted) || 0,
+        errors_count: parseInt(gscSitemap.errors) || 0,
+        warnings_count: parseInt(gscSitemap.warnings) || 0,
         source: 'gsc',
         in_database: false,
       });
@@ -169,7 +168,7 @@ Deno.serve(async (req) => {
     // Atualizar banco com dados mais recentes do GSC
     for (const sitemap of mergedSitemaps) {
       if (sitemap.source === 'gsc') {
-        await supabase
+        const { error: upsertError } = await supabase
           .from('gsc_sitemap_submissions')
           .upsert({
             integration_id,
@@ -179,13 +178,18 @@ Deno.serve(async (req) => {
             gsc_status: sitemap.gsc_status,
             gsc_last_submitted: sitemap.gsc_last_submitted,
             gsc_last_downloaded: sitemap.gsc_last_downloaded,
-            urls_submitted: sitemap.urls_submitted,
-            urls_indexed: sitemap.urls_indexed,
-            gsc_errors_count: sitemap.gsc_errors_count,
-            gsc_warnings_count: sitemap.gsc_warnings_count,
+            page_count: sitemap.page_count || 0,
+            errors_count: sitemap.errors_count || 0,
+            warnings_count: sitemap.warnings_count || 0,
           }, {
             onConflict: 'integration_id,sitemap_url',
           });
+        
+        if (upsertError) {
+          console.error(`❌ Error upserting sitemap ${sitemap.sitemap_url}:`, upsertError);
+          throw new Error(`Failed to save sitemap: ${upsertError.message}`);
+        }
+        console.log(`✅ Saved sitemap: ${sitemap.sitemap_url} (${sitemap.page_count} páginas)`);
       }
     }
 
