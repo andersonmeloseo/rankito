@@ -105,7 +105,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId, integrationId }: GSCDiscoveredU
               {urls && urls.length > 0 ? (
                 urls.map((url) => (
                   <TableRow key={url.id} className="h-16">
-                    <TableCell className="font-medium max-w-md">
+                     <TableCell className="font-medium max-w-md">
                       <a
                         href={url.url}
                         target="_blank"
@@ -116,7 +116,14 @@ export const GSCDiscoveredUrlsTable = ({ siteId, integrationId }: GSCDiscoveredU
                         <span className="truncate">{url.url}</span>
                       </a>
                     </TableCell>
-                    <TableCell className="text-center">{getStatusBadge(url.current_status)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {url.gsc_data && url.indexnow_data ? 'GSC + Sitemap' :
+                         url.gsc_data ? 'Search Analytics' :
+                         url.indexnow_data ? 'Sitemap' : '-'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(url.current_status)}</TableCell>
                     <TableCell className="text-right">{url.impressions?.toLocaleString() || 0}</TableCell>
                     <TableCell className="text-right">{url.clicks?.toLocaleString() || 0}</TableCell>
                     <TableCell className="text-right">

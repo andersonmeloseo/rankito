@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
       throw new Error('Invalid authentication');
     }
 
-    const { site_id } = await req.json();
+    const { site_id, sitemap_ids } = await req.json();
 
     if (!site_id) {
       return new Response(
@@ -218,12 +218,22 @@ Deno.serve(async (req) => {
     }
 
     console.log(`📋 Processing sitemaps for site ${site_id}`);
+    if (sitemap_ids && sitemap_ids.length > 0) {
+      console.log(`📋 Filtering by sitemap IDs: ${sitemap_ids.join(', ')}`);
+    }
 
     // Buscar sitemaps do projeto
-    const { data: sitemaps, error: sitemapsError } = await supabase
+    let sitemapQuery = supabase
       .from('gsc_sitemap_submissions')
       .select('*')
       .eq('site_id', site_id);
+
+    // Filter by specific sitemap_ids if provided
+    if (sitemap_ids && sitemap_ids.length > 0) {
+      sitemapQuery = sitemapQuery.in('id', sitemap_ids);
+    }
+
+    const { data: sitemaps, error: sitemapsError } = await sitemapQuery;
 
     if (sitemapsError) {
       throw sitemapsError;
@@ -233,9 +243,11 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'No sitemaps found for this site',
+          message: sitemap_ids?.length > 0 
+            ? 'No matching sitemaps found' 
+            : 'No sitemaps found for this site',
           sitemaps_processed: 0,
-          urls_inserted: 0,
+          total_urls_discovered: 0,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
