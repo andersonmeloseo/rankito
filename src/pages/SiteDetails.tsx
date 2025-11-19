@@ -54,13 +54,7 @@ import { format, subDays } from "date-fns";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ReportsTab } from "@/components/reports/ReportsTab";
-import { GSCIntegrationsManager } from "@/components/gsc/GSCIntegrationsManager";
-import { GSCIntegrationHealthCard } from "@/components/gsc/GSCIntegrationHealthCard";
-import { GSCIndexingAlertsPanel } from "@/components/gsc/GSCIndexingAlertsPanel";
-import { GSCIndexingControls } from "@/components/gsc/GSCIndexingControls";
-import { GSCDiscoveredUrlsTable } from "@/components/gsc/GSCDiscoveredUrlsTable";
-import { GSCSearchAnalyticsDashboard } from "@/components/gsc/GSCSearchAnalyticsDashboard";
-import { GSCIndexingJobsHistory } from "@/components/gsc/GSCIndexingJobsHistory";
+import { GSCTabContent } from "@/components/gsc/GSCTabContent";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
 
@@ -1422,66 +1416,14 @@ const SiteDetails = () => {
           {/* Google Search Console Tab */}
           <TabsContent value="gsc" className="space-y-6">
             {userData?.id && siteId ? (
-              <>
-                {/* Integrations Management */}
-                <GSCIntegrationsManager 
-                  siteId={siteId} 
-                  userId={userData.id}
-                  site={{
-                    url: site.site_url,
-                    name: site.site_name
-                  }}
-                />
-
-                {/* Integration Health Card - Only show if there are integrations */}
-                {/* This would require querying integrations first - for now, we'll add it in the next iteration */}
-
-                {/* Indexing Controls */}
-                <GSCIndexingControls 
-                  siteId={siteId}
-                  integrationId={undefined} // Will be set when user selects an integration
-                />
-
-                {/* Alerts Panel */}
-                <GSCIndexingAlertsPanel siteId={siteId} />
-
-                {/* Secondary Tabs for detailed views */}
-                <Card>
-                  <CardContent className="p-6">
-                    <Tabs defaultValue="urls" className="space-y-6">
-                      <TabsList className="grid w-full grid-cols-3">
-                        <ClickUpTabTrigger value="urls">
-                          <Globe className="h-4 w-4 mr-2" />
-                          URLs Descobertas
-                        </ClickUpTabTrigger>
-                        <ClickUpTabTrigger value="analytics">
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          Analytics
-                        </ClickUpTabTrigger>
-                        <ClickUpTabTrigger value="jobs">
-                          <Clock className="h-4 w-4 mr-2" />
-                          Histórico de Jobs
-                        </ClickUpTabTrigger>
-                      </TabsList>
-
-                      <TabsContent value="urls">
-                        <GSCDiscoveredUrlsTable 
-                          siteId={siteId}
-                          integrationId={undefined} // Will be set when user selects an integration
-                        />
-                      </TabsContent>
-
-                      <TabsContent value="analytics">
-                        <GSCSearchAnalyticsDashboard siteId={siteId} />
-                      </TabsContent>
-
-                      <TabsContent value="jobs">
-                        <GSCIndexingJobsHistory siteId={siteId} />
-                      </TabsContent>
-                    </Tabs>
-                  </CardContent>
-                </Card>
-              </>
+              <GSCTabContent
+                siteId={siteId}
+                userId={userData.id}
+                site={{
+                  url: site.site_url,
+                  name: site.site_name
+                }}
+              />
             ) : (
               <Card>
                 <CardContent className="py-12 text-center">

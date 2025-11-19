@@ -4,6 +4,7 @@ import { Search, FileText, Zap, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { InstantIndexDialog } from './InstantIndexDialog';
 
 interface GSCIndexingControlsProps {
   siteId: string;
@@ -13,7 +14,7 @@ interface GSCIndexingControlsProps {
 export const GSCIndexingControls = ({ siteId, integrationId }: GSCIndexingControlsProps) => {
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [isProcessingSitemap, setIsProcessingSitemap] = useState(false);
-  const [isIndexing, setIsIndexing] = useState(false);
+  const [instantIndexDialogOpen, setInstantIndexDialogOpen] = useState(false);
 
   const handleDiscoverPages = async () => {
     if (!integrationId) {
@@ -66,13 +67,12 @@ export const GSCIndexingControls = ({ siteId, integrationId }: GSCIndexingContro
     }
   };
 
-  const handleInstantIndex = async () => {
+  const handleInstantIndex = () => {
     if (!integrationId) {
       toast.error('Selecione uma integração GSC primeiro');
       return;
     }
-
-    toast.info('Funcionalidade de indexação instantânea será implementada na próxima fase');
+    setInstantIndexDialogOpen(true);
   };
 
   return (
@@ -122,16 +122,12 @@ export const GSCIndexingControls = ({ siteId, integrationId }: GSCIndexingContro
 
           <Button
             onClick={handleInstantIndex}
-            disabled={isIndexing || !integrationId}
+            disabled={!integrationId}
             className="h-auto flex-col items-start p-4 space-y-2"
             variant="outline"
           >
             <div className="flex items-center gap-2 w-full">
-              {isIndexing ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Zap className="h-5 w-5" />
-              )}
+              <Zap className="h-5 w-5" />
               <span className="font-semibold">Indexação Instantânea</span>
             </div>
             <p className="text-xs text-muted-foreground text-left">
@@ -146,6 +142,16 @@ export const GSCIndexingControls = ({ siteId, integrationId }: GSCIndexingContro
           </p>
         )}
       </CardContent>
+
+      {/* Instant Index Dialog */}
+      {integrationId && (
+        <InstantIndexDialog
+          open={instantIndexDialogOpen}
+          onOpenChange={setInstantIndexDialogOpen}
+          siteId={siteId}
+          integrationId={integrationId}
+        />
+      )}
     </Card>
   );
 };

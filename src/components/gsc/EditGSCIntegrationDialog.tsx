@@ -74,7 +74,7 @@ export function EditGSCIntegrationDialog({ open, onOpenChange, integration, site
       if (results.overall_status === 'healthy') toast.success('Conexão testada com sucesso!');
       else if (results.overall_status === 'warning') toast.warning('Conexão estabelecida com avisos');
       else toast.error('Problemas detectados na conexão');
-    } catch (error) { console.error('Test error:', error); toast.error('Erro ao testar conexão'); setTestResult({ status: 'error', suggestions: ['❌ Erro ao comunicar com o servidor'] }); }
+    } catch (error) { toast.error('Erro ao testar conexão'); setTestResult({ status: 'error', suggestions: ['❌ Erro ao comunicar com o servidor'] }); }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
