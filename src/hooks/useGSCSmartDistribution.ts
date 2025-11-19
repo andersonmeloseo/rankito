@@ -69,13 +69,32 @@ export function useGSCSmartDistribution(siteId: string) {
       log.info(`Distribuição calculada: ${result.queueItems.length} URLs em ${result.daysNeeded} dias`);
 
       // Inserir em lote na fila
-      const { error: insertError } = await supabase
+      const { data: insertedData, error: insertError } = await supabase
         .from('gsc_indexing_queue')
-        .insert(result.queueItems);
+        .insert(result.queueItems)
+        .select();
 
       if (insertError) {
         log.error('Erro ao inserir na fila', insertError);
+        
+        // Identificar duplicatas (constraint violation)
+        if (insertError.code === '23505') {
+          throw new Error(`Algumas URLs já foram enviadas hoje para estas integrações. Tente novamente amanhã ou use outras integrações.`);
+        }
+        
         throw new Error(`Erro ao adicionar URLs à fila: ${insertError.message}`);
+      }
+
+      // Validar inserção real
+      const insertedCount = insertedData?.length || 0;
+      console.log(`📊 URLs inseridas: ${insertedCount}/${result.queueItems.length}`);
+
+      if (insertedCount === 0) {
+        throw new Error('Nenhuma URL foi adicionada. Possível duplicação ou problema de permissão.');
+      }
+
+      if (insertedCount < result.queueItems.length) {
+        log.warn(`⚠️ Apenas ${insertedCount} de ${result.queueItems.length} URLs foram inseridas`);
       }
 
       log.info('Distribuição concluída com sucesso');
@@ -102,7 +121,10 @@ export function useGSCSmartDistribution(siteId: string) {
         .map(([name, count]) => `• ${name}: ${count} URLs`)
         .join('\n');
 
-      const description = `📊 Distribuição por conta:\n${distributionDetails}\n\n⏰ URLs serão enviadas em ${result.days_needed} dia(s)`;
+      const skippedUrls = result.total_urls - result.queued_urls;
+      const skippedInfo = skippedUrls > 0 ? `\n\n⚠️ ${skippedUrls} URLs duplicadas foram ignoradas` : '';
+      
+      const description = `📊 Distribuição por conta:\n${distributionDetails}\n\n⏰ URLs serão enviadas em ${result.days_needed} dia(s)${skippedInfo}`;
 
       toast.success(result.message, {
         description,
