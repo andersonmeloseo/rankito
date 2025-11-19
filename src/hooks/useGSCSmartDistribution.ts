@@ -104,13 +104,58 @@ export function useGSCSmartDistribution(siteId: string) {
         throw new Error('Engine de distribuição não gerou nenhum item. Contate o suporte.');
       }
 
-      // Inserir em lote na fila
-      console.log(`💾 [useGSCSmartDistribution] Inserindo ${result.queueItems.length} items no banco...`);
-      console.log(`📋 [useGSCSmartDistribution] Primeiros 3 items:`, result.queueItems.slice(0, 3));
+      // Buscar URLs já existentes na fila para evitar duplicatas
+      console.log(`🔍 [useGSCSmartDistribution] Verificando URLs já existentes na fila...`);
+      
+      const integrationIds = [...new Set(result.queueItems.map(item => item.integration_id))];
+      const { data: existingUrls, error: fetchError } = await supabase
+        .from('gsc_indexing_queue')
+        .select('url, integration_id')
+        .in('integration_id', integrationIds)
+        .in('status', ['pending', 'processing']);
+
+      if (fetchError) {
+        console.error(`❌ [useGSCSmartDistribution] Erro ao buscar URLs existentes:`, fetchError);
+      }
+
+      // Criar Set de URLs duplicadas (url + integration_id)
+      const existingUrlKeys = new Set(
+        (existingUrls || []).map(item => `${item.url}|||${item.integration_id}`)
+      );
+
+      console.log(`📊 [useGSCSmartDistribution] URLs já na fila: ${existingUrlKeys.size}`);
+
+      // Filtrar apenas URLs novas
+      const newQueueItems = result.queueItems.filter(item => {
+        const key = `${item.url}|||${item.integration_id}`;
+        return !existingUrlKeys.has(key);
+      });
+
+      const duplicatesCount = result.queueItems.length - newQueueItems.length;
+      if (duplicatesCount > 0) {
+        console.warn(`⚠️ [useGSCSmartDistribution] ${duplicatesCount} URLs duplicadas removidas`);
+      }
+
+      if (newQueueItems.length === 0) {
+        console.warn(`⚠️ [useGSCSmartDistribution] Todas as URLs já estão na fila!`);
+        return {
+          success: true,
+          total_urls: urls.length,
+          queued_urls: 0,
+          skipped_urls: urls.length,
+          distribution: {},
+          days_needed: 0,
+          message: 'Todas as URLs já foram enviadas anteriormente'
+        };
+      }
+
+      // Inserir apenas URLs novas
+      console.log(`💾 [useGSCSmartDistribution] Inserindo ${newQueueItems.length} items novos no banco...`);
+      console.log(`📋 [useGSCSmartDistribution] Primeiros 3 items:`, newQueueItems.slice(0, 3));
 
       const { data: insertedData, error: insertError } = await supabase
         .from('gsc_indexing_queue')
-        .insert(result.queueItems)
+        .insert(newQueueItems)
         .select();
 
       if (insertError) {
@@ -161,16 +206,18 @@ export function useGSCSmartDistribution(siteId: string) {
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-queue', siteId] });
       queryClient.invalidateQueries({ queryKey: ['gsc-load-distribution', siteId] });
 
+      const skippedCount = result.queueItems.length - newQueueItems.length;
+      
       return {
         success: true,
         total_urls: urls.length,
-        queued_urls: result.queueItems.length,
-        skipped_urls: 0,
+        queued_urls: newQueueItems.length,
+        skipped_urls: skippedCount,
         distribution: result.distribution,
         days_needed: result.daysNeeded,
         message: result.daysNeeded === 1 
-          ? `${urls.length} URLs agendadas para HOJE usando ${Object.keys(result.distribution).length} contas`
-          : `${urls.length} URLs distribuídas inteligentemente em ${result.daysNeeded} dia(s)`,
+          ? `${newQueueItems.length} URLs agendadas para HOJE usando ${Object.keys(result.distribution).length} contas`
+          : `${newQueueItems.length} URLs distribuídas inteligentemente em ${result.daysNeeded} dia(s)`,
       };
     },
     onSuccess: (result) => {
