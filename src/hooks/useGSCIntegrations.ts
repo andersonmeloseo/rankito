@@ -10,6 +10,7 @@ interface CreateGSCIntegrationInput {
   siteId: string;
   connectionName: string;
   serviceAccountJson: any;
+  gscPropertyUrl?: string;
 }
 
 export const useGSCIntegrations = (siteId: string, userId: string) => {
@@ -124,7 +125,7 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
 
       console.log('🔍 Testando variações de URL:', urlVariations);
 
-      // Inserir integração primeiro (para poder buscar propriedades)
+      // Inserir integração usando URL detectada ou fallback
       const { data, error } = await supabase
         .from('google_search_console_integrations')
         .insert([{
@@ -134,14 +135,14 @@ export const useGSCIntegrations = (siteId: string, userId: string) => {
           google_email: clientEmail,
           service_account_json: input.serviceAccountJson,
           is_active: true,
-          gsc_property_url: urlVariations[0], // Usar primeira variação como padrão
+          gsc_property_url: input.gscPropertyUrl || urlVariations[0], // Usar detectada primeiro
         }])
         .select()
         .single();
 
       if (error) throw error;
       
-      console.log('✅ Integração criada com URL:', urlVariations[0]);
+      console.log('✅ Integração criada com URL:', input.gscPropertyUrl || urlVariations[0]);
       return data;
     },
     onSuccess: () => {

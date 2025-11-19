@@ -75,6 +75,7 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
       siteId,
       connectionName: data.connectionName,
       serviceAccountJson: data.serviceAccountJson,
+      gscPropertyUrl: data.gscPropertyUrl,
     });
     setShowAddDialog(false);
   };
