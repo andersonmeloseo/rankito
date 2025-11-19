@@ -40,6 +40,16 @@ export function GSCIndexingQueueTab({ siteId }: GSCIndexingQueueTabProps) {
     }
   };
 
+  const getStatusLabel = (status: string): string => {
+    const translations: Record<string, string> = {
+      'pending': 'Pendente',
+      'processing': 'Processando',
+      'completed': 'Concluído',
+      'failed': 'Falhou'
+    };
+    return translations[status] || status;
+  };
+
   const paginatedItems = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
@@ -74,31 +84,31 @@ export function GSCIndexingQueueTab({ siteId }: GSCIndexingQueueTabProps) {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-2xl font-bold text-blue-600">{queueStats.pendingToday}</p>
+            <p className="text-2xl font-bold text-foreground">{queueStats.pendingToday}</p>
             <p className="text-sm text-muted-foreground">Para Hoje</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-2xl font-bold text-orange-600">{queueStats.pendingTomorrow}</p>
+            <p className="text-2xl font-bold text-foreground">{queueStats.pendingTomorrow}</p>
             <p className="text-sm text-muted-foreground">Para Amanhã</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-2xl font-bold text-purple-600">{queueStats.processing}</p>
+            <p className="text-2xl font-bold text-foreground">{queueStats.processing}</p>
             <p className="text-sm text-muted-foreground">Processando</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-2xl font-bold text-green-600">{queueStats.completed}</p>
+            <p className="text-2xl font-bold text-foreground">{queueStats.completed}</p>
             <p className="text-sm text-muted-foreground">Completadas</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-2xl font-bold text-red-600">{queueStats.failed}</p>
+            <p className="text-2xl font-bold text-foreground">{queueStats.failed}</p>
             <p className="text-sm text-muted-foreground">Falharam</p>
           </CardContent>
         </Card>
@@ -137,10 +147,10 @@ export function GSCIndexingQueueTab({ siteId }: GSCIndexingQueueTabProps) {
                           </a>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getStatusVariant(item.status)}>
-                            {getStatusIcon(item.status)}
-                            {item.status}
-                          </Badge>
+                    <Badge variant={getStatusVariant(item.status)}>
+                      {getStatusIcon(item.status)}
+                      {getStatusLabel(item.status)}
+                    </Badge>
                         </TableCell>
                         <TableCell>
                           {format(new Date(item.scheduled_for), 'dd/MM/yyyy', { locale: ptBR })}
