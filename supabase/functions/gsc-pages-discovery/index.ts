@@ -83,6 +83,29 @@ async function insertAnalyticsBatch(supabase: any, rows: any[]): Promise<void> {
   }
 }
 
+/**
+ * Insere URLs descobertas em lotes
+ */
+async function insertDiscoveredUrlsBatch(supabase: any, urls: any[]): Promise<void> {
+  const batchSize = 500;
+  for (let i = 0; i < urls.length; i += batchSize) {
+    const batch = urls.slice(i, i + batchSize);
+    const { error } = await supabase
+      .from('gsc_discovered_urls')
+      .upsert(batch, {
+        onConflict: 'site_id,url',
+        ignoreDuplicates: false,
+      });
+
+    if (error) {
+      console.error(`❌ Error inserting discovered URLs batch ${i / batchSize + 1}:`, error);
+      throw error;
+    }
+
+    console.log(`✅ Inserted discovered URLs batch ${i / batchSize + 1} (${batch.length} URLs)`);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -179,6 +202,23 @@ Deno.serve(async (req) => {
     // Inserir em lotes
     await insertAnalyticsBatch(supabase, analyticsData);
 
+    // Preparar URLs descobertas para inserção
+    const discoveredUrls = allPages.map((row: any) => ({
+      site_id,
+      integration_id,
+      url: row.keys[0],
+      current_status: 'discovered',
+      last_seen_at: new Date().toISOString(),
+      clicks: row.clicks || 0,
+      impressions: row.impressions || 0,
+      ctr: row.ctr || 0,
+      position: row.position || 0,
+    }));
+
+    console.log(`📝 Inserting ${discoveredUrls.length} URLs into gsc_discovered_urls...`);
+    await insertDiscoveredUrlsBatch(supabase, discoveredUrls);
+    console.log(`✅ Discovered URLs inserted successfully`);
+
     // Atualizar job
     const duration = Date.now() - startTime;
     await supabase
@@ -191,6 +231,8 @@ Deno.serve(async (req) => {
         completed_at: new Date().toISOString(),
         results: {
           pages_discovered: allPages.length,
+          urls_inserted_analytics: allPages.length,
+          urls_inserted_discovered: discoveredUrls.length,
           period: { startDate, endDate },
           duration_ms: duration,
         },
