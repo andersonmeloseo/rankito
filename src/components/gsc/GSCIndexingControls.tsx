@@ -34,7 +34,7 @@ export const GSCIndexingControls = ({ siteId, integrationId }: GSCIndexingContro
 
       if (error) throw error;
 
-      toast.success(`Descoberta iniciada! Processando ${data.urls_discovered || 0} URLs`);
+      toast.success(`✅ ${data.pages_discovered || 0} páginas descobertas e indexadas!`);
     } catch (error: any) {
       toast.error(`Erro ao descobrir páginas: ${error.message}`);
     } finally {
