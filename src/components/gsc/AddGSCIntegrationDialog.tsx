@@ -71,23 +71,25 @@ export function AddGSCIntegrationDialog({
     setTestResult({ status: 'idle' });
     setSelectedProperty("");
     
-    // Auto-testar após validação bem-sucedida
+    // Auto-testar após validação bem-sucedida usando o valor diretamente
     if (validation !== false) {
-      setTimeout(() => handleTestAndDetect(), 500);
+      setTimeout(() => handleTestAndDetect(value), 500);
     }
   };
 
-  const handleTestAndDetect = async () => {
+  const handleTestAndDetect = async (jsonValue?: string) => {
+    const jsonToUse = jsonValue || jsonInput;
+    
     // ✅ VALIDAÇÃO DEFENSIVA - impedir parse de string vazia
-    if (!jsonInput || !jsonInput.trim()) {
-      console.log("❌ handleTestAndDetect abortado: jsonInput vazio");
+    if (!jsonToUse || !jsonToUse.trim()) {
+      console.log("❌ handleTestAndDetect abortado: JSON vazio");
       return;
     }
 
     setTestResult({ status: 'testing' });
 
     try {
-      const parsedJson = JSON.parse(jsonInput);
+      const parsedJson = JSON.parse(jsonToUse);
 
       const { data, error } = await supabase.functions.invoke('gsc-test-and-detect', {
         body: { service_account_json: parsedJson, configured_property_url: null, site_url: siteUrl },
