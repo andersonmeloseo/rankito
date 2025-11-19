@@ -28,40 +28,27 @@ export function useGSCSitemaps({ siteId }: UseGSCSitemapsParams) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch sitemaps (agregado de todas integrações)
+  // Fetch sitemaps (direto do banco local)
   const { data: sitemaps, isLoading, error, refetch } = useQuery({
     queryKey: ['gsc-sitemaps', siteId],
     queryFn: async () => {
       if (!siteId) return [];
 
-      console.log('🔍 Fetching aggregated GSC sitemaps for site:', siteId);
+      console.log('🔍 Fetching sitemaps from database for site:', siteId);
 
-      // Buscar todas integrações ativas
-      const { data: integrations, error: intError } = await supabase
-        .from('google_search_console_integrations')
-        .select('id')
+      const { data, error } = await supabase
+        .from('gsc_sitemap_submissions')
+        .select('*')
         .eq('site_id', siteId)
-        .eq('is_active', true);
-
-      if (intError || !integrations || integrations.length === 0) {
-        console.log('⚠️ No active integrations found for site');
-        return [];
-      }
-
-      // Buscar sitemaps da primeira integração (ou agregar de todas)
-      const firstIntegrationId = integrations[0].id;
-
-      const { data, error } = await supabase.functions.invoke('gsc-get-sitemaps', {
-        body: { integration_id: firstIntegrationId },
-      });
+        .order('gsc_last_submitted', { ascending: false });
 
       if (error) {
         console.error('❌ Error fetching sitemaps:', error);
-        throw new Error(error.message || 'Failed to fetch sitemaps');
+        throw new Error(error.message);
       }
 
-      console.log('✅ Sitemaps fetched:', data.sitemaps?.length);
-      return data.sitemaps as GSCSitemap[];
+      console.log('✅ Sitemaps fetched from database:', data?.length || 0);
+      return data as GSCSitemap[];
     },
     enabled: !!siteId,
   });
