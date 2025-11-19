@@ -37,44 +37,89 @@ export function useGSCSmartDistribution(siteId: string) {
       const correlationId = Logger.generateCorrelationId();
       const log = logger.child({ correlationId, siteId });
 
+      console.log(`🚀 [useGSCSmartDistribution] INÍCIO - ${urls.length} URLs para site ${siteId}`);
       log.info(`Iniciando distribuição: ${urls.length} URLs`);
 
       if (!quota) {
-        throw new Error('Dados de quota não disponíveis');
+        console.error(`❌ [useGSCSmartDistribution] Quota não disponível`);
+        throw new Error('Dados de quota não disponíveis. Verifique se há integrações GSC configuradas.');
       }
 
-      // Converter integrações para formato do engine
-      const integrations: Integration[] = quota.breakdown
-        .filter(i => i.health_status === 'healthy' || i.health_status === null)
+      console.log(`📋 [useGSCSmartDistribution] Quota recebida:`, {
+        total_integrations: quota.breakdown?.length || 0,
+        total_limit: quota.total_limit,
+        total_remaining: quota.total_remaining
+      });
+
+      // Converter integrações para formato do engine COM FALLBACK
+      const integrations: Integration[] = (quota.breakdown || [])
+        .filter(i => {
+          const isHealthy = i.health_status === 'healthy' || i.health_status === null;
+          console.log(`  🏥 Integração ${i.name}: health=${i.health_status}, remaining=${i.remaining}, healthy=${isHealthy}`);
+          return isHealthy;
+        })
         .map(i => ({
           integration_id: i.integration_id,
           name: i.name,
           email: i.email,
-          remaining_today: i.remaining,
+          remaining_today: Math.max(0, i.remaining), // GARANTIR NUNCA NEGATIVO
           daily_limit: i.limit,
           is_active: true,
           health_status: i.health_status,
           consecutive_failures: 0,
         }));
 
+      console.log(`✅ [useGSCSmartDistribution] ${integrations.length} integrações saudáveis encontradas`);
+
+      if (integrations.length === 0) {
+        console.error(`❌ [useGSCSmartDistribution] ZERO integrações saudáveis!`);
+        throw new Error('Nenhuma integração GSC saudável disponível. Adicione ou repare suas integrações.');
+      }
+
       // Validar distribuição
+      console.log(`🔍 [useGSCSmartDistribution] Validando distribuição...`);
       const validation = validateDistribution(urls, integrations);
+      
+      console.log(`📊 [useGSCSmartDistribution] Resultado validação:`, validation);
+      
       if (!validation.valid) {
+        console.error(`❌ [useGSCSmartDistribution] Validação falhou: ${validation.error}`);
         throw new Error(validation.error);
       }
 
       // Executar distribuição usando engine
+      console.log(`⚙️ [useGSCSmartDistribution] Executando distribuição greedy...`);
       const result = distributeUrls(urls, integrations, 'greedy');
+
+      console.log(`✅ [useGSCSmartDistribution] Distribuição calculada:`, {
+        queueItems: result.queueItems.length,
+        daysNeeded: result.daysNeeded,
+        distribution: result.distribution
+      });
 
       log.info(`Distribuição calculada: ${result.queueItems.length} URLs em ${result.daysNeeded} dias`);
 
+      if (result.queueItems.length === 0) {
+        console.error(`❌ [useGSCSmartDistribution] Engine retornou 0 items!`);
+        throw new Error('Engine de distribuição não gerou nenhum item. Contate o suporte.');
+      }
+
       // Inserir em lote na fila
+      console.log(`💾 [useGSCSmartDistribution] Inserindo ${result.queueItems.length} items no banco...`);
+      console.log(`📋 [useGSCSmartDistribution] Primeiros 3 items:`, result.queueItems.slice(0, 3));
+
       const { data: insertedData, error: insertError } = await supabase
         .from('gsc_indexing_queue')
         .insert(result.queueItems)
         .select();
 
       if (insertError) {
+        console.error(`❌ [useGSCSmartDistribution] ERRO AO INSERIR:`, {
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint
+        });
         log.error('Erro ao inserir na fila', insertError);
         
         // Identificar duplicatas (constraint violation)
@@ -87,16 +132,28 @@ export function useGSCSmartDistribution(siteId: string) {
 
       // Validar inserção real
       const insertedCount = insertedData?.length || 0;
-      console.log(`📊 URLs inseridas: ${insertedCount}/${result.queueItems.length}`);
+      console.log(`📊 [useGSCSmartDistribution] URLs inseridas: ${insertedCount}/${result.queueItems.length}`);
 
       if (insertedCount === 0) {
-        throw new Error('Nenhuma URL foi adicionada. Possível duplicação ou problema de permissão.');
+        console.error(`❌ [useGSCSmartDistribution] ZERO URLs inseridas! Testando RLS...`);
+        
+        // Fazer query de teste para diagnosticar RLS
+        const { count, error: testError } = await supabase
+          .from('gsc_indexing_queue')
+          .select('*', { count: 'exact', head: true })
+          .eq('integration_id', result.queueItems[0].integration_id);
+
+        console.log(`🧪 [useGSCSmartDistribution] Teste RLS: count=${count}, error=`, testError);
+        
+        throw new Error('Nenhuma URL foi adicionada. Possível problema de permissão (RLS). Contate o suporte.');
       }
 
       if (insertedCount < result.queueItems.length) {
+        console.warn(`⚠️ [useGSCSmartDistribution] Inserção parcial: ${insertedCount}/${result.queueItems.length}`);
         log.warn(`⚠️ Apenas ${insertedCount} de ${result.queueItems.length} URLs foram inseridas`);
       }
 
+      console.log(`🎉 [useGSCSmartDistribution] SUCESSO TOTAL!`);
       log.info('Distribuição concluída com sucesso');
 
       // Invalidar queries relacionadas

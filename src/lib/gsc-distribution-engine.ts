@@ -81,14 +81,25 @@ export function calculateDailyCapacity(
   integrations: Integration[],
   day: number
 ): DailyCapacity {
+  console.log(`🔧 [calculateDailyCapacity] Entrada:`, { 
+    day, 
+    totalIntegrations: integrations.length,
+    integrations: integrations.map(i => ({ 
+      id: i.integration_id, 
+      name: i.name, 
+      remaining: i.remaining_today, 
+      limit: i.daily_limit 
+    }))
+  });
+
   const dailyIntegrations = integrations
     .map((int) => ({
       integration_id: int.integration_id,
       name: int.name,
       available_slots:
         day === 0
-          ? int.remaining_today // Hoje: usa quota restante
-          : int.daily_limit, // Dias futuros: quota completa (200)
+          ? Math.max(0, int.remaining_today) // Garantir nunca negativo
+          : int.daily_limit,
     }))
     .filter((int) => int.available_slots > 0);
 
@@ -96,6 +107,13 @@ export function calculateDailyCapacity(
     (sum, int) => sum + int.available_slots,
     0
   );
+
+  console.log(`✅ [calculateDailyCapacity] Resultado:`, { 
+    day, 
+    activeIntegrations: dailyIntegrations.length,
+    total_capacity,
+    breakdown: dailyIntegrations
+  });
 
   return { day, integrations: dailyIntegrations, total_capacity };
 }
@@ -108,6 +126,13 @@ export function distributeUrlsGreedy(
   dailyCapacity: DailyCapacity,
   startDate: Date
 ): QueueItem[] {
+  console.log(`🎯 [distributeUrlsGreedy] Entrada:`, {
+    totalUrls: urls.length,
+    day: dailyCapacity.day,
+    availableIntegrations: dailyCapacity.integrations.length,
+    totalCapacity: dailyCapacity.total_capacity
+  });
+
   const queueItems: QueueItem[] = [];
   let urlIndex = 0;
 
@@ -115,6 +140,8 @@ export function distributeUrlsGreedy(
   const sortedIntegrations = [...dailyCapacity.integrations].sort(
     (a, b) => b.available_slots - a.available_slots
   );
+
+  console.log(`📊 [distributeUrlsGreedy] Integrações ordenadas:`, sortedIntegrations);
 
   // Distribuir URLs preenchendo cada conta completamente
   for (const integration of sortedIntegrations) {
@@ -137,8 +164,11 @@ export function distributeUrlsGreedy(
       slotsUsed++;
       urlIndex++;
     }
+
+    console.log(`✓ [distributeUrlsGreedy] Integração ${integration.name}: ${slotsUsed} URLs atribuídas`);
   }
 
+  console.log(`✅ [distributeUrlsGreedy] Resultado: ${queueItems.length} items criados`);
   return queueItems;
 }
 
@@ -373,17 +403,53 @@ export function validateDistribution(
   urls: Array<{ url: string; page_id?: string }>,
   integrations: Integration[]
 ): { valid: boolean; error?: string } {
+  console.log(`🔍 [validateDistribution] Validando:`, {
+    totalUrls: urls.length,
+    totalIntegrations: integrations.length
+  });
+
   if (urls.length === 0) {
-    return { valid: false, error: 'Nenhuma URL fornecida' };
+    console.error(`❌ [validateDistribution] Nenhuma URL para distribuir`);
+    return { valid: false, error: 'Nenhuma URL para distribuir' };
+  }
+
+  if (integrations.length === 0) {
+    console.error(`❌ [validateDistribution] Nenhuma integração fornecida`);
+    return { valid: false, error: 'Nenhuma integração GSC configurada para este projeto' };
   }
 
   const healthyIntegrations = integrations.filter(
-    (i) => i.is_active && (i.health_status === 'healthy' || i.health_status === null)
+    (i) =>
+      i.is_active &&
+      (i.health_status === null || i.health_status === 'healthy') &&
+      (i.consecutive_failures === undefined || i.consecutive_failures < 3)
   );
 
+  console.log(`🏥 [validateDistribution] Integrações saudáveis: ${healthyIntegrations.length}/${integrations.length}`);
+
   if (healthyIntegrations.length === 0) {
-    return { valid: false, error: 'Nenhuma integração saudável disponível' };
+    console.error(`❌ [validateDistribution] Nenhuma integração saudável`);
+    return {
+      valid: false,
+      error: 'Nenhuma integração GSC saudável disponível. Verifique o status das suas integrações.',
+    };
   }
 
+  const totalCapacity = healthyIntegrations.reduce(
+    (sum, i) => sum + Math.max(0, i.remaining_today),
+    0
+  );
+
+  console.log(`📊 [validateDistribution] Capacidade total hoje: ${totalCapacity}`);
+
+  if (totalCapacity === 0) {
+    console.error(`❌ [validateDistribution] Capacidade zero`);
+    return {
+      valid: false,
+      error: 'Nenhuma capacidade disponível hoje. Aguarde até amanhã ou adicione mais integrações.',
+    };
+  }
+
+  console.log(`✅ [validateDistribution] Validação OK - ${healthyIntegrations.length} integrações, capacidade ${totalCapacity}`);
   return { valid: true };
 }
