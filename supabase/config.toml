@@ -3,8 +3,17 @@ project_id = "jhzmgexprjnpgadkxjup"
 [functions.check-expired-trials]
 verify_jwt = false
 
-[functions.gsc-test-and-detect]
+[functions.gsc-pages-discovery]
 verify_jwt = true
+
+[functions.gsc-sitemaps-process]
+verify_jwt = true
+
+[functions.gsc-instant-index]
+verify_jwt = true
+
+[functions.gsc-check-health]
+verify_jwt = false
 
 [functions.gsc-validate-apis]
 verify_jwt = false
