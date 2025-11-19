@@ -104,20 +104,37 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
         console.log(`🔄 ${duplicatesRemoved} URLs duplicadas removidas`);
       }
 
-      console.log(`📤 Enviando ${uniqueUrls.length} URLs únicas para distribuição`);
-      console.log(`📋 Primeiras 5 URLs:`, uniqueUrls.slice(0, 5));
+      console.log(`📤 [GSCSitemapsManager] Enviando ${uniqueUrls.length} URLs únicas para distribuição`);
+      console.log(`📋 [GSCSitemapsManager] Primeiras 5 URLs:`, uniqueUrls.slice(0, 5));
 
       // Adicionar URLs à fila de indexação
-      const result = await addToQueue.mutateAsync({
-        urls: uniqueUrls.map(url => ({ url }))
-      });
-
-      console.log(`✅ Resultado da distribuição:`, result);
+      console.log(`🔄 [GSCSitemapsManager] Chamando addToQueue.mutateAsync...`);
       
-      // Reset é feito no onSuccess da mutação
-      reset();
+      try {
+        const result = await addToQueue.mutateAsync({
+          urls: uniqueUrls.map(url => ({ url }))
+        });
+
+        console.log(`✅ [GSCSitemapsManager] addToQueue completou com sucesso:`, result);
+        
+        // Reset é feito no onSuccess da mutação
+        reset();
+      } catch (mutationError) {
+        console.error(`❌ [GSCSitemapsManager] addToQueue.mutateAsync FALHOU:`, {
+          error: mutationError,
+          message: mutationError instanceof Error ? mutationError.message : 'Unknown',
+          stack: mutationError instanceof Error ? mutationError.stack : undefined
+        });
+        throw mutationError; // Re-throw para ser capturado pelo catch externo
+      }
     } catch (error) {
-      console.error("❌ Erro completo ao processar sitemaps:", error);
+      console.error("❌ [GSCSitemapsManager] ERRO COMPLETO ao processar sitemaps:", {
+        error,
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined,
+        type: typeof error
+      });
+      
       toast({
         title: "❌ Erro ao processar",
         description: error instanceof Error ? error.message : "Erro desconhecido ao adicionar URLs à fila",
