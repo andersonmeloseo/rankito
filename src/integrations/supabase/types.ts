@@ -1063,6 +1063,7 @@ export type Database = {
           error_message: string | null
           id: string
           integration_id: string
+          migrated_to_new_system: boolean | null
           page_id: string | null
           processed_at: string | null
           scheduled_for: string
@@ -1076,6 +1077,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           integration_id: string
+          migrated_to_new_system?: boolean | null
           page_id?: string | null
           processed_at?: string | null
           scheduled_for?: string
@@ -1089,6 +1091,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           integration_id?: string
+          migrated_to_new_system?: boolean | null
           page_id?: string | null
           processed_at?: string | null
           scheduled_for?: string
@@ -1547,6 +1550,7 @@ export type Database = {
           gsc_response: Json | null
           id: string
           integration_id: string
+          migrated_to_new_system: boolean | null
           page_id: string | null
           request_type: string
           status: string | null
@@ -1561,6 +1565,7 @@ export type Database = {
           gsc_response?: Json | null
           id?: string
           integration_id: string
+          migrated_to_new_system?: boolean | null
           page_id?: string | null
           request_type?: string
           status?: string | null
@@ -1575,6 +1580,7 @@ export type Database = {
           gsc_response?: Json | null
           id?: string
           integration_id?: string
+          migrated_to_new_system?: boolean | null
           page_id?: string | null
           request_type?: string
           status?: string | null
