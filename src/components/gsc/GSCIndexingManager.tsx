@@ -30,7 +30,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const { quota, resetAt, refetchQuota, isLoadingQuota } = useGSCIndexing({ siteId });
   
   // Tab state
-  const [activeTab, setActiveTab] = useState("queue");
+  const [activeTab, setActiveTab] = useState("pages");
   
   // States for URL table
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
@@ -431,13 +431,13 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="queue" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Fila
-          </TabsTrigger>
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Páginas
+          </TabsTrigger>
+          <TabsTrigger value="queue" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Fila
           </TabsTrigger>
           <TabsTrigger value="errors" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />

@@ -50,7 +50,7 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
         .eq('google_search_console_integrations.site_id', siteId)
         .order('scheduled_for', { ascending: true })
         .order('created_at', { ascending: true })
-        .limit(100); // Limit to 100 most recent items for performance
+        .limit(1000); // Limit to 1000 items for better visibility
 
       if (error) throw new Error(error.message);
 
