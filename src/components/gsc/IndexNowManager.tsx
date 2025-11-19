@@ -82,14 +82,6 @@ export default function IndexNowManager({ siteId, site }: IndexNowManagerProps) 
     isKeyValidated
   } = useIndexNow(siteId);
 
-  // Validação automática da chave ao carregar
-  useEffect(() => {
-    if (siteKey?.indexnow_key && !isKeyValidated && !isValidating) {
-      console.log('🔍 Auto-validando chave IndexNow...');
-      validateKey();
-    }
-  }, [siteKey?.indexnow_key, isKeyValidated, isValidating, validateKey]);
-
   // Query para estatísticas do dia
   const { data: todayStats, refetch: refetchStats } = useQuery({
     queryKey: ['indexnow-today-stats', siteId],
