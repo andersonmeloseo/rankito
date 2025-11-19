@@ -154,15 +154,34 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
                 <h3 className="text-sm font-semibold">
                   Sitemaps Encontrados ({discoveredSitemaps.length})
                 </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={reset}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Limpar Todos
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleSubmitSelected}
+                    disabled={selectedSitemaps.length === 0 || isSubmitting}
+                    size="sm"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Enviar {selectedSitemaps.length} ao GSC
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={reset}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Limpar Todos
+                  </Button>
+                </div>
               </div>
 
               <Table>
@@ -217,9 +236,9 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
                 </TableBody>
               </Table>
 
-              {/* Footer com Resumo + Botão de Submissão */}
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="text-sm text-muted-foreground">
+              {/* Footer com Resumo */}
+              <div className="pt-4 border-t">
+                <div className="text-sm text-muted-foreground text-center">
                   {selectedSitemaps.length > 0 ? (
                     <>
                       <strong>{selectedSitemaps.length}</strong> sitemaps selecionados
@@ -230,23 +249,6 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
                     'Nenhum sitemap selecionado'
                   )}
                 </div>
-                
-                <Button 
-                  onClick={handleSubmitSelected}
-                  disabled={selectedSitemaps.length === 0 || isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      Enviar {selectedSitemaps.length} ao GSC
-                    </>
-                  )}
-                </Button>
               </div>
             </div>
           </>
