@@ -257,22 +257,36 @@ Deno.serve(async (req) => {
 
     let totalSitemapsProcessed = 0;
     let totalUrlsInserted = 0;
+    const failedSitemaps: Array<{ url: string; error: string }> = [];
 
     // Processar cada sitemap
     for (const sitemap of sitemaps) {
-      const result = await processSitemap(
-        supabase,
-        site_id,
-        sitemap.sitemap_url,
-        sitemap.id
-      );
+      try {
+        const result = await processSitemap(
+          supabase,
+          site_id,
+          sitemap.sitemap_url,
+          sitemap.id
+        );
 
-      totalSitemapsProcessed += result.sitemaps_processed;
-      totalUrlsInserted += result.urls_inserted;
+        totalSitemapsProcessed += result.sitemaps_processed;
+        totalUrlsInserted += result.urls_inserted;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`❌ Error processing sitemap ${sitemap.sitemap_url}:`, errorMessage);
+        failedSitemaps.push({
+          url: sitemap.sitemap_url,
+          error: errorMessage
+        });
+      }
     }
 
     const duration = Date.now() - startTime;
     console.log(`✅ Processing completed in ${duration}ms`);
+    
+    if (failedSitemaps.length > 0) {
+      console.log(`⚠️  ${failedSitemaps.length} sitemap(s) failed to process`);
+    }
 
     return new Response(
       JSON.stringify({
@@ -280,6 +294,7 @@ Deno.serve(async (req) => {
         sitemaps_processed: totalSitemapsProcessed,
         urls_inserted: totalUrlsInserted,
         duration_ms: duration,
+        failed_sitemaps: failedSitemaps.length > 0 ? failedSitemaps : undefined,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
