@@ -147,13 +147,13 @@ async function processSitemap(
       if (urls.length > 0) {
         const urlsToInsert = urls.map((u) => ({
           site_id: siteId,
+          integration_id: null,
           url: u.loc,
-          sitemap_found: true,
-          sitemap_url: sitemapUrl,
-          sitemap_id: sitemapId,
-          lastmod: u.lastmod,
-          priority: u.priority,
-          current_status: 'unknown',
+          discovered_at: new Date().toISOString(),
+          last_seen_at: new Date().toISOString(),
+          current_status: 'discovered',
+          gsc_data: false,
+          indexnow_data: false,
         }));
 
         await insertUrlsBatch(supabase, urlsToInsert);
