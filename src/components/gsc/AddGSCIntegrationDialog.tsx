@@ -78,6 +78,18 @@ export function AddGSCIntegrationDialog({
   };
 
   const handleTestAndDetect = async () => {
+    // ✅ VALIDAÇÃO DEFENSIVA - impedir parse de string vazia
+    if (!jsonInput || !jsonInput.trim()) {
+      console.log("❌ handleTestAndDetect abortado: jsonInput vazio");
+      return;
+    }
+
+    // ✅ Verificar se JSON é válido antes de tentar parsear
+    if (!jsonValidation.valid) {
+      console.log("❌ handleTestAndDetect abortado: JSON inválido");
+      return;
+    }
+
     setTestResult({ status: 'testing' });
 
     try {
