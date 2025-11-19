@@ -113,3 +113,6 @@ every = "15 minutes"
 
 [functions.extract-sitemap-urls]
 verify_jwt = false
+
+[functions.gsc-submit-sitemap]
+verify_jwt = true

@@ -23,6 +23,7 @@ import {
 import { useGSCSitemaps } from "@/hooks/useGSCSitemaps";
 import { useDiscoverSitemaps } from "@/hooks/useDiscoverSitemaps";
 import { useGSCIndexingQueue } from "@/hooks/useGSCIndexingQueue";
+import { useGSCIntegrations } from "@/hooks/useGSCIntegrations";
 import { Search, FileText, Trash2, Loader2, Send, CheckCircle2, AlertTriangle, XCircle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -38,9 +39,12 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
   const { toast } = useToast();
   const [sitemapUrl, setSitemapUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSubmittingToGSC, setIsSubmittingToGSC] = useState(false);
 
   const { sitemaps, isLoading, submitSitemap } = useGSCSitemaps({ siteId });
   const { addToQueue } = useGSCIndexingQueue({ siteId });
+  const { integrations } = useGSCIntegrations(siteId, userId);
 
   const {
     discoveredSitemaps,
@@ -56,6 +60,93 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
     if (!sitemapUrl.trim()) return;
     discover(sitemapUrl.trim());
     setSitemapUrl("");
+  };
+
+  const triggerQueueProcessing = async () => {
+    setIsProcessing(true);
+    try {
+      const { error } = await supabase.functions.invoke('gsc-process-indexing-queue', {
+        body: { scheduled: false }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "✅ Processamento iniciado!",
+        description: "As URLs estão sendo indexadas no Google agora."
+      });
+    } catch (error) {
+      console.error("❌ Erro ao processar fila:", error);
+      toast({
+        title: "Erro ao processar",
+        description: "Não foi possível iniciar o processamento da fila",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const submitSitemapsToGSC = async () => {
+    const selected = discoveredSitemaps.filter(s => s.selected);
+    if (selected.length === 0) return;
+
+    // Buscar primeira integração ativa
+    const activeIntegration = integrations?.find(i => i.is_active);
+    if (!activeIntegration) {
+      toast({
+        title: "Erro",
+        description: "Nenhuma integração GSC ativa encontrada",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmittingToGSC(true);
+    
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const sitemap of selected) {
+        try {
+          const { error } = await supabase.functions.invoke('gsc-submit-sitemap', {
+            body: {
+              integration_id: activeIntegration.id,
+              sitemap_url: sitemap.url
+            }
+          });
+          
+          if (error) {
+            console.error(`❌ Erro ao submeter ${sitemap.url}:`, error);
+            errorCount++;
+          } else {
+            console.log(`✅ Sitemap ${sitemap.url} submetido ao GSC`);
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`❌ Erro ao submeter ${sitemap.url}:`, error);
+          errorCount++;
+        }
+      }
+      
+      if (successCount > 0) {
+        toast({
+          title: "✅ Sitemaps submetidos!",
+          description: `${successCount} sitemap(s) enviado(s) ao Google Search Console${errorCount > 0 ? ` (${errorCount} erro(s))` : ''}`
+        });
+      } else {
+        throw new Error("Nenhum sitemap foi submetido com sucesso");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao submeter sitemaps",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmittingToGSC(false);
+    }
   };
 
   const handleSubmitSelected = async () => {
@@ -97,6 +188,14 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
         });
 
         console.log(`✅ [GSCSitemapsManager] addToQueue completou com sucesso:`, result);
+        
+        toast({
+          title: "✅ URLs adicionadas à fila!",
+          description: `${data.urls.length} URLs foram adicionadas. Iniciando processamento...`
+        });
+
+        // Auto-trigger do processamento
+        await triggerQueueProcessing();
         
         // Reset é feito no onSuccess da mutação
         reset();
@@ -200,6 +299,25 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
                 </h3>
                 <div className="flex gap-2">
                   <Button 
+                    onClick={triggerQueueProcessing}
+                    disabled={isProcessing}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Processando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Processar Agora
+                      </>
+                    )}
+                  </Button>
+
+                  <Button 
                     onClick={handleSubmitSelected}
                     disabled={selectedSitemaps.length === 0 || isSubmitting}
                     size="sm"
@@ -213,6 +331,24 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
                       <>
                         <Send className="h-4 w-4 mr-2" />
                         Adicionar {selectedSitemaps.length} à Fila
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={submitSitemapsToGSC}
+                    disabled={selectedSitemaps.length === 0 || isSubmittingToGSC}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {isSubmittingToGSC ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Submetendo...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Submeter {selectedSitemaps.length} ao GSC
                       </>
                     )}
                   </Button>
