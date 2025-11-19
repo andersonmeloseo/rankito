@@ -68,7 +68,7 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("configuracao");
-  const [indexingSubTab, setIndexingSubTab] = useState("por-pagina");
+  const [indexingSubTab, setIndexingSubTab] = useState("por-sitemap");
 
   const handleAdd = (data: any) => {
     createIntegration.mutate({
@@ -272,8 +272,8 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
             <CardContent>
               <Tabs value={indexingSubTab} onValueChange={setIndexingSubTab}>
                 <TabsList className="grid w-full grid-cols-2 max-w-md">
-                  <TabsTrigger value="por-pagina">Por Página</TabsTrigger>
                   <TabsTrigger value="por-sitemap">Por Sitemap</TabsTrigger>
+                  <TabsTrigger value="por-pagina">Por Página</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="por-pagina" className="mt-6">
