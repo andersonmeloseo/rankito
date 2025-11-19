@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.gsc-health-check.schedule]
 every = "15 minutes"
+
+[functions.extract-sitemap-urls]
+verify_jwt = false
