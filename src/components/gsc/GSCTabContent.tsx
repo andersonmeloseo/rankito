@@ -14,6 +14,7 @@ import { GSCIndexingAlertsPanel } from './GSCIndexingAlertsPanel';
 import { GSCDiscoveredUrlsTable } from './GSCDiscoveredUrlsTable';
 import { GSCSearchAnalyticsDashboard } from './GSCSearchAnalyticsDashboard';
 import { GSCIndexingJobsHistory } from './GSCIndexingJobsHistory';
+import { GSCSitemapsManager } from './GSCSitemapsManager';
 
 interface GSCTabContentProps {
   siteId: string;
@@ -128,7 +129,11 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
       <Card>
         <CardContent className="p-6">
           <Tabs defaultValue="urls" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
+              <ClickUpTabTrigger value="sitemaps">
+                <Globe className="h-4 w-4 mr-2" />
+                Sitemaps
+              </ClickUpTabTrigger>
               <ClickUpTabTrigger value="urls">
                 <Globe className="h-4 w-4 mr-2" />
                 URLs Descobertas
@@ -142,6 +147,13 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
                 Histórico de Jobs
               </ClickUpTabTrigger>
             </TabsList>
+
+            <TabsContent value="sitemaps">
+              <GSCSitemapsManager 
+                siteId={siteId}
+                integrationId={selectedGSCIntegrationId}
+              />
+            </TabsContent>
 
             <TabsContent value="urls">
               <GSCDiscoveredUrlsTable 
