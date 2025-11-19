@@ -703,7 +703,7 @@ export type Database = {
           id: string
           impressions: number | null
           indexnow_data: boolean | null
-          integration_id: string
+          integration_id: string | null
           last_checked_at: string | null
           last_seen_at: string | null
           position: number | null
@@ -721,7 +721,7 @@ export type Database = {
           id?: string
           impressions?: number | null
           indexnow_data?: boolean | null
-          integration_id: string
+          integration_id?: string | null
           last_checked_at?: string | null
           last_seen_at?: string | null
           position?: number | null
@@ -739,7 +739,7 @@ export type Database = {
           id?: string
           impressions?: number | null
           indexnow_data?: boolean | null
-          integration_id?: string
+          integration_id?: string | null
           last_checked_at?: string | null
           last_seen_at?: string | null
           position?: number | null
