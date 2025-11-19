@@ -80,9 +80,7 @@ export function AddGSCIntegrationDialog({
   const handleTestAndDetect = async (jsonValue?: string) => {
     const jsonToUse = jsonValue || jsonInput;
     
-    // ✅ VALIDAÇÃO DEFENSIVA - impedir parse de string vazia
     if (!jsonToUse || !jsonToUse.trim()) {
-      console.log("❌ handleTestAndDetect abortado: JSON vazio");
       return;
     }
 
@@ -127,7 +125,6 @@ export function AddGSCIntegrationDialog({
         toast.error('Problemas detectados na conexão');
       }
     } catch (error) {
-      console.error('Test error:', error);
       toast.error('Erro ao testar conexão');
       setTestResult({ status: 'error', suggestions: ['❌ Erro ao comunicar com o servidor'] });
     }
