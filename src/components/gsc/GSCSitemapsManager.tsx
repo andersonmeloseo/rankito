@@ -78,6 +78,7 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
             const urls = urlMatches.map(match => 
               match.replace(/<\/?loc>/g, '').trim()
             );
+            console.log(`🔍 URLs extraídas de ${sitemap.name}:`, urls.length);
             allUrls = [...allUrls, ...urls];
           }
         } catch (error) {
@@ -95,22 +96,31 @@ export function GSCSitemapsManager({ siteId, userId }: GSCSitemapsManagerProps) 
         return;
       }
 
+      // Remover duplicatas dentro do array
+      const uniqueUrls = Array.from(new Set(allUrls));
+      const duplicatesRemoved = allUrls.length - uniqueUrls.length;
+
+      if (duplicatesRemoved > 0) {
+        console.log(`🔄 ${duplicatesRemoved} URLs duplicadas removidas`);
+      }
+
+      console.log(`📤 Enviando ${uniqueUrls.length} URLs únicas para distribuição`);
+      console.log(`📋 Primeiras 5 URLs:`, uniqueUrls.slice(0, 5));
+
       // Adicionar URLs à fila de indexação
-      await addToQueue.mutateAsync({
-        urls: allUrls.map(url => ({ url }))
+      const result = await addToQueue.mutateAsync({
+        urls: uniqueUrls.map(url => ({ url }))
       });
 
-      toast({
-        title: "✅ URLs adicionadas à fila",
-        description: `${allUrls.length} URL${allUrls.length > 1 ? 's foram adicionadas' : ' foi adicionada'} à fila de indexação`,
-      });
+      console.log(`✅ Resultado da distribuição:`, result);
       
+      // Reset é feito no onSuccess da mutação
       reset();
     } catch (error) {
-      console.error("Erro ao processar sitemaps:", error);
+      console.error("❌ Erro completo ao processar sitemaps:", error);
       toast({
         title: "❌ Erro ao processar",
-        description: "Ocorreu um erro ao adicionar URLs à fila",
+        description: error instanceof Error ? error.message : "Erro desconhecido ao adicionar URLs à fila",
         variant: "destructive"
       });
     } finally {
