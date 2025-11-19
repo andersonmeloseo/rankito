@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -25,7 +24,6 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Validate JWT
     const jwt = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
     
@@ -69,7 +67,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Test authentication (get access token)
+    // 2. Test authentication
     console.log('2️⃣ Testing authentication...');
     let accessToken: string;
     try {
@@ -83,15 +81,14 @@ Deno.serve(async (req) => {
       results.authentication.error = errorMessage;
       results.suggestions.push('❌ Falha na autenticação com Google');
       results.suggestions.push('🔑 Verifique se o JSON da Service Account está correto');
-      results.suggestions.push('⏱️ Token JWT pode ter expirado - tente gerar um novo JSON');
       return new Response(
         JSON.stringify({ success: true, results }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 3. List all available GSC properties
-    console.log('3️⃣ Listing all available GSC properties...');
+    // 3. List GSC properties
+    console.log('3️⃣ Listing GSC properties...');
     try {
       const gscResponse = await fetch('https://www.googleapis.com/webmasters/v3/sites', {
         headers: { 'Authorization': `Bearer ${accessToken}` },
@@ -99,111 +96,83 @@ Deno.serve(async (req) => {
 
       if (gscResponse.ok) {
         const data = await gscResponse.json();
-        const properties = data.siteEntry || [];
-        results.available_properties = properties.map((p: any) => p.siteUrl);
+        results.available_properties = data.siteEntry?.map((s: any) => s.siteUrl) || [];
         results.apis.search_console.active = true;
-        console.log(`✅ Found ${results.available_properties.length} properties:`, results.available_properties);
-
-        if (results.available_properties.length === 0) {
-          results.suggestions.push('⚠️ Service Account não tem acesso a nenhuma propriedade no GSC');
-          results.suggestions.push(`📧 Adicione ${service_account_json.client_email} como Proprietário no Google Search Console`);
-          results.suggestions.push('⏱️ Aguarde 2-3 minutos após adicionar para propagação');
-        }
+        console.log(`✅ Found ${results.available_properties.length} properties`);
       } else {
-        const errorData = await gscResponse.json();
-        results.apis.search_console.error = errorData.error?.message || 'API not accessible';
-        console.log('❌ Search Console API error:', results.apis.search_console.error);
-        results.suggestions.push('❌ Search Console API não está acessível');
-        results.suggestions.push('🔗 Verifique se a API está habilitada no Google Cloud Console');
+        const errorText = await gscResponse.text();
+        results.apis.search_console.error = `${gscResponse.status}: ${errorText}`;
+        results.suggestions.push('❌ Search Console API não respondeu');
+        results.suggestions.push('🔧 Ative a Search Console API no Google Cloud Console');
       }
     } catch (error) {
+      console.error('❌ Failed to list properties:', error);
       results.apis.search_console.error = error instanceof Error ? error.message : 'Unknown error';
-      console.log('❌ Search Console API exception:', results.apis.search_console.error);
+      results.suggestions.push('❌ Erro ao listar propriedades GSC');
     }
 
-    // 4. Test Web Search Indexing API
+    // 4. Test Indexing API (opcional)
     console.log('4️⃣ Testing Web Search Indexing API...');
     try {
-      const testUrl = configured_property_url || site_url || 'https://example.com';
-      const indexingResponse = await fetch(
-        `https://indexing.googleapis.com/v3/urlNotifications/metadata?url=${encodeURIComponent(testUrl)}`,
-        { headers: { 'Authorization': `Bearer ${accessToken}` } }
-      );
+      const indexingResponse = await fetch('https://indexing.googleapis.com/v3/urlNotifications:publish', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: site_url,
+          type: 'URL_UPDATED',
+        }),
+      });
 
-      if (indexingResponse.ok || indexingResponse.status === 404) {
-        // 404 is OK - means API is enabled but URL not found
+      if (indexingResponse.ok) {
         results.apis.indexing.active = true;
-        console.log('✅ Web Search Indexing API: Active');
+        console.log('✅ Indexing API active');
       } else {
-        const errorData = await indexingResponse.json();
-        if (errorData.error?.message?.includes('API has not been used') || errorData.error?.code === 403) {
-          results.apis.indexing.error = 'API não habilitada no projeto Google Cloud';
-          results.suggestions.push('❌ Web Search Indexing API não está habilitada');
-          results.suggestions.push('🔗 Habilite em: https://console.cloud.google.com/apis/library/indexing.googleapis.com');
-        } else {
-          results.apis.indexing.error = errorData.error?.message || 'API not accessible';
-        }
-        console.log('❌ Web Search Indexing API error:', results.apis.indexing.error);
+        results.apis.indexing.error = `${indexingResponse.status}`;
+        results.suggestions.push('⚠️ Web Search Indexing API não ativa (opcional)');
       }
     } catch (error) {
       results.apis.indexing.error = error instanceof Error ? error.message : 'Unknown error';
-      console.log('❌ Web Search Indexing API exception:', results.apis.indexing.error);
     }
 
-    // 5. Detect correct property URL
-    if (results.available_properties.length > 0 && site_url) {
-      console.log('5️⃣ Detecting correct property URL...');
-      
+    // 5. Auto-detect property
+    console.log('5️⃣ Auto-detecting property...');
+    if (results.available_properties.length > 0) {
       try {
-        const detectedUrl = await detectCorrectPropertyUrl(accessToken, site_url);
-        if (detectedUrl) {
-          results.property_detection.suggested_url = detectedUrl;
-          console.log('✅ Detected URL:', detectedUrl);
-        }
+        const comparisonResult = await comparePropertyUrl(
+          accessToken,
+          configured_property_url,
+          site_url
+        );
 
-        // Compare configured URL with available properties
-        if (configured_property_url) {
-          const comparison = await comparePropertyUrl(accessToken, configured_property_url, site_url);
-          results.property_detection.url_matches = comparison.url_matches;
-          results.property_detection.variations_tested = comparison.available_properties;
+        results.property_detection = {
+          configured_url: comparisonResult.configured_url,
+          url_matches: comparisonResult.url_matches,
+          suggested_url: comparisonResult.suggested_url,
+          variations_tested: comparisonResult.available_properties,
+        };
 
-          if (!comparison.url_matches && comparison.suggested_url) {
-            results.overall_status = 'warning';
-            results.suggestions.push('⚠️ URL configurada não corresponde às propriedades disponíveis');
-            results.suggestions.push(`📝 URL atual: ${configured_property_url}`);
-            results.suggestions.push(`✅ URL sugerida: ${comparison.suggested_url}`);
-          }
+        if (comparisonResult.suggested_url) {
+          console.log('✅ Property detected:', comparisonResult.suggested_url);
+          results.suggestions.push(`✅ Propriedade detectada: ${comparisonResult.suggested_url}`);
+        } else if (results.available_properties.length === 1) {
+          results.property_detection.suggested_url = results.available_properties[0];
         }
       } catch (error) {
-        console.error('❌ Property detection error:', error);
+        console.error('❌ Property detection failed:', error);
       }
     }
 
-    // 6. Determine overall health status (Web Search Indexing API is optional)
-    const allHealthy = results.authentication.valid && 
-                      results.apis.search_console.active && 
-                      results.available_properties.length > 0;
-
-    if (allHealthy && (!configured_property_url || results.property_detection.url_matches)) {
+    // 6. Determine health
+    console.log('6️⃣ Determining health status...');
+    if (results.authentication.valid && results.apis.search_console.active && results.available_properties.length > 0) {
       results.overall_status = 'healthy';
-      results.suggestions.push('✅ Integração está funcional');
-      
-      // Web Search Indexing API warning (non-blocking)
-      if (!results.apis.indexing.active && results.apis.indexing.error) {
-        results.suggestions.push('⚠️ API Web Search Indexing não está ativa');
-        results.suggestions.push('💡 Ative em: https://console.cloud.google.com/apis/library/indexing.googleapis.com');
-      }
-    } else if (allHealthy && !results.property_detection.url_matches) {
+      console.log('✅ Integration healthy');
+    } else if (results.authentication.valid && results.apis.search_console.active) {
       results.overall_status = 'warning';
-    } else if (results.authentication.valid && results.available_properties.length > 0) {
-      results.overall_status = 'warning';
-      results.suggestions.push('⚠️ Integração parcialmente funcional');
-    } else {
-      results.overall_status = 'error';
     }
-
-    console.log('📊 Test complete. Overall status:', results.overall_status);
-    console.log('💡 Suggestions:', results.suggestions);
 
     return new Response(
       JSON.stringify({ success: true, results }),
@@ -211,14 +180,16 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Error in gsc-test-and-detect:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    console.error('💥 Fatal error:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: false,
-        error: errorMessage,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     );
   }
 });
