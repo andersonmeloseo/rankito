@@ -4,17 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { AddGSCIntegrationDialog } from './AddGSCIntegrationDialog';
 import { EditGSCIntegrationDialog } from './EditGSCIntegrationDialog';
-import { GSCSitemapsManager } from './GSCSitemapsManager';
-import { GSCIndexingManager } from './GSCIndexingManager';
-import { GSCOverviewDashboard } from './GSCOverviewDashboard';
-import { GSCErrorLog } from './GSCErrorLog';
-import { GSCIndexingHistory } from './GSCIndexingHistory';
-import IndexNowManager from './IndexNowManager';
-import { GSCQuickTest } from './GSCQuickTest';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +27,6 @@ import {
   Info,
   Crown,
   Settings2,
-  Send,
-  Activity,
-  Zap,
 } from 'lucide-react';
 
 interface GSCIntegrationsManagerProps {
@@ -67,8 +56,6 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
   const [integrationToEdit, setIntegrationToEdit] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("configuracao");
-  const [indexingSubTab, setIndexingSubTab] = useState("por-sitemap");
 
   const handleAdd = (data: any) => {
     createIntegration.mutate({
@@ -121,196 +108,118 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Integrações Google Search Console</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Carregando integrações...</p>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+          </div>
         </CardContent>
       </Card>
     );
   }
 
+  const canAddMore = integrations.length < (planLimits?.maxIntegrations || 0);
+  const isUnlimited = planLimits?.maxIntegrations === null;
+
   return (
-    <>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 max-w-4xl">
-          <TabsTrigger value="configuracao" variant="gsc" className="flex items-center gap-2">
-            <Settings2 className="h-4 w-4" />
-            Configuração
-          </TabsTrigger>
-          <TabsTrigger value="indexacao" variant="gsc" className="flex items-center gap-2">
-            <Send className="h-4 w-4" />
-            Indexação GSC
-          </TabsTrigger>
-          <TabsTrigger value="indexnow" variant="gsc" className="flex items-center gap-2">
-            <Zap className="h-4 w-4" />
-            IndexNow
-          </TabsTrigger>
-          <TabsTrigger value="monitoramento" variant="gsc" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Monitoramento
-          </TabsTrigger>
-        </TabsList>
-
-        {/* TAB 1: CONFIGURAÇÃO */}
-        <TabsContent value="configuracao" className="space-y-6">
-          {/* Seção: Integrações GSC */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    Integrações Google Search Console
-                  </CardTitle>
-                  <CardDescription>
-                    Configure Service Accounts do Google para submeter URLs e sitemaps
-                  </CardDescription>
-                </div>
-                <Button
-                  onClick={() => setShowAddDialog(true)}
-                  disabled={!planLimits?.canAddIntegration}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Adicionar Integração
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Plan Limits Info */}
-              {planLimits && (
-                <Alert className="border-blue-200 bg-blue-50/50">
-                  <Info className="h-4 w-4 text-blue-600" />
-                  <AlertDescription>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Crown className="h-4 w-4 text-yellow-600" />
-                      <span className="font-medium">Plano {planLimits.planName}:</span>
-                      <span>{planLimits.currentCount} / {planLimits.maxIntegrations === null ? '∞' : planLimits.maxIntegrations} integrações</span>
-                      {planLimits.remainingIntegrations !== null && planLimits.remainingIntegrations > 0 && (
-                        <Badge variant="outline" className="ml-2">+{planLimits.remainingIntegrations} disponíveis</Badge>
-                      )}
-                      {!planLimits.canAddIntegration && (
-                        <Badge className="ml-2 bg-red-100 text-red-700">Limite atingido</Badge>
-                      )}
-                    </div>
-                  </AlertDescription>
-                </Alert>
+    <div className="space-y-6">
+      {/* Plan Limits Banner */}
+      {!isUnlimited && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <div className="flex items-center justify-between">
+              <span>
+                Plano: <strong>{planLimits?.planName || 'N/A'}</strong> - 
+                Integrações GSC: <strong>{integrations.length}/{planLimits?.maxIntegrations || 0}</strong>
+              </span>
+              {planLimits?.maxIntegrations && integrations.length >= planLimits.maxIntegrations && (
+                <Badge className="bg-yellow-100 text-yellow-700">
+                  <Crown className="h-3 w-3 mr-1" />
+                  Limite Atingido
+                </Badge>
               )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
-              {/* Lista de Integrações */}
-              {integrations.length === 0 ? (
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    Nenhuma integração GSC configurada. Clique em "Adicionar Integração" para começar.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-3">
-                  {integrations.map((integration: any) => (
-                    <Card key={integration.id} className="border-2">
-                      <CardContent className="pt-6">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-3">
-                              <h4 className="font-semibold text-lg">{integration.connection_name}</h4>
-                              {getHealthBadge(integration.health_status)}
-                            </div>
-                            <div className="space-y-1 text-sm text-muted-foreground">
-                              <p>📧 {integration.google_email || 'Email não disponível'}</p>
-                              <p>🔗 {integration.gsc_property_url || 'Propriedade não detectada'}</p>
-                              {integration.gsc_permission_level && (
-                                <p>🔐 Permissão: {integration.gsc_permission_level}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditClick(integration)}
-                              disabled={isUpdating}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(integration.id)}
-                              disabled={isDeleting}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
+      {/* Connection List */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle>Credenciais GSC</CardTitle>
+            <CardDescription>Gerencie as Service Accounts conectadas ao Google Search Console</CardDescription>
+          </div>
+          <Button
+            onClick={() => setShowAddDialog(true)}
+            disabled={!canAddMore && !isUnlimited}
+            size="sm"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Credencial
+          </Button>
+        </CardHeader>
+        <Separator />
+        <CardContent className="pt-6">
+          {integrations.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Settings2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium">Nenhuma integração configurada</p>
+              <p className="text-sm mt-2">Adicione sua primeira Service Account do Google para começar</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {integrations.map((integration: any) => (
+                <Card key={integration.id} className="border-2">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-lg">{integration.connection_name}</h4>
+                          {getHealthBadge(integration.health_status)}
+                          {!integration.is_active && (
+                            <Badge variant="outline" className="text-muted-foreground">Inativo</Badge>
+                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {/* Quick Test */}
-              {integrations.length > 0 && site?.url && (
-                <>
-                  <Separator className="my-6" />
-                  <GSCQuickTest siteId={siteId} siteUrl={site.url} />
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* TAB 2: INDEXAÇÃO */}
-        <TabsContent value="indexacao" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Enviar URLs para Indexação</CardTitle>
-              <CardDescription>
-                Escolha como deseja submeter suas URLs: página por página ou em lote via sitemap
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={indexingSubTab} onValueChange={setIndexingSubTab}>
-                <TabsList className="grid w-full grid-cols-2 max-w-md">
-                  <TabsTrigger value="por-sitemap">Por Sitemap</TabsTrigger>
-                  <TabsTrigger value="por-pagina">Por Página</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="por-pagina" className="mt-6">
-                  <GSCIndexingManager siteId={siteId} />
-                </TabsContent>
-
-                <TabsContent value="por-sitemap" className="mt-6">
-                  <GSCSitemapsManager siteId={siteId} userId={userId} />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* TAB 3: INDEXNOW */}
-        <TabsContent value="indexnow" className="space-y-6">
-          <IndexNowManager siteId={siteId} site={site || { url: '', name: '' }} />
-        </TabsContent>
-
-        {/* TAB 4: MONITORAMENTO */}
-        <TabsContent value="monitoramento" className="space-y-6">
-          {/* Dashboard Executivo */}
-          <GSCOverviewDashboard
-            siteId={siteId}
-            userId={userId}
-            site={site || { url: '', name: '' }}
-            onNavigateToTab={setActiveTab}
-          />
-
-          {/* Log de Erros */}
-          <GSCErrorLog siteId={siteId} />
-
-          {/* Histórico Completo */}
-          <GSCIndexingHistory siteId={siteId} />
-        </TabsContent>
-      </Tabs>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          <p>📧 {integration.google_email || 'Email não disponível'}</p>
+                          <p>🌐 {integration.gsc_property_url || 'Propriedade não configurada'}</p>
+                          {integration.last_sync_at && (
+                            <p>🔄 Última sincronização: {new Date(integration.last_sync_at).toLocaleString('pt-BR')}</p>
+                          )}
+                        </div>
+                        {integration.last_error && (
+                          <Alert variant="destructive" className="mt-2">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription className="text-xs">{integration.last_error}</AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditClick(integration)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(integration.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Dialogs */}
       <AddGSCIntegrationDialog
@@ -343,12 +252,15 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 };
