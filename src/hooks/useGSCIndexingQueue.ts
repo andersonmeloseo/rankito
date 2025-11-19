@@ -264,12 +264,23 @@ export function useGSCIndexingQueue({ siteId }: UseGSCIndexingQueueParams) {
   });
 
   // Calculate queue stats
+  const today = new Date().toDateString();
+  const tomorrow = new Date(Date.now() + 86400000).toDateString();
+  
   const queueStats = {
     total: queueData?.length || 0,
     pending: queueData?.filter(item => item.status === 'pending').length || 0,
     processing: queueData?.filter(item => item.status === 'processing').length || 0,
     completed: queueData?.filter(item => item.status === 'completed').length || 0,
     failed: queueData?.filter(item => item.status === 'failed').length || 0,
+    pendingToday: queueData?.filter(item => 
+      item.status === 'pending' && 
+      new Date(item.scheduled_for).toDateString() === today
+    ).length || 0,
+    pendingTomorrow: queueData?.filter(item => 
+      item.status === 'pending' && 
+      new Date(item.scheduled_for).toDateString() === tomorrow
+    ).length || 0,
   };
 
   return {

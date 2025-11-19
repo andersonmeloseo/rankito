@@ -18,9 +18,9 @@ export function GSCQueueStatus({ siteId }: GSCQueueStatusProps) {
   const { latestLog, nextExecution, isLoading: isLoadingLogs } = useGSCQueueLogs();
   const queryClient = useQueryClient();
 
-  // Fetch pending URLs count
-  const { data: pendingCount, isLoading: isLoadingPending } = useQuery({
-    queryKey: ['gsc-queue-pending-count', siteId],
+  // Fetch queue metrics
+  const { data: queueMetrics, isLoading: isLoadingPending } = useQuery({
+    queryKey: ['gsc-queue-metrics', siteId],
     queryFn: async () => {
       // Get integration IDs for this site
       const { data: integrations } = await supabase
@@ -30,16 +30,50 @@ export function GSCQueueStatus({ siteId }: GSCQueueStatusProps) {
 
       const integrationIds = integrations?.map(i => i.id) || [];
 
-      if (integrationIds.length === 0) return 0;
+      if (integrationIds.length === 0) return {
+        pendingToday: 0,
+        pendingTomorrow: 0,
+        processing: 0,
+        completedToday: 0,
+        failedToday: 0,
+        total: 0,
+      };
 
-      const { count, error } = await supabase
+      // Fetch all queue items
+      const { data: items, error } = await supabase
         .from('gsc_indexing_queue')
-        .select('*', { count: 'exact', head: true })
-        .in('integration_id', integrationIds)
-        .eq('status', 'pending');
+        .select('status, scheduled_for, created_at, processed_at')
+        .in('integration_id', integrationIds);
 
       if (error) throw error;
-      return count || 0;
+
+      const today = new Date().toDateString();
+      const tomorrow = new Date(Date.now() + 86400000).toDateString();
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      return {
+        pendingToday: items?.filter(i => 
+          i.status === 'pending' && 
+          new Date(i.scheduled_for).toDateString() === today
+        ).length || 0,
+        pendingTomorrow: items?.filter(i => 
+          i.status === 'pending' && 
+          new Date(i.scheduled_for).toDateString() === tomorrow
+        ).length || 0,
+        processing: items?.filter(i => i.status === 'processing').length || 0,
+        completedToday: items?.filter(i => 
+          i.status === 'completed' && 
+          i.processed_at && 
+          new Date(i.processed_at) >= todayStart
+        ).length || 0,
+        failedToday: items?.filter(i => 
+          i.status === 'failed' && 
+          i.processed_at && 
+          new Date(i.processed_at) >= todayStart
+        ).length || 0,
+        total: items?.length || 0,
+      };
     },
     refetchInterval: 30000,
   });
@@ -108,7 +142,7 @@ export function GSCQueueStatus({ siteId }: GSCQueueStatusProps) {
           
           <Button
             onClick={() => processNowMutation.mutate()}
-            disabled={processNowMutation.isPending || pendingCount === 0}
+            disabled={processNowMutation.isPending || !queueMetrics || queueMetrics.total === 0}
             variant="outline"
             size="sm"
             className="transition-all active:scale-[0.98]"
@@ -223,10 +257,10 @@ export function GSCQueueStatus({ siteId }: GSCQueueStatusProps) {
               </div>
               <div className="pl-6">
                 <Badge 
-                  variant={pendingCount && pendingCount > 0 ? "default" : "outline"}
-                  className={pendingCount && pendingCount > 0 ? "bg-yellow-500/10 text-yellow-700 border-yellow-200" : ""}
+                  variant={queueMetrics && queueMetrics.total > 0 ? "default" : "outline"}
+                  className={queueMetrics && queueMetrics.total > 0 ? "bg-yellow-500/10 text-yellow-700 border-yellow-200" : ""}
                 >
-                  {pendingCount || 0} URL{pendingCount !== 1 ? 's' : ''} aguardando
+                  {queueMetrics?.total || 0} URL{queueMetrics?.total !== 1 ? 's' : ''} aguardando
                 </Badge>
               </div>
             </div>
