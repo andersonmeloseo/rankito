@@ -1,5 +1,8 @@
 project_id = "jhzmgexprjnpgadkxjup"
 
+[functions.gsc-test-and-detect]
+verify_jwt = true
+
 [functions.check-expired-trials]
 verify_jwt = false
 
