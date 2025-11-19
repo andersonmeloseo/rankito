@@ -12,6 +12,7 @@ import { GSCSimpleBatchDialog } from "./GSCSimpleBatchDialog";
 import { GSCPageTableFilters } from "./GSCPageTableFilters";
 import { GSCErrorLog } from "./GSCErrorLog";
 import { GSCQueueStatus } from "./GSCQueueStatus";
+import { GSCIndexingQueueTab } from "./GSCIndexingQueueTab";
 import { RefreshCw, Activity, Info, ChevronLeft, ChevronRight, ExternalLink, Send, CheckCircle2, XCircle, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, FileText, AlertTriangle, History as HistoryIcon, Clock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
@@ -29,7 +30,7 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
   const { quota, resetAt, refetchQuota, isLoadingQuota } = useGSCIndexing({ siteId });
   
   // Tab state
-  const [activeTab, setActiveTab] = useState("pages");
+  const [activeTab, setActiveTab] = useState("queue");
   
   // States for URL table
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
@@ -428,22 +429,30 @@ export function GSCIndexingManager({ siteId }: GSCIndexingManagerProps) {
         <GSCQueueStatus siteId={siteId} />
       </div>
 
-      {/* Tabs System */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="queue" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Fila
+          </TabsTrigger>
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Páginas para Indexar
+            Páginas
           </TabsTrigger>
           <TabsTrigger value="errors" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
-            Log de Erros
+            Erros
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <HistoryIcon className="h-4 w-4" />
-            Histórico Completo
+            Histórico
           </TabsTrigger>
         </TabsList>
+
+        {/* Tab 0: Fila */}
+        <TabsContent value="queue">
+          <GSCIndexingQueueTab siteId={siteId} />
+        </TabsContent>
 
         {/* Tab 1: Páginas para Indexar */}
         <TabsContent value="pages">
