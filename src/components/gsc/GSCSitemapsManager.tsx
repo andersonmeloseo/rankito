@@ -76,7 +76,19 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['gsc-discovered-urls'] });
       queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps'] });
-      toast.success(`${data.total_urls_discovered} URLs descobertas`);
+      
+      // Verificar se há sitemaps que falharam
+      if (data.failed_sitemaps && data.failed_sitemaps.length > 0) {
+        toast.warning(
+          `${data.urls_inserted} URLs descobertas de ${data.sitemaps_processed} sitemap(s). ⚠️ ${data.failed_sitemaps.length} sitemap(s) falharam (404 - não encontrados).`,
+          { duration: 7000 }
+        );
+      } else {
+        toast.success(
+          `✅ ${data.urls_inserted} URLs descobertas de ${data.sitemaps_processed} sitemap(s) processado(s) com sucesso!`
+        );
+      }
+      
       setSelectedSitemaps([]);
     },
     onError: (error: any) => {
