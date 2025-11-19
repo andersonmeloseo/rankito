@@ -84,12 +84,6 @@ export function AddGSCIntegrationDialog({
       return;
     }
 
-    // ✅ Verificar se JSON é válido antes de tentar parsear
-    if (!jsonValidation.valid) {
-      console.log("❌ handleTestAndDetect abortado: JSON inválido");
-      return;
-    }
-
     setTestResult({ status: 'testing' });
 
     try {
