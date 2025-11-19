@@ -37,6 +37,7 @@ import {
   Settings2,
   Send,
   Activity,
+  Zap,
 } from 'lucide-react';
 
 interface GSCIntegrationsManagerProps {
@@ -132,14 +133,18 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
   return (
     <>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-3xl">
+        <TabsList className="grid w-full grid-cols-4 max-w-4xl">
           <TabsTrigger value="configuracao" variant="gsc" className="flex items-center gap-2">
             <Settings2 className="h-4 w-4" />
             Configuração
           </TabsTrigger>
           <TabsTrigger value="indexacao" variant="gsc" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
-            Indexação
+            Indexação GSC
+          </TabsTrigger>
+          <TabsTrigger value="indexnow" variant="gsc" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            IndexNow
           </TabsTrigger>
           <TabsTrigger value="monitoramento" variant="gsc" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
@@ -253,9 +258,6 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
               )}
             </CardContent>
           </Card>
-
-          {/* Seção: IndexNow */}
-          <IndexNowManager siteId={siteId} site={site || { url: '', name: '' }} />
         </TabsContent>
 
         {/* TAB 2: INDEXAÇÃO */}
@@ -286,7 +288,12 @@ export const GSCIntegrationsManager = ({ siteId, userId, site }: GSCIntegrations
           </Card>
         </TabsContent>
 
-        {/* TAB 3: MONITORAMENTO */}
+        {/* TAB 3: INDEXNOW */}
+        <TabsContent value="indexnow" className="space-y-6">
+          <IndexNowManager siteId={siteId} site={site || { url: '', name: '' }} />
+        </TabsContent>
+
+        {/* TAB 4: MONITORAMENTO */}
         <TabsContent value="monitoramento" className="space-y-6">
           {/* Dashboard Executivo */}
           <GSCOverviewDashboard
