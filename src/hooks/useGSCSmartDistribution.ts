@@ -149,13 +149,16 @@ export function useGSCSmartDistribution(siteId: string) {
         };
       }
 
-      // Inserir apenas URLs novas
+      // Inserir apenas URLs novas usando UPSERT para evitar erro 409
       console.log(`💾 [useGSCSmartDistribution] Inserindo ${newQueueItems.length} items novos no banco...`);
       console.log(`📋 [useGSCSmartDistribution] Primeiros 3 items:`, newQueueItems.slice(0, 3));
 
       const { data: insertedData, error: insertError } = await supabase
         .from('gsc_indexing_queue')
-        .insert(newQueueItems)
+        .upsert(newQueueItems, {
+          onConflict: 'url,integration_id',
+          ignoreDuplicates: true
+        })
         .select();
 
       if (insertError) {
