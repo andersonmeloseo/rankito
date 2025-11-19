@@ -13,12 +13,36 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('🚨 START gsc-test-and-detect - FUNÇÃO INVOCADA');
+  
   if (req.method === 'OPTIONS') {
+    console.log('⚙️ OPTIONS request handled');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { service_account_json, configured_property_url, site_url } = await req.json();
+    console.log('📥 Parsing request body...');
+    let body;
+    try {
+      body = await req.json();
+      console.log('📩 BODY RECEIVED:', JSON.stringify({
+        hasServiceAccount: !!body.service_account_json,
+        configuredUrl: body.configured_property_url,
+        siteUrl: body.site_url
+      }));
+    } catch (jsonError: any) {
+      console.error('❌ JSON PARSE ERROR:', jsonError.message);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'JSON inválido na requisição',
+          results: { overall_status: 'error' }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    const { service_account_json, configured_property_url, site_url } = body;
 
     console.log('🔍 Testing GSC Service Account...');
     console.log('📍 Site URL:', site_url);
@@ -195,12 +219,14 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('❌ Unexpected error:', error);
+    console.error('❌ Stack trace:', error.stack);
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message,
+        error: error.message || 'Erro desconhecido',
         results: {
-          overall_status: 'error'
+          overall_status: 'error',
+          error_details: error.stack
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
