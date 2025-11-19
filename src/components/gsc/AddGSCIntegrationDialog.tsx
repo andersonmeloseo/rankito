@@ -157,13 +157,6 @@ export function AddGSCIntegrationDialog({
     onAdd({ connectionName: connectionName.trim(), serviceAccountJson: parsedJson, gscPropertyUrl: selectedProperty });
   };
 
-  const getStatusBadge = () => {
-    if (testResult.status === 'idle') return null;
-    if (testResult.status === 'testing') return <Badge variant="outline"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Testando...</Badge>;
-    if (testResult.status === 'healthy' || testResult.status === 'success') return <Badge variant="default" className="bg-green-600"><CheckCircle2 className="h-3 w-3 mr-1" />Conexão OK</Badge>;
-    if (testResult.status === 'warning') return <Badge variant="default" className="bg-yellow-600"><AlertTriangle className="h-3 w-3 mr-1" />Avisos</Badge>;
-    return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Erro</Badge>;
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -189,39 +182,57 @@ export function AddGSCIntegrationDialog({
             {jsonValidation.valid && jsonValidation.clientEmail && <Alert><CheckCircle2 className="h-4 w-4 text-green-600" /><AlertDescription>Email: <code className="text-xs">{jsonValidation.clientEmail}</code></AlertDescription></Alert>}
           </div>
 
-          <Button type="button" onClick={handleTestAndDetect} disabled={!jsonValidation.valid || testResult.status === 'testing'} className="w-full" variant="outline">
-            {testResult.status === 'testing' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Testando Conexão...</> : <><Search className="mr-2 h-4 w-4" />Testar e Detectar Propriedades</>}
-          </Button>
+          {/* Status do teste */}
+          {testResult.status === 'testing' && (
+            <Alert>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <AlertDescription>Testando conexão e detectando propriedades...</AlertDescription>
+            </Alert>
+          )}
 
-          {testResult.status !== 'idle' && testResult.status !== 'testing' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between"><span className="text-sm font-medium">Status da Conexão:</span>{getStatusBadge()}</div>
+          {/* Propriedade detectada */}
+          {selectedProperty && testResult.status !== 'idle' && testResult.status !== 'testing' && (
+            <Alert>
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription>
+                <strong>Propriedade GSC detectada:</strong>
+                <br />
+                <code className="text-sm bg-muted px-2 py-1 rounded mt-1 inline-block">
+                  {selectedProperty}
+                </code>
+                {testResult.property_detection?.suggested_url === selectedProperty && (
+                  <Badge variant="outline" className="ml-2 text-green-600">Recomendada</Badge>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
 
-              {testResult.available_properties && testResult.available_properties.length > 0 && (
-                <div className="space-y-3">
-                  <Label>Propriedades GSC Disponíveis ({testResult.available_properties.length})</Label>
-                  <RadioGroup value={selectedProperty} onValueChange={setSelectedProperty}>
-                    {testResult.available_properties.map((property: string) => (
-                      <div key={property} className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                        <RadioGroupItem value={property} id={property} />
-                        <Label htmlFor={property} className="flex-1 cursor-pointer">
-                          <code className="text-sm">{property}</code>
-                          {property === testResult.property_detection?.suggested_url && <Badge variant="outline" className="ml-2 text-green-600">Sugerida</Badge>}
-                        </Label>
-                      </div>
+          {/* Apenas sugestões críticas */}
+          {testResult.suggestions && testResult.suggestions.filter((s: string) => 
+            s.includes('❌') || s.includes('⚠️')
+          ).length > 0 && testResult.status !== 'testing' && (
+            <Alert variant={testResult.status === 'error' ? 'destructive' : 'default'}>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <ul className="space-y-1 text-sm">
+                  {testResult.suggestions
+                    .filter((s: string) => s.includes('❌') || s.includes('⚠️'))
+                    .map((suggestion: string, idx: number) => (
+                      <li key={idx}>{suggestion}</li>
                     ))}
-                  </RadioGroup>
-                </div>
-              )}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
 
-              {testResult.suggestions && testResult.suggestions.length > 0 && (
-                <Alert variant={testResult.status === 'error' ? 'destructive' : 'default'}>
-                  <AlertDescription className="space-y-1">
-                    {testResult.suggestions.map((suggestion: string, idx: number) => <div key={idx} className="text-sm">{suggestion}</div>)}
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
+          {/* Indicador de sucesso */}
+          {testResult.status === 'healthy' && selectedProperty && (
+            <Alert className="border-green-600 bg-green-50">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                ✅ Tudo pronto! Clique em "Adicionar Integração" para finalizar.
+              </AlertDescription>
+            </Alert>
           )}
 
           <div className="flex gap-3 pt-4">

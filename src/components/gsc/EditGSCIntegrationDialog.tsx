@@ -94,6 +94,21 @@ export function EditGSCIntegrationDialog({ open, onOpenChange, integration, site
             <Label>Service Account JSON</Label>
             <Textarea value={jsonInput} onChange={(e) => { setJsonInput(e.target.value); validateJSON(e.target.value); setTestResult({ status: 'idle' }); }} className="font-mono text-xs min-h-[200px]" required />
           </div>
+          
+          {/* Mostrar propriedade atual */}
+          {selectedProperty && (
+            <Alert>
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription>
+                <strong>Propriedade GSC atual:</strong>
+                <br />
+                <code className="text-sm bg-muted px-2 py-1 rounded mt-1 inline-block">
+                  {selectedProperty}
+                </code>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Button type="button" onClick={handleTestAndDetect} disabled={!jsonValidation.valid || testResult.status === 'testing'} className="w-full" variant="outline">
             {testResult.status === 'testing' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Testando...</> : <><Search className="mr-2 h-4 w-4" />Testar Conexão</>}
           </Button>
