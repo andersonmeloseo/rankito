@@ -22,9 +22,9 @@ export function GSCIndexingQueueTab({ siteId }: GSCIndexingQueueTabProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" | "success" => {
     switch (status) {
-      case 'completed': return 'default';
+      case 'completed': return 'success';
       case 'failed': return 'destructive';
       case 'processing': return 'default';
       default: return 'secondary';
