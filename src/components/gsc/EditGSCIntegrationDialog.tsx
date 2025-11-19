@@ -41,14 +41,15 @@ export function EditGSCIntegrationDialog({ open, onOpenChange, integration, site
   }, [open, integration]);
 
   const validateJSON = (input: string) => {
-    if (!input.trim()) { setJsonValidation({ valid: false }); return; }
+    if (!input.trim()) { setJsonValidation({ valid: false }); return false; }
     try {
       const parsed = JSON.parse(input);
-      if (parsed.type !== "service_account") { setJsonValidation({ valid: false, error: 'O campo "type" deve ser "service_account"' }); return; }
+      if (parsed.type !== "service_account") { setJsonValidation({ valid: false, error: 'O campo "type" deve ser "service_account"' }); return false; }
       const requiredFields = ["project_id", "private_key_id", "private_key", "client_email", "client_id", "auth_uri", "token_uri"];
-      for (const field of requiredFields) { if (!parsed[field]) { setJsonValidation({ valid: false, error: `Campo obrigatório ausente: ${field}` }); return; } }
+      for (const field of requiredFields) { if (!parsed[field]) { setJsonValidation({ valid: false, error: `Campo obrigatório ausente: ${field}` }); return false; } }
       setJsonValidation({ valid: true, clientEmail: parsed.client_email });
-    } catch (err) { setJsonValidation({ valid: false, error: "JSON inválido. Verifique a formatação." }); }
+      return true;
+    } catch (err) { setJsonValidation({ valid: false, error: "JSON inválido. Verifique a formatação." }); return false; }
   };
 
   const handleTestAndDetect = async () => {
@@ -59,6 +60,16 @@ export function EditGSCIntegrationDialog({ open, onOpenChange, integration, site
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Falha no teste');
       const results = data.results;
+      
+      // Auto-seleção inteligente
+      if (results.property_detection?.suggested_url) {
+        setSelectedProperty(results.property_detection.suggested_url);
+      } else if (results.available_properties?.length === 1) {
+        setSelectedProperty(results.available_properties[0]);
+      } else if (results.available_properties?.length > 0 && !selectedProperty) {
+        setSelectedProperty(results.available_properties[0]);
+      }
+      
       setTestResult({ status: results.overall_status, authentication: results.authentication, available_properties: results.available_properties || [], property_detection: results.property_detection, apis: results.apis, suggestions: results.suggestions || [] });
       if (results.overall_status === 'healthy') toast.success('Conexão testada com sucesso!');
       else if (results.overall_status === 'warning') toast.warning('Conexão estabelecida com avisos');

@@ -37,7 +37,7 @@ export function AddGSCIntegrationDialog({
   const validateJSON = (input: string) => {
     if (!input.trim()) {
       setJsonValidation({ valid: false });
-      return;
+      return false;
     }
 
     try {
@@ -45,7 +45,7 @@ export function AddGSCIntegrationDialog({
       
       if (parsed.type !== "service_account") {
         setJsonValidation({ valid: false, error: 'O campo "type" deve ser "service_account"' });
-        return;
+        return false;
       }
 
       const requiredFields = ["project_id", "private_key_id", "private_key", "client_email", "client_id", "auth_uri", "token_uri"];
@@ -53,21 +53,28 @@ export function AddGSCIntegrationDialog({
       for (const field of requiredFields) {
         if (!parsed[field]) {
           setJsonValidation({ valid: false, error: `Campo obrigatório ausente: ${field}` });
-          return;
+          return false;
         }
       }
 
       setJsonValidation({ valid: true, clientEmail: parsed.client_email });
+      return true;
     } catch (err) {
       setJsonValidation({ valid: false, error: "JSON inválido. Verifique a formatação." });
+      return false;
     }
   };
 
   const handleJSONChange = (value: string) => {
     setJsonInput(value);
-    validateJSON(value);
+    const validation = validateJSON(value);
     setTestResult({ status: 'idle' });
     setSelectedProperty("");
+    
+    // Auto-testar após validação bem-sucedida
+    if (validation !== false) {
+      setTimeout(() => handleTestAndDetect(), 500);
+    }
   };
 
   const handleTestAndDetect = async () => {
@@ -90,9 +97,13 @@ export function AddGSCIntegrationDialog({
 
       const results = data.results;
       
+      // Auto-seleção inteligente de propriedade
       if (results.property_detection?.suggested_url) {
         setSelectedProperty(results.property_detection.suggested_url);
       } else if (results.available_properties?.length === 1) {
+        setSelectedProperty(results.available_properties[0]);
+      } else if (results.available_properties?.length > 0) {
+        // Se múltiplas propriedades, auto-seleciona a primeira
         setSelectedProperty(results.available_properties[0]);
       }
 

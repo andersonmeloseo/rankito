@@ -179,22 +179,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 6. Determine overall status
+    // 6. Determine overall health status (Web Search Indexing API is optional)
     const allHealthy = results.authentication.valid && 
                       results.apis.search_console.active && 
-                      results.apis.indexing.active &&
                       results.available_properties.length > 0;
-    
-    const someHealthy = results.authentication.valid && 
-                       (results.apis.search_console.active || results.apis.indexing.active);
 
     if (allHealthy && (!configured_property_url || results.property_detection.url_matches)) {
       results.overall_status = 'healthy';
-      results.suggestions.push('✅ Integração totalmente funcional');
+      results.suggestions.push('✅ Integração está funcional');
+      
+      // Web Search Indexing API warning (non-blocking)
+      if (!results.apis.indexing.active && results.apis.indexing.error) {
+        results.suggestions.push('⚠️ API Web Search Indexing não está ativa');
+        results.suggestions.push('💡 Ative em: https://console.cloud.google.com/apis/library/indexing.googleapis.com');
+      }
     } else if (allHealthy && !results.property_detection.url_matches) {
       results.overall_status = 'warning';
-    } else if (someHealthy) {
+    } else if (results.authentication.valid && results.available_properties.length > 0) {
       results.overall_status = 'warning';
+      results.suggestions.push('⚠️ Integração parcialmente funcional');
     } else {
       results.overall_status = 'error';
     }
