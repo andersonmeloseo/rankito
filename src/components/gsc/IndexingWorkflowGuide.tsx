@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Map, Settings, Search, FileText, Globe, Zap, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface IndexingWorkflowGuideProps {
+  siteId: string;
   currentTab: string;
   currentSubTab?: string;
   onNavigate: (tab: string, subTab?: string) => void;
@@ -57,6 +58,7 @@ const steps = [
 ];
 
 export const IndexingWorkflowGuide = ({ 
+  siteId,
   currentTab, 
   currentSubTab, 
   onNavigate,
@@ -73,6 +75,17 @@ export const IndexingWorkflowGuide = ({
   };
 
   const currentStepIndex = getCurrentStep();
+  
+  // Rastrear progresso máximo alcançado via localStorage
+  const storageKey = `indexing-workflow-max-step-${siteId}`;
+  const maxStepReached = parseInt(localStorage.getItem(storageKey) || '1');
+  
+  // Se chegou em passo maior que o máximo anterior, atualizar
+  if (currentStepIndex > maxStepReached) {
+    localStorage.setItem(storageKey, currentStepIndex.toString());
+  }
+  
+  const effectiveMaxStep = Math.max(currentStepIndex, maxStepReached);
 
   return (
     <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-blue-200 dark:border-blue-800 mb-6">
@@ -160,8 +173,9 @@ export const IndexingWorkflowGuide = ({
         {/* Stepper vertical - Mobile */}
         <div className="md:hidden space-y-4">
           {steps.map((step, index) => {
-            const isCompleted = index + 1 < currentStepIndex || (index + 1 === currentStepIndex && step.id === 5);
-            const isCurrent = index + 1 === currentStepIndex;
+            const isActive = index + 1 === currentStepIndex;
+            const isCompleted = index + 1 < effectiveMaxStep;
+            const isCurrent = isActive;
             const isPending = index + 1 > currentStepIndex;
             const Icon = step.icon;
 

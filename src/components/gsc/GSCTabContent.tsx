@@ -77,6 +77,7 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
       <IndexingWorkflowGuide 
+        siteId={siteId}
         currentTab={activeTab}
         currentSubTab={activeSubTab}
         onNavigate={(tab, subTab) => {

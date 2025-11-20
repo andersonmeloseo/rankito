@@ -31,11 +31,11 @@ Deno.serve(async (req) => {
     // Criar cliente Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
     // Buscar dados do site
     console.log('🔍 Buscando dados do site:', siteId);
-    const { data: site, error: siteError } = await supabase
+    const { data: site, error: siteError } = await supabaseAdmin
       .from('rank_rent_sites')
       .select('site_url, indexnow_key')
       .eq('id', siteId)
@@ -172,6 +172,17 @@ Deno.serve(async (req) => {
       // Comparar conteúdo
       if (cleanContent === cleanKey) {
         console.log('✅ Chave validada com sucesso!');
+        
+        // Atualizar status de validação no banco
+        const { error: updateError } = await supabaseAdmin
+          .from('rank_rent_sites')
+          .update({ indexnow_validated: true })
+          .eq('id', siteId);
+        
+        if (updateError) {
+          console.error('Error updating indexnow_validated:', updateError);
+        }
+        
         return new Response(
           JSON.stringify({ 
             success: true,
