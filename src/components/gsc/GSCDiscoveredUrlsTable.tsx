@@ -145,6 +145,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
       clearSelection();
       queryClient.invalidateQueries({ queryKey: ['gsc-discovered-urls'] });
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota'] });
     },
     onError: (error: any) => {
       const errorMessage = error.message?.toLowerCase() || '';
@@ -347,6 +348,9 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
             <Activity className="h-5 w-5 text-blue-600" />
             Quota Diária de Indexação GSC
           </CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            {quotaData?.total_integrations || 0} conexão(ões) GSC ativa(s)
+          </p>
         </CardHeader>
         <CardContent>
           {quotaLoading ? (
@@ -355,18 +359,18 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold text-blue-700 dark:text-blue-400">
-                  {quotaData?.used || 0} / {quotaData?.limit || 200}
+                  {quotaData?.total_used || 0} / {quotaData?.total_limit || 200}
                 </span>
                 <Badge 
                   className={
-                    (quotaData?.remaining || 200) > 100 
+                    (quotaData?.total_remaining || 200) > 1000 
                       ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" 
-                      : (quotaData?.remaining || 200) > 50 
+                      : (quotaData?.total_remaining || 200) > 500 
                       ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" 
                       : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
                   }
                 >
-                  {quotaData?.remaining || 200} restantes
+                  {quotaData?.total_remaining || 200} restantes
                 </Badge>
               </div>
               
