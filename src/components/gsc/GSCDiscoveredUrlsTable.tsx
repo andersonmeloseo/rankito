@@ -4,10 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGSCDiscoveredUrls } from '@/hooks/useGSCDiscoveredUrls';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { ExternalLink, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface GSCDiscoveredUrlsTableProps {
   siteId: string;
@@ -17,12 +18,20 @@ interface GSCDiscoveredUrlsTableProps {
 export const GSCDiscoveredUrlsTable = ({ siteId, integrationId }: GSCDiscoveredUrlsTableProps) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 100;
 
-  const { urls, isLoading } = useGSCDiscoveredUrls(siteId, {
+  const { urls, isLoading, totalCount, totalPages } = useGSCDiscoveredUrls(siteId, {
     status: statusFilter,
     searchTerm,
     integrationId,
+    page: currentPage,
+    pageSize,
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm, integrationId]);
 
   const getStatusBadge = (status: string | null) => {
     switch (status) {
@@ -57,7 +66,8 @@ export const GSCDiscoveredUrlsTable = ({ siteId, integrationId }: GSCDiscoveredU
         <div className="flex items-center justify-between flex-wrap gap-4">
           <CardTitle className="text-lg">URLs Descobertas</CardTitle>
           <div className="flex items-center gap-2">
-            <Badge variant="outline">{urls?.length || 0} URLs</Badge>
+            <Badge variant="outline">{totalCount.toLocaleString('pt-BR')} URLs totais</Badge>
+            <Badge variant="secondary">Página {currentPage} de {totalPages}</Badge>
           </div>
         </div>
       </CardHeader>
@@ -149,6 +159,72 @@ export const GSCDiscoveredUrlsTable = ({ siteId, integrationId }: GSCDiscoveredU
             </TableBody>
           </Table>
         </div>
+
+        {/* Controles de Paginação */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalCount)} de {totalCount.toLocaleString('pt-BR')} URLs
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                Primeira
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNumber = currentPage <= 3 
+                    ? i + 1 
+                    : currentPage >= totalPages - 2 
+                      ? totalPages - 4 + i 
+                      : currentPage - 2 + i;
+                  
+                  if (pageNumber < 1 || pageNumber > totalPages) return null;
+                  
+                  return (
+                    <Button
+                      key={pageNumber}
+                      variant={currentPage === pageNumber ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNumber)}
+                      className="w-10"
+                    >
+                      {pageNumber}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                Última
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
