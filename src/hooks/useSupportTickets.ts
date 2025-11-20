@@ -191,34 +191,61 @@ export function useCreateTicket() {
       message: string;
       metadata?: Record<string, any>;
     }) => {
+      console.log('🎫 Tentando criar ticket:', { subject: data.subject, category: data.category });
+      
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      if (!user) {
+        console.error('❌ Usuário não autenticado');
+        throw new Error('Usuário não autenticado');
+      }
+      
+      console.log('✅ Usuário autenticado:', user.id);
 
-      // Create ticket
+      // Create ticket with explicit fields
+      const ticketPayload = {
+        user_id: user.id,
+        subject: data.subject,
+        category: data.category as any,
+        metadata: data.metadata || {},
+        initiated_by: 'user' as const,
+        is_broadcast: false,
+      };
+      
+      console.log('📤 Payload do ticket:', ticketPayload);
+
       const { data: ticket, error: ticketError } = await supabase
         .from('support_tickets')
-        .insert([{
-          user_id: user.id,
-          subject: data.subject,
-          category: data.category as any,
-          metadata: data.metadata || {},
-        }])
+        .insert([ticketPayload])
         .select()
         .single();
 
-      if (ticketError) throw ticketError;
+      if (ticketError) {
+        console.error('❌ Erro ao criar ticket:', ticketError);
+        throw ticketError;
+      }
+      
+      console.log('✅ Ticket criado:', ticket.id);
 
       // Create first message
+      const messagePayload = {
+        ticket_id: ticket.id,
+        sender_id: user.id,
+        message: data.message,
+        is_admin_reply: false,
+      };
+      
+      console.log('📤 Payload da mensagem:', messagePayload);
+
       const { error: messageError } = await supabase
         .from('support_messages')
-        .insert([{
-          ticket_id: ticket.id,
-          sender_id: user.id,
-          message: data.message,
-          is_admin_reply: false,
-        }]);
+        .insert([messagePayload]);
 
-      if (messageError) throw messageError;
+      if (messageError) {
+        console.error('❌ Erro ao criar mensagem:', messageError);
+        throw messageError;
+      }
+      
+      console.log('✅ Mensagem criada com sucesso');
 
       return ticket;
     },
@@ -227,7 +254,24 @@ export function useCreateTicket() {
       toast.success('Ticket criado com sucesso!');
     },
     onError: (error: Error) => {
-      toast.error('Erro ao criar ticket: ' + error.message);
+      console.error('❌ Erro detalhado ao criar ticket:', error);
+      
+      // Mensagens de erro mais específicas
+      let errorMessage = 'Erro ao criar ticket';
+      
+      if (error.message.includes('permission') || error.message.includes('policy')) {
+        errorMessage = 'Sem permissão para criar ticket. Verifique sua conta.';
+      } else if (error.message.includes('user_id')) {
+        errorMessage = 'Erro ao identificar usuário. Tente fazer login novamente.';
+      } else if (error.message.includes('constraint')) {
+        errorMessage = 'Dados inválidos. Verifique os campos e tente novamente.';
+      } else if (error.message.includes('autenticado')) {
+        errorMessage = 'Você precisa estar autenticado para criar tickets.';
+      } else {
+        errorMessage = `Erro ao criar ticket: ${error.message}`;
+      }
+      
+      toast.error(errorMessage);
     },
   });
 }
