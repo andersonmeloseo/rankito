@@ -262,10 +262,6 @@ const SuperAdminDashboard = () => {
           <TabsContent value="communication" className="space-y-8">
             <CommunicationTab />
           </TabsContent>
-
-          <TabsContent value="communication" className="space-y-8">
-            <CommunicationTab />
-          </TabsContent>
           </Tabs>
         </div>
       </div>
