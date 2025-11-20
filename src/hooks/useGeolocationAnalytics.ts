@@ -61,13 +61,26 @@ export const useGeolocationAnalytics = (
         .select('*')
         .not('country', 'is', null);
 
-      // Get user's sites first
-      const { data: sites } = await supabase
+      // Get user's sites first (owner OR creator)
+      const { data: sites, error: sitesError } = await supabase
         .from('rank_rent_sites')
         .select('id')
-        .eq('owner_user_id', userId);
+        .or(`owner_user_id.eq.${userId},created_by_user_id.eq.${userId}`);
+
+      if (sitesError) {
+        console.error('❌ Erro ao buscar sites:', sitesError);
+        throw sitesError;
+      }
+
+      console.log('🔍 Geolocation Debug - Sites:', {
+        userId,
+        totalSites: sites?.length || 0,
+        siteIds: sites?.map(s => s.id) || [],
+        filters
+      });
 
       if (!sites || sites.length === 0) {
+        console.warn('⚠️ Nenhum site encontrado para o usuário:', userId);
         return {
           summary: {
             totalCountries: 0,
@@ -101,8 +114,19 @@ export const useGeolocationAnalytics = (
 
       const { data: conversions, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar conversões:', error);
+        throw error;
+      }
+
+      console.log('📊 Conversões encontradas:', {
+        total: conversions?.length || 0,
+        comGeolocalização: conversions?.filter(c => c.country).length || 0,
+        primeiraConversão: conversions?.[0]
+      });
+
       if (!conversions || conversions.length === 0) {
+        console.warn('⚠️ Nenhuma conversão encontrada');
         return {
           summary: {
             totalCountries: 0,
@@ -162,8 +186,7 @@ export const useGeolocationAnalytics = (
           ...c,
           percentage: (c.conversions / totalConversions) * 100,
         }))
-        .sort((a, b) => b.conversions - a.conversions)
-        .slice(0, 50);
+        .sort((a, b) => b.conversions - a.conversions);
 
       // Aggregate by region
       const regionMap = new Map<string, RegionData>();
@@ -186,8 +209,7 @@ export const useGeolocationAnalytics = (
           ...r,
           percentage: (r.conversions / totalConversions) * 100,
         }))
-        .sort((a, b) => b.conversions - a.conversions)
-        .slice(0, 30);
+        .sort((a, b) => b.conversions - a.conversions);
 
       // Calculate summary
       const totalCountries = countryMap.size;
