@@ -64,10 +64,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   const pageSize = 100;
 
   const { urls, isLoading, totalCount } = useGSCDiscoveredUrls(siteId, {
-    status: 'all',
     searchTerm,
-    page: currentPage,
-    pageSize,
   });
 
   // Query para contar URLs enviadas (global)
@@ -242,28 +239,32 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   };
 
   const toggleAll = () => {
-    console.log('🔍 toggleAll called:', { 
-      selectedLength: selectedUrls.length, 
-      processedLength: processedUrls?.length 
-    });
+    const paginatedUrls = processedUrls || [];
+    const allCurrentSelected = paginatedUrls.every(u => selectedUrls.some(s => s.id === u.id));
     
-    if (selectedUrls.length === processedUrls?.length) {
-      console.log('✅ Clearing all selections');
-      setSelectedUrls([]);
+    if (allCurrentSelected) {
+      setSelectedUrls(prev => prev.filter(s => !paginatedUrls.some(u => u.id === s.id)));
     } else {
-      const urlsToSelect = processedUrls?.map(u => ({ id: u.id, url: u.url })) || [];
-      console.log('✅ Selecting all URLs:', urlsToSelect.length);
-      setSelectedUrls(urlsToSelect);
+      const newSelections = paginatedUrls.filter(u => !selectedUrls.some(s => s.id === u.id));
+      setSelectedUrls(prev => [...prev, ...newSelections.map(u => ({ id: u.id, url: u.url }))]);
     }
   };
 
   const clearSelection = () => setSelectedUrls([]);
 
-  const processedUrls = sortData(filterUrlsData(urls || []), urlsSort);
-  const processedHistory = sortData(filterHistoryData(indexingHistory || []), historySort);
-
-  const filteredCount = processedUrls?.length || 0;
+  // Aplicar filtros e ordenação ANTES da paginação
+  const filteredAndSorted = sortData(filterUrlsData(urls || []), urlsSort);
+  
+  // Calcular paginação baseada em dados filtrados
+  const filteredCount = filteredAndSorted.length;
   const totalPagesAdjusted = Math.ceil(filteredCount / pageSize);
+  
+  // ENTÃO aplicar paginação no frontend
+  const from = (currentPage - 1) * pageSize;
+  const to = from + pageSize;
+  const processedUrls = filteredAndSorted.slice(from, to);
+  
+  const processedHistory = sortData(filterHistoryData(indexingHistory || []), historySort);
 
   const totalUrls = totalCount;
   const discoveredUrls = discoveredCount || 0;
