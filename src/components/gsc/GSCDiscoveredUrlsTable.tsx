@@ -131,7 +131,24 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-jobs'] });
     },
     onError: (error: any) => {
-      toast.error(`Erro ao enviar URLs: ${error.message}`);
+      const errorMessage = error.message?.toLowerCase() || '';
+      const isQuotaError = errorMessage.includes('quota') || 
+                          errorMessage.includes('rate_limit') || 
+                          errorMessage.includes('429');
+      
+      if (isQuotaError) {
+        const now = new Date();
+        const resetTime = new Date(now);
+        resetTime.setUTCHours(24, 0, 0, 0);
+        const hoursUntilReset = Math.ceil((resetTime.getTime() - now.getTime()) / (1000 * 60 * 60));
+        
+        toast.error(
+          `Cota diária do Google esgotada (200 URLs/dia). Reset em ~${hoursUntilReset}h às 00:00 UTC`,
+          { duration: 8000 }
+        );
+      } else {
+        toast.error(`Erro ao enviar URLs: ${error.message}`);
+      }
     }
   });
 
