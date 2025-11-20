@@ -70,15 +70,15 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
     pageSize,
   });
 
-  // Query para contar URLs indexadas (global)
-  const { data: indexedCount } = useQuery({
-    queryKey: ['gsc-urls-indexed-count', siteId],
+  // Query para contar URLs enviadas (global)
+  const { data: sentCount } = useQuery({
+    queryKey: ['gsc-urls-sent-count', siteId],
     queryFn: async () => {
       const { count, error } = await supabase
         .from('gsc_discovered_urls')
         .select('*', { count: 'exact', head: true })
         .eq('site_id', siteId)
-        .eq('current_status', 'indexed');
+        .eq('current_status', 'sent');
       if (error) throw error;
       return count || 0;
     },
@@ -262,8 +262,8 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   const processedHistory = sortData(filterHistoryData(indexingHistory || []), historySort);
 
   const totalUrls = totalCount;
-  const indexedUrls = indexedCount || 0;
   const discoveredUrls = discoveredCount || 0;
+  const sentUrls = sentCount || 0;
   const selectedCount = selectedUrls.length;
 
   const totalJobs = indexingHistory?.length || 0;
@@ -276,7 +276,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
     const isDark = document.documentElement.classList.contains('dark');
     switch (status) {
       case 'indexed':
-        return <Badge className={isDark ? "bg-green-900/30 text-green-300 border-green-700" : "bg-green-100 text-green-700 border-green-300"}>Indexado</Badge>;
+        return <Badge className={isDark ? "bg-green-900/30 text-green-300 border-green-700" : "bg-green-100 text-green-700 border-green-300"}>Indexado (legado)</Badge>;
       case 'sent':
         return <Badge className={isDark ? "bg-blue-900/30 text-blue-300 border-blue-700" : "bg-blue-100 text-blue-700 border-blue-300"}>Enviado</Badge>;
       case 'discovered':
@@ -414,12 +414,12 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
             <Card className="shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Indexadas</p>
-                    <p className="text-2xl font-bold">{indexedUrls.toLocaleString('pt-BR')}</p>
+                    <p className="text-sm text-muted-foreground">Descobertas</p>
+                    <p className="text-2xl font-bold">{discoveredCount?.toLocaleString('pt-BR') || 0}</p>
                   </div>
                 </div>
               </CardContent>
@@ -428,12 +428,12 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
             <Card className="shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                  <div className="p-2 bg-sky-100 dark:bg-sky-900/30 rounded-lg">
+                    <Send className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Descobertas</p>
-                    <p className="text-2xl font-bold">{discoveredUrls.toLocaleString('pt-BR')}</p>
+                    <p className="text-sm text-muted-foreground">Enviadas</p>
+                    <p className="text-2xl font-bold">{sentCount?.toLocaleString('pt-BR') || 0}</p>
                   </div>
                 </div>
               </CardContent>
@@ -513,7 +513,6 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
               <SelectItem value="all">Todos Status</SelectItem>
               <SelectItem value="discovered">Descoberto</SelectItem>
               <SelectItem value="sent">Enviado</SelectItem>
-              <SelectItem value="indexed">Indexado</SelectItem>
               <SelectItem value="failed">Falhou</SelectItem>
             </SelectContent>
             </Select>
