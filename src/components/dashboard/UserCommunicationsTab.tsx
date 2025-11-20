@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useUserTickets, useTicketMessages, useSendMessage, useMarkMessagesAsRead, useUploadAttachment } from "@/hooks/useSupportTickets";
+import { useUserTickets, useTicketMessages, useSendMessage, useMarkMessagesAsRead, useUploadAttachment, useUpdateTicketStatus } from "@/hooks/useSupportTickets";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,13 +7,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageCircle, Plus, Send, Radio, Mail, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { MessageCircle, Plus, Send, Radio, Mail, AlertCircle, CheckCircle2, Clock, RotateCcw } from "lucide-react";
 import { SupportTicketDialog } from "@/components/support/SupportTicketDialog";
 import { TicketActionsMenu } from "@/components/support/TicketActionsMenu";
 import { EmojiPickerButton } from "@/components/support/EmojiPickerButton";
 import { AttachmentButton } from "@/components/support/AttachmentButton";
 import { AttachmentPreview } from "@/components/support/AttachmentPreview";
 import { MessageAttachment } from "@/components/support/MessageAttachment";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +45,7 @@ export function UserCommunicationsTab() {
   const sendMessage = useSendMessage();
   const markAsRead = useMarkMessagesAsRead();
   const uploadAttachment = useUploadAttachment();
+  const updateTicketStatus = useUpdateTicketStatus();
 
   // Separar mensagens do admin e tickets do usuário
   const adminMessages = tickets.filter(t => t.initiated_by === 'admin');
@@ -372,57 +379,106 @@ export function UserCommunicationsTab() {
               </CardContent>
 
               {/* Input */}
-              {selectedTicket?.status !== 'closed' && (
-                <>
-                  <Separator />
-                  <div className="p-4 flex-shrink-0">
-                    <div className="flex flex-col gap-2">
-                      {/* Preview de anexos */}
-                      {selectedFiles.length > 0 && (
-                        <div className="flex gap-2 flex-wrap">
-                          {selectedFiles.map((file, idx) => (
-                            <AttachmentPreview
-                              key={idx}
-                              file={file}
-                              onRemove={() => handleRemoveFile(idx)}
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Input de mensagem */}
-                      <div className="flex gap-2">
-                        <div className="flex gap-1">
-                          <AttachmentButton
-                            onFilesSelected={handleFilesSelected}
+              <Separator />
+              <div className="p-4 flex-shrink-0">
+                {selectedTicket?.status === 'closed' ? (
+                  <div className="text-center p-6 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Este ticket está fechado. Reabra para continuar a conversa.
+                    </p>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={async () => {
+                        if (selectedTicket?.id) {
+                          try {
+                            await updateTicketStatus.mutateAsync({
+                              ticket_id: selectedTicket.id,
+                              status: "open",
+                            });
+                            toast({
+                              title: "Ticket reaberto",
+                              description: "Você já pode enviar mensagens novamente",
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Erro ao reabrir",
+                              description: "Tente novamente em alguns instantes",
+                              variant: "destructive",
+                            });
+                          }
+                        }
+                      }}
+                      disabled={updateTicketStatus.isPending}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Reabrir Ticket
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {selectedFiles.length > 0 && (
+                      <div className="flex gap-2 flex-wrap p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground w-full mb-1">
+                          {selectedFiles.length} arquivo(s) anexado(s):
+                        </p>
+                        {selectedFiles.map((file, idx) => (
+                          <AttachmentPreview
+                            key={idx}
+                            file={file}
+                            onRemove={() => handleRemoveFile(idx)}
                           />
-                          <EmojiPickerButton
-                            onEmojiSelect={handleEmojiSelect}
-                          />
-                        </div>
-
-                        <Textarea
-                          ref={textareaRef}
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          placeholder="Digite sua mensagem..."
-                          className="resize-none min-h-[80px]"
-                        />
-
-                        <Button
-                          onClick={handleSendMessage}
-                          disabled={!newMessage.trim() || sendMessage.isPending}
-                          size="icon"
-                          className="h-[80px]"
-                        >
-                          <Send className="w-4 h-4" />
-                        </Button>
+                        ))}
                       </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <TooltipProvider>
+                        <div className="flex gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <AttachmentButton onFilesSelected={handleFilesSelected} />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Anexar arquivo (imagens, PDFs, documentos)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <EmojiPickerButton onEmojiSelect={handleEmojiSelect} />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Adicionar emoji 😊</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
+                      
+                      <Textarea
+                        ref={textareaRef}
+                        placeholder="Digite sua mensagem... Use os botões ao lado para anexar arquivos ou emojis"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className="flex-1 min-h-[80px] resize-none"
+                      />
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={!newMessage.trim() && selectedFiles.length === 0}
+                        size="icon"
+                        className="h-[80px]"
+                      >
+                        <Send className="w-5 h-5" />
+                      </Button>
                     </div>
                   </div>
-                </>
-              )}
+                )}
+              </div>
             </>
           )}
         </Card>

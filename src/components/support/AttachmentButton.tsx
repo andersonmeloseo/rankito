@@ -67,7 +67,7 @@ export function AttachmentButton({
         type="button"
         onClick={() => fileInputRef.current?.click()}
       >
-        <Paperclip className="w-4 h-4" />
+        <Paperclip className="w-5 h-5" />
       </Button>
     </>
   );

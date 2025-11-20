@@ -24,7 +24,7 @@ export function EmojiPickerButton({ onEmojiSelect }: EmojiPickerButtonProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="icon" type="button">
-          <Smile className="w-4 h-4" />
+          <Smile className="w-5 h-5" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0 border-0" align="start">
