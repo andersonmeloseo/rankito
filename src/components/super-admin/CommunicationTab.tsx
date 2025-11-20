@@ -7,17 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Send, User } from "lucide-react";
+import { MessageSquare, Send, User, Mail } from "lucide-react";
 import { useAllTickets, useTicketMessages, useSendMessage, useUpdateTicketStatus, useUpdateTicketPriority, useTicketStats } from "@/hooks/useSupportTickets";
 import { StatusBadge } from "@/components/support/StatusBadge";
 import { PriorityBadge } from "@/components/support/PriorityBadge";
 import { CategoryIcon } from "@/components/support/CategoryIcon";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { AdminMessageComposer } from "./AdminMessageComposer";
 
 export function CommunicationTab() {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [showMessageComposer, setShowMessageComposer] = useState(false);
   const [filters, setFilters] = useState({
     status: 'all',
     category: 'all',
@@ -99,8 +101,18 @@ export function CommunicationTab() {
       {/* Main Layout */}
       <div className="grid grid-cols-12 gap-6">
         {/* Sidebar - Tickets List */}
-        <div className="col-span-4">
-          <Card className="h-[calc(100vh-300px)]">
+        <div className="col-span-4 space-y-4">
+          {/* Botão Nova Mensagem */}
+          <Button 
+            onClick={() => setShowMessageComposer(true)} 
+            className="w-full"
+            size="lg"
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Nova Mensagem
+          </Button>
+
+          <Card className="h-[calc(100vh-380px)]">
             <CardHeader>
               <CardTitle className="text-lg">Tickets</CardTitle>
               <CardDescription>Todos os tickets de suporte</CardDescription>
@@ -332,6 +344,8 @@ export function CommunicationTab() {
           </Card>
         </div>
       </div>
+
+      <AdminMessageComposer open={showMessageComposer} onOpenChange={setShowMessageComposer} />
     </div>
   );
 }
