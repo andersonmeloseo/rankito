@@ -1,14 +1,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Clock, Zap, List, RefreshCw, X, CheckCircle2, XCircle, AlertCircle, Calendar } from "lucide-react";
+import { Clock, Zap, List, RefreshCw, X, CheckCircle2, XCircle, AlertCircle, Calendar, Settings } from "lucide-react";
 import { useGSCScheduling } from "@/hooks/useGSCScheduling";
 import { useGSCQuotaStatus } from "@/hooks/useGSCQuotaStatus";
-import { format } from "date-fns";
+import { useScheduleConfig } from "@/hooks/useScheduleConfig";
+import { ScheduleConfigDialog } from "./ScheduleConfigDialog";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 
@@ -17,7 +17,7 @@ interface GSCSchedulingPanelProps {
 }
 
 export const GSCSchedulingPanel = ({ siteId }: GSCSchedulingPanelProps) => {
-  const [autoScheduleEnabled, setAutoScheduleEnabled] = useState(true);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
   
   const {
     scheduledSubmissions,
@@ -29,6 +29,17 @@ export const GSCSchedulingPanel = ({ siteId }: GSCSchedulingPanelProps) => {
   } = useGSCScheduling(siteId);
 
   const { quotaStatus, quotaExceeded, percentageUsed } = useGSCQuotaStatus(siteId);
+  const { config, updateConfig } = useScheduleConfig(siteId);
+
+  const getFrequencyLabel = (freq?: string) => {
+    const labels: Record<string, string> = {
+      hourly: 'A cada hora',
+      daily: 'Diariamente',
+      weekly: 'Semanalmente',
+      custom: 'Personalizado',
+    };
+    return labels[freq || 'daily'] || 'Não configurado';
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
@@ -56,34 +67,60 @@ export const GSCSchedulingPanel = ({ siteId }: GSCSchedulingPanelProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Agendamento Inteligente */}
+      <ScheduleConfigDialog 
+        open={configDialogOpen} 
+        onOpenChange={setConfigDialogOpen}
+        siteId={siteId}
+      />
+
+      {/* Configuração de Agendamento */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" />
-            Agendamento Inteligente
-          </CardTitle>
-          <CardDescription>
-            Distribua URLs automaticamente ao longo de 24h respeitando quota diária
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                Configuração de Agendamento
+              </CardTitle>
+              <CardDescription>
+                {config?.enabled 
+                  ? `Ativo: ${getFrequencyLabel(config.frequency)} às ${config.specific_time}` 
+                  : 'Agendamento pausado - clique em "Configurar" para ativar'}
+              </CardDescription>
+            </div>
+            <Button onClick={() => setConfigDialogOpen(true)} variant="outline">
+              <Settings className="h-4 w-4 mr-2" />
+              Configurar
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Toggle */}
-          <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-            <div className="space-y-1">
-              <Label htmlFor="auto-schedule" className="text-sm font-medium">
-                Ativar agendamento automático
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                URLs descobertas serão distribuídas automaticamente
-              </p>
-            </div>
-            <Switch
-              id="auto-schedule"
-              checked={autoScheduleEnabled}
-              onCheckedChange={setAutoScheduleEnabled}
-            />
+          {/* Badges com resumo da config */}
+          <div className="flex gap-2 flex-wrap">
+            <Badge variant={config?.enabled ? "default" : "secondary"}>
+              {config?.enabled ? "✓ Ativo" : "Pausado"}
+            </Badge>
+            <Badge variant="outline">
+              {getFrequencyLabel(config?.frequency)}
+            </Badge>
+            <Badge variant="outline">
+              {config?.max_urls_per_run || 200} URLs/execução
+            </Badge>
+            {config?.distribute_across_day && (
+              <Badge variant="outline">Distribuição em 48 slots</Badge>
+            )}
           </div>
+          
+          {/* Próxima execução */}
+          {config?.next_run_at && (
+            <Alert>
+              <Clock className="h-4 w-4" />
+              <AlertDescription>
+                Próxima execução: {format(new Date(config.next_run_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                {' '}({formatDistanceToNow(new Date(config.next_run_at), { addSuffix: true, locale: ptBR })})
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Estatísticas */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
