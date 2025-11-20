@@ -14,6 +14,7 @@ import { GSCIndexingAlertsPanel } from './GSCIndexingAlertsPanel';
 import { GSCDiscoveredUrlsTable } from './GSCDiscoveredUrlsTable';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
 import { IndexNowManager } from './IndexNowManager';
+import { IndexingWorkflowGuide } from './IndexingWorkflowGuide';
 
 interface GSCTabContentProps {
   siteId: string;
@@ -28,6 +29,8 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
   const { integrations } = useGSCIntegrations(siteId, userId);
   const [selectedGSCIntegrationId, setSelectedGSCIntegrationId] = useState<string | undefined>();
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [activeTab, setActiveTab] = useState('config');
+  const [activeSubTab, setActiveSubTab] = useState('sitemaps');
 
   // Auto-select first integration
   useEffect(() => {
@@ -72,7 +75,17 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
   };
 
   return (
-    <Tabs defaultValue="config" className="w-full space-y-6">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+      <IndexingWorkflowGuide 
+        currentTab={activeTab}
+        currentSubTab={activeSubTab}
+        onNavigate={(tab, subTab) => {
+          setActiveTab(tab);
+          if (subTab) setActiveSubTab(subTab);
+        }}
+        indexNowKey={site.url ? `${siteId.substring(0, 8)}-indexnow` : undefined}
+        indexNowFileName={site.url ? `${siteId.substring(0, 8)}-indexnow.txt` : undefined}
+      />
       <TabsList className="grid w-full grid-cols-3 h-12">
         <ClickUpTabTrigger value="config">
           <Globe className="w-4 h-4 mr-2" />
@@ -147,7 +160,7 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
         {/* Sub-tabs for Sitemaps and URLs */}
         <Card>
           <CardContent className="p-6">
-            <Tabs defaultValue="urls" className="space-y-6">
+            <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-6">
               <TabsList className="grid w-full grid-cols-2">
                 <ClickUpTabTrigger value="sitemaps">
                   <Globe className="h-4 w-4 mr-2" />
