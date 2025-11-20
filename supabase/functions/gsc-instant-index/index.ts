@@ -208,15 +208,27 @@ Deno.serve(async (req) => {
         gscResult.error?.data?.error?.message?.toLowerCase().includes('quota')
       );
 
+      // REGISTRAR URL NA TABELA DE QUOTA
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      );
+
+      // Inserir registro de requisição para rastreamento de quota
+      await supabaseAdmin
+        .from('gsc_url_indexing_requests')
+        .insert({
+          site_id: site_id,
+          integration_id: finalIntegrationId,
+          url: url,
+          status: overallSuccess ? 'success' : 'failed',
+          error_message: !overallSuccess ? JSON.stringify(gscResult.error) : null,
+          response_data: gscResult,
+        });
+
       // Só atualizar status se NÃO for erro de quota
       // Erros de quota preservam o status atual da URL
       if (!isQuotaError) {
-        // Usar Service Role para bypass RLS
-        const supabaseAdmin = createClient(
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-        );
-
         const { error: updateError } = await supabaseAdmin
           .from('gsc_discovered_urls')
           .update({
