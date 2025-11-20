@@ -4,9 +4,18 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { CheckCircle2, RotateCcw, XCircle, Info, FileDown, MoreVertical } from "lucide-react";
 import { useUpdateTicketStatus } from "@/hooks/useSupportTickets";
 import { useToast } from "@/hooks/use-toast";
@@ -104,79 +113,112 @@ export function TicketActionsMenu({
   };
 
   return (
-    <>
-      <div className="flex items-center gap-2">
-        {/* Quick Actions */}
+    <div className="flex flex-wrap items-center gap-2">
+      {/* Quick action buttons - visible on desktop */}
+      <div className="hidden lg:flex items-center gap-2">
         {(ticketStatus === "open" || ticketStatus === "in_progress") && (
           <Button
-            size="sm"
             variant="outline"
+            size="sm"
             onClick={() => handleStatusChange("resolved", "Resolvido")}
             disabled={updateStatus.isPending}
           >
-            <CheckCircle2 className="w-4 h-4 mr-2" />
+            <CheckCircle2 className="w-4 h-4" />
             Marcar como Resolvido
           </Button>
         )}
 
+        {ticketStatus !== "closed" && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={updateStatus.isPending}>
+                <XCircle className="w-4 h-4" />
+                Fechar Ticket
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogTitle>Confirmar fechamento</AlertDialogTitle>
+              <AlertDialogDescription>
+                Ao fechar este ticket, não será mais possível enviar mensagens.
+                Esta ação pode ser revertida reabrindo o ticket. Tem certeza?
+              </AlertDialogDescription>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleStatusChange("closed", "Fechado")}>
+                  Sim, Fechar Ticket
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
         {(ticketStatus === "resolved" || ticketStatus === "closed") && (
           <Button
-            size="sm"
             variant="outline"
+            size="sm"
             onClick={() => handleStatusChange("open", "Reaberto")}
             disabled={updateStatus.isPending}
           >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reabrir Ticket
+            <RotateCcw className="w-4 h-4" />
+            Reabrir
           </Button>
         )}
-
-        {/* Dropdown Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            {ticketStatus !== "closed" && (
-              <>
-                {ticketStatus !== "resolved" && (
-                  <DropdownMenuItem
-                    onClick={() => handleStatusChange("resolved", "Resolvido")}
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Marcar como Resolvido
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={() => handleStatusChange("closed", "Fechado")}
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Fechar Ticket
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-            
-            <DropdownMenuItem onClick={() => setShowInfo(true)}>
-              <Info className="w-4 h-4 mr-2" />
-              Ver Informações
-            </DropdownMenuItem>
-            
-            <DropdownMenuItem onClick={exportToPDF}>
-              <FileDown className="w-4 h-4 mr-2" />
-              Exportar Conversa
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
+
+      {/* Dropdown menu - all actions on mobile, secondary actions on desktop */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm">
+            <MoreVertical className="w-4 h-4" />
+            <span className="lg:hidden ml-1">Menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          {/* Mobile-only quick actions */}
+          <div className="lg:hidden">
+            {(ticketStatus === "open" || ticketStatus === "in_progress") && (
+              <DropdownMenuItem onClick={() => handleStatusChange("resolved", "Resolvido")}>
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Marcar como Resolvido
+              </DropdownMenuItem>
+            )}
+
+            {ticketStatus !== "closed" && (
+              <DropdownMenuItem
+                onClick={() => handleStatusChange("closed", "Fechado")}
+                className="text-red-600"
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                Fechar Ticket
+              </DropdownMenuItem>
+            )}
+
+            {(ticketStatus === "resolved" || ticketStatus === "closed") && (
+              <DropdownMenuItem onClick={() => handleStatusChange("open", "Reaberto")}>
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reabrir
+              </DropdownMenuItem>
+            )}
+          </div>
+
+          {/* Secondary actions - always in dropdown */}
+          <DropdownMenuItem onClick={() => setShowInfo(true)}>
+            <Info className="w-4 h-4 mr-2" />
+            Ver Informações
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={exportToPDF}>
+            <FileDown className="w-4 h-4 mr-2" />
+            Exportar Conversa
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <TicketInfoDialog
         ticketId={ticketId}
         open={showInfo}
         onOpenChange={setShowInfo}
       />
-    </>
+    </div>
   );
 }
