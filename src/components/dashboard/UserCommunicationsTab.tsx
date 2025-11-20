@@ -113,17 +113,17 @@ export function UserCommunicationsTab() {
   };
 
   return (
-    <div className="grid grid-cols-12 gap-6 h-[calc(100vh-200px)]">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[400px] lg:min-h-[600px] max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-280px)]">
       {/* Sidebar */}
-      <div className="col-span-4 space-y-4 overflow-hidden flex flex-col">
+      <div className="col-span-1 lg:col-span-4 flex flex-col gap-4 h-full">
         <Button onClick={() => setShowCreateDialog(true)} className="w-full">
           <Plus className="w-4 h-4 mr-2" />
           Criar Ticket de Suporte
         </Button>
 
         {/* Mensagens do Admin */}
-        <Card className="flex-1 overflow-hidden flex flex-col">
-          <CardHeader className="pb-3">
+        <Card className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <CardHeader className="pb-3 flex-shrink-0">
             <CardTitle className="text-base flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
               Mensagens do Admin
@@ -132,7 +132,7 @@ export function UserCommunicationsTab() {
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden">
+          <CardContent className="flex-1 min-h-0 p-4">
             <ScrollArea className="h-full">
               <div className="space-y-2">
                 {adminMessages.length === 0 ? (
@@ -174,8 +174,8 @@ export function UserCommunicationsTab() {
         </Card>
 
         {/* Meus Tickets */}
-        <Card className="flex-1 overflow-hidden flex flex-col">
-          <CardHeader className="pb-3">
+        <Card className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <CardHeader className="pb-3 flex-shrink-0">
             <CardTitle className="text-base">
               Meus Tickets
               {userTickets.length > 0 && (
@@ -183,7 +183,7 @@ export function UserCommunicationsTab() {
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden">
+          <CardContent className="flex-1 min-h-0 p-4">
             <ScrollArea className="h-full">
               <div className="space-y-2">
                 {userTickets.length === 0 ? (
@@ -228,10 +228,10 @@ export function UserCommunicationsTab() {
       </div>
 
       {/* Chat View */}
-      <div className="col-span-8">
+      <div className="col-span-1 lg:col-span-8 h-full">
         <Card className="h-full flex flex-col">
           {!selectedTicketId ? (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center">
                 <MessageCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium mb-2">Selecione uma conversa</h3>
@@ -243,7 +243,7 @@ export function UserCommunicationsTab() {
           ) : (
             <>
               {/* Header */}
-              <CardHeader>
+              <CardHeader className="flex-shrink-0">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg mb-2">{selectedTicket?.subject}</CardTitle>
@@ -257,7 +257,7 @@ export function UserCommunicationsTab() {
               <Separator />
 
               {/* Messages */}
-              <CardContent className="flex-1 overflow-hidden p-4">
+              <CardContent className="flex-1 min-h-0 p-4">
                 <ScrollArea className="h-full pr-4">
                   <div className="space-y-4">
                     {messages.map((msg) => (
@@ -288,7 +288,7 @@ export function UserCommunicationsTab() {
               {selectedTicket?.status !== 'closed' && (
                 <>
                   <Separator />
-                  <div className="p-4">
+                  <div className="p-4 flex-shrink-0">
                     <div className="flex gap-2">
                       <Textarea
                         value={newMessage}
