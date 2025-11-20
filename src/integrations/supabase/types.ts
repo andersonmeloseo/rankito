@@ -694,6 +694,7 @@ export type Database = {
       }
       gsc_discovered_urls: {
         Row: {
+          auto_schedule_enabled: boolean | null
           clicks: number | null
           created_at: string | null
           ctr: number | null
@@ -707,12 +708,15 @@ export type Database = {
           last_checked_at: string | null
           last_seen_at: string | null
           position: number | null
+          priority: number | null
+          scheduled_for: string | null
           sent_to_indexnow: boolean | null
           site_id: string
           updated_at: string | null
           url: string
         }
         Insert: {
+          auto_schedule_enabled?: boolean | null
           clicks?: number | null
           created_at?: string | null
           ctr?: number | null
@@ -726,12 +730,15 @@ export type Database = {
           last_checked_at?: string | null
           last_seen_at?: string | null
           position?: number | null
+          priority?: number | null
+          scheduled_for?: string | null
           sent_to_indexnow?: boolean | null
           site_id: string
           updated_at?: string | null
           url: string
         }
         Update: {
+          auto_schedule_enabled?: boolean | null
           clicks?: number | null
           created_at?: string | null
           ctr?: number | null
@@ -745,6 +752,8 @@ export type Database = {
           last_checked_at?: string | null
           last_seen_at?: string | null
           position?: number | null
+          priority?: number | null
+          scheduled_for?: string | null
           sent_to_indexnow?: boolean | null
           site_id?: string
           updated_at?: string | null
@@ -943,6 +952,147 @@ export type Database = {
           },
           {
             foreignKeyName: "gsc_indexing_jobs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_schedule_execution_logs: {
+        Row: {
+          created_at: string | null
+          errors: Json | null
+          execution_duration_ms: number | null
+          execution_type: string
+          id: string
+          integrations_used: number | null
+          sites_processed: number | null
+          total_capacity: number | null
+          urls_processed: number | null
+          urls_scheduled: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          errors?: Json | null
+          execution_duration_ms?: number | null
+          execution_type: string
+          id?: string
+          integrations_used?: number | null
+          sites_processed?: number | null
+          total_capacity?: number | null
+          urls_processed?: number | null
+          urls_scheduled?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          errors?: Json | null
+          execution_duration_ms?: number | null
+          execution_type?: string
+          id?: string
+          integrations_used?: number | null
+          sites_processed?: number | null
+          total_capacity?: number | null
+          urls_processed?: number | null
+          urls_scheduled?: number | null
+        }
+        Relationships: []
+      }
+      gsc_scheduled_submissions: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          error_message: string | null
+          id: string
+          integration_id: string | null
+          priority: number | null
+          response_data: Json | null
+          scheduled_for: string
+          site_id: string
+          sitemap_url: string | null
+          started_at: string | null
+          status: string
+          submission_type: string
+          updated_at: string | null
+          urls: string[] | null
+          urls_failed: number | null
+          urls_submitted: number | null
+          urls_successful: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string | null
+          priority?: number | null
+          response_data?: Json | null
+          scheduled_for: string
+          site_id: string
+          sitemap_url?: string | null
+          started_at?: string | null
+          status?: string
+          submission_type: string
+          updated_at?: string | null
+          urls?: string[] | null
+          urls_failed?: number | null
+          urls_submitted?: number | null
+          urls_successful?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string | null
+          priority?: number | null
+          response_data?: Json | null
+          scheduled_for?: string
+          site_id?: string
+          sitemap_url?: string | null
+          started_at?: string | null
+          status?: string
+          submission_type?: string
+          updated_at?: string | null
+          urls?: string[] | null
+          urls_failed?: number | null
+          urls_submitted?: number | null
+          urls_successful?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_scheduled_submissions_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_scheduled_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_scheduled_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gsc_scheduled_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_scheduled_submissions_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_sites"
