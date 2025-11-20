@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, BarChart3, Users, Globe, DollarSign, UserCircle, KeyRound, Shield, Package, Activity, TrendingUp, Bot } from "lucide-react";
+import { LogOut, BarChart3, Users, Globe, DollarSign, UserCircle, KeyRound, Shield, Package, Activity, TrendingUp, Bot, MessageSquare } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
