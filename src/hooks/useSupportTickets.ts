@@ -285,6 +285,7 @@ export function useSendMessage() {
       message: string;
       is_admin_reply: boolean;
       is_internal_note?: boolean;
+      attachments?: Array<{ name: string; url: string; size: number; type: string }>;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
@@ -297,6 +298,7 @@ export function useSendMessage() {
           message: data.message,
           is_admin_reply: data.is_admin_reply,
           is_internal_note: data.is_internal_note || false,
+          attachments: data.attachments || [],
         });
 
       if (error) throw error;
@@ -420,6 +422,35 @@ export function useMarkMessagesAsRead() {
       queryClient.invalidateQueries({ queryKey: ['support-messages', variables.ticket_id] });
       queryClient.invalidateQueries({ queryKey: ['support-tickets'] });
       queryClient.invalidateQueries({ queryKey: ['support-ticket', variables.ticket_id] });
+    },
+  });
+}
+
+export function useUploadAttachment() {
+  return useMutation({
+    mutationFn: async (data: { file: File; userId: string }) => {
+      const fileName = `${Date.now()}_${data.file.name}`;
+      const filePath = `${data.userId}/${fileName}`;
+
+      const { data: uploadData, error } = await supabase.storage
+        .from('support-attachments')
+        .upload(filePath, data.file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('support-attachments')
+        .getPublicUrl(uploadData.path);
+
+      return {
+        name: data.file.name,
+        url: publicUrl,
+        size: data.file.size,
+        type: data.file.type,
+      };
+    },
+    onError: (error: Error) => {
+      toast.error('Erro ao fazer upload: ' + error.message);
     },
   });
 }
