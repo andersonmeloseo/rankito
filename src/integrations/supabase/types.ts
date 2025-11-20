@@ -3404,6 +3404,17 @@ export type Database = {
           page_views: number
         }[]
       }
+      get_top_users_by_consumption: {
+        Args: { limit_count?: number }
+        Returns: {
+          total_conversions: number
+          total_pages: number
+          total_sites: number
+          user_email: string
+          user_id: string
+          user_name: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

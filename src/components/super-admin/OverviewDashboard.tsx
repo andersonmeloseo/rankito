@@ -1,10 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSaasMetrics } from "@/hooks/useSaasMetrics";
-import { DollarSign, TrendingUp, Users, Clock, AlertCircle, TrendingDown } from "lucide-react";
+import { useSystemConsumptionMetrics } from "@/hooks/useSystemConsumptionMetrics";
+import { DollarSign, TrendingUp, Users, Clock, AlertCircle, TrendingDown, Server, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { SystemConsumptionCard } from "./SystemConsumptionCard";
+import { TopUsersConsumptionTable } from "./TopUsersConsumptionTable";
+import { ResourceDistributionByPlan } from "./ResourceDistributionByPlan";
 
 export const OverviewDashboard = () => {
   const { data: metrics, isLoading } = useSaasMetrics();
+  const { data: consumption, isLoading: isLoadingConsumption } = useSystemConsumptionMetrics();
 
   if (isLoading) {
     return <div>Carregando métricas...</div>;
@@ -130,6 +136,35 @@ export const OverviewDashboard = () => {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* System Consumption Analytics */}
+      <Separator className="my-8" />
+      
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <Server className="h-6 w-6" />
+          Análise de Consumo do Sistema
+        </h2>
+
+        {isLoadingConsumption ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : consumption ? (
+          <>
+            <SystemConsumptionCard metrics={consumption} />
+            
+            <div className="grid gap-6 lg:grid-cols-2">
+              <TopUsersConsumptionTable topUsers={consumption.topUsers} />
+              <ResourceDistributionByPlan distribution={consumption.distributionByPlan} />
+            </div>
+          </>
+        ) : (
+          <div className="text-center text-muted-foreground py-8">
+            Nenhum dado disponível
+          </div>
+        )}
       </div>
     </div>
   );
