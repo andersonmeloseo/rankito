@@ -28,7 +28,7 @@ export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('rank_rent_sites')
-        .select('indexnow_key')
+        .select('indexnow_key, indexnow_validated')
         .eq('id', siteId)
         .single();
       
@@ -136,7 +136,7 @@ export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Label>Chave Atual</Label>
-              {validationResult?.valid && (
+              {site?.indexnow_validated && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                   <CheckCircle2 className="h-3 w-3" />
                   Chave Validada

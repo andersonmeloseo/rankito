@@ -36,10 +36,13 @@ Deno.serve(async (req) => {
     // Gerar nova chave
     const newKey = generateIndexNowKey();
 
-    // Atualizar no banco
+    // Atualizar no banco e invalidar validação
     const { error } = await supabase
       .from('rank_rent_sites')
-      .update({ indexnow_key: newKey })
+      .update({ 
+        indexnow_key: newKey,
+        indexnow_validated: false
+      })
       .eq('id', siteId);
 
     if (error) throw error;
