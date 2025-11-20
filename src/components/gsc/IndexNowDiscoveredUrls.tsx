@@ -31,14 +31,15 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
   const { data: urls, isLoading } = useQuery({
     queryKey: ['gsc-discovered-urls-indexnow', siteId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('gsc_discovered_urls')
-        .select('id, url, current_status, discovered_at, sent_to_indexnow')
-        .eq('site_id', siteId)
-        .order('discovered_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
+    const { data, error } = await supabase
+      .from('gsc_discovered_urls')
+      .select('id, url, current_status, discovered_at, sent_to_indexnow')
+      .eq('site_id', siteId)
+      .order('discovered_at', { ascending: false })
+      .range(0, 9999999);
+    
+    if (error) throw error;
+    return data;
     },
     staleTime: 0,
     refetchOnMount: true,
