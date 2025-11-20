@@ -2849,6 +2849,129 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          attachments: Json | null
+          created_at: string
+          edited_at: string | null
+          id: string
+          is_admin_reply: boolean
+          is_internal_note: boolean
+          is_read: boolean
+          message: string
+          sender_id: string
+          ticket_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          is_admin_reply?: boolean
+          is_internal_note?: boolean
+          is_read?: boolean
+          message: string
+          sender_id: string
+          ticket_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          is_admin_reply?: boolean
+          is_internal_note?: boolean
+          is_read?: boolean
+          message?: string
+          sender_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category: Database["public"]["Enums"]["support_category"]
+          closed_at: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          metadata: Json | null
+          priority: Database["public"]["Enums"]["support_priority"]
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["support_status"]
+          subject: string
+          unread_admin_count: number
+          unread_user_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["support_category"]
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          metadata?: Json | null
+          priority?: Database["public"]["Enums"]["support_priority"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["support_status"]
+          subject: string
+          unread_admin_count?: number
+          unread_user_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["support_category"]
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          metadata?: Json | null
+          priority?: Database["public"]["Enums"]["support_priority"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["support_status"]
+          subject?: string
+          unread_admin_count?: number
+          unread_user_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notifications: {
         Row: {
           created_at: string
@@ -3555,6 +3678,19 @@ export type Database = {
         | "past_due"
         | "canceled"
         | "expired"
+      support_category:
+        | "bug_report"
+        | "feature_request"
+        | "question"
+        | "technical_support"
+        | "other"
+      support_priority: "low" | "medium" | "high" | "urgent"
+      support_status:
+        | "open"
+        | "in_progress"
+        | "waiting_user"
+        | "resolved"
+        | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3719,6 +3855,21 @@ export const Constants = {
         "past_due",
         "canceled",
         "expired",
+      ],
+      support_category: [
+        "bug_report",
+        "feature_request",
+        "question",
+        "technical_support",
+        "other",
+      ],
+      support_priority: ["low", "medium", "high", "urgent"],
+      support_status: [
+        "open",
+        "in_progress",
+        "waiting_user",
+        "resolved",
+        "closed",
       ],
     },
   },
