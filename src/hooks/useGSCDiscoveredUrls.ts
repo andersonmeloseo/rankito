@@ -14,46 +14,15 @@ export const useGSCDiscoveredUrls = (
   filters?: UseGSCDiscoveredUrlsFilters
 ) => {
   const queryClient = useQueryClient();
-  const page = filters?.page || 1;
-  const pageSize = filters?.pageSize || 100;
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
-
-  const { data: countData } = useQuery({
-    queryKey: ['gsc-discovered-urls-count', siteId, filters?.status, filters?.searchTerm],
-    queryFn: async () => {
-      let query = supabase
-        .from('gsc_discovered_urls')
-        .select('*', { count: 'exact', head: true })
-        .eq('site_id', siteId);
-
-      if (filters?.status && filters.status !== 'all') {
-        query = query.eq('current_status', filters.status);
-      }
-      if (filters?.searchTerm) {
-        query = query.ilike('url', `%${filters.searchTerm}%`);
-      }
-
-      const { count, error } = await query;
-      if (error) throw error;
-      return count || 0;
-    },
-    enabled: !!siteId,
-  });
 
   const { data: urls, isLoading } = useQuery({
-    queryKey: ['gsc-discovered-urls', siteId, filters, page, pageSize],
+    queryKey: ['gsc-discovered-urls', siteId, filters?.searchTerm],
     queryFn: async () => {
       let query = supabase
         .from('gsc_discovered_urls')
         .select('*')
         .eq('site_id', siteId)
-        .order('last_seen_at', { ascending: false })
-        .range(from, to);
-
-      if (filters?.status && filters.status !== 'all') {
-        query = query.eq('current_status', filters.status);
-      }
+        .order('last_seen_at', { ascending: false });
 
       if (filters?.searchTerm) {
         query = query.ilike('url', `%${filters.searchTerm}%`);
@@ -66,8 +35,6 @@ export const useGSCDiscoveredUrls = (
     },
     enabled: !!siteId,
   });
-
-  const totalPages = Math.ceil((countData || 0) / pageSize);
 
   const updateUrlStatus = useMutation({
     mutationFn: async ({ urlId, status }: { urlId: string; status: string }) => {
@@ -90,10 +57,7 @@ export const useGSCDiscoveredUrls = (
   return {
     urls,
     isLoading,
-    totalCount: countData || 0,
-    currentPage: page,
-    totalPages,
-    pageSize,
+    totalCount: urls?.length || 0,
     updateUrlStatus,
   };
 };
