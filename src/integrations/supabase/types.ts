@@ -600,6 +600,60 @@ export type Database = {
         }
         Relationships: []
       }
+      geolocation_api_configs: {
+        Row: {
+          api_key: string
+          created_at: string | null
+          created_by: string | null
+          display_name: string
+          error_count: number | null
+          id: string
+          is_active: boolean | null
+          last_error: string | null
+          last_rotation_at: string | null
+          last_used_at: string | null
+          monthly_limit: number | null
+          priority: number
+          provider_name: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          api_key: string
+          created_at?: string | null
+          created_by?: string | null
+          display_name: string
+          error_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_error?: string | null
+          last_rotation_at?: string | null
+          last_used_at?: string | null
+          monthly_limit?: number | null
+          priority?: number
+          provider_name: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          api_key?: string
+          created_at?: string | null
+          created_by?: string | null
+          display_name?: string
+          error_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_error?: string | null
+          last_rotation_at?: string | null
+          last_used_at?: string | null
+          monthly_limit?: number | null
+          priority?: number
+          provider_name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       google_search_console_integrations: {
         Row: {
           auto_submit_new_pages: boolean | null

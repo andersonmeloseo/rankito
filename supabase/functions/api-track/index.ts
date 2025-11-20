@@ -213,57 +213,152 @@ serve(async (req) => {
 
     const device = detectDevice(user_agent);
 
-    // Get geolocation data
-    const getGeolocation = async (ip: string, apiKey: string) => {
-      try {
-        // Ignorar IPs locais
-        if (ip === 'unknown' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) {
-          return { city: null, region: null, country: null, country_code: null };
+    // Get geolocation data usando sistema de rotação de APIs
+    const selectNextApi = async (supabase: any) => {
+      const { data: apis, error } = await supabase
+        .from('geolocation_api_configs')
+        .select('*')
+        .eq('is_active', true)
+        .order('last_rotation_at', { ascending: true, nullsFirst: true })
+        .order('priority', { ascending: true })
+        .order('error_count', { ascending: true });
+      
+      if (!apis || apis.length === 0) return null;
+      
+      const availableApis = apis.filter((api: any) => {
+        if (!api.monthly_limit) return true;
+        return api.usage_count < api.monthly_limit;
+      });
+      
+      if (availableApis.length === 0) {
+        await supabase
+          .from('geolocation_api_configs')
+          .update({ usage_count: 0 })
+          .eq('is_active', true);
+        return apis[0];
+      }
+      
+      return availableApis[0];
+    };
+
+    const fetchGeolocation = async (provider: string, apiKey: string, ip: string) => {
+      switch(provider) {
+        case 'ipgeolocation': {
+          const res = await fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${apiKey}&ip=${ip}`);
+          const data = await res.json();
+          return {
+            city: data.city || null,
+            region: data.state_prov || null,
+            country: data.country_name || null,
+            country_code: data.country_code2 || null
+          };
         }
-
-        // Extrair primeiro IP se houver múltiplos (x-forwarded-for pode ter lista)
-        const cleanIp = ip.split(',')[0].trim();
-        
-        console.log('Fetching geolocation for IP:', cleanIp);
-        
-        const response = await fetch(
-          `https://api.ipgeolocation.io/ipgeo?apiKey=${apiKey}&ip=${cleanIp}`,
-          {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-          }
-        );
-
-        if (!response.ok) {
-          console.error('Geolocation API error:', response.status);
-          return { city: null, region: null, country: null, country_code: null };
+        case 'ipapi': {
+          const res = await fetch(`http://ip-api.com/json/${ip}?fields=status,city,regionName,country,countryCode`);
+          const data = await res.json();
+          if (data.status !== 'success') throw new Error('API failed');
+          return {
+            city: data.city || null,
+            region: data.regionName || null,
+            country: data.country || null,
+            country_code: data.countryCode || null
+          };
         }
-
-        const data = await response.json();
-        
-        console.log('Geolocation result:', {
-          city: data.city,
-          region: data.state_prov,
-          country: data.country_name,
-          country_code: data.country_code2
-        });
-        
-        return {
-          city: data.city || null,
-          region: data.state_prov || null,
-          country: data.country_name || null,
-          country_code: data.country_code2 || null
-        };
-      } catch (error) {
-        console.error('Error fetching geolocation:', error);
-        return { city: null, region: null, country: null, country_code: null };
+        case 'ipstack': {
+          const res = await fetch(`http://api.ipstack.com/${ip}?access_key=${apiKey}`);
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.info);
+          return {
+            city: data.city || null,
+            region: data.region_name || null,
+            country: data.country_name || null,
+            country_code: data.country_code || null
+          };
+        }
+        case 'ipinfo': {
+          const res = await fetch(`https://ipinfo.io/${ip}/json?token=${apiKey}`);
+          const data = await res.json();
+          return {
+            city: data.city || null,
+            region: data.region || null,
+            country: data.country || null,
+            country_code: data.country || null
+          };
+        }
+        default:
+          throw new Error('Unknown provider');
       }
     };
 
-    const geoApiKey = Deno.env.get('IPGEOLOCATION_API_KEY');
-    const geoData = geoApiKey 
-      ? await getGeolocation(ip_address, geoApiKey)
-      : { city: null, region: null, country: null, country_code: null };
+    const tryApiWithFailover = async (supabase: any, ip: string, maxRetries: number = 5) => {
+      // Ignorar IPs locais
+      if (ip === 'unknown' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+        return { city: null, region: null, country: null, country_code: null };
+      }
+
+      const cleanIp = ip.split(',')[0].trim();
+      let attempts = 0;
+      
+      while (attempts < maxRetries) {
+        const selectedApi = await selectNextApi(supabase);
+        
+        if (!selectedApi) {
+          console.error('❌ No APIs available');
+          return { city: null, region: null, country: null, country_code: null };
+        }
+        
+        try {
+          console.log(`🔍 Attempt ${attempts + 1}: ${selectedApi.display_name} (${selectedApi.provider_name})`);
+          
+          const geoData = await fetchGeolocation(
+            selectedApi.provider_name, 
+            selectedApi.api_key, 
+            cleanIp
+          );
+          
+          await supabase
+            .from('geolocation_api_configs')
+            .update({ 
+              usage_count: selectedApi.usage_count + 1,
+              last_used_at: new Date().toISOString(),
+              last_rotation_at: new Date().toISOString(),
+              error_count: 0,
+              last_error: null
+            })
+            .eq('id', selectedApi.id);
+          
+          console.log(`✅ Success with ${selectedApi.display_name}`);
+          return geoData;
+          
+        } catch (error: any) {
+          console.warn(`⚠️ ${selectedApi.display_name} failed: ${error?.message}`);
+          
+          await supabase
+            .from('geolocation_api_configs')
+            .update({ 
+              error_count: selectedApi.error_count + 1,
+              last_error: error?.message || 'Unknown error',
+              last_rotation_at: new Date().toISOString()
+            })
+            .eq('id', selectedApi.id);
+          
+          if (selectedApi.error_count + 1 >= 10) {
+            await supabase
+              .from('geolocation_api_configs')
+              .update({ is_active: false })
+              .eq('id', selectedApi.id);
+          }
+          
+          attempts++;
+          continue;
+        }
+      }
+      
+      console.error(`❌ All APIs failed after ${maxRetries} attempts`);
+      return { city: null, region: null, country: null, country_code: null };
+    };
+
+    const geoData = await tryApiWithFailover(supabase, ip_address);
 
     console.log('IP Address:', ip_address);
     console.log('Geolocation data:', geoData);
