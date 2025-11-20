@@ -22,8 +22,22 @@ serve(async (req) => {
       case 'ipgeolocation':
         const resGeo = await fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${apiKey}&ip=${testIp}`);
         result = await resGeo.json();
+        
+        // Detectar erros específicos da API
+        if (result.message) {
+          if (result.message.includes('API key is invalid') || result.message.includes('Invalid API key')) {
+            throw new Error('❌ API Key inválida para IPGeolocation.io');
+          }
+          if (result.message.includes('You have exceeded') || result.message.includes('exceeded')) {
+            throw new Error('❌ Limite de requisições excedido no IPGeolocation.io');
+          }
+          throw new Error(`❌ Erro IPGeolocation: ${result.message}`);
+        }
+        
         success = resGeo.ok && result.city;
-        message = success ? 'API validada com sucesso' : result.message || 'Resposta inválida';
+        message = success 
+          ? `✅ API validada com sucesso! Localização: ${result.city}, ${result.country_name}` 
+          : 'Resposta inválida da API';
         break;
         
       case 'ipapi':

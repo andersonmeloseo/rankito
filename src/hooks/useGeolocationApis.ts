@@ -149,7 +149,7 @@ export const useGeolocationApis = () => {
     createApi: createApi.mutate,
     updateApi: updateApi.mutate,
     deleteApi: deleteApi.mutate,
-    testApi: testApi.mutate,
+    testApi: testApi,
     bulkUpdate: bulkUpdate.mutate,
     bulkDelete: bulkDelete.mutate,
   };

@@ -68,15 +68,21 @@ export const AddEditGeolocationApiDialog = ({ open, onOpenChange, api }: AddEdit
     setTesting(true);
     setTestResult(null);
     
-    testApi(
+    testApi.mutate(
       { provider: formData.provider_name, apiKey: formData.api_key || 'free' },
       {
         onSuccess: (data) => {
+          console.log('✅ Teste bem-sucedido:', data);
           setTestResult(data);
           setTesting(false);
         },
-        onError: () => {
-          setTestResult({ success: false, message: 'Erro ao testar API' });
+        onError: (error: any) => {
+          console.error('❌ Erro no teste:', error);
+          const errorMessage = error?.message || 'Erro ao testar API do IPGeolocation';
+          setTestResult({ 
+            success: false, 
+            message: errorMessage 
+          });
           setTesting(false);
         }
       }
