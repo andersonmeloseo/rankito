@@ -16,6 +16,7 @@ import { ChangePlanDialog } from "./ChangePlanDialog";
 import { CreateUserDialog } from "./CreateUserDialog";
 import { UserResourcesExpandableRow } from "./UserResourcesExpandableRow";
 import { useUserResources } from "@/hooks/useUserResources";
+import { logAuditAction } from "@/lib/auditLog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 

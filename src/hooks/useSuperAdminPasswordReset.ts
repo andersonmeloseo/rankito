@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { logAuditAction } from "@/lib/auditLog";
 
 export const useSuperAdminPasswordReset = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +28,12 @@ export const useSuperAdminPasswordReset = () => {
       toast({
         title: "Senha resetada com sucesso",
         description: `A senha do usuário ${email} foi atualizada.`,
+      });
+
+      await logAuditAction({
+        action: 'password_reset',
+        targetUserId: data?.userId,
+        details: { email, adminReset: true },
       });
 
       return { success: true };
