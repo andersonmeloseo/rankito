@@ -10,50 +10,12 @@ const corsHeaders = {
  * Categoriza erros por tipo
  */
 function categorizeError(error: any, context: string): string {
-  if (context === 'indexnow') {
-    if (error.status === 404) return 'indexnow_file_not_found';
-    if (error.status === 429) return 'rate_limit_exceeded';
-  }
-
   if (context === 'gsc') {
     if (error.status === 401 || error.status === 403) return 'gsc_auth_failed';
     if (error.message?.includes('quota')) return 'quota_exceeded';
   }
 
   return 'api_error';
-}
-
-/**
- * Envia URLs para IndexNow API
- */
-async function sendToIndexNow(
-  domain: string,
-  urls: string[],
-  indexnowKey: string
-): Promise<{ success: boolean; error?: any }> {
-  try {
-    const payload = {
-      host: domain,
-      key: indexnowKey,
-      keyLocation: `https://${domain}/${indexnowKey}.txt`,
-      urlList: urls,
-    };
-
-    const response = await fetch('https://api.indexnow.org/indexnow', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorType = categorizeError({ status: response.status }, 'indexnow');
-      return { success: false, error: { type: errorType, status: response.status } };
-    }
-
-    return { success: true };
-  } catch (error) {
-    return { success: false, error };
-  }
 }
 
 /**
@@ -126,10 +88,10 @@ Deno.serve(async (req) => {
 
     console.log(`📋 Indexing ${urls.length} URLs for site ${site_id}`);
 
-    // Buscar site
+    // Verificar se site existe
     const { data: site, error: siteError } = await supabase
       .from('rank_rent_sites')
-      .select('indexnow_key')
+      .select('id')
       .eq('id', site_id)
       .single();
 
@@ -167,31 +129,25 @@ Deno.serve(async (req) => {
 
     // Processar cada URL
     for (const url of urls) {
-      const urlResult: any = { url, indexnow: null, gsc: null };
+      const urlResult: any = { url, gsc: null };
 
-      // Enviar para IndexNow se key configurada
-      if (site.indexnow_key) {
-        const domain = new URL(url).hostname;
-        const indexNowResult = await sendToIndexNow(domain, [url], site.indexnow_key);
-        urlResult.indexnow = indexNowResult.success ? 'success' : 'failed';
-
-        if (!indexNowResult.success) {
-          console.error(`❌ IndexNow failed for ${url}:`, indexNowResult.error);
-        }
-      }
-
-      // Enviar para GSC se integração configurada
+      // Enviar para GSC
       if (integration) {
         const gscResult = await sendToGSC(url, integration.access_token);
         urlResult.gsc = gscResult.success ? 'success' : 'failed';
 
         if (!gscResult.success) {
           console.error(`❌ GSC failed for ${url}:`, gscResult.error);
+        } else {
+          console.log(`✅ GSC success for ${url}`);
         }
+      } else {
+        console.warn(`⚠️ No integration configured for ${url}`);
+        urlResult.gsc = 'skipped';
       }
 
-      // Atualizar status da URL
-      const overallSuccess = urlResult.indexnow === 'success' || urlResult.gsc === 'success';
+      // Status baseado apenas no GSC
+      const overallSuccess = urlResult.gsc === 'success';
       
       await supabase
         .from('gsc_discovered_urls')

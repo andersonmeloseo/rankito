@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList } from '@/components/ui/tabs';
 import { ClickUpTabTrigger } from '@/components/ui/custom-tabs';
-import { Globe, BarChart3, Clock } from 'lucide-react';
+import { Globe, BarChart3, Clock, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useGSCIntegrations } from '@/hooks/useGSCIntegrations';
@@ -15,6 +15,7 @@ import { GSCDiscoveredUrlsTable } from './GSCDiscoveredUrlsTable';
 import { GSCSearchAnalyticsDashboard } from './GSCSearchAnalyticsDashboard';
 import { GSCIndexingJobsHistory } from './GSCIndexingJobsHistory';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
+import { IndexNowManager } from './IndexNowManager';
 
 interface GSCTabContentProps {
   siteId: string;
@@ -73,104 +74,146 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
   };
 
   return (
-    <>
-      {/* Integrations Management */}
-      <GSCIntegrationsManager 
-        siteId={siteId} 
-        userId={userId}
-        site={site}
-      />
+    <Tabs defaultValue="config" className="w-full space-y-6">
+      <TabsList className="grid w-full grid-cols-4 h-12">
+        <ClickUpTabTrigger value="config">
+          <Globe className="w-4 h-4 mr-2" />
+          Configuração
+        </ClickUpTabTrigger>
+        <ClickUpTabTrigger value="indexing">
+          <Globe className="w-4 h-4 mr-2" />
+          Indexação GSC
+        </ClickUpTabTrigger>
+        <ClickUpTabTrigger value="indexnow">
+          <Zap className="w-4 h-4 mr-2" />
+          IndexNow
+        </ClickUpTabTrigger>
+        <ClickUpTabTrigger value="monitoring">
+          <BarChart3 className="w-4 h-4 mr-2" />
+          Monitoramento
+        </ClickUpTabTrigger>
+      </TabsList>
 
-      {/* Integration Selector */}
-      {integrations && integrations.length > 0 && (
+      {/* Configuração Tab */}
+      <TabsContent value="config" className="space-y-6">
+        {/* Integrations Management */}
+        <GSCIntegrationsManager 
+          siteId={siteId} 
+          userId={userId}
+          site={site}
+        />
+
+        {/* Integration Selector */}
+        {integrations && integrations.length > 0 && (
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Integração Ativa</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select 
+                value={selectedGSCIntegrationId} 
+                onValueChange={setSelectedGSCIntegrationId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma integração" />
+                </SelectTrigger>
+                <SelectContent>
+                  {integrations.map((integration) => (
+                    <SelectItem key={integration.id} value={integration.id}>
+                      {integration.connection_name} ({integration.google_email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Integration Health Card */}
+        {selectedIntegration && (
+          <GSCIntegrationHealthCard 
+            integration={selectedIntegration}
+            onTestConnection={handleTestConnection}
+            isTestingConnection={isTestingConnection}
+          />
+        )}
+      </TabsContent>
+
+      {/* Indexação GSC Tab */}
+      <TabsContent value="indexing" className="space-y-6">
+        {/* Indexing Controls */}
+        <GSCIndexingControls 
+          siteId={siteId}
+          integrationId={selectedGSCIntegrationId}
+        />
+
+        {/* Alerts Panel */}
+        <GSCIndexingAlertsPanel siteId={siteId} />
+
+        {/* Sub-tabs for Sitemaps and URLs */}
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Integração Ativa</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Select 
-              value={selectedGSCIntegrationId} 
-              onValueChange={setSelectedGSCIntegrationId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma integração" />
-              </SelectTrigger>
-              <SelectContent>
-                {integrations.map((integration) => (
-                  <SelectItem key={integration.id} value={integration.id}>
-                    {integration.connection_name} ({integration.google_email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <CardContent className="p-6">
+            <Tabs defaultValue="urls" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <ClickUpTabTrigger value="sitemaps">
+                  <Globe className="h-4 w-4 mr-2" />
+                  Por Sitemap
+                </ClickUpTabTrigger>
+                <ClickUpTabTrigger value="urls">
+                  <Globe className="h-4 w-4 mr-2" />
+                  Por Página
+                </ClickUpTabTrigger>
+              </TabsList>
+
+              <TabsContent value="sitemaps">
+                <GSCSitemapsManager 
+                  siteId={siteId}
+                  integrationId={selectedGSCIntegrationId}
+                />
+              </TabsContent>
+
+              <TabsContent value="urls">
+                <GSCDiscoveredUrlsTable 
+                  siteId={siteId}
+                />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
-      )}
+      </TabsContent>
 
-      {/* Integration Health Card */}
-      {selectedIntegration && (
-        <GSCIntegrationHealthCard 
-          integration={selectedIntegration}
-          onTestConnection={handleTestConnection}
-          isTestingConnection={isTestingConnection}
-        />
-      )}
+      {/* IndexNow Tab */}
+      <TabsContent value="indexnow" className="space-y-6">
+        <IndexNowManager siteId={siteId} siteUrl={site.url} />
+      </TabsContent>
 
-      {/* Indexing Controls */}
-      <GSCIndexingControls 
-        siteId={siteId}
-        integrationId={selectedGSCIntegrationId}
-      />
+      {/* Monitoramento Tab */}
+      <TabsContent value="monitoring" className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <Tabs defaultValue="analytics" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <ClickUpTabTrigger value="analytics">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Analytics
+                </ClickUpTabTrigger>
+                <ClickUpTabTrigger value="jobs">
+                  <Clock className="h-4 w-4 mr-2" />
+                  Histórico de Jobs
+                </ClickUpTabTrigger>
+              </TabsList>
 
-      {/* Alerts Panel */}
-      <GSCIndexingAlertsPanel siteId={siteId} />
+              <TabsContent value="analytics">
+                <GSCSearchAnalyticsDashboard siteId={siteId} />
+              </TabsContent>
 
-      {/* Secondary Tabs for detailed views */}
-      <Card>
-        <CardContent className="p-6">
-          <Tabs defaultValue="urls" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <ClickUpTabTrigger value="sitemaps">
-                <Globe className="h-4 w-4 mr-2" />
-                Sitemaps
-              </ClickUpTabTrigger>
-              <ClickUpTabTrigger value="urls">
-                <Globe className="h-4 w-4 mr-2" />
-                URLs Descobertas
-              </ClickUpTabTrigger>
-              <ClickUpTabTrigger value="analytics">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Analytics
-              </ClickUpTabTrigger>
-              <ClickUpTabTrigger value="jobs">
-                <Clock className="h-4 w-4 mr-2" />
-                Histórico de Jobs
-              </ClickUpTabTrigger>
-            </TabsList>
-
-            <TabsContent value="sitemaps">
-              <GSCSitemapsManager 
-                siteId={siteId}
-                integrationId={selectedGSCIntegrationId}
-              />
-            </TabsContent>
-
-            <TabsContent value="urls">
-              <GSCDiscoveredUrlsTable 
-                siteId={siteId}
-              />
-            </TabsContent>
-
-            <TabsContent value="analytics">
-              <GSCSearchAnalyticsDashboard siteId={siteId} />
-            </TabsContent>
-
-            <TabsContent value="jobs">
-              <GSCIndexingJobsHistory siteId={siteId} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </>
+              <TabsContent value="jobs">
+                <GSCIndexingJobsHistory siteId={siteId} />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
   );
 };
