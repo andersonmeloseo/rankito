@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart } from "lucide-react";
+import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Breadcrumb,
@@ -55,6 +55,7 @@ import { BulkDeleteDialog } from "@/components/rank-rent/BulkDeleteDialog";
 
 import { LeadNotificationBanner } from "@/components/crm/LeadNotificationBanner";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
+import { GeolocationAnalyticsTab } from "@/components/dashboard/geolocation/GeolocationAnalyticsTab";
 
 const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
@@ -342,6 +343,10 @@ const Dashboard = () => {
                     E-commerce
                   </ClickUpTabTrigger>
                   
+                  <ClickUpTabTrigger value="geolocation" icon={MapPin}>
+                    Geolocalização
+                  </ClickUpTabTrigger>
+                  
                   <ClickUpTabTrigger value="clients" icon={Users}>
                     Clientes
                   </ClickUpTabTrigger>
@@ -443,6 +448,10 @@ const Dashboard = () => {
 
             <TabsContent value="ecommerce" className="space-y-8">
               <EcommerceTab />
+            </TabsContent>
+
+            <TabsContent value="geolocation" className="space-y-8">
+              <GeolocationAnalyticsTab userId={user.id} />
             </TabsContent>
 
             <TabsContent value="clients" className="space-y-8">
