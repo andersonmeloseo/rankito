@@ -43,6 +43,8 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
     },
     staleTime: 0,
     refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    gcTime: 0,
   });
 
   const paginatedUrls = useMemo(() => {
