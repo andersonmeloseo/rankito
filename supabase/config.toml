@@ -131,3 +131,6 @@ verify_jwt = false
 
 [functions.gsc-submit-sitemap]
 verify_jwt = true
+
+[functions.geolocation-test-api]
+verify_jwt = false
