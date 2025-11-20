@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, CheckCircle2, Copy, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle2, Copy, RefreshCw, ExternalLink } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -45,31 +45,40 @@ export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
     setValidationResult(null);
 
     try {
-      const domain = new URL(siteUrl).hostname;
-      const keyFileUrl = `https://${domain}/${site.indexnow_key}.txt`;
+      const { data, error } = await supabase.functions.invoke('indexnow-validate-key', {
+        body: { siteId }
+      });
       
-      const response = await fetch(keyFileUrl);
-      const content = await response.text();
+      if (error) throw error;
       
-      if (response.ok && content.trim() === site.indexnow_key) {
+      if (data.success) {
         setValidationResult({
           valid: true,
-          message: "Chave IndexNow válida! Arquivo verificado com sucesso."
+          message: data.message || "Chave IndexNow válida! Arquivo verificado com sucesso."
         });
       } else {
         setValidationResult({
           valid: false,
-          message: `Arquivo não encontrado ou conteúdo incorreto em ${keyFileUrl}`
+          message: data.error || "Erro ao validar chave"
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       setValidationResult({
         valid: false,
-        message: "Erro ao validar chave. Verifique se o arquivo .txt existe no domínio."
+        message: error.message || "Erro ao validar chave. Verifique se o arquivo .txt existe no domínio."
       });
     } finally {
       setIsValidating(false);
     }
+  };
+
+  // Abrir arquivo IndexNow no navegador
+  const openKeyFile = () => {
+    if (!site?.indexnow_key) return;
+    
+    const domain = new URL(siteUrl).hostname;
+    const keyFileUrl = `https://${domain}/${site.indexnow_key}.txt`;
+    window.open(keyFileUrl, '_blank');
   };
 
   // Regenerar chave
@@ -160,15 +169,27 @@ export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
                 </AlertDescription>
               </Alert>
 
-              <Button
-                onClick={validateKey}
-                disabled={isValidating}
-                variant="secondary"
-                className="w-full"
-              >
-                <CheckCircle2 className={`h-4 w-4 mr-2 ${isValidating ? 'animate-spin' : ''}`} />
-                Validar Chave
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={validateKey}
+                  disabled={isValidating}
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  <CheckCircle2 className={`h-4 w-4 mr-2 ${isValidating ? 'animate-spin' : ''}`} />
+                  Validar Chave
+                </Button>
+                
+                <Button
+                  onClick={openKeyFile}
+                  variant="outline"
+                  className="flex-1"
+                  disabled={!site?.indexnow_key}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Abrir Arquivo
+                </Button>
+              </div>
 
               {validationResult && (
                 <Alert variant={validationResult.valid ? "default" : "destructive"}>
