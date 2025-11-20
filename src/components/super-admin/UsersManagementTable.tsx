@@ -6,13 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Eye, Lock, Unlock, Trash2, Edit, DollarSign, X } from "lucide-react";
+import { Search, Eye, Lock, Unlock, Trash2, Edit, DollarSign, X, UserPlus } from "lucide-react";
 import { UserDetailsDialog } from "./UserDetailsDialog";
 import { BlockUserDialog } from "./BlockUserDialog";
 import { EditUserDialog } from "./EditUserDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { BulkAssignPlanDialog } from "./BulkAssignPlanDialog";
 import { ChangePlanDialog } from "./ChangePlanDialog";
+import { CreateUserDialog } from "./CreateUserDialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -27,6 +28,7 @@ export const UsersManagementTable = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkPlanDialogOpen, setBulkPlanDialogOpen] = useState(false);
   const [changePlanDialogOpen, setChangePlanDialogOpen] = useState(false);
+  const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const { 
@@ -165,6 +167,15 @@ export const UsersManagementTable = () => {
 
   return (
     <div className="space-y-4">
+      {/* Header with Create Button */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Usuários do Sistema</h3>
+        <Button onClick={() => setCreateUserDialogOpen(true)} className="gap-2">
+          <UserPlus className="h-4 w-4" />
+          Criar Novo Usuário
+        </Button>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
         <div className="relative flex-1">
@@ -421,6 +432,11 @@ export const UsersManagementTable = () => {
         user={selectedUser}
         open={changePlanDialogOpen}
         onOpenChange={setChangePlanDialogOpen}
+      />
+
+      <CreateUserDialog
+        open={createUserDialogOpen}
+        onOpenChange={setCreateUserDialogOpen}
       />
     </div>
   );
