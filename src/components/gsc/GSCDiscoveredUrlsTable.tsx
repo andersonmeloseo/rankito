@@ -67,6 +67,34 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
     pageSize,
   });
 
+  // Query para contar URLs indexadas (global)
+  const { data: indexedCount } = useQuery({
+    queryKey: ['gsc-urls-indexed-count', siteId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('gsc_discovered_urls')
+        .select('*', { count: 'exact', head: true })
+        .eq('site_id', siteId)
+        .eq('current_status', 'indexed');
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  // Query para contar URLs descobertas (global)
+  const { data: discoveredCount } = useQuery({
+    queryKey: ['gsc-urls-discovered-count', siteId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('gsc_discovered_urls')
+        .select('*', { count: 'exact', head: true })
+        .eq('site_id', siteId)
+        .eq('current_status', 'discovered');
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
   const { data: indexingHistory, isLoading: historyLoading } = useQuery({
     queryKey: ['gsc-indexing-jobs', siteId],
     queryFn: async () => {
@@ -176,9 +204,9 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   const processedUrls = sortData(filterUrlsData(urls || []), urlsSort);
   const processedHistory = sortData(filterHistoryData(indexingHistory || []), historySort);
 
-  const totalUrls = urls?.length || 0;
-  const indexedUrls = urls?.filter(u => u.current_status === 'indexed').length || 0;
-  const discoveredUrls = urls?.filter(u => u.current_status === 'discovered').length || 0;
+  const totalUrls = totalCount;
+  const indexedUrls = indexedCount || 0;
+  const discoveredUrls = discoveredCount || 0;
   const selectedCount = selectedUrls.length;
 
   const totalJobs = indexingHistory?.length || 0;
