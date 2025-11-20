@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Eye, Lock, Unlock, Trash2, Edit, DollarSign, X, UserPlus } from "lucide-react";
+import { Search, Eye, Lock, Unlock, Trash2, Edit, DollarSign, X, UserPlus, ChevronDown, ChevronUp, Package } from "lucide-react";
 import { UserDetailsDialog } from "./UserDetailsDialog";
 import { BlockUserDialog } from "./BlockUserDialog";
 import { EditUserDialog } from "./EditUserDialog";
@@ -14,6 +14,8 @@ import { DeleteUserDialog } from "./DeleteUserDialog";
 import { BulkAssignPlanDialog } from "./BulkAssignPlanDialog";
 import { ChangePlanDialog } from "./ChangePlanDialog";
 import { CreateUserDialog } from "./CreateUserDialog";
+import { UserResourcesExpandableRow } from "./UserResourcesExpandableRow";
+import { useUserResources } from "@/hooks/useUserResources";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -30,6 +32,7 @@ export const UsersManagementTable = () => {
   const [changePlanDialogOpen, setChangePlanDialogOpen] = useState(false);
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
 
   const { 
     users, 
@@ -159,6 +162,10 @@ export const UsersManagementTable = () => {
     }
   };
 
+  const toggleExpandedUser = (userId: string) => {
+    setExpandedUserId(expandedUserId === userId ? null : userId);
+  };
+
   const selectedUsers = users?.filter((u: any) => selectedUserIds.includes(u.id)) || [];
 
   if (isLoading) {
@@ -265,6 +272,7 @@ export const UsersManagementTable = () => {
               <TableHead>País</TableHead>
               <TableHead>Plano</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Recursos</TableHead>
               <TableHead>Cadastro</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -272,105 +280,125 @@ export const UsersManagementTable = () => {
           <TableBody>
             {users && users.length > 0 ? (
               users.map((user: any) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedUserIds.includes(user.id)}
-                      onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{user.full_name || '-'}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.whatsapp || '-'}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">
-                    {user.website ? (
-                      <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                        {user.website}
-                      </a>
-                    ) : '-'}
-                  </TableCell>
-                  <TableCell>{user.country_code || '-'}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getPlanBadgeVariant(user.user_subscriptions?.[0]?.subscription_plans?.slug)}>
-                        {getPlanName(user)}
-                      </Badge>
+                <>
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedUserIds.includes(user.id)}
+                        onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{user.full_name || '-'}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.whatsapp || '-'}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {user.website ? (
+                        <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          {user.website}
+                        </a>
+                      ) : '-'}
+                    </TableCell>
+                    <TableCell>{user.country_code || '-'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getPlanBadgeVariant(user.user_subscriptions?.[0]?.subscription_plans?.slug)}>
+                          {getPlanName(user)}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setChangePlanDialogOpen(true);
+                          }}
+                          className="h-7 w-7 p-0"
+                        >
+                          <DollarSign className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(user)}</TableCell>
+                    <TableCell>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setChangePlanDialogOpen(true);
-                        }}
-                        className="h-7 w-7 p-0"
+                        onClick={() => toggleExpandedUser(user.id)}
+                        className="flex items-center gap-2"
                       >
-                        <DollarSign className="h-3 w-3" />
+                        {expandedUserId === user.id ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                        <Package className="h-4 w-4" />
                       </Button>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(user)}</TableCell>
-                  <TableCell>
-                    {user.created_at ? format(new Date(user.created_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setDetailsOpen(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setEditDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      {user.is_active ? (
+                    </TableCell>
+                    <TableCell>
+                      {user.created_at ? format(new Date(user.created_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 justify-end">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => {
                             setSelectedUser(user);
-                            setBlockDialogOpen(true);
+                            setDetailsOpen(true);
                           }}
                         >
-                          <Lock className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      ) : (
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => unblockUser(user.id)}
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setEditDialogOpen(true);
+                          }}
                         >
-                          <Unlock className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                        {user.is_active ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setBlockDialogOpen(true);
+                            }}
+                          >
+                            <Lock className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => unblockUser(user.id)}
+                          >
+                            <Unlock className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {expandedUserId === user.id && (
+                    <UserResourcesExpandableRow userId={user.id} />
+                  )}
+                </>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground">
+                <TableCell colSpan={11} className="text-center text-muted-foreground">
                   Nenhum usuário encontrado
                 </TableCell>
               </TableRow>

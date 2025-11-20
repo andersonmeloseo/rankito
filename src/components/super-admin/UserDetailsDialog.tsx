@@ -1,8 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
+import { ExternalLink, Package, FileText, TrendingUp, Server } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useUserResources } from "@/hooks/useUserResources";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserDetailsDialogProps {
   user: any;
@@ -14,6 +18,7 @@ export const UserDetailsDialog = ({ user, open, onOpenChange }: UserDetailsDialo
   if (!user) return null;
 
   const subscription = user.user_subscriptions?.[0];
+  const { data: resources, isLoading: resourcesLoading } = useUserResources(user?.id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -123,6 +128,116 @@ export const UserDetailsDialog = ({ user, open, onOpenChange }: UserDetailsDialo
               <Separator />
             </>
           )}
+
+          {/* Resource Consumption */}
+          <div>
+            <h3 className="text-sm font-medium mb-3">Consumo de Recursos</h3>
+            
+            {resourcesLoading ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <Skeleton key={i} className="h-20" />
+                  ))}
+                </div>
+              </div>
+            ) : resources && resources.sites.length > 0 ? (
+              <>
+                {/* Metrics Cards */}
+                <div className="grid grid-cols-4 gap-4 mb-4">
+                  <Card>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Sites</p>
+                      </div>
+                      <div className="text-2xl font-bold">{resources.summary.totalSites}</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Páginas</p>
+                      </div>
+                      <div className="text-2xl font-bold">
+                        {resources.summary.totalPages.toLocaleString('pt-BR')}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Conversões</p>
+                      </div>
+                      <div className="text-2xl font-bold">
+                        {resources.summary.totalConversions.toLocaleString('pt-BR')}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Server className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">GSC</p>
+                      </div>
+                      <div className="text-2xl font-bold">{resources.summary.totalGscIntegrations}</div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {/* Sites List */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Sites Detalhados</h4>
+                  {resources.sites.map(site => (
+                    <div key={site.id} className="border rounded-lg p-3 space-y-2 hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{site.site_name}</p>
+                          <a 
+                            href={site.site_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            {site.site_url}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                        <Badge variant="outline">{site.niche}</Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground text-xs">Páginas</p>
+                          <p className="font-medium">{site.total_pages.toLocaleString('pt-BR')}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Conversões</p>
+                          <p className="font-medium">{site.total_conversions.toLocaleString('pt-BR')}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">GSC</p>
+                          <p className="font-medium">{site.gsc_integrations_count}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Indexações</p>
+                          <p className="font-medium">{site.indexing_requests_count.toLocaleString('pt-BR')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-8">
+                Este usuário não possui sites cadastrados
+              </div>
+            )}
+          </div>
+
+          <Separator />
 
           {/* Account Info */}
           <div>
