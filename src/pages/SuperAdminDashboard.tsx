@@ -25,6 +25,7 @@ import { SystemHealthOverview } from "@/components/super-admin/SystemHealthOverv
 import { ProblematicIntegrationsTable } from "@/components/super-admin/ProblematicIntegrationsTable";
 import { RecentIssuesTimeline } from "@/components/super-admin/RecentIssuesTimeline";
 import { EdgeFunctionsHealthTable } from "@/components/super-admin/EdgeFunctionsHealthTable";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
@@ -65,6 +66,7 @@ const SuperAdminDashboard = () => {
         subtitle={user?.email}
         actions={
           <>
+            <NotificationCenter />
             <Button 
               variant="outline" 
               onClick={() => setResetPasswordOpen(true)}
