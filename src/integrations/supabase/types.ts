@@ -47,6 +47,51 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_automation_rules: {
+        Row: {
+          actions: Json
+          conditions: Json
+          config: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          priority: number
+          rule_name: string
+          rule_type: Database["public"]["Enums"]["automation_rule_type"]
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          conditions?: Json
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          priority?: number
+          rule_name: string
+          rule_type: Database["public"]["Enums"]["automation_rule_type"]
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          conditions?: Json
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          priority?: number
+          rule_name?: string
+          rule_type?: Database["public"]["Enums"]["automation_rule_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       auto_conversion_settings: {
         Row: {
           created_at: string | null
@@ -97,6 +142,44 @@ export type Database = {
           whatsapp_score?: number | null
         }
         Relationships: []
+      }
+      automation_execution_logs: {
+        Row: {
+          error_message: string | null
+          executed_at: string
+          execution_details: Json
+          execution_status: Database["public"]["Enums"]["automation_execution_status"]
+          id: string
+          rule_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          executed_at?: string
+          execution_details?: Json
+          execution_status: Database["public"]["Enums"]["automation_execution_status"]
+          id?: string
+          rule_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          executed_at?: string
+          execution_details?: Json
+          execution_status?: Database["public"]["Enums"]["automation_execution_status"]
+          id?: string
+          rule_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_execution_logs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "admin_automation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_portal_analytics: {
         Row: {
@@ -3439,6 +3522,13 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "client" | "end_client"
+      automation_execution_status: "success" | "failed" | "skipped"
+      automation_rule_type:
+        | "auto_approval"
+        | "trial_expiration"
+        | "plan_renewal"
+        | "plan_upgrade"
+        | "custom_notification"
       event_type:
         | "page_view"
         | "phone_click"
@@ -3593,6 +3683,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "client", "end_client"],
+      automation_execution_status: ["success", "failed", "skipped"],
+      automation_rule_type: [
+        "auto_approval",
+        "trial_expiration",
+        "plan_renewal",
+        "plan_upgrade",
+        "custom_notification",
+      ],
       event_type: [
         "page_view",
         "phone_click",
