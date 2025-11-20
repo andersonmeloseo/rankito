@@ -7,19 +7,78 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { RefreshCw, Send, RotateCw, AlertCircle, History } from "lucide-react";
+import { RefreshCw, Send, RotateCw, AlertCircle, History, ArrowUp, ArrowDown, ArrowUpDown, FileText, CheckCircle, List } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface GSCSitemapsManagerProps {
   siteId: string;
   integrationId: string;
 }
 
+type SortField = 'sitemap_url' | 'sitemap_type' | 'page_count' | 'gsc_status' | 'gsc_last_submitted' | 'gsc_last_downloaded' | 'errors_count' | 'warnings_count';
+type SortDirection = 'asc' | 'desc';
+
+interface SortState {
+  field: SortField;
+  direction: SortDirection;
+}
+
+interface SortableHeaderProps {
+  field: SortField;
+  label: string;
+  currentSort: SortState;
+  onSort: (field: SortField) => void;
+  className?: string;
+}
+
+const SortableHeader = ({ field, label, currentSort, onSort, className }: SortableHeaderProps) => {
+  const isActive = currentSort.field === field;
+  
+  return (
+    <TableHead 
+      className={`cursor-pointer select-none hover:bg-muted/50 transition-colors ${className || ''}`}
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center gap-2">
+        {label}
+        {isActive && (
+          currentSort.direction === 'asc' 
+            ? <ArrowUp className="h-4 w-4" />
+            : <ArrowDown className="h-4 w-4" />
+        )}
+        {!isActive && <ArrowUpDown className="h-4 w-4 text-muted-foreground/50" />}
+      </div>
+    </TableHead>
+  );
+};
+
 export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManagerProps) {
   const queryClient = useQueryClient();
   const [selectedSitemaps, setSelectedSitemaps] = useState<string[]>([]);
+  
+  const [discoverySort, setDiscoverySort] = useState<SortState>({
+    field: 'sitemap_url',
+    direction: 'asc'
+  });
+
+  const [historySort, setHistorySort] = useState<SortState>({
+    field: 'gsc_last_submitted',
+    direction: 'desc'
+  });
+
+  const [discoveryFilters, setDiscoveryFilters] = useState({
+    status: 'all',
+    type: 'all'
+  });
+
+  const [historyFilters, setHistoryFilters] = useState({
+    status: 'all',
+    hasErrors: 'all',
+    hasWarnings: 'all'
+  });
 
   // Fetch sitemaps from database (discovery section)
   const { data: sitemaps, isLoading } = useQuery({
@@ -160,6 +219,86 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
     }
   };
 
+  const handleDiscoverySort = (field: SortField) => {
+    setDiscoverySort(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const handleHistorySort = (field: SortField) => {
+    setHistorySort(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const sortData = <T extends Record<string, any>>(data: T[], sortState: SortState): T[] => {
+    return [...data].sort((a, b) => {
+      const aVal = a[sortState.field];
+      const bVal = b[sortState.field];
+      
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      
+      if (typeof aVal === 'string') {
+        return sortState.direction === 'asc' 
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+      
+      return sortState.direction === 'asc' 
+        ? (aVal as number) - (bVal as number)
+        : (bVal as number) - (aVal as number);
+    });
+  };
+
+  const filterDiscoveryData = (data: any[]) => {
+    return data.filter(item => {
+      if (discoveryFilters.status !== 'all' && item.gsc_status !== discoveryFilters.status) {
+        return false;
+      }
+      if (discoveryFilters.type !== 'all' && item.sitemap_type !== discoveryFilters.type) {
+        return false;
+      }
+      return true;
+    });
+  };
+
+  const filterHistoryData = (data: any[]) => {
+    return data.filter(item => {
+      if (historyFilters.status !== 'all' && item.gsc_status !== historyFilters.status) {
+        return false;
+      }
+      if (historyFilters.hasErrors === 'yes' && (!item.errors_count || item.errors_count === 0)) {
+        return false;
+      }
+      if (historyFilters.hasErrors === 'no' && item.errors_count > 0) {
+        return false;
+      }
+      if (historyFilters.hasWarnings === 'yes' && (!item.warnings_count || item.warnings_count === 0)) {
+        return false;
+      }
+      if (historyFilters.hasWarnings === 'no' && item.warnings_count > 0) {
+        return false;
+      }
+      return true;
+    });
+  };
+
+  const processedSitemaps = sortData(
+    filterDiscoveryData(sitemaps || []),
+    discoverySort
+  );
+
+  const processedHistory = sortData(
+    filterHistoryData(submissionHistory || []),
+    historySort
+  );
+
+  const totalDiscoveredPages = processedSitemaps.reduce((sum, s) => sum + (s.page_count || 0), 0);
+  const totalHistoryPages = processedHistory.reduce((sum, s) => sum + (s.page_count || 0), 0);
+
   const getStatusBadge = (status: string | null) => {
     switch (status?.toLowerCase()) {
       case 'success':
@@ -168,10 +307,114 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
         return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">Pendente</Badge>;
       case 'error':
         return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">Erro</Badge>;
+      case 'warning':
+        return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">Aviso</Badge>;
       default:
         return <Badge variant="secondary">Desconhecido</Badge>;
     }
   };
+
+  const DiscoveryFilters = () => (
+    <div className="flex gap-3 items-center flex-wrap">
+      <Select 
+        value={discoveryFilters.status} 
+        onValueChange={(value) => setDiscoveryFilters(prev => ({ ...prev, status: value }))}
+      >
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos Status</SelectItem>
+          <SelectItem value="success">Sucesso</SelectItem>
+          <SelectItem value="pending">Pendente</SelectItem>
+          <SelectItem value="error">Erro</SelectItem>
+          <SelectItem value="warning">Aviso</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select 
+        value={discoveryFilters.type} 
+        onValueChange={(value) => setDiscoveryFilters(prev => ({ ...prev, type: value }))}
+      >
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="Tipo" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos Tipos</SelectItem>
+          <SelectItem value="index">Index</SelectItem>
+          <SelectItem value="regular">Regular</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {(discoveryFilters.status !== 'all' || discoveryFilters.type !== 'all') && (
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => setDiscoveryFilters({ status: 'all', type: 'all' })}
+        >
+          Limpar Filtros
+        </Button>
+      )}
+    </div>
+  );
+
+  const HistoryFilters = () => (
+    <div className="flex gap-3 items-center flex-wrap">
+      <Select 
+        value={historyFilters.status} 
+        onValueChange={(value) => setHistoryFilters(prev => ({ ...prev, status: value }))}
+      >
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos Status</SelectItem>
+          <SelectItem value="success">Sucesso</SelectItem>
+          <SelectItem value="pending">Pendente</SelectItem>
+          <SelectItem value="error">Erro</SelectItem>
+          <SelectItem value="warning">Aviso</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select 
+        value={historyFilters.hasErrors} 
+        onValueChange={(value) => setHistoryFilters(prev => ({ ...prev, hasErrors: value }))}
+      >
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="Erros" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          <SelectItem value="yes">Com Erros</SelectItem>
+          <SelectItem value="no">Sem Erros</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select 
+        value={historyFilters.hasWarnings} 
+        onValueChange={(value) => setHistoryFilters(prev => ({ ...prev, hasWarnings: value }))}
+      >
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="Avisos" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          <SelectItem value="yes">Com Avisos</SelectItem>
+          <SelectItem value="no">Sem Avisos</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {(historyFilters.status !== 'all' || historyFilters.hasErrors !== 'all' || historyFilters.hasWarnings !== 'all') && (
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => setHistoryFilters({ status: 'all', hasErrors: 'all', hasWarnings: 'all' })}
+        >
+          Limpar Filtros
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-8">
@@ -207,28 +450,89 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
             </Button>
           </div>
 
+          <DiscoveryFilters />
+
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
               Carregando sitemaps...
             </div>
-          ) : sitemaps && sitemaps.length > 0 ? (
-            <Table>
+          ) : processedSitemaps && processedSitemaps.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <FileText className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total de Páginas</p>
+                      <p className="text-2xl font-bold">{totalDiscoveredPages.toLocaleString('pt-BR')}</p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-300" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Sitemaps</p>
+                      <p className="text-2xl font-bold">{processedSitemaps.length}</p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                      <List className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Selecionados</p>
+                      <p className="text-2xl font-bold">{selectedSitemaps.length}</p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedSitemaps.length === sitemaps.length}
+                      checked={selectedSitemaps.length === processedSitemaps.length}
                       onCheckedChange={toggleAll}
                     />
                   </TableHead>
-                  <TableHead>URL do Sitemap</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Páginas</TableHead>
-                  <TableHead>Status GSC</TableHead>
+                  <SortableHeader 
+                    field="sitemap_url" 
+                    label="URL do Sitemap" 
+                    currentSort={discoverySort} 
+                    onSort={handleDiscoverySort}
+                  />
+                  <SortableHeader 
+                    field="sitemap_type" 
+                    label="Tipo" 
+                    currentSort={discoverySort} 
+                    onSort={handleDiscoverySort}
+                  />
+                  <SortableHeader 
+                    field="page_count" 
+                    label="Páginas" 
+                    currentSort={discoverySort} 
+                    onSort={handleDiscoverySort}
+                  />
+                  <SortableHeader 
+                    field="gsc_status" 
+                    label="Status GSC" 
+                    currentSort={discoverySort} 
+                    onSort={handleDiscoverySort}
+                  />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sitemaps.map((sitemap) => (
+                {processedSitemaps.map((sitemap) => (
                   <TableRow key={sitemap.id}>
                     <TableCell>
                       <Checkbox
@@ -248,6 +552,14 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
                 ))}
               </TableBody>
             </Table>
+            </>
+          ) : sitemaps && sitemaps.length > 0 && processedSitemaps.length === 0 ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Nenhum sitemap encontrado com os filtros aplicados. Tente ajustar os filtros.
+              </AlertDescription>
+            </Alert>
           ) : (
             <Alert>
               <AlertCircle className="h-4 w-4" />
@@ -270,23 +582,101 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
             Acompanhe o status de todos os sitemaps enviados para indexação no GSC (atualiza a cada 30s)
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <HistoryFilters />
+
           {submissionHistory && submissionHistory.length > 0 ? (
-            <Table>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <FileText className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total de Páginas</p>
+                      <p className="text-2xl font-bold">{totalHistoryPages.toLocaleString('pt-BR')}</p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-300" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Envios</p>
+                      <p className="text-2xl font-bold">{processedHistory.length}</p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-red-100 dark:bg-red-900 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-300" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total de Erros</p>
+                      <p className="text-2xl font-bold">
+                        {processedHistory.reduce((sum, s) => sum + (s.errors_count || 0), 0)}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>URL do Sitemap</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Última Submissão</TableHead>
-                  <TableHead>Último Download (Google)</TableHead>
-                  <TableHead>Páginas</TableHead>
-                  <TableHead>Erros</TableHead>
-                  <TableHead>Avisos</TableHead>
+                  <SortableHeader 
+                    field="sitemap_url" 
+                    label="URL do Sitemap" 
+                    currentSort={historySort} 
+                    onSort={handleHistorySort}
+                  />
+                  <SortableHeader 
+                    field="gsc_status" 
+                    label="Status" 
+                    currentSort={historySort} 
+                    onSort={handleHistorySort}
+                  />
+                  <SortableHeader 
+                    field="gsc_last_submitted" 
+                    label="Última Submissão" 
+                    currentSort={historySort} 
+                    onSort={handleHistorySort}
+                  />
+                  <SortableHeader 
+                    field="gsc_last_downloaded" 
+                    label="Último Download (Google)" 
+                    currentSort={historySort} 
+                    onSort={handleHistorySort}
+                  />
+                  <SortableHeader 
+                    field="page_count" 
+                    label="Páginas" 
+                    currentSort={historySort} 
+                    onSort={handleHistorySort}
+                  />
+                  <SortableHeader 
+                    field="errors_count" 
+                    label="Erros" 
+                    currentSort={historySort} 
+                    onSort={handleHistorySort}
+                  />
+                  <SortableHeader 
+                    field="warnings_count" 
+                    label="Avisos" 
+                    currentSort={historySort} 
+                    onSort={handleHistorySort}
+                  />
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {submissionHistory.map((submission) => (
+                {processedHistory.map((submission) => (
                   <TableRow key={submission.id}>
                     <TableCell className="font-mono text-sm max-w-xs truncate">
                       {submission.sitemap_url}
@@ -333,6 +723,14 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
                 ))}
               </TableBody>
             </Table>
+            </>
+          ) : submissionHistory && submissionHistory.length > 0 && processedHistory.length === 0 ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Nenhum envio encontrado com os filtros aplicados. Tente ajustar os filtros.
+              </AlertDescription>
+            </Alert>
           ) : (
             <Alert>
               <AlertCircle className="h-4 w-4" />
