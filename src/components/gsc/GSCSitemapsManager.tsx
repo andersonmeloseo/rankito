@@ -7,8 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { RefreshCw, Send, ExternalLink, AlertCircle } from "lucide-react";
+import { RefreshCw, Send, RotateCw, AlertCircle, History } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface GSCSitemapsManagerProps {
   siteId: string;
@@ -19,7 +21,7 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
   const queryClient = useQueryClient();
   const [selectedSitemaps, setSelectedSitemaps] = useState<string[]>([]);
 
-  // Fetch sitemaps from database
+  // Fetch sitemaps from database (discovery section)
   const { data: sitemaps, isLoading } = useQuery({
     queryKey: ['gsc-sitemaps', siteId, integrationId],
     queryFn: async () => {
@@ -33,6 +35,23 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch submission history with auto-refresh
+  const { data: submissionHistory } = useQuery({
+    queryKey: ['gsc-sitemap-history', siteId, integrationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gsc_sitemap_submissions')
+        .select('*')
+        .eq('site_id', siteId)
+        .eq('integration_id', integrationId)
+        .order('gsc_last_submitted', { ascending: false, nullsFirst: false });
+
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
 
   // Fetch sitemaps from GSC
@@ -50,6 +69,7 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemap-history'] });
       toast.success(`${data.sitemaps.length} sitemaps sincronizados do GSC`);
     },
     onError: (error: any) => {
@@ -57,42 +77,72 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
     },
   });
 
-  // Process selected sitemaps
-  const processSitemaps = useMutation({
-    mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No session');
+  // Submit sitemaps for indexing
+  const submitSitemaps = useMutation({
+    mutationFn: async (sitemapIds: string[]) => {
+      const results = [];
+      for (const sitemapId of sitemapIds) {
+        const sitemap = sitemaps?.find(s => s.id === sitemapId);
+        if (!sitemap) continue;
+        
+        const response = await supabase.functions.invoke('gsc-submit-sitemap', {
+          body: {
+            integration_id: integrationId,
+            sitemap_url: sitemap.sitemap_url,
+          },
+        });
+        
+        results.push({ 
+          sitemap: sitemap.sitemap_url, 
+          success: !response.error,
+          error: response.error,
+          data: response.data 
+        });
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemap-history'] });
+      
+      const successCount = results.filter(r => r.success).length;
+      const errorCount = results.filter(r => !r.success).length;
+      
+      if (errorCount > 0) {
+        toast.warning(
+          `✅ ${successCount} sitemap(s) enviado(s) com sucesso. ❌ ${errorCount} falharam.`,
+          { duration: 7000 }
+        );
+      } else {
+        toast.success(`✅ ${successCount} sitemap(s) enviado(s) para indexação no GSC!`);
+      }
+      setSelectedSitemaps([]);
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao enviar sitemaps: ${error.message}`);
+    },
+  });
 
-      const response = await supabase.functions.invoke('gsc-sitemaps-process', {
-        body: { 
-          site_id: siteId,
-          sitemap_ids: selectedSitemaps,
+  // Submit single sitemap (for resubmit button)
+  const resubmitSitemap = useMutation({
+    mutationFn: async (sitemapUrl: string) => {
+      const response = await supabase.functions.invoke('gsc-submit-sitemap', {
+        body: {
+          integration_id: integrationId,
+          sitemap_url: sitemapUrl,
         },
       });
 
       if (response.error) throw response.error;
       return response.data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['gsc-discovered-urls'] });
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps'] });
-      
-      // Verificar se há sitemaps que falharam
-      if (data.failed_sitemaps && data.failed_sitemaps.length > 0) {
-        toast.warning(
-          `${data.urls_inserted} URLs descobertas de ${data.sitemaps_processed} sitemap(s). ⚠️ ${data.failed_sitemaps.length} sitemap(s) falharam (404 - não encontrados).`,
-          { duration: 7000 }
-        );
-      } else {
-        toast.success(
-          `✅ ${data.urls_inserted} URLs descobertas de ${data.sitemaps_processed} sitemap(s) processado(s) com sucesso!`
-        );
-      }
-      
-      setSelectedSitemaps([]);
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemap-history'] });
+      toast.success('✅ Sitemap reenviado para indexação!');
     },
     onError: (error: any) => {
-      toast.error(`Erro ao processar sitemaps: ${error.message}`);
+      toast.error(`Erro ao reenviar sitemap: ${error.message}`);
     },
   });
 
@@ -110,55 +160,58 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: any; label: string }> = {
-      success: { variant: "default", label: "Sucesso" },
-      pending: { variant: "secondary", label: "Pendente" },
-      error: { variant: "destructive", label: "Erro" },
-    };
-    const config = variants[status] || { variant: "secondary", label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+  const getStatusBadge = (status: string | null) => {
+    switch (status?.toLowerCase()) {
+      case 'success':
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Sucesso</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">Pendente</Badge>;
+      case 'error':
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">Erro</Badge>;
+      default:
+        return <Badge variant="secondary">Desconhecido</Badge>;
+    }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Gestão de Sitemaps</CardTitle>
-        <CardDescription>
-          Busque sitemaps do Google Search Console e processe URLs para indexação
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex gap-2">
-          <Button
-            onClick={() => fetchSitemaps.mutate()}
-            disabled={fetchSitemaps.isPending}
-            variant="outline"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${fetchSitemaps.isPending ? 'animate-spin' : ''}`} />
-            Buscar Sitemaps no GSC
-          </Button>
-          
-          {selectedSitemaps.length > 0 && (
+    <div className="space-y-8">
+      {/* SEÇÃO 1: Descoberta e Envio para Indexação */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Send className="h-5 w-5" />
+            Descoberta e Envio para Indexação
+          </CardTitle>
+          <CardDescription>
+            Busque sitemaps do Google Search Console e envie-os para indexação
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
             <Button
-              onClick={() => processSitemaps.mutate()}
-              disabled={processSitemaps.isPending}
+              onClick={() => fetchSitemaps.mutate()}
+              disabled={fetchSitemaps.isPending}
+              className="gap-2"
             >
-              <Send className="h-4 w-4 mr-2" />
-              Processar {selectedSitemaps.length} Selecionado(s)
+              <RefreshCw className={`h-4 w-4 ${fetchSitemaps.isPending ? 'animate-spin' : ''}`} />
+              Buscar Sitemaps no GSC
             </Button>
-          )}
-        </div>
+            <Button
+              onClick={() => submitSitemaps.mutate(selectedSitemaps)}
+              disabled={selectedSitemaps.length === 0 || submitSitemaps.isPending}
+              variant="default"
+              className="gap-2"
+            >
+              <Send className="h-4 w-4" />
+              Enviar {selectedSitemaps.length > 0 ? selectedSitemaps.length : ''} para Indexação no GSC
+            </Button>
+          </div>
 
-        {!sitemaps || sitemaps.length === 0 ? (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Nenhum sitemap encontrado. Clique em "Buscar Sitemaps no GSC" para sincronizar.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div className="border rounded-lg">
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Carregando sitemaps...
+            </div>
+          ) : sitemaps && sitemaps.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -170,11 +223,8 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
                   </TableHead>
                   <TableHead>URL do Sitemap</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">URLs</TableHead>
-                  <TableHead className="text-right">Erros</TableHead>
-                  <TableHead className="text-right">Avisos</TableHead>
-                  <TableHead>Última Submissão</TableHead>
+                  <TableHead>Páginas</TableHead>
+                  <TableHead>Status GSC</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -186,44 +236,113 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
                         onCheckedChange={() => toggleSitemap(sitemap.id)}
                       />
                     </TableCell>
-                    <TableCell>
-                      <a
-                        href={sitemap.sitemap_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-blue-600 hover:underline"
-                      >
-                        {sitemap.sitemap_url}
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                    <TableCell className="font-mono text-sm max-w-md truncate">
+                      {sitemap.sitemap_url}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{sitemap.sitemap_type}</Badge>
+                      <Badge variant="outline">{sitemap.sitemap_type || 'urlset'}</Badge>
                     </TableCell>
+                    <TableCell>{sitemap.page_count || 0}</TableCell>
                     <TableCell>{getStatusBadge(sitemap.gsc_status)}</TableCell>
-                    <TableCell className="text-right">{sitemap.page_count || 0}</TableCell>
-                    <TableCell className="text-right">
-                      {sitemap.errors_count > 0 && (
-                        <Badge variant="destructive">{sitemap.errors_count}</Badge>
-                      )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Nenhum sitemap encontrado. Clique em "Buscar Sitemaps no GSC" para sincronizar.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* SEÇÃO 2: Histórico de Envios */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Histórico de Envios para Indexação
+          </CardTitle>
+          <CardDescription>
+            Acompanhe o status de todos os sitemaps enviados para indexação no GSC (atualiza a cada 30s)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {submissionHistory && submissionHistory.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>URL do Sitemap</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Última Submissão</TableHead>
+                  <TableHead>Último Download (Google)</TableHead>
+                  <TableHead>Páginas</TableHead>
+                  <TableHead>Erros</TableHead>
+                  <TableHead>Avisos</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {submissionHistory.map((submission) => (
+                  <TableRow key={submission.id}>
+                    <TableCell className="font-mono text-sm max-w-xs truncate">
+                      {submission.sitemap_url}
                     </TableCell>
-                    <TableCell className="text-right">
-                      {sitemap.warnings_count > 0 && (
-                        <Badge variant="secondary">{sitemap.warnings_count}</Badge>
+                    <TableCell>{getStatusBadge(submission.gsc_status)}</TableCell>
+                    <TableCell className="text-sm">
+                      {submission.gsc_last_submitted 
+                        ? format(new Date(submission.gsc_last_submitted), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                        : '-'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {submission.gsc_last_downloaded 
+                        ? format(new Date(submission.gsc_last_downloaded), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                        : '-'}
+                    </TableCell>
+                    <TableCell>{submission.page_count || 0}</TableCell>
+                    <TableCell>
+                      {submission.errors_count ? (
+                        <Badge variant="destructive">{submission.errors_count}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">0</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      {sitemap.gsc_last_submitted 
-                        ? new Date(sitemap.gsc_last_submitted).toLocaleDateString('pt-BR')
-                        : '-'}
+                      {submission.warnings_count ? (
+                        <Badge className="bg-yellow-100 text-yellow-800">{submission.warnings_count}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">0</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => resubmitSitemap.mutate(submission.sitemap_url)}
+                        disabled={resubmitSitemap.isPending}
+                        className="gap-2"
+                      >
+                        <RotateCw className={`h-4 w-4 ${resubmitSitemap.isPending ? 'animate-spin' : ''}`} />
+                        Reenviar
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          ) : (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Nenhum histórico de envio disponível. Envie sitemaps para indexação para ver o histórico aqui.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
