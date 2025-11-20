@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin, MessageCircle } from "lucide-react";
+import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin, MessageCircle, GraduationCap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Breadcrumb,
@@ -59,6 +59,7 @@ import { GeolocationAnalyticsTab } from "@/components/dashboard/geolocation/Geol
 import { useUnreadCommunications } from "@/hooks/useUnreadCommunications";
 import { CommunicationNotificationBadge } from "@/components/dashboard/CommunicationNotificationBadge";
 import { UserCommunicationsTab } from "@/components/dashboard/UserCommunicationsTab";
+import { AcademyTab } from "@/components/training/AcademyTab";
 
 const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
@@ -374,6 +375,10 @@ const Dashboard = () => {
                       </Badge>
                     )}
                   </ClickUpTabTrigger>
+
+                  <ClickUpTabTrigger value="academia" icon={GraduationCap}>
+                    Academia
+                  </ClickUpTabTrigger>
                 </TabsList>
               </div>
             </div>
@@ -484,6 +489,10 @@ const Dashboard = () => {
 
             <TabsContent value="communication" className="space-y-8">
               <UserCommunicationsTab />
+            </TabsContent>
+
+            <TabsContent value="academia" className="space-y-8">
+              <AcademyTab />
             </TabsContent>
           </Tabs>
         </div>

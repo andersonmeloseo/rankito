@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, BarChart3, Users, Globe, DollarSign, UserCircle, KeyRound, Shield, Package, Activity, TrendingUp, Bot, MessageSquare } from "lucide-react";
+import { LogOut, BarChart3, Users, Globe, DollarSign, UserCircle, KeyRound, Shield, Package, Activity, TrendingUp, Bot, MessageSquare, GraduationCap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,7 @@ import { NotificationCenter } from "@/components/notifications/NotificationCente
 import { RetentionAnalytics } from "@/components/super-admin/RetentionAnalytics";
 import { AdminAutomationsTab } from "@/components/super-admin/automations/AdminAutomationsTab";
 import { CommunicationTab } from "@/components/super-admin/CommunicationTab";
+import { VideoTrainingManagementTab } from "@/components/super-admin/VideoTrainingManagementTab";
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
@@ -109,7 +110,7 @@ const SuperAdminDashboard = () => {
       <div className="flex-1">
         <div className="container mx-auto px-4 lg:px-8 xl:px-12 py-8 pb-64 space-y-8">
           <Tabs defaultValue="overview" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-10 bg-transparent border-b border-gray-200 rounded-none h-auto p-0 gap-0">
+          <TabsList className="grid w-full grid-cols-11 bg-transparent border-b border-gray-200 rounded-none h-auto p-0 gap-0">
               <TabsTrigger 
                 value="overview" 
                 className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-b-4 data-[state=active]:border-gray-300 rounded-none border-b-2 border-transparent hover:bg-blue-500/10 hover:border-blue-400 transition-all"
@@ -188,6 +189,14 @@ const SuperAdminDashboard = () => {
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Comunicação
               </TabsTrigger>
+              
+              <TabsTrigger 
+                value="videoaulas"
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-b-4 data-[state=active]:border-gray-300 rounded-none border-b-2 border-transparent hover:bg-blue-500/10 hover:border-blue-400 transition-all"
+              >
+                <GraduationCap className="mr-2 h-4 w-4" />
+                Videoaulas
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-8">
@@ -261,6 +270,10 @@ const SuperAdminDashboard = () => {
 
           <TabsContent value="communication" className="space-y-8">
             <CommunicationTab />
+          </TabsContent>
+
+          <TabsContent value="videoaulas" className="space-y-8">
+            <VideoTrainingManagementTab />
           </TabsContent>
           </Tabs>
         </div>
