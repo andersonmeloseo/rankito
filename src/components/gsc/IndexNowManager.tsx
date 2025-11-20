@@ -3,10 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Copy, RefreshCw, Send } from "lucide-react";
+import { AlertCircle, CheckCircle2, Copy, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,7 +19,6 @@ interface IndexNowManagerProps {
 export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [urls, setUrls] = useState("");
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<{ valid: boolean; message: string } | null>(null);
 
@@ -101,54 +98,6 @@ export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
       });
     }
   });
-
-  // Enviar URLs para IndexNow
-  const submitUrls = useMutation({
-    mutationFn: async (urlList: string[]) => {
-      const { data, error } = await supabase.functions.invoke('indexnow-submit', {
-        body: {
-          urls: urlList,
-          siteId,
-          userId: (await supabase.auth.getUser()).data.user?.id
-        }
-      });
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "URLs enviadas",
-        description: `${data.urlsCount} URLs enviadas ao IndexNow com sucesso`,
-      });
-      setUrls("");
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao enviar URLs",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleSubmit = () => {
-    const urlList = urls
-      .split('\n')
-      .map(u => u.trim())
-      .filter(u => u.length > 0);
-
-    if (urlList.length === 0) {
-      toast({
-        title: "Nenhuma URL",
-        description: "Digite ao menos uma URL para enviar",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    submitUrls.mutate(urlList);
-  };
 
   const copyKey = () => {
     if (site?.indexnow_key) {
@@ -232,46 +181,6 @@ export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
                 </Alert>
               )}
             </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Envio de URLs */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Enviar URLs para IndexNow</CardTitle>
-          <CardDescription>
-            Envie URLs individuais para indexação via IndexNow API
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>URLs (uma por linha)</Label>
-            <Textarea
-              placeholder="https://exemplo.com/pagina1&#10;https://exemplo.com/pagina2"
-              value={urls}
-              onChange={(e) => setUrls(e.target.value)}
-              rows={8}
-              disabled={!site?.indexnow_key || !validationResult?.valid}
-            />
-          </div>
-
-          <Button
-            onClick={handleSubmit}
-            disabled={!site?.indexnow_key || !validationResult?.valid || submitUrls.isPending}
-            className="w-full"
-          >
-            <Send className={`h-4 w-4 mr-2 ${submitUrls.isPending ? 'animate-spin' : ''}`} />
-            Enviar para IndexNow
-          </Button>
-
-          {(!site?.indexnow_key || !validationResult?.valid) && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Configure e valide a chave IndexNow antes de enviar URLs
-              </AlertDescription>
-            </Alert>
           )}
         </CardContent>
       </Card>
