@@ -707,6 +707,7 @@ export type Database = {
           last_checked_at: string | null
           last_seen_at: string | null
           position: number | null
+          sent_to_indexnow: boolean | null
           site_id: string
           updated_at: string | null
           url: string
@@ -725,6 +726,7 @@ export type Database = {
           last_checked_at?: string | null
           last_seen_at?: string | null
           position?: number | null
+          sent_to_indexnow?: boolean | null
           site_id: string
           updated_at?: string | null
           url: string
@@ -743,6 +745,7 @@ export type Database = {
           last_checked_at?: string | null
           last_seen_at?: string | null
           position?: number | null
+          sent_to_indexnow?: boolean | null
           site_id?: string
           updated_at?: string | null
           url?: string
