@@ -87,7 +87,7 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
         indexNowKey={site.url ? `${siteId.substring(0, 8)}-indexnow` : undefined}
         indexNowFileName={site.url ? `${siteId.substring(0, 8)}-indexnow.txt` : undefined}
       />
-      <TabsList className="grid w-full grid-cols-3 h-12">
+      <TabsList className="grid w-full grid-cols-4 h-12">
         <ClickUpTabTrigger value="config">
           <Globe className="w-4 h-4 mr-2" />
           Configuração
@@ -99,6 +99,10 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
         <ClickUpTabTrigger value="indexnow">
           <Zap className="w-4 h-4 mr-2" />
           IndexNow
+        </ClickUpTabTrigger>
+        <ClickUpTabTrigger value="agendamento">
+          <Clock className="w-4 h-4 mr-2" />
+          Agendamento
         </ClickUpTabTrigger>
       </TabsList>
 
@@ -159,7 +163,7 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
         <Card>
           <CardContent className="p-6">
             <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <ClickUpTabTrigger value="sitemaps">
                   <Globe className="h-4 w-4 mr-2" />
                   Por Sitemap
@@ -167,10 +171,6 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
                 <ClickUpTabTrigger value="urls">
                   <Globe className="h-4 w-4 mr-2" />
                   Por Página
-                </ClickUpTabTrigger>
-                <ClickUpTabTrigger value="agendamento">
-                  <Clock className="h-4 w-4 mr-2" />
-                  Agendamento
                 </ClickUpTabTrigger>
               </TabsList>
 
@@ -186,10 +186,6 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
                   siteId={siteId}
                 />
               </TabsContent>
-
-              <TabsContent value="agendamento">
-                <GSCSchedulingPanel siteId={siteId} />
-              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
@@ -198,6 +194,11 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
       {/* IndexNow Tab */}
       <TabsContent value="indexnow" className="space-y-6">
         <IndexNowManager siteId={siteId} siteUrl={site.url} />
+      </TabsContent>
+
+      {/* Agendamento Tab */}
+      <TabsContent value="agendamento" className="space-y-6">
+        <GSCSchedulingPanel siteId={siteId} />
       </TabsContent>
     </Tabs>
   );
