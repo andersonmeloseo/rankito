@@ -38,6 +38,56 @@
     }
   }
 
+  // Debug visual panel
+  function createDebugPanel() {
+    const panel = document.createElement('div');
+    panel.id = 'rankito-debug';
+    panel.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.95);
+      color: #00ff00;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 15px;
+      border-radius: 8px;
+      z-index: 999999;
+      box-shadow: 0 4px 20px rgba(0,255,0,0.3);
+    `;
+    panel.innerHTML = '<div style="font-weight: bold; margin-bottom: 10px; color: #00ff00;">🟢 RANKITO DEBUG MODE</div>';
+    document.body.appendChild(panel);
+    return panel;
+  }
+
+  function showDebugPanel(eventType, data) {
+    if (!config.debug) return;
+    
+    const panel = document.getElementById('rankito-debug') || createDebugPanel();
+    const eventLog = document.createElement('div');
+    eventLog.style.cssText = `
+      margin-bottom: 10px;
+      padding: 8px;
+      background: rgba(0, 255, 0, 0.1);
+      border-left: 3px solid #00ff00;
+      border-radius: 4px;
+    `;
+    const timestamp = new Date().toLocaleTimeString();
+    eventLog.innerHTML = `
+      <div style="color: #00ff00; font-weight: bold;">[${timestamp}] ${eventType}</div>
+      <pre style="margin: 5px 0 0 0; font-size: 10px; color: #33ff33; white-space: pre-wrap;">${JSON.stringify(data, null, 2)}</pre>
+    `;
+    panel.appendChild(eventLog);
+    
+    // Keep only last 10 events
+    while (panel.children.length > 11) {
+      panel.removeChild(panel.children[1]);
+    }
+  }
+
   // Detect platform
   function detectPlatform() {
     if (window.Shopify) return 'shopify';
@@ -79,6 +129,7 @@
     };
 
     log('Sending event:', eventType, payload);
+    showDebugPanel(eventType, payload.metadata);
 
     fetch(`${API_URL}?token=${config.token}`, {
       method: 'POST',
@@ -246,6 +297,19 @@
       }
     });
 
+    // Begin Checkout (Checkout page)
+    if (window.location.pathname.includes('/checkout')) {
+      setTimeout(() => {
+        const total = document.querySelector('.total-line__price, [data-checkout-total-price]')?.textContent?.replace(/[^\d.,]/g, '');
+        if (total) {
+          log('Shopify begin_checkout');
+          sendEvent('begin_checkout', {
+            cart_value: parseFloat(total) || null
+          });
+        }
+      }, 1000);
+    }
+
     // Purchase (Thank You page)
     if (window.Shopify.checkout) {
       const checkout = window.Shopify.checkout;
@@ -256,6 +320,18 @@
         currency: checkout.currency,
         order_name: checkout.order_number
       });
+    }
+
+    // Search tracking
+    if (window.location.pathname.includes('/search')) {
+      const searchTerm = new URLSearchParams(window.location.search).get('q');
+      if (searchTerm) {
+        log('Shopify search:', searchTerm);
+        sendEvent('search', {
+          search_term: searchTerm,
+          results_count: document.querySelectorAll('.product-item, .grid-product').length
+        });
+      }
     }
   }
 
@@ -294,6 +370,19 @@
       });
     }
 
+    // Begin Checkout
+    if (document.body.classList.contains('woocommerce-checkout')) {
+      setTimeout(() => {
+        const total = document.querySelector('.order-total .amount')?.textContent?.replace(/[^\d.,]/g, '');
+        if (total) {
+          log('WooCommerce begin_checkout');
+          sendEvent('begin_checkout', {
+            cart_value: parseFloat(total) || null
+          });
+        }
+      }, 1000);
+    }
+
     // Purchase (Order Received page)
     if (typeof wc_ga_data !== 'undefined' && wc_ga_data.order) {
       const order = wc_ga_data.order;
@@ -303,6 +392,18 @@
         revenue: parseFloat(order.total),
         currency: wc_ga_data.currency
       });
+    }
+
+    // Search tracking
+    if (document.body.classList.contains('search-results')) {
+      const searchTerm = new URLSearchParams(window.location.search).get('s');
+      if (searchTerm) {
+        log('WooCommerce search:', searchTerm);
+        sendEvent('search', {
+          search_term: searchTerm,
+          results_count: document.querySelectorAll('.product, .product-item').length
+        });
+      }
     }
   }
 
@@ -340,7 +441,125 @@
         });
       }
     });
+
+    // Fallback: Detect checkout form submissions
+    document.addEventListener('submit', function(e) {
+      const form = e.target;
+      if (form.classList.contains('checkout-form') || 
+          form.action.includes('checkout') ||
+          form.action.includes('payment') ||
+          form.action.includes('compra')) {
+        
+        log('Checkout form submitted');
+        sendEvent('begin_checkout', {
+          form_action: form.action,
+          page_url: window.location.href
+        });
+      }
+    });
+
+    // Detect begin_checkout by URL
+    if (window.location.pathname.includes('/checkout') || 
+        window.location.pathname.includes('/cart') ||
+        window.location.pathname.includes('/carrinho')) {
+      setTimeout(() => {
+        const cartTotal = document.querySelector('.cart-total, .total-price, [class*="total"]')?.textContent?.replace(/[^\d.,]/g, '');
+        if (cartTotal) {
+          log('Generic begin_checkout detected');
+          sendEvent('begin_checkout', {
+            cart_value: parseFloat(cartTotal) || null
+          });
+        }
+      }, 1000);
+    }
   }
+
+  // GTM dataLayer Purchase Detection
+  function initGTMTracking() {
+    if (!window.dataLayer) return;
+    log('GTM dataLayer detected');
+
+    const originalPush = window.dataLayer.push;
+    window.dataLayer.push = function() {
+      const args = Array.from(arguments);
+      args.forEach(item => {
+        if (item.event === 'purchase' || item.ecommerce?.purchase) {
+          const purchaseData = item.ecommerce?.purchase || item.ecommerce || item;
+          log('GTM purchase detected:', purchaseData);
+          sendEvent('purchase', {
+            order_id: String(purchaseData.transaction_id || purchaseData.actionField?.id || purchaseData.id || Date.now()),
+            revenue: parseFloat(purchaseData.value || purchaseData.actionField?.revenue || purchaseData.revenue || 0),
+            currency: purchaseData.currency || 'BRL'
+          });
+        }
+        
+        // Detect add_to_cart via GTM
+        if (item.event === 'add_to_cart' || item.ecommerce?.add) {
+          const productData = item.ecommerce?.add?.products?.[0] || item.ecommerce?.items?.[0] || {};
+          log('GTM add_to_cart detected:', productData);
+          sendEvent('add_to_cart', {
+            product_id: String(productData.id || productData.item_id || 'gtm'),
+            product_name: productData.name || productData.item_name
+          });
+        }
+
+        // Detect begin_checkout via GTM
+        if (item.event === 'begin_checkout' || item.ecommerce?.checkout) {
+          log('GTM begin_checkout detected');
+          sendEvent('begin_checkout', {
+            cart_value: parseFloat(item.ecommerce?.value || 0)
+          });
+        }
+      });
+      return originalPush.apply(this, arguments);
+    };
+  }
+
+  // Public API for manual tracking
+  window.RankitoPixel.trackPurchase = function(orderData) {
+    log('Manual purchase tracking:', orderData);
+    sendEvent('purchase', {
+      order_id: orderData.order_id || String(Date.now()),
+      revenue: parseFloat(orderData.revenue || orderData.total || 0),
+      currency: orderData.currency || 'BRL',
+      order_name: orderData.order_name || null,
+      payment_method: orderData.payment_method || null
+    });
+  };
+
+  window.RankitoPixel.trackAddToCart = function(productData) {
+    log('Manual add_to_cart tracking:', productData);
+    sendEvent('add_to_cart', {
+      product_id: String(productData.product_id || 'manual'),
+      product_name: productData.product_name || productData.name,
+      price: parseFloat(productData.price || 0),
+      quantity: parseInt(productData.quantity || 1)
+    });
+  };
+
+  window.RankitoPixel.trackRemoveFromCart = function(productData) {
+    log('Manual remove_from_cart tracking:', productData);
+    sendEvent('remove_from_cart', {
+      product_id: String(productData.product_id || 'manual'),
+      product_name: productData.product_name || productData.name
+    });
+  };
+
+  window.RankitoPixel.trackBeginCheckout = function(cartData) {
+    log('Manual begin_checkout tracking:', cartData);
+    sendEvent('begin_checkout', {
+      cart_value: parseFloat(cartData.cart_value || cartData.total || 0),
+      items_count: parseInt(cartData.items_count || 0)
+    });
+  };
+
+  window.RankitoPixel.trackSearch = function(searchData) {
+    log('Manual search tracking:', searchData);
+    sendEvent('search', {
+      search_term: searchData.search_term || searchData.query,
+      results_count: parseInt(searchData.results_count || 0)
+    });
+  };
 
   // Initialize E-commerce tracking
   function initEcommerce() {
@@ -351,6 +570,9 @@
 
     config.platform = detectPlatform();
     log('Platform detected:', config.platform);
+
+    // Always init GTM tracking if available
+    initGTMTracking();
 
     switch (config.platform) {
       case 'shopify':
