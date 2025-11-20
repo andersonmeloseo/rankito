@@ -865,20 +865,14 @@ export const useAnalytics = ({
     if (!existing) {
       existing = {
         date: dateStr,
-        whatsapp_click: 0,
-        phone_click: 0,
-        email_click: 0,
-        form_submit: 0,
         total: 0,
       };
       acc.push(existing);
     }
     
-    if (conv.event_type === 'whatsapp_click') existing.whatsapp_click++;
-    else if (conv.event_type === 'phone_click') existing.phone_click++;
-    else if (conv.event_type === 'email_click') existing.email_click++;
-    else if (conv.event_type === 'form_submit') existing.form_submit++;
-    
+    // Incrementar contador para o tipo específico de evento dinamicamente
+    const eventType = conv.event_type;
+    existing[eventType] = (existing[eventType] || 0) + 1;
     existing.total++;
     
     return acc;

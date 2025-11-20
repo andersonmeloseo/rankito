@@ -2,20 +2,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMemo } from "react";
 
 interface ConversionsTimelineChartProps {
   data: Array<{
     date: string;
-    whatsapp_click: number;
-    phone_click: number;
-    email_click: number;
-    form_submit: number;
     total: number;
+    [key: string]: number | string;
   }>;
   isLoading?: boolean;
 }
 
 export const ConversionsTimelineChart = ({ data, isLoading }: ConversionsTimelineChartProps) => {
+  // Detectar dinamicamente quais tipos de conversão existem nos dados
+  const conversionTypes = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    
+    const typesSet = new Set<string>();
+    data.forEach(item => {
+      Object.keys(item).forEach(key => {
+        if (key !== 'date' && key !== 'total') {
+          typesSet.add(key);
+        }
+      });
+    });
+    
+    return Array.from(typesSet);
+  }, [data]);
+  
+  // Mapeamento de cores para tipos conhecidos
+  const colorMap: Record<string, string> = {
+    'whatsapp_click': 'hsl(var(--chart-1))',
+    'phone_click': 'hsl(var(--chart-2))',
+    'email_click': 'hsl(var(--chart-5))',
+    'form_submit': 'hsl(var(--chart-3))',
+    'button_click': 'hsl(var(--chart-4))',
+    'product_view': 'hsl(var(--chart-1))',
+    'add_to_cart': 'hsl(var(--chart-2))',
+    'purchase': 'hsl(var(--chart-3))',
+    'begin_checkout': 'hsl(var(--chart-4))',
+    'remove_from_cart': 'hsl(var(--chart-5))',
+  };
+  
+  // Função para formatar o nome do tipo de evento
+  const formatEventName = (eventType: string) => {
+    return eventType
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   if (isLoading) {
     return (
       <Card className="shadow-lg border-border/50 backdrop-blur-sm">
@@ -83,42 +119,20 @@ export const ConversionsTimelineChart = ({ data, isLoading }: ConversionsTimelin
               wrapperStyle={{ paddingTop: "20px" }}
               iconType="line"
             />
-            <Line 
-              type="monotone" 
-              dataKey="whatsapp_click" 
-              stroke="hsl(var(--chart-1))" 
-              strokeWidth={2}
-              name="WhatsApp"
-              dot={{ fill: "hsl(var(--chart-1))", r: 4 }}
-              activeDot={{ r: 6 }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="phone_click" 
-              stroke="hsl(var(--chart-2))" 
-              strokeWidth={2}
-              name="Telefone"
-              dot={{ fill: "hsl(var(--chart-2))", r: 4 }}
-              activeDot={{ r: 6 }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="email_click" 
-              stroke="hsl(var(--chart-5))" 
-              strokeWidth={2}
-              name="Email"
-              dot={{ fill: "hsl(var(--chart-5))", r: 4 }}
-              activeDot={{ r: 6 }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="form_submit" 
-              stroke="hsl(var(--chart-3))" 
-              strokeWidth={2}
-              name="Formulário"
-              dot={{ fill: "hsl(var(--chart-3))", r: 4 }}
-              activeDot={{ r: 6 }}
-            />
+            
+            {/* Renderizar linhas dinamicamente para cada tipo de conversão */}
+            {conversionTypes.map((eventType, index) => (
+              <Line 
+                key={eventType}
+                type="monotone" 
+                dataKey={eventType}
+                stroke={colorMap[eventType] || `hsl(var(--chart-${(index % 5) + 1}))`}
+                strokeWidth={2}
+                name={formatEventName(eventType)}
+                dot={{ fill: colorMap[eventType] || `hsl(var(--chart-${(index % 5) + 1}))`, r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </CardContent>
