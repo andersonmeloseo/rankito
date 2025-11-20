@@ -45,7 +45,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
+  const [selectedUrls, setSelectedUrls] = useState<Array<{id: string, url: string}>>([]);
   const [urlsSort, setUrlsSort] = useState<SortState>({ field: 'last_seen_at', direction: 'desc' });
   const [historySort, setHistorySort] = useState<SortState>({ field: 'created_at' as any, direction: 'desc' });
   const [urlsFilters, setUrlsFilters] = useState({
@@ -113,12 +113,11 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   const queryClient = useQueryClient();
 
   const sendToIndexing = useMutation({
-    mutationFn: async (urlIds: string[]) => {
-      const selectedUrlsData = urls?.filter(u => urlIds.includes(u.id)) || [];
+    mutationFn: async (urlsToSend: Array<{id: string, url: string}>) => {
       const { data, error } = await supabase.functions.invoke('gsc-instant-index', {
         body: { 
           site_id: siteId,
-          urls: selectedUrlsData.map(u => u.url),
+          urls: urlsToSend.map(u => u.url),
           integration_id: null
         }
       });
@@ -189,14 +188,22 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   };
 
   const toggleUrl = (urlId: string) => {
-    setSelectedUrls(prev => prev.includes(urlId) ? prev.filter(id => id !== urlId) : [...prev, urlId]);
+    setSelectedUrls(prev => {
+      const exists = prev.find(u => u.id === urlId);
+      if (exists) {
+        return prev.filter(u => u.id !== urlId);
+      } else {
+        const urlObj = processedUrls.find(u => u.id === urlId);
+        return urlObj ? [...prev, { id: urlObj.id, url: urlObj.url }] : prev;
+      }
+    });
   };
 
   const toggleAll = () => {
-    if (selectedUrls.length === urls?.length) {
+    if (selectedUrls.length === processedUrls?.length) {
       setSelectedUrls([]);
     } else {
-      setSelectedUrls(urls?.map(u => u.id) || []);
+      setSelectedUrls(processedUrls?.map(u => ({ id: u.id, url: u.url })) || []);
     }
   };
 
@@ -364,11 +371,17 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                   </Button>
                   <Button 
                     size="sm"
-                    onClick={() => sendToIndexing.mutate(selectedUrls)}
-                    disabled={sendToIndexing.isPending}
+                    onClick={() => {
+                      if (selectedUrls.length === 0) {
+                        toast.error('Selecione pelo menos uma URL para indexar');
+                        return;
+                      }
+                      sendToIndexing.mutate(selectedUrls);
+                    }}
+                    disabled={sendToIndexing.isPending || selectedUrls.length === 0}
                   >
                     <Send className="h-4 w-4 mr-2" />
-                    Enviar para Indexação GSC
+                    Enviar {selectedUrls.length > 0 ? `${selectedUrls.length} URL${selectedUrls.length > 1 ? 's' : ''}` : ''} para Indexação GSC
                   </Button>
                 </div>
               </AlertDescription>
@@ -439,7 +452,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox 
-                      checked={selectedUrls.length === urls?.length && urls?.length > 0}
+                      checked={processedUrls?.length > 0 && selectedUrls.length === processedUrls.length}
                       onCheckedChange={toggleAll}
                     />
                   </TableHead>
@@ -464,7 +477,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                     <TableRow key={url.id} className="h-16">
                       <TableCell>
                         <Checkbox 
-                          checked={selectedUrls.includes(url.id)}
+                          checked={selectedUrls.some(u => u.id === url.id)}
                           onCheckedChange={() => toggleUrl(url.id)}
                         />
                       </TableCell>
