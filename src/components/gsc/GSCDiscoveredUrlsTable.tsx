@@ -15,6 +15,7 @@ import {
   ArrowUpDown, 
   FileText, 
   CheckCircle, 
+  CheckCircle2,
   List, 
   AlertCircle, 
   History, 
@@ -279,7 +280,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
       case 'indexed':
         return <Badge className={isDark ? "bg-green-900/30 text-green-300 border-green-700" : "bg-green-100 text-green-700 border-green-300"}>Indexado (legado)</Badge>;
       case 'sent':
-        return <Badge className={isDark ? "bg-blue-900/30 text-blue-300 border-blue-700" : "bg-blue-100 text-blue-700 border-blue-300"}>Enviado</Badge>;
+        return <Badge className={isDark ? "bg-green-900/30 text-green-300 border-green-700" : "bg-green-100 text-green-700 border-green-300"}><CheckCircle2 className="w-3 h-3 mr-1" />Enviado</Badge>;
       case 'discovered':
         return <Badge className={isDark ? "bg-yellow-900/30 text-yellow-300 border-yellow-700" : "bg-yellow-100 text-yellow-700 border-yellow-300"}>Descoberto</Badge>;
       case 'failed':
