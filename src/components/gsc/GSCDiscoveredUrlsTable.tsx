@@ -188,22 +188,38 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   };
 
   const toggleUrl = (urlId: string) => {
+    console.log('🔍 toggleUrl called:', { urlId, processedUrlsLength: processedUrls?.length });
     setSelectedUrls(prev => {
       const exists = prev.find(u => u.id === urlId);
       if (exists) {
+        console.log('✅ URL already selected, removing:', urlId);
         return prev.filter(u => u.id !== urlId);
       } else {
-        const urlObj = processedUrls.find(u => u.id === urlId);
-        return urlObj ? [...prev, { id: urlObj.id, url: urlObj.url }] : prev;
+        const urlObj = processedUrls?.find(u => u.id === urlId);
+        console.log('🔍 Looking for URL in processedUrls:', { found: !!urlObj, urlId });
+        if (!urlObj) {
+          console.error('❌ URL not found in processedUrls!', { urlId, processedUrlsLength: processedUrls?.length });
+          return prev;
+        }
+        console.log('✅ Adding URL to selection:', urlObj);
+        return [...prev, { id: urlObj.id, url: urlObj.url }];
       }
     });
   };
 
   const toggleAll = () => {
+    console.log('🔍 toggleAll called:', { 
+      selectedLength: selectedUrls.length, 
+      processedLength: processedUrls?.length 
+    });
+    
     if (selectedUrls.length === processedUrls?.length) {
+      console.log('✅ Clearing all selections');
       setSelectedUrls([]);
     } else {
-      setSelectedUrls(processedUrls?.map(u => ({ id: u.id, url: u.url })) || []);
+      const urlsToSelect = processedUrls?.map(u => ({ id: u.id, url: u.url })) || [];
+      console.log('✅ Selecting all URLs:', urlsToSelect.length);
+      setSelectedUrls(urlsToSelect);
     }
   };
 
@@ -372,10 +388,17 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                   <Button 
                     size="sm"
                     onClick={() => {
+                      console.log('🚀 Send button clicked:', { 
+                        selectedUrlsLength: selectedUrls.length,
+                        selectedUrls: selectedUrls 
+                      });
+                      
                       if (selectedUrls.length === 0) {
                         toast.error('Selecione pelo menos uma URL para indexar');
                         return;
                       }
+                      
+                      console.log('✅ Calling sendToIndexing mutation with URLs:', selectedUrls.map(u => u.url));
                       sendToIndexing.mutate(selectedUrls);
                     }}
                     disabled={sendToIndexing.isPending || selectedUrls.length === 0}
@@ -453,7 +476,10 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                   <TableHead className="w-12">
                     <Checkbox 
                       checked={processedUrls?.length > 0 && selectedUrls.length === processedUrls.length}
-                      onCheckedChange={toggleAll}
+                      onCheckedChange={() => {
+                        console.log('📋 Select all checkbox clicked');
+                        toggleAll();
+                      }}
                     />
                   </TableHead>
                   <SortableHeader field="url" label="URL" currentSort={urlsSort} onSort={handleUrlsSort} />
@@ -478,7 +504,10 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                       <TableCell>
                         <Checkbox 
                           checked={selectedUrls.some(u => u.id === url.id)}
-                          onCheckedChange={() => toggleUrl(url.id)}
+                          onCheckedChange={() => {
+                            console.log('📋 Individual checkbox clicked:', url.id);
+                            toggleUrl(url.id);
+                          }}
                         />
                       </TableCell>
                       <TableCell className="max-w-md">
