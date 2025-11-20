@@ -20,9 +20,10 @@ export const InstallationGuide = ({ trackingToken }: InstallationGuideProps) => 
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="wordpress" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="wordpress">WordPress</TabsTrigger>
             <TabsTrigger value="shopify">Shopify</TabsTrigger>
+            <TabsTrigger value="gtm">Google Tag Manager</TabsTrigger>
             <TabsTrigger value="html">HTML</TabsTrigger>
           </TabsList>
 
@@ -77,6 +78,85 @@ export const InstallationGuide = ({ trackingToken }: InstallationGuideProps) => 
                   adicionar ao carrinho, compras) sem configuração adicional.
                 </p>
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="gtm" className="space-y-4 mt-4">
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Instalação via Google Tag Manager</h4>
+              <ol className="text-sm text-muted-foreground space-y-3 list-decimal list-inside">
+                <li>
+                  <strong>Acessar o Google Tag Manager</strong>
+                  <ul className="ml-8 mt-2 space-y-1 list-disc list-inside">
+                    <li>Acesse <a href="https://tagmanager.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">tagmanager.google.com</a></li>
+                    <li>Selecione o contêiner do seu site</li>
+                  </ul>
+                </li>
+                
+                <li>
+                  <strong>Criar Nova Tag</strong>
+                  <ul className="ml-8 mt-2 space-y-1 list-disc list-inside">
+                    <li>Clique em "Tags" no menu lateral</li>
+                    <li>Clique no botão "Nova"</li>
+                    <li>Dê um nome: "Rankito Pixel"</li>
+                  </ul>
+                </li>
+                
+                <li>
+                  <strong>Configurar a Tag</strong>
+                  <ul className="ml-8 mt-2 space-y-1 list-disc list-inside">
+                    <li>Clique em "Configuração da tag"</li>
+                    <li>Selecione "HTML Personalizado"</li>
+                    <li>Cole o código do pixel (disponível acima)</li>
+                    <li>Marque a opção "Suportar document.write"</li>
+                  </ul>
+                </li>
+                
+                <li>
+                  <strong>Definir Acionador</strong>
+                  <ul className="ml-8 mt-2 space-y-1 list-disc list-inside">
+                    <li>Clique em "Acionamento"</li>
+                    <li>Selecione "All Pages" (Todas as páginas)</li>
+                    <li>Ou crie um acionador personalizado se preferir</li>
+                  </ul>
+                </li>
+                
+                <li>
+                  <strong>Salvar e Publicar</strong>
+                  <ul className="ml-8 mt-2 space-y-1 list-disc list-inside">
+                    <li>Clique em "Salvar" no canto superior direito</li>
+                    <li>Clique em "Enviar" para publicar as mudanças</li>
+                    <li>Adicione um nome à versão (ex: "Instalação Rankito Pixel")</li>
+                    <li>Clique em "Publicar"</li>
+                  </ul>
+                </li>
+              </ol>
+            </div>
+
+            <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg flex gap-3">
+              <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Integração Automática com GTM
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  O pixel detecta automaticamente eventos enviados via GTM dataLayer (purchase, add_to_cart, begin_checkout) 
+                  e os sincroniza com o Rankito CRM sem configuração adicional.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+              <h4 className="text-sm font-medium">Modo de Pré-visualização (Preview)</h4>
+              <p className="text-xs text-muted-foreground">
+                Antes de publicar, use o modo "Pré-visualizar" do GTM para testar se o pixel está disparando corretamente:
+              </p>
+              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside ml-4">
+                <li>Clique em "Pré-visualizar" no GTM</li>
+                <li>Acesse seu site na aba que abrir</li>
+                <li>Verifique se a tag "Rankito Pixel" aparece como "Tags Fired"</li>
+                <li>Retorne ao Rankito e verifique se eventos estão sendo recebidos</li>
+              </ol>
             </div>
           </TabsContent>
 
