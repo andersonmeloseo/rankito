@@ -211,7 +211,13 @@ Deno.serve(async (req) => {
       // Só atualizar status se NÃO for erro de quota
       // Erros de quota preservam o status atual da URL
       if (!isQuotaError) {
-        const { error: updateError } = await supabase
+        // Usar Service Role para bypass RLS
+        const supabaseAdmin = createClient(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        );
+
+        const { error: updateError } = await supabaseAdmin
           .from('gsc_discovered_urls')
           .update({
             current_status: overallSuccess ? 'sent' : 'failed',
