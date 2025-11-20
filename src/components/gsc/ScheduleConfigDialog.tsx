@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { Clock, Calendar, Settings, CheckCircle2 } from "lucide-react";
 import { useScheduleConfig, ScheduleConfig } from "@/hooks/useScheduleConfig";
 import { format, addHours, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface ScheduleConfigDialogProps {
   open: boolean;
@@ -31,6 +32,19 @@ export const ScheduleConfigDialog = ({ open, onOpenChange, siteId }: ScheduleCon
   const [maxUrlsPerRun, setMaxUrlsPerRun] = useState(config?.max_urls_per_run || 200);
   const [distributeAcrossDay, setDistributeAcrossDay] = useState(config?.distribute_across_day ?? true);
   const [pauseOnQuotaExceeded, setPauseOnQuotaExceeded] = useState(config?.pause_on_quota_exceeded ?? true);
+
+  // Sync state with loaded config
+  useEffect(() => {
+    if (config) {
+      setFrequency(config.frequency);
+      setSpecificTime(config.specific_time);
+      setSpecificDays(config.specific_days || []);
+      setIntervalHours(config.interval_hours || 6);
+      setMaxUrlsPerRun(config.max_urls_per_run);
+      setDistributeAcrossDay(config.distribute_across_day);
+      setPauseOnQuotaExceeded(config.pause_on_quota_exceeded);
+    }
+  }, [config]);
 
   const weekDays = [
     { value: 0, label: 'Dom' },
