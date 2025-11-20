@@ -11,6 +11,7 @@ import { GSCIntegrationsManager } from './GSCIntegrationsManager';
 import { GSCIntegrationHealthCard } from './GSCIntegrationHealthCard';
 import { GSCIndexingControls } from './GSCIndexingControls';
 import { GSCDiscoveredUrlsTable } from './GSCDiscoveredUrlsTable';
+import { GSCSchedulingPanel } from './GSCSchedulingPanel';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
 import { IndexNowManager } from './IndexNowManager';
 import { IndexingWorkflowGuide } from './IndexingWorkflowGuide';
@@ -158,7 +159,7 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
         <Card>
           <CardContent className="p-6">
             <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <ClickUpTabTrigger value="sitemaps">
                   <Globe className="h-4 w-4 mr-2" />
                   Por Sitemap
@@ -166,6 +167,10 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
                 <ClickUpTabTrigger value="urls">
                   <Globe className="h-4 w-4 mr-2" />
                   Por Página
+                </ClickUpTabTrigger>
+                <ClickUpTabTrigger value="agendamento">
+                  <Clock className="h-4 w-4 mr-2" />
+                  Agendamento
                 </ClickUpTabTrigger>
               </TabsList>
 
@@ -180,6 +185,10 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
                 <GSCDiscoveredUrlsTable 
                   siteId={siteId}
                 />
+              </TabsContent>
+
+              <TabsContent value="agendamento">
+                <GSCSchedulingPanel siteId={siteId} />
               </TabsContent>
             </Tabs>
           </CardContent>
