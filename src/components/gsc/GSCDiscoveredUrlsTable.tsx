@@ -20,8 +20,11 @@ import {
   History, 
   Send,
   TrendingUp,
-  Clock
+  Clock,
+  Activity,
+  Calendar
 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useState, useEffect } from 'react';
@@ -111,6 +114,19 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   });
 
   const queryClient = useQueryClient();
+
+  // Fetch aggregated quota data
+  const { data: quotaData, isLoading: quotaLoading } = useQuery({
+    queryKey: ['gsc-aggregated-quota', siteId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('gsc-get-aggregated-quota', {
+        body: { site_id: siteId }
+      });
+      if (error) throw error;
+      return data.aggregated_quota;
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
 
   const sendToIndexing = useMutation({
     mutationFn: async (urlsToSend: Array<{id: string, url: string}>) => {
@@ -261,8 +277,8 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
     switch (status) {
       case 'indexed':
         return <Badge className={isDark ? "bg-green-900/30 text-green-300 border-green-700" : "bg-green-100 text-green-700 border-green-300"}>Indexado</Badge>;
-      case 'queued':
-        return <Badge className={isDark ? "bg-blue-900/30 text-blue-300 border-blue-700" : "bg-blue-100 text-blue-700 border-blue-300"}>Na Fila</Badge>;
+      case 'sent':
+        return <Badge className={isDark ? "bg-blue-900/30 text-blue-300 border-blue-700" : "bg-blue-100 text-blue-700 border-blue-300"}>Enviado</Badge>;
       case 'discovered':
         return <Badge className={isDark ? "bg-yellow-900/30 text-yellow-300 border-yellow-700" : "bg-yellow-100 text-yellow-700 border-yellow-300"}>Descoberto</Badge>;
       case 'failed':
@@ -324,6 +340,56 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
 
   return (
     <div className="space-y-8">
+      {/* Quota Card */}
+      <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950 dark:to-background">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Activity className="h-5 w-5 text-blue-600" />
+            Quota Diária de Indexação GSC
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {quotaLoading ? (
+            <div className="text-center text-muted-foreground">Carregando quota...</div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-3xl font-bold text-blue-700 dark:text-blue-400">
+                  {quotaData?.used || 0} / {quotaData?.limit || 200}
+                </span>
+                <Badge 
+                  className={
+                    (quotaData?.remaining || 200) > 100 
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" 
+                      : (quotaData?.remaining || 200) > 50 
+                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" 
+                      : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                  }
+                >
+                  {quotaData?.remaining || 200} restantes
+                </Badge>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="space-y-2">
+                <Progress 
+                  value={quotaData?.percentage || 0} 
+                  className="h-3"
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  {quotaData?.percentage || 0}% utilizado
+                </p>
+              </div>
+
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Quota reseta diariamente às 00:00 UTC
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="pb-4">
           <CardTitle>URLs Descobertas</CardTitle>
@@ -443,13 +509,13 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos Status</SelectItem>
-                <SelectItem value="discovered">Descoberto</SelectItem>
-                <SelectItem value="queued">Na Fila</SelectItem>
-                <SelectItem value="indexed">Indexado</SelectItem>
-                <SelectItem value="failed">Falhou</SelectItem>
-              </SelectContent>
+            <SelectContent>
+              <SelectItem value="all">Todos Status</SelectItem>
+              <SelectItem value="discovered">Descoberto</SelectItem>
+              <SelectItem value="sent">Enviado</SelectItem>
+              <SelectItem value="indexed">Indexado</SelectItem>
+              <SelectItem value="failed">Falhou</SelectItem>
+            </SelectContent>
             </Select>
 
             <Select value={urlsFilters.origin} onValueChange={(value) => setUrlsFilters(prev => ({ ...prev, origin: value }))}>
