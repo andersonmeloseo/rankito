@@ -46,7 +46,6 @@ interface SortState {
 }
 
 export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) => {
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUrls, setSelectedUrls] = useState<Array<{id: string, url: string}>>([]);
@@ -64,8 +63,8 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
 
   const pageSize = 100;
 
-  const { urls, isLoading, totalCount, totalPages } = useGSCDiscoveredUrls(siteId, {
-    status: statusFilter,
+  const { urls, isLoading, totalCount } = useGSCDiscoveredUrls(siteId, {
+    status: 'all',
     searchTerm,
     page: currentPage,
     pageSize,
@@ -172,7 +171,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, searchTerm]);
+  }, [searchTerm]);
 
   const handleUrlsSort = (field: SortField) => {
     setUrlsSort(prev => ({
@@ -262,6 +261,9 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
 
   const processedUrls = sortData(filterUrlsData(urls || []), urlsSort);
   const processedHistory = sortData(filterHistoryData(indexingHistory || []), historySort);
+
+  const filteredCount = processedUrls?.length || 0;
+  const totalPagesAdjusted = Math.ceil(filteredCount / pageSize);
 
   const totalUrls = totalCount;
   const discoveredUrls = discoveredCount || 0;
@@ -625,10 +627,10 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
             </Table>
           </div>
 
-          {totalPages > 1 && (
+          {totalPagesAdjusted > 1 && (
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalCount)} de {totalCount.toLocaleString('pt-BR')} URLs
+                Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, filteredCount)} de {filteredCount.toLocaleString('pt-BR')} URLs
               </div>
               <div className="flex gap-2">
                 <Button
@@ -640,14 +642,14 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                   Anterior
                 </Button>
                 <div className="flex items-center gap-2">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  {Array.from({ length: Math.min(5, totalPagesAdjusted) }, (_, i) => {
                     let pageNum;
-                    if (totalPages <= 5) {
+                    if (totalPagesAdjusted <= 5) {
                       pageNum = i + 1;
                     } else if (currentPage <= 3) {
                       pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
+                    } else if (currentPage >= totalPagesAdjusted - 2) {
+                      pageNum = totalPagesAdjusted - 4 + i;
                     } else {
                       pageNum = currentPage - 2 + i;
                     }
@@ -666,8 +668,8 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(totalPagesAdjusted, prev + 1))}
+                  disabled={currentPage === totalPagesAdjusted}
                 >
                   Próxima
                 </Button>
