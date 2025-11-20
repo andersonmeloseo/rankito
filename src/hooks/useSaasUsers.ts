@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "./use-toast";
+import { logAuditAction } from "@/lib/auditLog";
 
 interface UserFilters {
   search?: string;
@@ -84,6 +85,12 @@ export const useSaasUsers = (filters?: UserFilters) => {
         .eq('id', userId);
 
       if (error) throw error;
+
+      await logAuditAction({
+        action: 'user_blocked',
+        targetUserId: userId,
+        details: { reason: reason || 'Sem motivo especificado' },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saas-users'] });
@@ -102,6 +109,11 @@ export const useSaasUsers = (filters?: UserFilters) => {
         .eq('id', userId);
 
       if (error) throw error;
+
+      await logAuditAction({
+        action: 'user_unblocked',
+        targetUserId: userId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saas-users'] });
@@ -120,6 +132,12 @@ export const useSaasUsers = (filters?: UserFilters) => {
         .eq('id', userId);
 
       if (error) throw error;
+
+      await logAuditAction({
+        action: 'user_updated',
+        targetUserId: userId,
+        details: { updatedFields: Object.keys(updates) },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saas-users'] });
@@ -138,6 +156,11 @@ export const useSaasUsers = (filters?: UserFilters) => {
         .eq('id', userId);
 
       if (error) throw error;
+
+      await logAuditAction({
+        action: 'user_deleted',
+        targetUserId: userId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saas-users'] });
@@ -189,6 +212,12 @@ export const useSaasUsers = (filters?: UserFilters) => {
           .eq('id', existingSub.id);
 
         if (error) throw error;
+
+        await logAuditAction({
+          action: 'plan_changed',
+          targetUserId: userId,
+          details: { planId, operation: 'updated' },
+        });
       } else {
         const { error } = await supabase
           .from('user_subscriptions')
@@ -201,6 +230,12 @@ export const useSaasUsers = (filters?: UserFilters) => {
           });
 
         if (error) throw error;
+
+        await logAuditAction({
+          action: 'plan_assigned',
+          targetUserId: userId,
+          details: { planId, operation: 'created' },
+        });
       }
     },
     onSuccess: () => {
@@ -246,6 +281,11 @@ export const useSaasUsers = (filters?: UserFilters) => {
             });
         }
       }
+
+      await logAuditAction({
+        action: 'bulk_plan_assigned',
+        details: { planId, userCount: userIds.length },
+      });
     },
     onSuccess: (_, { userIds }) => {
       queryClient.invalidateQueries({ queryKey: ['saas-users'] });
@@ -263,6 +303,13 @@ export const useSaasUsers = (filters?: UserFilters) => {
       });
 
       if (error) throw error;
+
+      await logAuditAction({
+        action: 'email_updated',
+        targetUserId: userId,
+        details: { newEmail },
+      });
+
       return data;
     },
     onSuccess: () => {

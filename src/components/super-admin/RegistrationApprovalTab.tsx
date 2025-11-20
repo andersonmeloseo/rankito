@@ -19,6 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useRole } from "@/contexts/RoleContext";
+import { logAuditAction } from "@/lib/auditLog";
 
 interface PendingUser {
   id: string;
@@ -144,6 +145,16 @@ export const RegistrationApprovalTab = () => {
         console.error('❌ Erro ao enviar email:', emailError);
         // Não bloqueia a aprovação se email falhar
       }
+
+      // 5. Log de auditoria
+      await logAuditAction({
+        action: 'user_approved',
+        targetUserId: userId,
+        details: {
+          planName: plan?.name || profile?.selected_plan_slug,
+          trialDays: plan?.trial_days || 0,
+        },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-users'] });
@@ -203,6 +214,15 @@ export const RegistrationApprovalTab = () => {
         console.error('❌ Erro ao enviar email:', emailError);
         // Não bloqueia a rejeição se email falhar
       }
+
+      // Log de auditoria
+      await logAuditAction({
+        action: 'user_rejected',
+        targetUserId: userId,
+        details: {
+          rejectionReason: reason,
+        },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-users'] });

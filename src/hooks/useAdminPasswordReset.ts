@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { logAuditAction } from '@/lib/auditLog';
 
 export const useAdminPasswordReset = () => {
   return useMutation({
@@ -25,6 +26,12 @@ export const useAdminPasswordReset = () => {
       if (!response.ok) {
         throw new Error(result.error || 'Falha ao alterar senha');
       }
+
+      await logAuditAction({
+        action: 'password_reset',
+        targetUserId: session.user.id,
+        details: { selfReset: true },
+      });
 
       return result;
     },

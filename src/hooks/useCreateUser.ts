@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { logAuditAction } from "@/lib/auditLog";
 
 export interface CreateUserInput {
   email: string;
@@ -37,6 +38,17 @@ export const useCreateUser = () => {
       }
 
       console.log('✅ User created successfully:', data);
+
+      await logAuditAction({
+        action: 'user_created',
+        targetUserId: data?.userId,
+        details: {
+          email: userData.email,
+          role: userData.role,
+          planId: userData.plan_id,
+        },
+      });
+
       return data;
     },
     onSuccess: () => {
