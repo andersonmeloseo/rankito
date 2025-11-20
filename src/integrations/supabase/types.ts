@@ -959,6 +959,89 @@ export type Database = {
           },
         ]
       }
+      gsc_schedule_config: {
+        Row: {
+          created_at: string | null
+          distribute_across_day: boolean | null
+          enabled: boolean | null
+          frequency: string
+          id: string
+          interval_hours: number | null
+          last_run_at: string | null
+          max_urls_per_run: number | null
+          next_run_at: string | null
+          pause_on_quota_exceeded: boolean | null
+          site_id: string
+          specific_days: number[] | null
+          specific_time: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          distribute_across_day?: boolean | null
+          enabled?: boolean | null
+          frequency?: string
+          id?: string
+          interval_hours?: number | null
+          last_run_at?: string | null
+          max_urls_per_run?: number | null
+          next_run_at?: string | null
+          pause_on_quota_exceeded?: boolean | null
+          site_id: string
+          specific_days?: number[] | null
+          specific_time?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          distribute_across_day?: boolean | null
+          enabled?: boolean | null
+          frequency?: string
+          id?: string
+          interval_hours?: number | null
+          last_run_at?: string | null
+          max_urls_per_run?: number | null
+          next_run_at?: string | null
+          pause_on_quota_exceeded?: boolean | null
+          site_id?: string
+          specific_days?: number[] | null
+          specific_time?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_schedule_config_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_schedule_config_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gsc_schedule_config_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_schedule_config_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gsc_schedule_execution_logs: {
         Row: {
           created_at: string | null
