@@ -18,33 +18,45 @@ interface ScheduleConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   siteId: string;
+  editingConfig?: ScheduleConfig | null;
 }
 
-export const ScheduleConfigDialog = ({ open, onOpenChange, siteId }: ScheduleConfigDialogProps) => {
-  const { config, updateConfig } = useScheduleConfig(siteId);
+export const ScheduleConfigDialog = ({ open, onOpenChange, siteId, editingConfig }: ScheduleConfigDialogProps) => {
+  const { createConfig, updateConfig } = useScheduleConfig(siteId);
   
-  const [frequency, setFrequency] = useState<'hourly' | 'daily' | 'weekly' | 'custom'>(
-    config?.frequency || 'daily'
-  );
-  const [specificTime, setSpecificTime] = useState(config?.specific_time || '00:30');
-  const [specificDays, setSpecificDays] = useState<number[]>(config?.specific_days || []);
-  const [intervalHours, setIntervalHours] = useState(config?.interval_hours || 6);
-  const [maxUrlsPerRun, setMaxUrlsPerRun] = useState(config?.max_urls_per_run || 200);
-  const [distributeAcrossDay, setDistributeAcrossDay] = useState(config?.distribute_across_day ?? true);
-  const [pauseOnQuotaExceeded, setPauseOnQuotaExceeded] = useState(config?.pause_on_quota_exceeded ?? true);
+  // Estados locais
+  const [scheduleName, setScheduleName] = useState('');
+  const [frequency, setFrequency] = useState<'hourly' | 'daily' | 'weekly' | 'custom'>('daily');
+  const [specificTime, setSpecificTime] = useState('00:30');
+  const [specificDays, setSpecificDays] = useState<number[]>([]);
+  const [intervalHours, setIntervalHours] = useState(6);
+  const [maxUrlsPerRun, setMaxUrlsPerRun] = useState(200);
+  const [distributeAcrossDay, setDistributeAcrossDay] = useState(true);
+  const [pauseOnQuotaExceeded, setPauseOnQuotaExceeded] = useState(true);
 
-  // Sync state with loaded config
+  // Sync state with editingConfig
   useEffect(() => {
-    if (config) {
-      setFrequency(config.frequency);
-      setSpecificTime(config.specific_time);
-      setSpecificDays(config.specific_days || []);
-      setIntervalHours(config.interval_hours || 6);
-      setMaxUrlsPerRun(config.max_urls_per_run);
-      setDistributeAcrossDay(config.distribute_across_day);
-      setPauseOnQuotaExceeded(config.pause_on_quota_exceeded);
+    if (editingConfig) {
+      setScheduleName(editingConfig.schedule_name);
+      setFrequency(editingConfig.frequency);
+      setSpecificTime(editingConfig.specific_time);
+      setSpecificDays(editingConfig.specific_days || []);
+      setIntervalHours(editingConfig.interval_hours || 6);
+      setMaxUrlsPerRun(editingConfig.max_urls_per_run);
+      setDistributeAcrossDay(editingConfig.distribute_across_day);
+      setPauseOnQuotaExceeded(editingConfig.pause_on_quota_exceeded);
+    } else {
+      // Reset for new schedule
+      setScheduleName('');
+      setFrequency('daily');
+      setSpecificTime('00:30');
+      setSpecificDays([]);
+      setIntervalHours(6);
+      setMaxUrlsPerRun(200);
+      setDistributeAcrossDay(true);
+      setPauseOnQuotaExceeded(true);
     }
-  }, [config]);
+  }, [editingConfig, open]);
 
   const weekDays = [
     { value: 0, label: 'Dom' },
@@ -93,30 +105,35 @@ export const ScheduleConfigDialog = ({ open, onOpenChange, siteId }: ScheduleCon
   };
 
   const handleSave = () => {
-    // Validation: weekly must have at least 1 day selected
-    if (frequency === 'weekly' && specificDays.length === 0) {
-      toast.error('Selecione pelo menos 1 dia da semana');
+    // Validações
+    if (!scheduleName.trim()) {
+      toast.error('Informe um nome para o agendamento');
       return;
     }
 
-    const newConfig: Partial<ScheduleConfig> = {
+    if (frequency === 'weekly' && specificDays.length === 0) {
+      toast.error('Selecione pelo menos um dia da semana');
+      return;
+    }
+
+    const configData = {
+      schedule_name: scheduleName,
       enabled: true,
       frequency,
       specific_time: specificTime,
       max_urls_per_run: maxUrlsPerRun,
       distribute_across_day: distributeAcrossDay,
       pause_on_quota_exceeded: pauseOnQuotaExceeded,
+      ...(frequency === 'weekly' && { specific_days: specificDays }),
+      ...(frequency === 'custom' && { interval_hours: intervalHours }),
     };
 
-    if (frequency === 'weekly') {
-      newConfig.specific_days = specificDays;
+    if (editingConfig?.id) {
+      updateConfig.mutate({ id: editingConfig.id, config: configData });
+    } else {
+      createConfig.mutate(configData);
     }
 
-    if (frequency === 'custom') {
-      newConfig.interval_hours = intervalHours;
-    }
-
-    updateConfig.mutate(newConfig);
     onOpenChange(false);
   };
 
@@ -133,14 +150,24 @@ export const ScheduleConfigDialog = ({ open, onOpenChange, siteId }: ScheduleCon
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Configuração de Agendamento GSC
+            {editingConfig ? 'Editar Agendamento' : 'Novo Agendamento'}
           </DialogTitle>
           <DialogDescription>
-            Personalize como e quando as URLs serão enviadas para indexação
+            Configure como e quando suas URLs serão enviadas ao Google Search Console automaticamente
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
+          {/* Nome do Agendamento */}
+          <div className="space-y-2">
+            <Label>Nome do Agendamento *</Label>
+            <Input
+              value={scheduleName}
+              onChange={(e) => setScheduleName(e.target.value)}
+              placeholder="Ex: Agendamento Manhã, Estratégia Semanal"
+            />
+          </div>
+
           {/* Botões Rápidos */}
           <div className="flex gap-2 flex-wrap">
             <Button 
@@ -345,8 +372,8 @@ export const ScheduleConfigDialog = ({ open, onOpenChange, siteId }: ScheduleCon
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={updateConfig.isPending}>
-              {updateConfig.isPending ? 'Salvando...' : 'Salvar Configuração'}
+            <Button onClick={handleSave} disabled={createConfig.isPending || updateConfig.isPending}>
+              {(createConfig.isPending || updateConfig.isPending) ? 'Salvando...' : 'Salvar Configuração'}
             </Button>
           </div>
         </div>

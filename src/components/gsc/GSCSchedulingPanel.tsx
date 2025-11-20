@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Clock, Zap, List, RefreshCw, X, CheckCircle2, XCircle, AlertCircle, Calendar, Settings } from "lucide-react";
+import { Clock, Zap, List, X, CheckCircle2, XCircle, AlertCircle, Calendar, Settings, Plus, Pencil, Trash2, Play, Pause } from "lucide-react";
 import { useGSCScheduling } from "@/hooks/useGSCScheduling";
 import { useGSCQuotaStatus } from "@/hooks/useGSCQuotaStatus";
-import { useScheduleConfig } from "@/hooks/useScheduleConfig";
+import { useScheduleConfig, ScheduleConfig } from "@/hooks/useScheduleConfig";
 import { ScheduleConfigDialog } from "./ScheduleConfigDialog";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -18,6 +18,7 @@ interface GSCSchedulingPanelProps {
 
 export const GSCSchedulingPanel = ({ siteId }: GSCSchedulingPanelProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [editingConfig, setEditingConfig] = useState<ScheduleConfig | null>(null);
   
   const {
     scheduledSubmissions,
@@ -25,11 +26,10 @@ export const GSCSchedulingPanel = ({ siteId }: GSCSchedulingPanelProps) => {
     queueStats,
     isLoadingScheduled,
     cancelScheduled,
-    rescheduleNow,
   } = useGSCScheduling(siteId);
 
-  const { quotaStatus, quotaExceeded, percentageUsed } = useGSCQuotaStatus(siteId);
-  const { config, updateConfig } = useScheduleConfig(siteId);
+  const { quotaStatus, quotaExceeded } = useGSCQuotaStatus(siteId);
+  const { configs, deleteConfig, toggleActiveStatus } = useScheduleConfig(siteId);
 
   const getFrequencyLabel = (freq?: string) => {
     const labels: Record<string, string> = {
@@ -44,7 +44,7 @@ export const GSCSchedulingPanel = ({ siteId }: GSCSchedulingPanelProps) => {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
       pending: { variant: "outline", icon: Clock },
-      processing: { variant: "default", icon: RefreshCw },
+      processing: { variant: "default", icon: Clock },
       completed: { variant: "secondary", icon: CheckCircle2 },
       failed: { variant: "destructive", icon: XCircle },
       cancelled: { variant: "outline", icon: X },
@@ -61,9 +61,30 @@ export const GSCSchedulingPanel = ({ siteId }: GSCSchedulingPanelProps) => {
     );
   };
 
-  const nextProcessingTime = scheduledSubmissions && scheduledSubmissions.length > 0
-    ? format(new Date(scheduledSubmissions[0].scheduled_for), "dd/MM/yyyy HH:mm", { locale: ptBR })
-    : "-";
+  const handleEditSchedule = (config: ScheduleConfig) => {
+    setEditingConfig(config);
+    setConfigDialogOpen(true);
+  };
+
+  const handleNewSchedule = () => {
+    setEditingConfig(null);
+    setConfigDialogOpen(true);
+  };
+
+  const handleToggleActive = (configId: string, currentStatus: boolean) => {
+    toggleActiveStatus.mutate({ configId, isActive: !currentStatus });
+  };
+
+  const handleDeleteSchedule = (configId: string) => {
+    if (confirm('Tem certeza que deseja remover este agendamento?')) {
+      deleteConfig.mutate(configId);
+    }
+  };
+
+  const activeSchedulesCount = configs?.filter(c => c.is_active).length || 0;
+  const totalDailyCapacity = (configs?.filter(c => c.is_active).reduce((sum, c) => sum + c.max_urls_per_run, 0) || 0);
+  const nextSchedule = configs?.filter(c => c.is_active && c.next_run_at)
+    .sort((a, b) => new Date(a.next_run_at!).getTime() - new Date(b.next_run_at!).getTime())[0];
 
   return (
     <div className="space-y-6">
@@ -71,59 +92,130 @@ export const GSCSchedulingPanel = ({ siteId }: GSCSchedulingPanelProps) => {
         open={configDialogOpen} 
         onOpenChange={setConfigDialogOpen}
         siteId={siteId}
+        editingConfig={editingConfig}
       />
 
-      {/* Configuração de Agendamento */}
+      {/* Resumo Geral */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary" />
+            Resumo Geral
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Agendamentos Ativos</p>
+              <p className="text-2xl font-bold">{activeSchedulesCount}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total URLs/dia</p>
+              <p className="text-2xl font-bold">{totalDailyCapacity}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Próxima Execução</p>
+              <p className="text-lg font-semibold">
+                {nextSchedule ? format(new Date(nextSchedule.next_run_at!), "dd/MM HH:mm", { locale: ptBR }) : "-"}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista de Agendamentos Configurados */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-primary" />
-                Configuração de Agendamento
+                <Settings className="h-5 w-5 text-primary" />
+                Agendamentos Configurados
               </CardTitle>
               <CardDescription>
-                {config?.enabled 
-                  ? `Ativo: ${getFrequencyLabel(config.frequency)} às ${config.specific_time}` 
-                  : 'Agendamento pausado - clique em "Configurar" para ativar'}
+                {configs?.length || 0} agendamento(s) cadastrado(s)
               </CardDescription>
             </div>
-            <Button onClick={() => setConfigDialogOpen(true)} variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
-              Configurar
+            <Button onClick={handleNewSchedule}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Agendamento
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Badges com resumo da config */}
-          <div className="flex gap-2 flex-wrap">
-            <Badge variant={config?.enabled ? "default" : "secondary"}>
-              {config?.enabled ? "✓ Ativo" : "Pausado"}
-            </Badge>
-            <Badge variant="outline">
-              {getFrequencyLabel(config?.frequency)}
-            </Badge>
-            <Badge variant="outline">
-              {config?.max_urls_per_run || 200} URLs/execução
-            </Badge>
-            {config?.distribute_across_day && (
-              <Badge variant="outline">Distribuição em 48 slots</Badge>
-            )}
-          </div>
-          
-          {/* Próxima execução */}
-          {config?.next_run_at && (
-            <Alert>
-              <Clock className="h-4 w-4" />
-              <AlertDescription>
-                Próxima execução: {format(new Date(config.next_run_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                {' '}({formatDistanceToNow(new Date(config.next_run_at), { addSuffix: true, locale: ptBR })})
-              </AlertDescription>
-            </Alert>
+        <CardContent>
+          {!configs || configs.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum agendamento configurado. Clique em "Novo Agendamento" para começar.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Frequência</TableHead>
+                  <TableHead>Horário</TableHead>
+                  <TableHead>URLs/exec</TableHead>
+                  <TableHead>Próxima Execução</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {configs.map((config) => (
+                  <TableRow key={config.id}>
+                    <TableCell className="font-medium">{config.schedule_name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{getFrequencyLabel(config.frequency)}</Badge>
+                    </TableCell>
+                    <TableCell>{config.specific_time}</TableCell>
+                    <TableCell>{config.max_urls_per_run}</TableCell>
+                    <TableCell>
+                      {config.next_run_at 
+                        ? format(new Date(config.next_run_at), "dd/MM HH:mm", { locale: ptBR })
+                        : "-"
+                      }
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={config.is_active ? "default" : "secondary"}>
+                        {config.is_active ? "Ativo" : "Pausado"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleToggleActive(config.id!, config.is_active)}
+                          title={config.is_active ? "Pausar" : "Ativar"}
+                        >
+                          {config.is_active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditSchedule(config)}
+                          title="Editar"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteSchedule(config.id!)}
+                          title="Deletar"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
 
           {/* Estatísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
             <Card className="border-border/40">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -158,26 +250,20 @@ export const GSCSchedulingPanel = ({ siteId }: GSCSchedulingPanelProps) => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-lg font-semibold">{nextProcessingTime}</p>
+                <p className="text-lg font-semibold">
+                  {scheduledSubmissions && scheduledSubmissions.length > 0
+                    ? format(new Date(scheduledSubmissions[0].scheduled_for), "dd/MM HH:mm", { locale: ptBR })
+                    : "-"
+                  }
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">Horário agendado</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Botão Reagendar */}
-          <Button
-            onClick={() => rescheduleNow.mutate()}
-            disabled={rescheduleNow.isPending}
-            variant="outline"
-            className="w-full"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${rescheduleNow.isPending ? 'animate-spin' : ''}`} />
-            Reagendar Agora
-          </Button>
-
           {/* Alerta de Quota Excedida */}
           {quotaExceeded && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 Quota diária excedida! Próximo reset em: 00:00 UTC
