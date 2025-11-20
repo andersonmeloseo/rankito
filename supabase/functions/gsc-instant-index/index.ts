@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
           .upsert({
             site_id,
             url,
-            current_status: overallSuccess ? 'sent_for_indexing' : 'failed',
+            current_status: overallSuccess ? 'sent' : 'failed',
             last_checked_at: new Date().toISOString(),
           }, {
             onConflict: 'site_id,url',
