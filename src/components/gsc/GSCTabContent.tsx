@@ -58,12 +58,12 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
 
       if (error) throw error;
 
-      if (data?.overall_status === 'healthy') {
-        toast.success('Conexão testada com sucesso!');
-      } else if (data?.overall_status === 'warning') {
-        toast.warning('Conexão estabelecida com avisos');
+      if (data?.results?.overall_status === 'healthy') {
+        toast.success('✅ Conexão testada com sucesso! GSC integrado corretamente.');
+      } else if (data?.results?.overall_status === 'warning') {
+        toast.warning('⚠️ Conexão estabelecida com avisos. Verifique configurações.');
       } else {
-        toast.error('Problemas detectados na conexão');
+        toast.error('❌ Problemas detectados na conexão. Verifique credenciais.');
       }
     } catch (error: any) {
       toast.error(`Erro ao testar conexão: ${error.message}`);
