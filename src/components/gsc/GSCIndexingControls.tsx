@@ -104,7 +104,7 @@ export const GSCIndexingControls = ({ siteId, integrationId }: GSCIndexingContro
               ) : (
                 <Search className="h-5 w-5" />
               )}
-              <span className="font-semibold">Descobrir Páginas</span>
+              <span className="font-semibold">Passo 1 - Descobrir Páginas</span>
             </div>
             <p className="text-xs text-muted-foreground text-left">
               Busca páginas via Search Analytics API (últimos 3 meses)
@@ -123,7 +123,7 @@ export const GSCIndexingControls = ({ siteId, integrationId }: GSCIndexingContro
               ) : (
                 <FileText className="h-5 w-5" />
               )}
-              <span className="font-semibold">Processar Sitemap</span>
+              <span className="font-semibold">Passo 2 - Processar Sitemap</span>
             </div>
             <p className="text-xs text-muted-foreground text-left">
               Extrai URLs do sitemap e envia para indexação
@@ -138,7 +138,7 @@ export const GSCIndexingControls = ({ siteId, integrationId }: GSCIndexingContro
           >
             <div className="flex items-center gap-2 w-full">
               <Zap className="h-5 w-5" />
-              <span className="font-semibold">Indexação Instantânea</span>
+              <span className="font-semibold">Passo 3 - Indexação das URLs</span>
             </div>
             <p className="text-xs text-muted-foreground text-left">
               Envia URLs selecionadas para indexação (quota: 200/dia)
