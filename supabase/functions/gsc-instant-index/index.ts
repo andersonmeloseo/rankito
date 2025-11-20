@@ -51,6 +51,48 @@ async function sendToGSC(url: string, accessToken: string): Promise<{ success: b
   }
 }
 
+/**
+ * Busca automaticamente uma integração ativa para o site
+ * Prioriza integrações com health_status = 'healthy'
+ */
+async function findActiveIntegration(supabase: any, siteId: string): Promise<string | null> {
+  console.log(`🔍 Auto-detecting GSC integration for site ${siteId}...`);
+  
+  // Buscar integração healthy ativa
+  const { data: healthyIntegration } = await supabase
+    .from('google_search_console_integrations')
+    .select('id')
+    .eq('site_id', siteId)
+    .eq('is_active', true)
+    .eq('health_status', 'healthy')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  
+  if (healthyIntegration) {
+    console.log(`✅ Found healthy integration: ${healthyIntegration.id}`);
+    return healthyIntegration.id;
+  }
+  
+  // Fallback: buscar qualquer integração ativa
+  const { data: anyIntegration } = await supabase
+    .from('google_search_console_integrations')
+    .select('id')
+    .eq('site_id', siteId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  
+  if (anyIntegration) {
+    console.log(`⚠️ Found active integration (not healthy): ${anyIntegration.id}`);
+    return anyIntegration.id;
+  }
+  
+  console.log(`❌ No active integration found for site ${siteId}`);
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -99,17 +141,32 @@ Deno.serve(async (req) => {
       throw new Error('Site not found');
     }
 
+    // Auto-detectar integração se não fornecida
+    let finalIntegrationId = integration_id;
+
+    if (!finalIntegrationId) {
+      console.log('🔄 No integration_id provided, auto-detecting...');
+      finalIntegrationId = await findActiveIntegration(supabase, site_id);
+      
+      if (!finalIntegrationId) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'No active GSC integration found for this site. Please configure at least one GSC integration in the Configuração tab.' 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Buscar integração
-    const integration = integration_id
-      ? await getIntegrationWithValidToken(integration_id)
-      : null;
+    const integration = await getIntegrationWithValidToken(finalIntegrationId);
 
     // Criar job
     const { data: job, error: jobError } = await supabase
       .from('gsc_indexing_jobs')
       .insert({
         site_id,
-        integration_id: integration_id || null,
+        integration_id: finalIntegrationId,
         job_type: 'instant',
         status: 'running',
         started_at: new Date().toISOString(),
@@ -132,18 +189,13 @@ Deno.serve(async (req) => {
       const urlResult: any = { url, gsc: null };
 
       // Enviar para GSC
-      if (integration) {
-        const gscResult = await sendToGSC(url, integration.access_token);
-        urlResult.gsc = gscResult.success ? 'success' : 'failed';
+      const gscResult = await sendToGSC(url, integration.access_token);
+      urlResult.gsc = gscResult.success ? 'success' : 'failed';
 
-        if (!gscResult.success) {
-          console.error(`❌ GSC failed for ${url}:`, gscResult.error);
-        } else {
-          console.log(`✅ GSC success for ${url}`);
-        }
+      if (!gscResult.success) {
+        console.error(`❌ GSC failed for ${url}:`, gscResult.error);
       } else {
-        console.warn(`⚠️ No integration configured for ${url}`);
-        urlResult.gsc = 'skipped';
+        console.log(`✅ GSC success for ${url}`);
       }
 
       // Status baseado apenas no GSC
@@ -185,12 +237,10 @@ Deno.serve(async (req) => {
       .eq('id', job.id);
 
     // Atualizar health status da integração
-    if (integration_id) {
-      if (failCount === urls.length) {
-        await markIntegrationUnhealthy(integration_id, 'All indexing requests failed');
-      } else if (successCount > 0) {
-        await markIntegrationHealthy(integration_id);
-      }
+    if (failCount === urls.length) {
+      await markIntegrationUnhealthy(finalIntegrationId, 'All indexing requests failed');
+    } else if (successCount > 0) {
+      await markIntegrationHealthy(finalIntegrationId);
     }
 
     console.log(`✅ Indexing completed: ${successCount} success, ${failCount} failed`);
