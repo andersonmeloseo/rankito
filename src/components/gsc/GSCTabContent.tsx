@@ -12,8 +12,6 @@ import { GSCIntegrationHealthCard } from './GSCIntegrationHealthCard';
 import { GSCIndexingControls } from './GSCIndexingControls';
 import { GSCIndexingAlertsPanel } from './GSCIndexingAlertsPanel';
 import { GSCDiscoveredUrlsTable } from './GSCDiscoveredUrlsTable';
-import { GSCSearchAnalyticsDashboard } from './GSCSearchAnalyticsDashboard';
-import { GSCIndexingJobsHistory } from './GSCIndexingJobsHistory';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
 import { IndexNowManager } from './IndexNowManager';
 
@@ -75,7 +73,7 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
 
   return (
     <Tabs defaultValue="config" className="w-full space-y-6">
-      <TabsList className="grid w-full grid-cols-4 h-12">
+      <TabsList className="grid w-full grid-cols-3 h-12">
         <ClickUpTabTrigger value="config">
           <Globe className="w-4 h-4 mr-2" />
           Configuração
@@ -87,10 +85,6 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
         <ClickUpTabTrigger value="indexnow">
           <Zap className="w-4 h-4 mr-2" />
           IndexNow
-        </ClickUpTabTrigger>
-        <ClickUpTabTrigger value="monitoring">
-          <BarChart3 className="w-4 h-4 mr-2" />
-          Monitoramento
         </ClickUpTabTrigger>
       </TabsList>
 
@@ -185,34 +179,6 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
       {/* IndexNow Tab */}
       <TabsContent value="indexnow" className="space-y-6">
         <IndexNowManager siteId={siteId} siteUrl={site.url} />
-      </TabsContent>
-
-      {/* Monitoramento Tab */}
-      <TabsContent value="monitoring" className="space-y-6">
-        <Card>
-          <CardContent className="p-6">
-            <Tabs defaultValue="analytics" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2">
-                <ClickUpTabTrigger value="analytics">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Analytics
-                </ClickUpTabTrigger>
-                <ClickUpTabTrigger value="jobs">
-                  <Clock className="h-4 w-4 mr-2" />
-                  Histórico de Jobs
-                </ClickUpTabTrigger>
-              </TabsList>
-
-              <TabsContent value="analytics">
-                <GSCSearchAnalyticsDashboard siteId={siteId} />
-              </TabsContent>
-
-              <TabsContent value="jobs">
-                <GSCIndexingJobsHistory siteId={siteId} />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
       </TabsContent>
     </Tabs>
   );

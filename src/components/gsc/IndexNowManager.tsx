@@ -10,6 +10,8 @@ import { AlertCircle, CheckCircle2, Copy, RefreshCw, Send } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { IndexNowHistory } from "./IndexNowHistory";
+import { IndexNowDiscoveredUrls } from "./IndexNowDiscoveredUrls";
 
 interface IndexNowManagerProps {
   siteId: string;
@@ -273,6 +275,12 @@ export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
           )}
         </CardContent>
       </Card>
+
+      {/* URLs Descobertas Disponíveis */}
+      <IndexNowDiscoveredUrls siteId={siteId} />
+
+      {/* Histórico de Envios */}
+      <IndexNowHistory siteId={siteId} />
     </div>
   );
 };

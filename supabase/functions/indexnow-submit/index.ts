@@ -115,6 +115,20 @@ Deno.serve(async (req) => {
       // Continua mesmo com erro no banco
     }
 
+    // Se sucesso, atualizar campo sent_to_indexnow nas URLs descobertas
+    if (success) {
+      const { error: updateError } = await supabase
+        .from('gsc_discovered_urls')
+        .update({ sent_to_indexnow: true })
+        .eq('site_id', siteId)
+        .in('url', validUrls);
+
+      if (updateError) {
+        console.error('Error updating sent_to_indexnow flag:', updateError);
+        // Continua mesmo com erro na atualização
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success,
