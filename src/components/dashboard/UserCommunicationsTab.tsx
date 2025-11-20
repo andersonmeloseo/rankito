@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useUserTickets, useTicketMessages, useSendMessage, useMarkMessagesAsRead } from "@/hooks/useSupportTickets";
+import { useState, useEffect, useRef } from "react";
+import { useUserTickets, useTicketMessages, useSendMessage, useMarkMessagesAsRead, useUploadAttachment } from "@/hooks/useSupportTickets";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,14 +9,24 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageCircle, Plus, Send, Radio, Mail, AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { SupportTicketDialog } from "@/components/support/SupportTicketDialog";
+import { TicketActionsMenu } from "@/components/support/TicketActionsMenu";
+import { EmojiPickerButton } from "@/components/support/EmojiPickerButton";
+import { AttachmentButton } from "@/components/support/AttachmentButton";
+import { AttachmentPreview } from "@/components/support/AttachmentPreview";
+import { MessageAttachment } from "@/components/support/MessageAttachment";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 
 export function UserCommunicationsTab() {
+  const { toast } = useToast();
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -28,6 +38,7 @@ export function UserCommunicationsTab() {
   const { data: messages = [] } = useTicketMessages(selectedTicketId || undefined);
   const sendMessage = useSendMessage();
   const markAsRead = useMarkMessagesAsRead();
+  const uploadAttachment = useUploadAttachment();
 
   // Separar mensagens do admin e tickets do usuário
   const adminMessages = tickets.filter(t => t.initiated_by === 'admin');
@@ -63,19 +74,75 @@ export function UserCommunicationsTab() {
     };
   }, [userId]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!selectedTicketId || !newMessage.trim()) return;
 
-    sendMessage.mutate({
-      ticket_id: selectedTicketId,
-      message: newMessage,
-      is_admin_reply: false,
-      is_internal_note: false
-    }, {
-      onSuccess: () => {
-        setNewMessage("");
+    try {
+      // Upload attachments first
+      const attachments = [];
+      if (selectedFiles.length > 0 && userId) {
+        toast({
+          title: "Enviando anexos...",
+          description: `Fazendo upload de ${selectedFiles.length} arquivo(s)`,
+        });
+
+        for (const file of selectedFiles) {
+          const attachment = await uploadAttachment.mutateAsync({
+            file,
+            userId,
+          });
+          attachments.push(attachment);
+        }
       }
-    });
+
+      // Send message with attachments
+      await sendMessage.mutateAsync({
+        ticket_id: selectedTicketId,
+        message: newMessage.trim(),
+        is_admin_reply: false,
+        attachments,
+      } as any);
+
+      setNewMessage("");
+      setSelectedFiles([]);
+    } catch (error) {
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: "Tente novamente em alguns instantes",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart || newMessage.length;
+    const newText =
+      newMessage.slice(0, start) + emoji + newMessage.slice(start);
+    setNewMessage(newText);
+
+    // Focus back on textarea
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+    }, 0);
+  };
+
+  const handleFilesSelected = (files: File[]) => {
+    setSelectedFiles((prev) => [...prev, ...files]);
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const getStatusBadge = (status: string) => {
@@ -252,12 +319,19 @@ export function UserCommunicationsTab() {
                       {getStatusBadge(selectedTicket?.status || 'open')}
                     </div>
                   </div>
+                  {selectedTicketId && (
+                    <TicketActionsMenu
+                      ticketId={selectedTicketId}
+                      ticketStatus={selectedTicket?.status || "open"}
+                      chatContainerRef={chatContainerRef}
+                    />
+                  )}
                 </div>
               </CardHeader>
               <Separator />
 
               {/* Messages */}
-              <CardContent className="flex-1 min-h-0 p-4">
+              <CardContent className="flex-1 min-h-0 p-4" ref={chatContainerRef}>
                 <ScrollArea className="h-full pr-4">
                   <div className="space-y-4">
                     {messages.map((msg) => (
@@ -271,6 +345,19 @@ export function UserCommunicationsTab() {
                             : 'bg-primary text-primary-foreground'
                         }`}>
                           <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                          
+                          {/* Attachments */}
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              {msg.attachments.map((attachment, idx) => (
+                                <MessageAttachment
+                                  key={idx}
+                                  attachment={attachment}
+                                />
+                              ))}
+                            </div>
+                          )}
+
                           <p className="text-xs mt-2 opacity-70">
                             {formatDistanceToNow(new Date(msg.created_at), { 
                               addSuffix: true, 
@@ -289,27 +376,49 @@ export function UserCommunicationsTab() {
                 <>
                   <Separator />
                   <div className="p-4 flex-shrink-0">
-                    <div className="flex gap-2">
-                      <Textarea
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Digite sua mensagem..."
-                        className="min-h-[80px]"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                      />
-                      <Button 
-                        onClick={handleSendMessage} 
-                        disabled={!newMessage.trim() || sendMessage.isPending}
-                        size="icon"
-                        className="h-[80px]"
-                      >
-                        <Send className="w-4 h-4" />
-                      </Button>
+                    <div className="flex flex-col gap-2">
+                      {/* Preview de anexos */}
+                      {selectedFiles.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          {selectedFiles.map((file, idx) => (
+                            <AttachmentPreview
+                              key={idx}
+                              file={file}
+                              onRemove={() => handleRemoveFile(idx)}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Input de mensagem */}
+                      <div className="flex gap-2">
+                        <div className="flex gap-1">
+                          <AttachmentButton
+                            onFilesSelected={handleFilesSelected}
+                          />
+                          <EmojiPickerButton
+                            onEmojiSelect={handleEmojiSelect}
+                          />
+                        </div>
+
+                        <Textarea
+                          ref={textareaRef}
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          onKeyDown={handleKeyDown}
+                          placeholder="Digite sua mensagem..."
+                          className="resize-none min-h-[80px]"
+                        />
+
+                        <Button
+                          onClick={handleSendMessage}
+                          disabled={!newMessage.trim() || sendMessage.isPending}
+                          size="icon"
+                          className="h-[80px]"
+                        >
+                          <Send className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </>
