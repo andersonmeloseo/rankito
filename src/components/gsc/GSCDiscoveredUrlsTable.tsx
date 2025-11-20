@@ -12,10 +12,9 @@ import { useState, useEffect } from 'react';
 
 interface GSCDiscoveredUrlsTableProps {
   siteId: string;
-  integrationId?: string;
 }
 
-export const GSCDiscoveredUrlsTable = ({ siteId, integrationId }: GSCDiscoveredUrlsTableProps) => {
+export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -24,14 +23,13 @@ export const GSCDiscoveredUrlsTable = ({ siteId, integrationId }: GSCDiscoveredU
   const { urls, isLoading, totalCount, totalPages } = useGSCDiscoveredUrls(siteId, {
     status: statusFilter,
     searchTerm,
-    integrationId,
     page: currentPage,
     pageSize,
   });
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, searchTerm, integrationId]);
+  }, [statusFilter, searchTerm]);
 
   const getStatusBadge = (status: string | null) => {
     switch (status) {
@@ -46,6 +44,19 @@ export const GSCDiscoveredUrlsTable = ({ siteId, integrationId }: GSCDiscoveredU
       default:
         return <Badge variant="outline">Desconhecido</Badge>;
     }
+  };
+
+  const getOriginBadge = (gscData: boolean | null, indexnowData: boolean | null) => {
+    if (gscData && indexnowData) {
+      return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">GSC + Sitemap</Badge>;
+    }
+    if (gscData) {
+      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Search Analytics</Badge>;
+    }
+    if (indexnowData) {
+      return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Sitemap</Badge>;
+    }
+    return <Badge variant="outline">-</Badge>;
   };
 
   if (isLoading) {
@@ -103,6 +114,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId, integrationId }: GSCDiscoveredU
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead>URL</TableHead>
+                <TableHead className="text-center">Origem</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead className="text-right">Impressões</TableHead>
                 <TableHead className="text-right">Cliques</TableHead>
@@ -126,14 +138,10 @@ export const GSCDiscoveredUrlsTable = ({ siteId, integrationId }: GSCDiscoveredU
                         <span className="truncate">{url.url}</span>
                       </a>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {url.gsc_data && url.indexnow_data ? 'GSC + Sitemap' :
-                         url.gsc_data ? 'Search Analytics' :
-                         url.indexnow_data ? 'Sitemap' : '-'}
-                      </Badge>
+                    <TableCell className="text-center">
+                      {getOriginBadge(url.gsc_data, url.indexnow_data)}
                     </TableCell>
-                    <TableCell>{getStatusBadge(url.current_status)}</TableCell>
+                    <TableCell className="text-center">{getStatusBadge(url.current_status)}</TableCell>
                     <TableCell className="text-right">{url.impressions?.toLocaleString() || 0}</TableCell>
                     <TableCell className="text-right">{url.clicks?.toLocaleString() || 0}</TableCell>
                     <TableCell className="text-right">

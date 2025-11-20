@@ -158,7 +158,6 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
             <TabsContent value="urls">
               <GSCDiscoveredUrlsTable 
                 siteId={siteId}
-                integrationId={selectedGSCIntegrationId}
               />
             </TabsContent>
 

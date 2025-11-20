@@ -5,7 +5,6 @@ import { toast } from "sonner";
 interface UseGSCDiscoveredUrlsFilters {
   status?: string;
   searchTerm?: string;
-  integrationId?: string;
   page?: number;
   pageSize?: number;
 }
@@ -21,7 +20,7 @@ export const useGSCDiscoveredUrls = (
   const to = from + pageSize - 1;
 
   const { data: countData } = useQuery({
-    queryKey: ['gsc-discovered-urls-count', siteId, filters?.status, filters?.integrationId, filters?.searchTerm],
+    queryKey: ['gsc-discovered-urls-count', siteId, filters?.status, filters?.searchTerm],
     queryFn: async () => {
       let query = supabase
         .from('gsc_discovered_urls')
@@ -30,9 +29,6 @@ export const useGSCDiscoveredUrls = (
 
       if (filters?.status && filters.status !== 'all') {
         query = query.eq('current_status', filters.status);
-      }
-      if (filters?.integrationId) {
-        query = query.eq('integration_id', filters.integrationId);
       }
       if (filters?.searchTerm) {
         query = query.ilike('url', `%${filters.searchTerm}%`);
@@ -57,10 +53,6 @@ export const useGSCDiscoveredUrls = (
 
       if (filters?.status && filters.status !== 'all') {
         query = query.eq('current_status', filters.status);
-      }
-
-      if (filters?.integrationId) {
-        query = query.eq('integration_id', filters.integrationId);
       }
 
       if (filters?.searchTerm) {
