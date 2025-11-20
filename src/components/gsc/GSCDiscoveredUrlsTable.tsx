@@ -141,7 +141,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`${data.successful || 0} URLs enviadas para indexação`);
+      toast.success(`${data.urls_successful || 0} URLs enviadas para indexação`);
       clearSelection();
       queryClient.invalidateQueries({ queryKey: ['gsc-discovered-urls'] });
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-jobs'] });
