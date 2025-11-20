@@ -354,6 +354,11 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
             {quotaData?.total_integrations || 0} conexão(ões) GSC ativa(s)
+            {quotaData && quotaData.unhealthy_count > 0 && (
+              <span className="ml-2 text-destructive font-medium">
+                ({quotaData.unhealthy_count} de {quotaData.total_integrations} bloqueada(s))
+              </span>
+            )}
           </p>
         </CardHeader>
         <CardContent>
@@ -361,28 +366,69 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
             <div className="text-center text-muted-foreground">Carregando quota...</div>
           ) : (
             <div className="space-y-4">
+              {/* Critical Alert - Quota Excedida */}
+              {quotaData && quotaData.total_used > quotaData.total_limit && (
+                <Alert variant="destructive" className="animate-pulse">
+                  <AlertCircle className="h-5 w-5" />
+                  <div className="ml-2">
+                    <h3 className="font-semibold text-base mb-1">⚠️ Quota Diária Excedida!</h3>
+                    <AlertDescription className="space-y-2">
+                      <p>
+                        Você enviou <strong>{quotaData.total_used - quotaData.total_limit} URLs além do limite</strong> de {quotaData.total_limit} URLs/dia.
+                      </p>
+                      <p className="text-sm">
+                        <strong>Consequências:</strong> URLs acima do limite foram rejeitadas pelo Google. 
+                        {quotaData.unhealthy_count > 0 && (
+                          <span className="block mt-1">
+                            {quotaData.unhealthy_count} conexão(ões) marcada(s) como "unhealthy" até o reset da quota.
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-sm flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Quota reseta em {(() => {
+                          const now = new Date();
+                          const resetTime = new Date(now);
+                          resetTime.setUTCHours(24, 0, 0, 0);
+                          const hoursUntilReset = Math.floor((resetTime.getTime() - now.getTime()) / (1000 * 60 * 60));
+                          const minutesUntilReset = Math.floor(((resetTime.getTime() - now.getTime()) % (1000 * 60 * 60)) / (1000 * 60));
+                          return `${hoursUntilReset}h ${minutesUntilReset}min`;
+                        })()}
+                      </p>
+                    </AlertDescription>
+                  </div>
+                </Alert>
+              )}
+
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold text-blue-700 dark:text-blue-400">
                   {quotaData?.total_used || 0} / {quotaData?.total_limit || 200}
                 </span>
-                <Badge 
-                  className={
-                    (quotaData?.total_remaining || 200) > 1000 
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" 
-                      : (quotaData?.total_remaining || 200) > 500 
-                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" 
-                      : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                  }
-                >
-                  {quotaData?.total_remaining || 200} restantes
-                </Badge>
+                <div className="flex gap-2">
+                  {quotaData && quotaData.total_used > quotaData.total_limit && (
+                    <Badge className="bg-destructive text-destructive-foreground animate-pulse">
+                      ⚠️ +{quotaData.total_used - quotaData.total_limit} BLOQUEADAS
+                    </Badge>
+                  )}
+                  <Badge 
+                    className={
+                      (quotaData?.total_remaining || 200) > 1000 
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" 
+                        : (quotaData?.total_remaining || 200) > 500 
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" 
+                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                    }
+                  >
+                    {quotaData?.total_remaining || 200} restantes
+                  </Badge>
+                </div>
               </div>
               
               {/* Progress Bar */}
               <div className="space-y-2">
                 <Progress 
-                  value={quotaData?.percentage || 0} 
-                  className="h-3"
+                  value={Math.min(quotaData?.percentage || 0, 100)} 
+                  className={`h-3 ${quotaData && quotaData.percentage > 100 ? '[&>div]:bg-destructive [&>div]:animate-pulse' : ''}`}
                 />
                 <p className="text-xs text-muted-foreground text-right">
                   {quotaData?.percentage || 0}% utilizado
@@ -392,6 +438,18 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 Quota reseta diariamente às 00:00 UTC
+                {quotaData && quotaData.percentage > 100 && (
+                  <span className="ml-auto text-destructive font-medium">
+                    Reset em {(() => {
+                      const now = new Date();
+                      const resetTime = new Date(now);
+                      resetTime.setUTCHours(24, 0, 0, 0);
+                      const hoursUntilReset = Math.floor((resetTime.getTime() - now.getTime()) / (1000 * 60 * 60));
+                      const minutesUntilReset = Math.floor(((resetTime.getTime() - now.getTime()) % (1000 * 60 * 60)) / (1000 * 60));
+                      return `${hoursUntilReset}h ${minutesUntilReset}min`;
+                    })()}
+                  </span>
+                )}
               </p>
             </div>
           )}
