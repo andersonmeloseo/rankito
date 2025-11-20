@@ -10,17 +10,20 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const authHeader = req.headers.get('Authorization')!;
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { site_id, config } = await req.json();
+    const { site_id, config, config_id } = await req.json();
     
-    console.log('⚙️ Atualizando config de agendamento:', { site_id, config });
+    console.log('⚙️ Salvando config de agendamento:', { site_id, config, config_id });
 
     // Calcular next_run_at baseado na frequência
     const calculateNextRun = (cfg: any): Date => {
@@ -74,7 +77,7 @@ Deno.serve(async (req) => {
       }
     };
 
-    const next_run_at = calculateNextRun(config);
+    const nextRun = calculateNextRun(config);
 
     // Verificar se usuário é dono do site
     const { data: site } = await supabase
@@ -92,30 +95,52 @@ Deno.serve(async (req) => {
       throw new Error('Usuário não autenticado');
     }
 
-    // Upsert configuração
-    const { data, error } = await supabase
-      .from('gsc_schedule_config')
-      .upsert({
-        site_id,
-        user_id: user.id,
-        ...config,
-        next_run_at: next_run_at.toISOString(),
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'site_id'
-      })
-      .select()
-      .single();
+    const user_id = user.id;
 
-    if (error) throw error;
+    // INSERT ou UPDATE baseado em config_id
+    let data, upsertError;
 
-    console.log('✅ Config atualizada:', data);
+    if (config_id) {
+      // UPDATE existing schedule
+      const result = await supabaseAdmin
+        .from('gsc_schedule_config')
+        .update({
+          ...config,
+          next_run_at: nextRun.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', config_id)
+        .select()
+        .single();
+      
+      data = result.data;
+      upsertError = result.error;
+    } else {
+      // INSERT new schedule
+      const result = await supabaseAdmin
+        .from('gsc_schedule_config')
+        .insert({
+          site_id,
+          user_id,
+          ...config,
+          next_run_at: nextRun.toISOString(),
+        })
+        .select()
+        .single();
+      
+      data = result.data;
+      upsertError = result.error;
+    }
+
+    if (upsertError) throw upsertError;
+
+    console.log('✅ Config salva:', data);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         config: data,
-        next_run_at: next_run_at.toISOString(),
+        next_run_at: nextRun.toISOString(),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -123,7 +148,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('❌ Erro ao atualizar config:', error);
+    console.error('❌ Erro ao salvar config:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

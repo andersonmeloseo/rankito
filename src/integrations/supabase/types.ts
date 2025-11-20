@@ -967,10 +967,12 @@ export type Database = {
           frequency: string
           id: string
           interval_hours: number | null
+          is_active: boolean | null
           last_run_at: string | null
           max_urls_per_run: number | null
           next_run_at: string | null
           pause_on_quota_exceeded: boolean | null
+          schedule_name: string
           site_id: string
           specific_days: number[] | null
           specific_time: string | null
@@ -984,10 +986,12 @@ export type Database = {
           frequency?: string
           id?: string
           interval_hours?: number | null
+          is_active?: boolean | null
           last_run_at?: string | null
           max_urls_per_run?: number | null
           next_run_at?: string | null
           pause_on_quota_exceeded?: boolean | null
+          schedule_name?: string
           site_id: string
           specific_days?: number[] | null
           specific_time?: string | null
@@ -1001,10 +1005,12 @@ export type Database = {
           frequency?: string
           id?: string
           interval_hours?: number | null
+          is_active?: boolean | null
           last_run_at?: string | null
           max_urls_per_run?: number | null
           next_run_at?: string | null
           pause_on_quota_exceeded?: boolean | null
+          schedule_name?: string
           site_id?: string
           specific_days?: number[] | null
           specific_time?: string | null
@@ -1015,28 +1021,28 @@ export type Database = {
           {
             foreignKeyName: "gsc_schedule_config_site_id_fkey"
             columns: ["site_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "rank_rent_contract_status"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "gsc_schedule_config_site_id_fkey"
             columns: ["site_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "rank_rent_metrics"
             referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "gsc_schedule_config_site_id_fkey"
             columns: ["site_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "rank_rent_site_metrics"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "gsc_schedule_config_site_id_fkey"
             columns: ["site_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "rank_rent_sites"
             referencedColumns: ["id"]
           },
