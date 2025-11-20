@@ -86,7 +86,7 @@ export const IndexingWorkflowGuide = ({
         {/* Stepper horizontal - Desktop */}
         <div className="hidden md:flex items-start justify-between gap-2">
           {steps.map((step, index) => {
-            const isCompleted = index + 1 < currentStepIndex;
+            const isCompleted = index + 1 < currentStepIndex || (index + 1 === currentStepIndex && step.id === 5);
             const isCurrent = index + 1 === currentStepIndex;
             const isPending = index + 1 > currentStepIndex;
             const Icon = step.icon;
@@ -160,7 +160,7 @@ export const IndexingWorkflowGuide = ({
         {/* Stepper vertical - Mobile */}
         <div className="md:hidden space-y-4">
           {steps.map((step, index) => {
-            const isCompleted = index + 1 < currentStepIndex;
+            const isCompleted = index + 1 < currentStepIndex || (index + 1 === currentStepIndex && step.id === 5);
             const isCurrent = index + 1 === currentStepIndex;
             const isPending = index + 1 > currentStepIndex;
             const Icon = step.icon;
