@@ -1121,6 +1121,78 @@ export type Database = {
           },
         ]
       }
+      gsc_url_indexing_requests: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          integration_id: string
+          response_data: Json | null
+          site_id: string
+          status: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          response_data?: Json | null
+          site_id: string
+          status: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          response_data?: Json | null
+          site_id?: string
+          status?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_url_indexing_requests_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_search_console_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_url_indexing_requests_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_url_indexing_requests_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gsc_url_indexing_requests_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gsc_url_indexing_requests_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       indexnow_submissions: {
         Row: {
           created_at: string | null
