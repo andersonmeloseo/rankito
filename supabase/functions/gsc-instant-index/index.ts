@@ -201,17 +201,30 @@ Deno.serve(async (req) => {
       // Status baseado apenas no GSC
       const overallSuccess = urlResult.gsc === 'success';
       
-      await supabase
-        .from('gsc_discovered_urls')
-        .upsert({
-          site_id,
-          url,
-          current_status: overallSuccess ? 'sent_for_indexing' : 'failed',
-          last_checked_at: new Date().toISOString(),
-        }, {
-          onConflict: 'site_id,url',
-          ignoreDuplicates: false,
-        });
+      // Detectar se é erro de quota (429 ou rate limit)
+      const isQuotaError = !overallSuccess && (
+        gscResult.error?.type === 'quota_exceeded' ||
+        gscResult.error?.data?.error?.status === 'RESOURCE_EXHAUSTED' ||
+        gscResult.error?.data?.error?.message?.toLowerCase().includes('quota')
+      );
+
+      // Só atualizar status se NÃO for erro de quota
+      // Erros de quota preservam o status atual da URL
+      if (!isQuotaError) {
+        await supabase
+          .from('gsc_discovered_urls')
+          .upsert({
+            site_id,
+            url,
+            current_status: overallSuccess ? 'sent_for_indexing' : 'failed',
+            last_checked_at: new Date().toISOString(),
+          }, {
+            onConflict: 'site_id,url',
+            ignoreDuplicates: false,
+          });
+      } else {
+        console.log(`⏭️ Quota exceeded for ${url} - preserving current status`);
+      }
 
       if (overallSuccess) {
         successCount++;
