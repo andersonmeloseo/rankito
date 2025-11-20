@@ -79,6 +79,12 @@ export const ScheduleConfigDialog = ({ open, onOpenChange, siteId }: ScheduleCon
   };
 
   const handleSave = () => {
+    // Validation: weekly must have at least 1 day selected
+    if (frequency === 'weekly' && specificDays.length === 0) {
+      toast.error('Selecione pelo menos 1 dia da semana');
+      return;
+    }
+
     const newConfig: Partial<ScheduleConfig> = {
       enabled: true,
       frequency,
