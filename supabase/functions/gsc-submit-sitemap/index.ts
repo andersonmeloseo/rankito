@@ -116,21 +116,30 @@ Deno.serve(async (req) => {
       console.log('📊 Sitemap details:', sitemapDetails);
     }
 
+    // Preparar dados para salvar no banco
+    const submittedCount = sitemapDetails?.contents?.[0]?.submitted;
+    const errorsValue = sitemapDetails?.errors;
+    const warningsValue = sitemapDetails?.warnings;
+
+    const submissionData = {
+      integration_id,
+      site_id: integration.site_id,
+      sitemap_url,
+      sitemap_type: sitemapDetails?.isSitemapsIndex ? 'index' : 'regular',
+      gsc_status: warningsValue && warningsValue !== '0' ? 'warning' : 'success',
+      gsc_last_submitted: sitemapDetails?.lastSubmitted || new Date().toISOString(),
+      gsc_last_downloaded: sitemapDetails?.lastDownloaded || null,
+      page_count: submittedCount ? parseInt(submittedCount) : 0,
+      errors_count: errorsValue ? parseInt(errorsValue) : 0,
+      warnings_count: warningsValue ? parseInt(warningsValue) : 0,
+    };
+
+    console.log('💾 Saving to database:', JSON.stringify(submissionData, null, 2));
+
     // Salvar no banco (upsert baseado em integration_id + sitemap_url)
     const { data: submission, error: dbError } = await supabase
       .from('gsc_sitemap_submissions')
-      .upsert({
-        integration_id,
-        site_id: integration.site_id,
-        sitemap_url,
-        sitemap_type: sitemapDetails?.isSitemapsIndex ? 'index' : 'regular',
-        gsc_status: sitemapDetails?.warnings ? 'warning' : 'success',
-        gsc_last_submitted: sitemapDetails?.lastSubmitted || new Date().toISOString(),
-        gsc_last_downloaded: sitemapDetails?.lastDownloaded || null,
-        page_count: parseInt(sitemapDetails?.contents?.[0]?.submitted || '0'),
-        errors_count: parseInt(sitemapDetails?.errors || '0'),
-        warnings_count: parseInt(sitemapDetails?.warnings || '0'),
-      }, {
+      .upsert(submissionData, {
         onConflict: 'integration_id,sitemap_url',
       })
       .select()
