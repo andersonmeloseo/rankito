@@ -3364,6 +3364,7 @@ export type Database = {
     Functions: {
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
       generate_indexnow_key: { Args: never; Returns: string }
+      get_database_health_metrics: { Args: never; Returns: Json }
       get_event_distribution: {
         Args: {
           device_filter?: string
