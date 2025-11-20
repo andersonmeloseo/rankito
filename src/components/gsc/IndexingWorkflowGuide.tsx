@@ -231,8 +231,8 @@ export const IndexingWorkflowGuide = ({
             <AlertTitle className="text-yellow-800 dark:text-yellow-300">Instruções IndexNow</AlertTitle>
             <AlertDescription className="space-y-2 text-yellow-700 dark:text-yellow-400">
               <p>1. Crie um arquivo <code className="bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded font-mono text-xs">.txt</code> na raiz do seu site</p>
-              <p>2. Nome do arquivo: <code className="bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded font-mono text-xs">{indexNowFileName}</code></p>
-              <p>3. Conteúdo do arquivo: <code className="bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded font-mono text-xs break-all">{indexNowKey}</code></p>
+              <p>2. Nome do arquivo: copie exatamente como mostrado no campo "Nome do Arquivo" abaixo</p>
+              <p>3. Conteúdo do arquivo: copie exatamente como mostrado no campo "Chave IndexNow" abaixo</p>
               <p>4. Clique em "Validar Chave" na aba IndexNow abaixo</p>
               <p>5. Selecione todas as URLs e clique em "Enviar para IndexNow"</p>
             </AlertDescription>
