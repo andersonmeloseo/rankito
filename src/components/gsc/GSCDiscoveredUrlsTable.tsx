@@ -117,8 +117,9 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
       const selectedUrlsData = urls?.filter(u => urlIds.includes(u.id)) || [];
       const { data, error } = await supabase.functions.invoke('gsc-instant-index', {
         body: { 
-          siteId, 
-          urls: selectedUrlsData.map(u => u.url) 
+          site_id: siteId,
+          urls: selectedUrlsData.map(u => u.url),
+          integration_id: null
         }
       });
       if (error) throw error;
