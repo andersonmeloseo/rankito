@@ -10,7 +10,6 @@ import { useGSCIntegrations } from '@/hooks/useGSCIntegrations';
 import { GSCIntegrationsManager } from './GSCIntegrationsManager';
 import { GSCIntegrationHealthCard } from './GSCIntegrationHealthCard';
 import { GSCIndexingControls } from './GSCIndexingControls';
-import { GSCIndexingAlertsPanel } from './GSCIndexingAlertsPanel';
 import { GSCDiscoveredUrlsTable } from './GSCDiscoveredUrlsTable';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
 import { IndexNowManager } from './IndexNowManager';
@@ -154,9 +153,6 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
           siteId={siteId}
           integrationId={selectedGSCIntegrationId}
         />
-
-        {/* Alerts Panel */}
-        <GSCIndexingAlertsPanel siteId={siteId} />
 
         {/* Sub-tabs for Sitemaps and URLs */}
         <Card>
