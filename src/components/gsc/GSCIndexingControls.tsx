@@ -141,7 +141,7 @@ export const GSCIndexingControls = ({ siteId, integrationId }: GSCIndexingContro
               <span className="font-semibold">Passo 3 - Indexação das URLs</span>
             </div>
             <p className="text-xs text-muted-foreground text-left">
-              Envia URLs selecionadas para indexação (200 URLs/dia por conexão GSC)
+              Envia URLs para indexação (200 URLs/dia por conexão GSC)
             </p>
           </Button>
         </div>
