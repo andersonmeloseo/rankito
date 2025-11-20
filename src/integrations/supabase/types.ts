@@ -3428,6 +3428,13 @@ export type Database = {
         Returns: boolean
       }
       reset_gsc_integration_health: { Args: never; Returns: undefined }
+      trigger_all_notification_checks: {
+        Args: never
+        Returns: {
+          job_name: string
+          result: string
+        }[]
+      }
       update_contract_statuses: { Args: never; Returns: undefined }
     }
     Enums: {
