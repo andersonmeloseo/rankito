@@ -127,10 +127,9 @@ Deno.serve(async (req) => {
         gsc_status: sitemapDetails?.warnings ? 'warning' : 'success',
         gsc_last_submitted: sitemapDetails?.lastSubmitted || new Date().toISOString(),
         gsc_last_downloaded: sitemapDetails?.lastDownloaded || null,
-        urls_submitted: sitemapDetails?.contents?.[0]?.submitted || 0,
-        urls_indexed: sitemapDetails?.contents?.[0]?.indexed || 0,
-        gsc_errors_count: sitemapDetails?.errors || 0,
-        gsc_warnings_count: sitemapDetails?.warnings || 0,
+        page_count: parseInt(sitemapDetails?.contents?.[0]?.submitted || '0'),
+        errors_count: parseInt(sitemapDetails?.errors || '0'),
+        warnings_count: parseInt(sitemapDetails?.warnings || '0'),
       }, {
         onConflict: 'integration_id,sitemap_url',
       })
