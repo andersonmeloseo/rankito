@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Send, ExternalLink, Globe, CheckCircle2 } from 'lucide-react';
+import { Send, ExternalLink, Globe, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Pagination, 
   PaginationContent, 
@@ -22,11 +23,52 @@ interface IndexNowDiscoveredUrlsProps {
   siteId: string;
 }
 
+type SortField = 'url' | 'current_status' | 'sent_to_indexnow' | 'discovered_at';
+type SortDirection = 'asc' | 'desc';
+interface SortState {
+  field: SortField;
+  direction: SortDirection;
+}
+
+interface SortableHeaderProps {
+  field: SortField;
+  label: string;
+  currentSort: SortState;
+  onSort: (field: SortField) => void;
+  className?: string;
+}
+
+const SortableHeader = ({ field, label, currentSort, onSort, className }: SortableHeaderProps) => {
+  const isActive = currentSort.field === field;
+  return (
+    <TableHead 
+      className={`cursor-pointer select-none hover:bg-muted/50 transition-colors ${className || ''}`}
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center gap-2">
+        {label}
+        {isActive && (currentSort.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+        {!isActive && <ArrowUpDown className="h-4 w-4 text-muted-foreground/50" />}
+      </div>
+    </TableHead>
+  );
+};
+
 export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) => {
   const queryClient = useQueryClient();
   const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 100;
+  
+  const [sortState, setSortState] = useState<SortState>({
+    field: 'discovered_at',
+    direction: 'desc'
+  });
+  
+  const [filters, setFilters] = useState({
+    status: 'all',
+    sentToIndexNow: 'all'
+  });
 
   // Query 1: Total count
   const { data: totalCount = 0 } = useQuery({
@@ -53,13 +95,50 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
         .from('gsc_discovered_urls')
         .select('id, url, current_status, discovered_at, sent_to_indexnow')
         .eq('site_id', siteId)
-        .order('discovered_at', { ascending: false })
-        .range(startIndex, endIndex);
+        .range(0, 9999999); // Fetch all for client-side processing
       
       if (error) throw error;
       return data;
     },
   });
+  
+  // Client-side filtering and sorting
+  const sortData = <T extends Record<string, any>>(data: T[], sortState: SortState): T[] => {
+    return [...data].sort((a, b) => {
+      const aVal = a[sortState.field];
+      const bVal = b[sortState.field];
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      if (typeof aVal === 'string') {
+        return sortState.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      if (typeof aVal === 'boolean') {
+        return sortState.direction === 'asc' ? (aVal === bVal ? 0 : aVal ? 1 : -1) : (aVal === bVal ? 0 : aVal ? -1 : 1);
+      }
+      return sortState.direction === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal > bVal ? -1 : 1);
+    });
+  };
+  
+  const filterData = (data: any[]) => {
+    return data.filter(item => {
+      if (filters.status !== 'all' && item.current_status !== filters.status) return false;
+      if (filters.sentToIndexNow === 'yes' && !item.sent_to_indexnow) return false;
+      if (filters.sentToIndexNow === 'no' && item.sent_to_indexnow) return false;
+      return true;
+    });
+  };
+  
+  const processedUrls = useMemo(() => {
+    if (!urls) return [];
+    const filtered = filterData(urls);
+    return sortData(filtered, sortState);
+  }, [urls, filters, sortState]);
+  
+  const paginatedUrls = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return processedUrls.slice(start, end);
+  }, [processedUrls, currentPage, itemsPerPage]);
 
   // Query 3: Already sent count
   const { data: alreadySentCount = 0 } = useQuery({
@@ -76,7 +155,14 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
     },
   });
 
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const totalPages = Math.ceil(processedUrls.length / itemsPerPage);
+  
+  const handleSort = (field: SortField) => {
+    setSortState(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
 
   const sendToIndexNow = useMutation({
     mutationFn: async (urlList: string[]) => {
@@ -112,11 +198,11 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
   };
 
   const toggleAll = () => {
-    if (!urls) return;
-    if (selectedUrls.length === urls.length) {
+    if (!paginatedUrls) return;
+    if (selectedUrls.length === paginatedUrls.length && paginatedUrls.length > 0) {
       setSelectedUrls([]);
     } else {
-      setSelectedUrls(urls.map(u => u.url));
+      setSelectedUrls(paginatedUrls.map(u => u.url));
     }
   };
 
@@ -151,7 +237,7 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
           <CardContent>
             <div className="flex items-center gap-2">
               <Globe className="h-5 w-5 text-blue-600" />
-              <span className="text-2xl font-bold">{totalCount}</span>
+              <span className="text-2xl font-bold">{processedUrls.length}</span>
             </div>
           </CardContent>
         </Card>
@@ -188,7 +274,7 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
             <div>
               <CardTitle>URLs Descobertas Disponíveis</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalCount)} de {totalCount} URLs
+                Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, processedUrls.length)} de {processedUrls.length} URLs
               </p>
             </div>
             <Button
@@ -201,24 +287,93 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
           </div>
         </CardHeader>
         <CardContent>
+          {/* Filters */}
+          <div className="flex gap-4 mb-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Status:</label>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="discovered">Descoberto</SelectItem>
+                  <SelectItem value="sent">Enviado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Enviado ao IndexNow:</label>
+              <Select
+                value={filters.sentToIndexNow}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, sentToIndexNow: value }))}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="yes">Sim</SelectItem>
+                  <SelectItem value="no">Não</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(filters.status !== 'all' || filters.sentToIndexNow !== 'all') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilters({ status: 'all', sentToIndexNow: 'all' })}
+              >
+                Limpar Filtros
+              </Button>
+            )}
+          </div>
+          
+
           <div className="border rounded-lg">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={urls && selectedUrls.length === urls.length && urls.length > 0}
+                      checked={paginatedUrls && selectedUrls.length === paginatedUrls.length && paginatedUrls.length > 0}
                       onCheckedChange={toggleAll}
                     />
                   </TableHead>
-                  <TableHead>URL</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Descoberta em</TableHead>
+                  <SortableHeader 
+                    field="url" 
+                    label="URL" 
+                    currentSort={sortState} 
+                    onSort={handleSort} 
+                  />
+                  <SortableHeader 
+                    field="current_status" 
+                    label="Status" 
+                    currentSort={sortState} 
+                    onSort={handleSort} 
+                  />
+                  <SortableHeader 
+                    field="sent_to_indexnow" 
+                    label="IndexNow" 
+                    currentSort={sortState} 
+                    onSort={handleSort} 
+                  />
+                  <SortableHeader 
+                    field="discovered_at" 
+                    label="Descoberta em" 
+                    currentSort={sortState} 
+                    onSort={handleSort} 
+                  />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {urls && urls.length > 0 ? (
-              urls.map((url) => (
+            {paginatedUrls && paginatedUrls.length > 0 ? (
+              paginatedUrls.map((url) => (
                     <TableRow key={url.id} className="h-16">
                       <TableCell>
                         <Checkbox
@@ -238,10 +393,16 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
                         </a>
                       </TableCell>
                       <TableCell>
+                        <Badge variant="outline">{url.current_status || 'Descoberto'}</Badge>
+                      </TableCell>
+                      <TableCell>
                         {url.sent_to_indexnow ? (
-                          <Badge className="bg-green-600">Enviado ✓</Badge>
+                          <Badge className="bg-green-100 text-green-700 border-green-300">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Enviado
+                          </Badge>
                         ) : (
-                          <Badge variant="outline">{url.current_status || 'Descoberto'}</Badge>
+                          <Badge variant="outline">Não</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
