@@ -211,17 +211,20 @@ Deno.serve(async (req) => {
       // Só atualizar status se NÃO for erro de quota
       // Erros de quota preservam o status atual da URL
       if (!isQuotaError) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('gsc_discovered_urls')
-          .upsert({
-            site_id,
-            url,
+          .update({
             current_status: overallSuccess ? 'sent' : 'failed',
             last_checked_at: new Date().toISOString(),
-          }, {
-            onConflict: 'site_id,url',
-            ignoreDuplicates: false,
-          });
+          })
+          .eq('site_id', site_id)
+          .eq('url', url);
+        
+        if (updateError) {
+          console.error(`⚠️ Failed to update status for ${url}:`, updateError);
+        } else {
+          console.log(`✅ Status updated to '${overallSuccess ? 'sent' : 'failed'}' for ${url}`);
+        }
       } else {
         console.log(`⏭️ Quota exceeded for ${url} - preserving current status`);
       }
