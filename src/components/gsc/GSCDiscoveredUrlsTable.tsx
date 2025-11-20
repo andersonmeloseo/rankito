@@ -102,7 +102,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
         .from('gsc_indexing_jobs')
         .select('*')
         .eq('site_id', siteId)
-        .eq('job_type', 'instant_indexing')
+        .eq('job_type', 'instant')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;

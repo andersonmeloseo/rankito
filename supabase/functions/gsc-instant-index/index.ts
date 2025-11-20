@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
       .insert({
         site_id,
         integration_id: integration_id || null,
-        job_type: 'manual',
+        job_type: 'instant',
         status: 'running',
         started_at: new Date().toISOString(),
       })
