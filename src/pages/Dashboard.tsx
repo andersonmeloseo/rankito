@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin } from "lucide-react";
+import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Breadcrumb,
@@ -56,6 +56,9 @@ import { BulkDeleteDialog } from "@/components/rank-rent/BulkDeleteDialog";
 import { LeadNotificationBanner } from "@/components/crm/LeadNotificationBanner";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
 import { GeolocationAnalyticsTab } from "@/components/dashboard/geolocation/GeolocationAnalyticsTab";
+import { useUnreadCommunications } from "@/hooks/useUnreadCommunications";
+import { CommunicationNotificationBadge } from "@/components/dashboard/CommunicationNotificationBadge";
+import { UserCommunicationsTab } from "@/components/dashboard/UserCommunicationsTab";
 
 const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
@@ -78,6 +81,10 @@ const Dashboard = () => {
 
   // Realtime leads
   const { newLeads, clearNewLeads } = useRealtimeLeads(user?.id);
+
+  // Unread communications
+  const { data: unreadData } = useUnreadCommunications(user?.id);
+  const unreadCount = unreadData?.count || 0;
 
   // Subscription limits
   const { data: limits, isLoading: limitsLoading } = useSubscriptionLimits();
@@ -281,9 +288,17 @@ const Dashboard = () => {
           <div className="flex items-start justify-between gap-6 mb-6">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-              <p className="text-base text-muted-foreground">
-                Bem-vindo de volta, {userName} 👋
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-base text-muted-foreground">
+                  Bem-vindo de volta, {userName} 👋
+                </p>
+                {unreadCount > 0 && (
+                  <CommunicationNotificationBadge 
+                    count={unreadCount}
+                    onClick={() => handleTabChange('communication')}
+                  />
+                )}
+              </div>
             </div>
             
             {/* Action Button */}
@@ -349,6 +364,15 @@ const Dashboard = () => {
                   
                   <ClickUpTabTrigger value="clients" icon={Users}>
                     Clientes
+                  </ClickUpTabTrigger>
+
+                  <ClickUpTabTrigger value="communication" icon={MessageCircle}>
+                    Comunicação
+                    {unreadCount > 0 && (
+                      <Badge variant="destructive" className="ml-2 animate-pulse">
+                        {unreadCount}
+                      </Badge>
+                    )}
                   </ClickUpTabTrigger>
                 </TabsList>
               </div>
@@ -457,7 +481,11 @@ const Dashboard = () => {
             <TabsContent value="clients" className="space-y-8">
               <ClientsListIntegrated userId={user.id} />
             </TabsContent>
-        </Tabs>
+
+            <TabsContent value="communication" className="space-y-8">
+              <UserCommunicationsTab />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 

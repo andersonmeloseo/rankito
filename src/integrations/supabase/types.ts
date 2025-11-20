@@ -2910,9 +2910,12 @@ export type Database = {
           closed_at: string | null
           created_at: string
           id: string
+          initiated_by: string
+          is_broadcast: boolean
           last_message_at: string
           metadata: Json | null
           priority: Database["public"]["Enums"]["support_priority"]
+          recipient_user_id: string | null
           resolved_at: string | null
           status: Database["public"]["Enums"]["support_status"]
           subject: string
@@ -2927,9 +2930,12 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           id?: string
+          initiated_by?: string
+          is_broadcast?: boolean
           last_message_at?: string
           metadata?: Json | null
           priority?: Database["public"]["Enums"]["support_priority"]
+          recipient_user_id?: string | null
           resolved_at?: string | null
           status?: Database["public"]["Enums"]["support_status"]
           subject: string
@@ -2944,9 +2950,12 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           id?: string
+          initiated_by?: string
+          is_broadcast?: boolean
           last_message_at?: string
           metadata?: Json | null
           priority?: Database["public"]["Enums"]["support_priority"]
+          recipient_user_id?: string | null
           resolved_at?: string | null
           status?: Database["public"]["Enums"]["support_status"]
           subject?: string

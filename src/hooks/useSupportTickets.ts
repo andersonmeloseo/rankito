@@ -18,6 +18,9 @@ export interface SupportTicket {
   unread_admin_count: number;
   unread_user_count: number;
   metadata: Record<string, any>;
+  initiated_by: 'user' | 'admin';
+  is_broadcast: boolean;
+  recipient_user_id: string | null;
   profiles?: {
     full_name: string;
     email: string;
@@ -56,7 +59,7 @@ export function useUserTickets(userId?: string) {
           *,
           user_profile:profiles!user_id (full_name, email, avatar_url)
         `)
-        .eq('user_id', userId)
+        .or(`user_id.eq.${userId},recipient_user_id.eq.${userId},is_broadcast.eq.true`)
         .order('last_message_at', { ascending: false });
 
       if (error) throw error;
