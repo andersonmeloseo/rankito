@@ -19,7 +19,6 @@ interface InstantIndexDialogProps {
 
 export const InstantIndexDialog = ({ open, onOpenChange, siteId, integrationId }: InstantIndexDialogProps) => {
   const { urls, isLoading } = useGSCDiscoveredUrls(siteId, {
-    integrationId,
     status: 'discovered', // Only show non-indexed URLs
   });
 
