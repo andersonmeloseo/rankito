@@ -28,33 +28,55 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 100;
 
-  const { data: urls, isLoading } = useQuery({
-    queryKey: ['gsc-discovered-urls-indexnow', siteId],
+  // Query 1: Total count
+  const { data: totalCount = 0 } = useQuery({
+    queryKey: ['gsc-discovered-urls-count', siteId],
     queryFn: async () => {
-    const { data, error } = await supabase
-      .from('gsc_discovered_urls')
-      .select('id, url, current_status, discovered_at, sent_to_indexnow')
-      .eq('site_id', siteId)
-      .order('discovered_at', { ascending: false })
-      .range(0, 9999999);
-    
-    if (error) throw error;
-    return data;
+      const { count, error } = await supabase
+        .from('gsc_discovered_urls')
+        .select('*', { count: 'exact', head: true })
+        .eq('site_id', siteId);
+      
+      if (error) throw error;
+      return count || 0;
     },
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    gcTime: 0,
   });
 
-  const paginatedUrls = useMemo(() => {
-    if (!urls) return [];
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return urls.slice(startIndex, endIndex);
-  }, [urls, currentPage]);
+  // Query 2: Paginated URLs (server-side pagination)
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage - 1;
 
-  const totalPages = Math.ceil((urls?.length || 0) / itemsPerPage);
+  const { data: urls, isLoading } = useQuery({
+    queryKey: ['gsc-discovered-urls-indexnow', siteId, currentPage],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gsc_discovered_urls')
+        .select('id, url, current_status, discovered_at, sent_to_indexnow')
+        .eq('site_id', siteId)
+        .order('discovered_at', { ascending: false })
+        .range(startIndex, endIndex);
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Query 3: Already sent count
+  const { data: alreadySentCount = 0 } = useQuery({
+    queryKey: ['gsc-discovered-urls-sent-count', siteId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('gsc_discovered_urls')
+        .select('*', { count: 'exact', head: true })
+        .eq('site_id', siteId)
+        .eq('sent_to_indexnow', true);
+      
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const sendToIndexNow = useMutation({
     mutationFn: async (urlList: string[]) => {
@@ -105,9 +127,6 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
     }
     sendToIndexNow.mutate(selectedUrls);
   };
-
-  const totalCount = urls?.length || 0;
-  const alreadySentCount = urls?.filter(u => u.sent_to_indexnow).length || 0;
 
   if (isLoading) {
     return (
@@ -198,8 +217,8 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedUrls && paginatedUrls.length > 0 ? (
-              paginatedUrls.map((url) => (
+            {urls && urls.length > 0 ? (
+              urls.map((url) => (
                     <TableRow key={url.id} className="h-16">
                       <TableCell>
                         <Checkbox
