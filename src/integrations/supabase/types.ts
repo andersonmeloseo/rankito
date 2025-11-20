@@ -2981,6 +2981,95 @@ export type Database = {
           },
         ]
       }
+      training_modules: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      training_videos: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          duration_seconds: number | null
+          id: string
+          is_active: boolean
+          is_free: boolean
+          module_id: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_id: string
+          video_provider: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          is_free?: boolean
+          module_id: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_id: string
+          video_provider: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          is_free?: boolean
+          module_id?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_id?: string
+          video_provider?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_videos_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notifications: {
         Row: {
           created_at: string
@@ -3100,6 +3189,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_video_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          last_position_seconds: number
+          updated_at: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_position_seconds?: number
+          updated_at?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_position_seconds?: number
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_video_progress_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "training_videos"
             referencedColumns: ["id"]
           },
         ]
