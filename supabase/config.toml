@@ -1,5 +1,8 @@
 project_id = "jhzmgexprjnpgadkxjup"
 
+[functions.super-admin-create-user]
+verify_jwt = true
+
 [functions.gsc-update-schedule-config]
 verify_jwt = true
 

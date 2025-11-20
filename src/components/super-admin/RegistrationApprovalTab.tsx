@@ -45,18 +45,25 @@ export const RegistrationApprovalTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, whatsapp, website, created_at, is_active')
+        .select(`
+          id, 
+          full_name, 
+          email, 
+          whatsapp, 
+          website, 
+          created_at, 
+          is_active,
+          selected_plan_slug,
+          rejection_reason,
+          approved_at,
+          approved_by
+        `)
         .eq('is_active', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Mapear dados com campos adicionais via cast
-      return (data || []).map(profile => ({
-        ...profile,
-        selected_plan_slug: (profile as any).selected_plan_slug || null,
-        rejection_reason: (profile as any).rejection_reason || null,
-      })) as PendingUser[];
+      return (data || []) as PendingUser[];
     },
   });
 
