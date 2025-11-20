@@ -40,6 +40,8 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
       if (error) throw error;
       return data;
     },
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const paginatedUrls = useMemo(() => {
