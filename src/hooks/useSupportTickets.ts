@@ -33,7 +33,7 @@ export interface SupportMessage {
   ticket_id: string;
   sender_id: string;
   message: string;
-  attachments: Array<{ name: string; url: string; size: number }>;
+  attachments: Array<{ name: string; url: string; size: number; type: string }>;
   is_admin_reply: boolean;
   is_read: boolean;
   is_internal_note: boolean;
