@@ -134,7 +134,15 @@ export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Chave Atual</Label>
+            <div className="flex items-center gap-2">
+              <Label>Chave Atual</Label>
+              {validationResult?.valid && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Chave Validada
+                </span>
+              )}
+            </div>
             <div className="flex gap-2">
               <Input
                 value={site?.indexnow_key || "Nenhuma chave configurada"}
@@ -171,16 +179,6 @@ export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
 
               <div className="flex gap-2">
                 <Button
-                  onClick={validateKey}
-                  disabled={isValidating}
-                  variant="secondary"
-                  className="flex-1"
-                >
-                  <CheckCircle2 className={`h-4 w-4 mr-2 ${isValidating ? 'animate-spin' : ''}`} />
-                  Validar Chave
-                </Button>
-                
-                <Button
                   onClick={openKeyFile}
                   variant="outline"
                   className="flex-1"
@@ -188,6 +186,16 @@ export const IndexNowManager = ({ siteId, siteUrl }: IndexNowManagerProps) => {
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Abrir Arquivo
+                </Button>
+                
+                <Button
+                  onClick={validateKey}
+                  disabled={isValidating}
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  <CheckCircle2 className={`h-4 w-4 mr-2 ${isValidating ? 'animate-spin' : ''}`} />
+                  Validar Chave
                 </Button>
               </div>
 
