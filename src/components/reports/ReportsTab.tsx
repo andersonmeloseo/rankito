@@ -252,7 +252,9 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           styles,
           reportName: reportName || 'Relatório',
           siteName: siteName,
-          period: reportData?.period ? `${reportData.period.start} - ${reportData.period.end}` : `${period} dias`
+          period: reportData?.period ? `${reportData.period.start} - ${reportData.period.end}` : `${period} dias`,
+          includeEcommerce,
+          ecommerceData: reportData?.ecommerce
         }
       });
 

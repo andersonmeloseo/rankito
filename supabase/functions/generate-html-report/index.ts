@@ -11,9 +11,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { htmlContent, styles, reportName, siteName, period } = await req.json();
+    const { htmlContent, styles, reportName, siteName, period, includeEcommerce, ecommerceData } = await req.json();
 
-    console.log('Generating HTML report:', { reportName, siteName, period });
+    console.log('Generating HTML report:', { reportName, siteName, period, includeEcommerce });
 
     // Construir documento HTML completo com o conteúdo capturado
     const fullHTML = `
@@ -120,6 +120,91 @@ Deno.serve(async (req) => {
     </div>
     
     ${htmlContent}
+    
+    ${includeEcommerce && ecommerceData ? `
+    <div style="margin-top: 3rem; padding: 2rem; background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+      <h2 style="color: #7c3aed; font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        🛒 E-commerce Analytics
+      </h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 0.5rem; color: white;">
+          <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Receita Total</div>
+          <div style="font-size: 1.5rem; font-weight: 700;">R$ ${ecommerceData.totalRevenue?.toFixed(2) || '0.00'}</div>
+        </div>
+        <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 0.5rem; color: white;">
+          <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Total de Pedidos</div>
+          <div style="font-size: 1.5rem; font-weight: 700;">${ecommerceData.totalOrders || 0}</div>
+        </div>
+        <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 0.5rem; color: white;">
+          <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Ticket Médio</div>
+          <div style="font-size: 1.5rem; font-weight: 700;">R$ ${ecommerceData.averageOrderValue?.toFixed(2) || '0.00'}</div>
+        </div>
+      </div>
+      
+      ${ecommerceData.topProducts && ecommerceData.topProducts.length > 0 ? `
+      <div style="margin-top: 2rem;">
+        <h3 style="color: #374151; font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">📦 Top 10 Produtos</h3>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 0.5rem; overflow: hidden;">
+          <thead style="background: #f9fafb;">
+            <tr>
+              <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #374151;">Produto</th>
+              <th style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #374151;">Visualizações</th>
+              <th style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #374151;">Add to Cart</th>
+              <th style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #374151;">Compras</th>
+              <th style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #374151;">Receita</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ecommerceData.topProducts.slice(0, 10).map((product: any, i: number) => `
+              <tr style="border-bottom: 1px solid #e5e7eb; ${i % 2 === 0 ? 'background: #f9fafb;' : ''}">
+                <td style="padding: 0.75rem; color: #374151; font-weight: 500;">${product.name || 'Unknown'}</td>
+                <td style="padding: 0.75rem; text-align: right; color: #6b7280;">${product.views || 0}</td>
+                <td style="padding: 0.75rem; text-align: right; color: #6b7280;">${product.addToCarts || 0}</td>
+                <td style="padding: 0.75rem; text-align: right; color: #6b7280;">${product.purchases || 0}</td>
+                <td style="padding: 0.75rem; text-align: right; color: #374151; font-weight: 600;">R$ ${(product.revenue || 0).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      ` : ''}
+      
+      ${ecommerceData.funnel ? `
+      <div style="margin-top: 2rem;">
+        <h3 style="color: #374151; font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">🎯 Funil de Conversão</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+          <div style="padding: 1rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb;">
+            <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 0.25rem;">Visualizações</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: #374151;">${ecommerceData.funnel.productViews || 0}</div>
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">100%</div>
+          </div>
+          <div style="padding: 1rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb;">
+            <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 0.25rem;">Add to Cart</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: #374151;">${ecommerceData.funnel.addToCarts || 0}</div>
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">
+              ${ecommerceData.funnel.productViews > 0 ? ((ecommerceData.funnel.addToCarts / ecommerceData.funnel.productViews) * 100).toFixed(1) : 0}%
+            </div>
+          </div>
+          <div style="padding: 1rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb;">
+            <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 0.25rem;">Checkouts</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: #374151;">${ecommerceData.funnel.checkouts || 0}</div>
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">
+              ${ecommerceData.funnel.productViews > 0 ? ((ecommerceData.funnel.checkouts / ecommerceData.funnel.productViews) * 100).toFixed(1) : 0}%
+            </div>
+          </div>
+          <div style="padding: 1rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb;">
+            <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 0.25rem;">Compras</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: #374151;">${ecommerceData.funnel.purchases || 0}</div>
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">
+              ${ecommerceData.funnel.productViews > 0 ? ((ecommerceData.funnel.purchases / ecommerceData.funnel.productViews) * 100).toFixed(1) : 0}%
+            </div>
+          </div>
+        </div>
+      </div>
+      ` : ''}
+    </div>
+    ` : ''}
     
     <div class="report-footer">
       <p>Relatório gerado em ${new Date().toLocaleString('pt-BR', {
