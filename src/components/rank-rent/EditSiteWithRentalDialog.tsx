@@ -85,7 +85,11 @@ export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteW
 
     try {
       const updateData: any = {
-        ...formData,
+        site_name: formData.site_name,
+        site_url: formData.site_url,
+        niche: formData.niche,
+        location: formData.location,
+        notes: formData.notes,
         is_ecommerce: formData.isEcommerce,
         is_rented: isRented,
         monthly_rent_value: isRented && monthlyRent ? parseFloat(monthlyRent) : 0,
