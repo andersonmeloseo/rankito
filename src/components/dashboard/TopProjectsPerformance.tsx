@@ -1,12 +1,12 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { TrendingUp, Eye, MousePointerClick, ExternalLink, RefreshCw } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { TrendingUp, ExternalLink, AlertCircle, RefreshCw, Eye, MousePointerClick } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TopProjectsPerformanceProps {
   userId: string;
@@ -26,123 +26,71 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Limpar cache ao montar o componente
-  // Limpar cache apenas na primeira montagem
-  useEffect(() => {
-    try {
-      localStorage.removeItem('top-projects-cache');
-    } catch (e) {
-      console.error('❌ Erro ao limpar cache:', e);
-    }
-    
-    queryClient.invalidateQueries({ queryKey: ["top-projects-performance"] });
-  }, []); // Array vazio = roda apenas UMA VEZ
-
-  const { data: topProjects, isLoading } = useQuery({
+  const { data: topProjects, isLoading, error, refetch } = useQuery({
     queryKey: ["top-projects-performance", userId],
     queryFn: async () => {
-      console.log('🔍 Buscando dados com userId:', userId);
-      
-      // Buscar sites do usuário
-      const { data: sites, error: sitesError } = await supabase
-        .from("rank_rent_sites")
-        .select("id, site_name, site_url, is_rented")
-        .eq("created_by_user_id", userId);
+      const { data, error } = await supabase.rpc(
+        'get_top_projects_performance',
+        { 
+          user_id: userId, 
+          days_ago: 30, 
+          limit_count: 5 
+        }
+      );
 
-      if (sitesError) {
-        console.error('❌ Erro ao buscar sites:', sitesError);
-        throw sitesError;
-      }
-
-      console.log('📊 Sites encontrados:', sites?.length);
-
-      if (!sites || sites.length === 0) {
-        console.log('⚠️ Nenhum site encontrado');
-        return [];
-      }
-
-      const siteIds = sites.map(s => s.id);
-      
-      // Data 30 dias atrás
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      // Buscar conversões dos últimos 30 dias
-      const { data: conversions, error: conversionsError } = await supabase
-        .from("rank_rent_conversions")
-        .select("site_id, event_type")
-        .in("site_id", siteIds)
-        .gte("created_at", thirtyDaysAgo.toISOString());
-
-      if (conversionsError) {
-        console.error('❌ Erro ao buscar conversões:', conversionsError);
-        throw conversionsError;
-      }
-
-      console.log('📈 Conversões encontradas:', conversions?.length);
-
-      // Agregar métricas por site
-      const projectMetrics = sites.map(site => {
-        const siteConversions = conversions?.filter(c => c.site_id === site.id) || [];
-        
-        const totalConversions = siteConversions.length;
-        const pageViews = siteConversions.filter(c => c.event_type === 'page_view').length;
-        const conversionEvents = siteConversions.filter(c => c.event_type !== 'page_view').length;
-
-        return {
-          site_id: site.id,
-          site_name: site.site_name,
-          site_url: site.site_url,
-          is_rented: site.is_rented,
-          total_conversions: totalConversions,
-          page_views: pageViews,
-          conversion_events: conversionEvents,
-        };
-      });
-
-      // Ordenar por total de conversões e pegar top 5
-      const topProjects = projectMetrics
-        .sort((a, b) => b.total_conversions - a.total_conversions)
-        .slice(0, 5);
-
-      console.log('🎯 Top 5 projetos calculados:', topProjects);
-
-      return topProjects;
+      if (error) throw error;
+      return (data || []) as ProjectPerformance[];
     },
     enabled: !!userId,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 60000, // 1 minute
+    refetchInterval: 300000, // 5 minutes
   });
 
-  // Log detalhado para diagnóstico
-  useEffect(() => {
-    if (topProjects && !isLoading) {
-      console.log('🖼️ Renderizando TopProjectsPerformance:', { 
-        userId, 
-        projectsCount: topProjects?.length,
-        isLoading,
-        projects: topProjects
-      });
-    }
-  }, [topProjects, isLoading, userId]);
-
-  if (isLoading) {
+  if (error) {
     return (
-      <Card>
+      <Card className="col-span-1 lg:col-span-3">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <TrendingUp className="w-5 h-5" />
-            Top Projetos por Performance
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-blue-600" />
+            Top 5 Projetos por Performance (últimos 30 dias)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-24" />
-            ))}
-          </div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erro ao carregar dados</AlertTitle>
+            <AlertDescription className="flex flex-col gap-2">
+              <span>{error instanceof Error ? error.message : "Erro desconhecido"}</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refetch()}
+              >
+                Tentar Novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Card className="col-span-1 lg:col-span-3">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-blue-600" />
+            Top 5 Projetos por Performance (últimos 30 dias)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          ))}
         </CardContent>
       </Card>
     );
@@ -187,7 +135,7 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
   };
 
   return (
-    <Card key={topProjects?.map(p => p.site_id).join('-') || 'loading'}>
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">

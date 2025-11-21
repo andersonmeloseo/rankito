@@ -3783,6 +3783,18 @@ export type Database = {
           page_views: number
         }[]
       }
+      get_top_projects_performance: {
+        Args: { days_ago?: number; limit_count?: number; user_id: string }
+        Returns: {
+          conversion_events: number
+          is_rented: boolean
+          page_views: number
+          site_id: string
+          site_name: string
+          site_url: string
+          total_conversions: number
+        }[]
+      }
       get_top_users_by_consumption: {
         Args: { limit_count?: number }
         Returns: {
