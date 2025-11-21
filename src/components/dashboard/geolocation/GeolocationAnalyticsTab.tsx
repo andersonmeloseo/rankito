@@ -138,21 +138,19 @@ export const GeolocationAnalyticsTab = ({ userId }: GeolocationAnalyticsTabProps
           {/* Metrics Cards */}
           <GeolocationMetricsCards summary={summary} />
 
-          {/* Main Content: Map + Tables */}
+          {/* Mapa 100% width */}
+          <InteractiveGeolocationMap 
+            cities={cities} 
+            totalConversions={summary.totalConversions}
+          />
+
+          {/* 3 Tabelas Horizontais */}
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <InteractiveGeolocationMap 
-                cities={cities} 
-                totalConversions={summary.totalConversions}
-              />
-            </div>
-            <div className="space-y-6">
-              <GeoRankingTables
-                countries={countries}
-                cities={cities}
-                regions={regions}
-              />
-            </div>
+            <GeoRankingTables
+              countries={countries}
+              cities={cities}
+              regions={regions}
+            />
           </div>
 
           {/* Charts */}
