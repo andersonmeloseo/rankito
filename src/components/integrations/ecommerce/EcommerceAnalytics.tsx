@@ -17,29 +17,61 @@ interface EcommerceAnalyticsProps {
 }
 
 export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
-  if (!siteId) {
-    return <div className="text-muted-foreground">ID do site inválido</div>;
-  }
+  try {
+    console.log('🎯 EcommerceAnalytics renderizando:', { siteId });
+    
+    if (!siteId) {
+      console.warn('⚠️ siteId inválido');
+      return (
+        <div className="p-4">
+          <Card className="border-destructive">
+            <CardContent className="p-6">
+              <p className="text-muted-foreground">ID do site inválido</p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
 
-  const endDate = new Date();
-  const startDate = subDays(endDate, 30);
+    const endDate = new Date();
+    const startDate = subDays(endDate, 30);
 
-  const { metrics, products, funnel, isLoading } = useEcommerceAnalytics(
-    siteId,
-    startDate,
-    endDate
-  );
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="h-32 bg-muted animate-pulse rounded-lg" />
-        <div className="h-64 bg-muted animate-pulse rounded-lg" />
-      </div>
+    const { metrics, products, funnel, isLoading } = useEcommerceAnalytics(
+      siteId,
+      startDate,
+      endDate
     );
-  }
 
-  return (
+    console.log('📊 Hook state:', { isLoading, hasMetrics: !!metrics, hasProducts: !!products });
+
+    if (isLoading) {
+      console.log('⏳ Mostrando skeleton de loading...');
+      return (
+        <div className="space-y-4 p-4">
+          <div className="text-sm text-muted-foreground mb-4 font-medium">
+            Carregando dados de e-commerce...
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <div className="h-20 bg-muted animate-pulse rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Card>
+            <CardContent className="p-6">
+              <div className="h-64 bg-muted animate-pulse rounded" />
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    console.log('✅ Renderizando conteúdo principal');
+
+    return (
     <div className="space-y-6">
       {/* Alert informativo quando não há dados */}
       {(!metrics || metrics.totalOrders === 0) && (
@@ -282,4 +314,24 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
       )}
     </div>
   );
+  } catch (error) {
+    console.error('❌ Erro fatal no EcommerceAnalytics:', error);
+    return (
+      <div className="p-4">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Erro ao Carregar E-commerce</CardTitle>
+            <CardDescription>
+              {error instanceof Error ? error.message : 'Erro desconhecido ao renderizar analytics'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Por favor, recarregue a página ou entre em contato com o suporte.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 };
