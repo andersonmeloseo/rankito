@@ -111,8 +111,12 @@ export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteW
       });
 
       queryClient.invalidateQueries({ queryKey: ["rank-rent-site-metrics"] });
-      queryClient.invalidateQueries({ queryKey: ["site-details"] });
       queryClient.invalidateQueries({ queryKey: ["overview-metrics"] });
+      
+      // ✅ Invalidação específica do site para garantir atualização do is_ecommerce
+      if (site.id) {
+        queryClient.invalidateQueries({ queryKey: ["site-details", site.id] });
+      }
       
       onOpenChange(false);
     } catch (error) {
