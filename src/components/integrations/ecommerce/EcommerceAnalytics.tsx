@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEcommerceAnalytics } from "@/hooks/useEcommerceAnalytics";
 import { formatCurrency } from "@/lib/utils";
@@ -9,12 +10,16 @@ import {
   Eye
 } from "lucide-react";
 import { ConversionFunnelVisual } from "./ConversionFunnelVisual";
+import { RevenueEvolutionChart } from "@/components/dashboard/RevenueEvolutionChart";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface EcommerceAnalyticsProps {
   siteId: string;
 }
 
 export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
+  const [period, setPeriod] = useState<string>("30");
+  
   try {
     console.log('🎯 EcommerceAnalytics renderizando:', { siteId });
     
@@ -31,7 +36,10 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
       );
     }
 
-    const { metrics, products, funnel, isLoading } = useEcommerceAnalytics(siteId, 30);
+    const { metrics, products, funnel, revenueEvolution, isLoading } = useEcommerceAnalytics(
+      siteId, 
+      parseInt(period)
+    );
 
     console.log('📊 Hook state:', { isLoading, hasMetrics: !!metrics, hasProducts: !!products });
 
@@ -64,6 +72,22 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
 
     return (
     <div className="space-y-6">
+      {/* Period Filter */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium">Período:</span>
+            <Tabs value={period} onValueChange={setPeriod}>
+              <TabsList>
+                <TabsTrigger value="7">7 dias</TabsTrigger>
+                <TabsTrigger value="30">30 dias</TabsTrigger>
+                <TabsTrigger value="90">90 dias</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Alert informativo quando não há dados */}
       {(!metrics || metrics.totalOrders === 0) && (
         <Card className="border-dashed">
@@ -149,6 +173,9 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Revenue Evolution Chart */}
+      <RevenueEvolutionChart data={revenueEvolution} isLoading={isLoading} />
 
       {/* Conversion Funnel Visual */}
       {funnel && (
