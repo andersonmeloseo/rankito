@@ -29,6 +29,7 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
     location: "",
     monthly_rent_value: "",
     notes: "",
+    is_ecommerce: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,6 +74,7 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
         location: formData.location,
         monthly_rent_value: formData.monthly_rent_value ? Number(formData.monthly_rent_value) : 0,
         notes: formData.notes,
+        is_ecommerce: formData.is_ecommerce,
       });
 
       if (error) throw error;
@@ -94,6 +96,7 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
         location: "",
         monthly_rent_value: "",
         notes: "",
+        is_ecommerce: false,
       });
       onOpenChange(false);
     } catch (error: any) {
@@ -217,6 +220,24 @@ export const AddSiteDialog = ({ open, onOpenChange, userId }: AddSiteDialogProps
               value={formData.monthly_rent_value}
               onChange={(e) => setFormData({ ...formData, monthly_rent_value: e.target.value })}
             />
+          </div>
+
+          <div className="flex items-center space-x-3 p-4 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            <input
+              type="checkbox"
+              id="is_ecommerce"
+              checked={formData.is_ecommerce}
+              onChange={(e) => setFormData({ ...formData, is_ecommerce: e.target.checked })}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="is_ecommerce" className="cursor-pointer font-medium text-sm">
+                🛒 Este é um site de E-commerce
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Ative para rastrear métricas de produtos, vendas e receita específicas
+              </p>
+            </div>
           </div>
 
           <div className="space-y-2">

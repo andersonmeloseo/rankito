@@ -189,11 +189,18 @@ export const SitesGrid = ({
             </div>
           </div>
 
-          {site.niche && (
-            <div className="flex items-center gap-2 pt-2">
-              <Badge variant="secondary" className="text-xs">
-                {site.niche}
-              </Badge>
+          {(site.niche || site.is_ecommerce) && (
+            <div className="flex items-center gap-2 pt-2 flex-wrap">
+              {site.is_ecommerce && (
+                <Badge variant="default" className="text-xs bg-orange-600 hover:bg-orange-700">
+                  🛒 E-commerce
+                </Badge>
+              )}
+              {site.niche && (
+                <Badge variant="secondary" className="text-xs">
+                  {site.niche}
+                </Badge>
+              )}
               {site.location && (
                 <Badge variant="outline" className="text-xs">
                   {site.location}

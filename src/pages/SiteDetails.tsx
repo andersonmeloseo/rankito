@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe, FileText, Search, Plug } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe, FileText, Search, Plug, ShoppingCart } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -57,6 +57,7 @@ import { ReportsTab } from "@/components/reports/ReportsTab";
 import { GSCTabContent } from "@/components/gsc/GSCTabContent";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
+import { EcommerceAnalytics } from "@/components/integrations/ecommerce/EcommerceAnalytics";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -119,14 +120,28 @@ const SiteDetails = () => {
   const { data: site, isLoading: siteLoading } = useQuery({
     queryKey: ["site-details", siteId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch from rank_rent_sites to get is_ecommerce field
+      const { data: siteData, error: siteError } = await supabase
+        .from("rank_rent_sites")
+        .select("is_ecommerce, site_name, site_url, niche, location, tracking_token, tracking_pixel_installed, is_rented, monthly_rent_value, client_id, contract_start_date, contract_end_date, next_payment_date, auto_renew, notes")
+        .eq("id", siteId)
+        .single();
+
+      if (siteError) throw siteError;
+
+      // Fetch metrics from rank_rent_metrics view
+      const { data: metricsData, error: metricsError } = await supabase
         .from("rank_rent_metrics")
         .select("*")
         .eq("site_id", siteId)
         .single();
 
-      if (error) throw error;
-      return data;
+      if (metricsError) throw metricsError;
+
+      return {
+        ...metricsData,
+        is_ecommerce: siteData.is_ecommerce,
+      };
     },
     enabled: !!siteId,
   });
@@ -820,6 +835,12 @@ const SiteDetails = () => {
                 <ClickUpTabTrigger value="pixel-tracking" icon={Globe}>
                   Pixel & E-commerce
                 </ClickUpTabTrigger>
+                
+                {site?.is_ecommerce && (
+                  <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
+                    E-commerce
+                  </ClickUpTabTrigger>
+                )}
               </TabsList>
             </div>
           </div>
@@ -1455,6 +1476,13 @@ const SiteDetails = () => {
               pixelInstalled={site.tracking_pixel_installed}
             />
           </TabsContent>
+
+          {/* E-commerce Analytics Tab (Conditional) */}
+          {site?.is_ecommerce && (
+            <TabsContent value="ecommerce">
+              <EcommerceAnalytics siteId={siteId || ""} />
+            </TabsContent>
+          )}
 
         </Tabs>
       </div>
