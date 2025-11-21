@@ -166,7 +166,7 @@ export function CommunicationTab() {
                         <Card
                           key={ticket.id}
                           className={`p-3 cursor-pointer transition-colors ${
-                            selectedTicketId === ticket.id ? 'bg-accent' : 'hover:bg-accent/50'
+                            selectedTicketId === ticket.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
                           }`}
                           onClick={() => setSelectedTicketId(ticket.id)}
                         >
