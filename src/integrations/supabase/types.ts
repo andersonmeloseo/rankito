@@ -1670,6 +1670,39 @@ export type Database = {
           },
         ]
       }
+      mapbox_usage_tracking: {
+        Row: {
+          created_at: string
+          id: string
+          last_reset_at: string | null
+          limit_reached: boolean
+          map_loads_count: number
+          month_year: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_reset_at?: string | null
+          limit_reached?: boolean
+          map_loads_count?: number
+          month_year: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_reset_at?: string | null
+          limit_reached?: boolean
+          map_loads_count?: number
+          month_year?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           approved_at: string | null

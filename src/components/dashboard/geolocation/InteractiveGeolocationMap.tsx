@@ -4,6 +4,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
+import { useMapboxUsage } from '@/hooks/useMapboxUsage';
+import { MapboxLimitReached } from './MapboxLimitReached';
 
 interface CityData {
   city: string;
@@ -48,6 +50,9 @@ export const InteractiveGeolocationMap = ({ cities, totalConversions }: Interact
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>('');
   const [error, setError] = useState<string>('');
+  
+  // Check Mapbox usage limit
+  const { data: usageData, isLoading: isCheckingUsage, error: usageError } = useMapboxUsage();
 
   useEffect(() => {
     // Check for Mapbox token
@@ -160,6 +165,31 @@ export const InteractiveGeolocationMap = ({ cities, totalConversions }: Interact
       map.current = null;
     };
   }, [cities, totalConversions, mapboxToken]);
+
+  // Show loading state while checking usage
+  if (isCheckingUsage) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center h-[600px]">
+          <div className="text-center space-y-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+            <p className="text-sm text-muted-foreground">Verificando limite de uso...</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Show limit reached component if quota exceeded
+  if (usageData && !usageData.canLoad) {
+    return (
+      <MapboxLimitReached 
+        currentCount={usageData.currentCount}
+        limit={usageData.limit}
+        resetDate={usageData.resetDate}
+      />
+    );
+  }
 
   if (error) {
     return (
