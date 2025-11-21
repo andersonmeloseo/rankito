@@ -33,6 +33,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   const [includeROI, setIncludeROI] = useState(true);
   const [includeTopPages, setIncludeTopPages] = useState(true);
   const [includeReferrers, setIncludeReferrers] = useState(false);
+  const [includeEcommerce, setIncludeEcommerce] = useState(false);
   const [enableComparison, setEnableComparison] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -111,6 +112,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           includeROI,
           includeTopPages,
           includeReferrers,
+          includeEcommerce,
           style,
           financialConfig: costPerConversion ? {
             costPerConversion: parseFloat(costPerConversion),
@@ -368,6 +370,10 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
                 <Checkbox checked={includeReferrers} onCheckedChange={(c) => setIncludeReferrers(!!c)} />
                 <span className="text-sm">Performance por Referrer</span>
               </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox checked={includeEcommerce} onCheckedChange={(c) => setIncludeEcommerce(!!c)} />
+                <span className="text-sm">Métricas de E-commerce</span>
+              </label>
             </div>
           </div>
 
@@ -482,6 +488,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
             includePageViews={includePageViews}
             includeTopPages={includeTopPages}
             includeReferrers={includeReferrers}
+            includeEcommerce={includeEcommerce}
             financialConfig={costPerConversion ? {
               costPerConversion: parseFloat(costPerConversion),
               currency,

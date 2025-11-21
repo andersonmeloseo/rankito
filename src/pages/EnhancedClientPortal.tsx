@@ -15,6 +15,7 @@ import { EpicPortalHeader } from '@/components/client-portal/EpicPortalHeader';
 import { OverviewTab } from '@/components/client-portal/OverviewTab';
 import { ConversionsTab } from '@/components/client-portal/ConversionsTab';
 import { PageViewsTab } from '@/components/client-portal/PageViewsTab';
+import { EcommerceTab } from '@/components/client-portal/EcommerceTab';
 import { ContractFinancialDashboard } from '@/components/client-portal/ContractFinancialDashboard';
 import { ConversionToast } from '@/components/client-portal/ConversionToast';
 import { useRealtimeConversions } from '@/hooks/useRealtimeConversions';
@@ -286,10 +287,11 @@ export const EnhancedClientPortal = () => {
         />
 
         <Tabs defaultValue="overview" className="space-y-10">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">📊 Visão Geral</TabsTrigger>
             <TabsTrigger value="conversions">🎯 Conversões</TabsTrigger>
             <TabsTrigger value="pageviews">👁️ Visualizações</TabsTrigger>
+            <TabsTrigger value="ecommerce">🛒 E-commerce</TabsTrigger>
             <TabsTrigger value="financeiro">💰 Financeiro</TabsTrigger>
             <TabsTrigger value="relatorios">📄 Relatórios</TabsTrigger>
           </TabsList>
@@ -310,6 +312,10 @@ export const EnhancedClientPortal = () => {
               analytics={analytics} 
               siteIds={analytics?.sites?.map((s: any) => s.id) || []} 
             />
+          </TabsContent>
+
+          <TabsContent value="ecommerce">
+            <EcommerceTab analytics={analytics} />
           </TabsContent>
 
           <TabsContent value="financeiro">

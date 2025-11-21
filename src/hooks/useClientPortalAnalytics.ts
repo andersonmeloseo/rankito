@@ -280,6 +280,75 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         .sort((a: any, b: any) => b.count - a.count)
         .slice(0, 5);
 
+      // E-commerce data processing
+      const ecommerceEvents = conversions?.filter(c => c.is_ecommerce_event) || [];
+      
+      const ecommerce = ecommerceEvents.length > 0 ? (() => {
+        const purchases = ecommerceEvents.filter(e => e.event_type === 'purchase');
+        const totalRevenue = purchases.reduce((sum, p) => {
+          const metadata = p.metadata as any;
+          return sum + (parseFloat(metadata?.revenue || '0'));
+        }, 0);
+        
+        const totalOrders = purchases.length;
+        const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+        const productViews = ecommerceEvents.filter(e => e.event_type === 'product_view').length;
+        const addToCarts = ecommerceEvents.filter(e => e.event_type === 'add_to_cart').length;
+        const checkouts = ecommerceEvents.filter(e => e.event_type === 'begin_checkout').length;
+        const conversionRate = productViews > 0 ? (totalOrders / productViews) * 100 : 0;
+        
+        // Product aggregation
+        const productMap = new Map<string, any>();
+        ecommerceEvents.forEach(event => {
+          const metadata = event.metadata as any;
+          const productName = metadata?.product_name || 'Produto Desconhecido';
+          const pageUrl = event.page_url || '';
+          
+          if (!productMap.has(productName)) {
+            productMap.set(productName, { productName, purchases: 0, revenue: 0, productUrl: '' });
+          }
+          
+          const product = productMap.get(productName)!;
+          if (event.event_type === 'purchase' && pageUrl) product.productUrl = pageUrl;
+          if (event.event_type === 'purchase') {
+            product.purchases++;
+            product.revenue += parseFloat(metadata?.revenue || '0');
+          }
+        });
+        
+        const topProducts = Array.from(productMap.values())
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 10);
+        
+        // Revenue evolution
+        const revenueByDay = purchases.reduce((acc: any, p) => {
+          const date = new Date(p.created_at).toISOString().split('T')[0];
+          if (!acc[date]) acc[date] = { date, revenue: 0, orders: 0 };
+          const metadata = p.metadata as any;
+          acc[date].revenue += parseFloat(metadata?.revenue || '0');
+          acc[date].orders++;
+          return acc;
+        }, {});
+        
+        return {
+          totalRevenue,
+          totalOrders,
+          averageOrderValue,
+          conversionRate,
+          topProducts,
+          revenueEvolution: Object.values(revenueByDay),
+          funnel: {
+            productViews,
+            addToCarts,
+            checkouts,
+            purchases: totalOrders,
+            viewToCartRate: productViews > 0 ? (addToCarts / productViews) * 100 : 0,
+            cartToCheckoutRate: addToCarts > 0 ? (checkouts / addToCarts) * 100 : 0,
+            checkoutToSaleRate: checkouts > 0 ? (totalOrders / checkouts) * 100 : 0,
+          }
+        };
+      })() : null;
+
       return {
         totalSites: sites?.length || 0,
         totalPages,
@@ -305,13 +374,14 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         uniquePages,
         sparklineData,
         previousPeriodMetrics: {
-          uniqueVisitors: 0, // Would need to calculate from previous period
+          uniqueVisitors: 0,
           uniquePages: 0,
           pageViews: previousPageViews,
           conversions: previousTotalConversions,
           conversionRate: previousConversionRate,
         },
         topReferrers: topReferrersList,
+        ecommerce,
       };
     },
     enabled: !!clientId && clientId !== 'undefined' && clientId !== 'null' && clientId !== '',

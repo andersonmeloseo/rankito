@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { siteId, reportName, period, includeConversions, includePageViews, includeROI } = await req.json();
+    const { siteId, reportName, period, includeConversions, includePageViews, includeROI, includeEcommerce } = await req.json();
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -38,6 +38,13 @@ Deno.serve(async (req) => {
       .eq('site_id', siteId)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString());
+    
+    // Process e-commerce data
+    const ecommerceEvents = conversions?.filter(c => c.is_ecommerce_event) || [];
+    const purchases = ecommerceEvents.filter(e => e.event_type === 'purchase');
+    const ecommerceTotalRevenue = purchases.reduce((sum, p) => sum + (parseFloat(p.metadata?.revenue || '0')), 0);
+    const ecommerceTotalOrders = purchases.length;
+    const ecommerceAOV = ecommerceTotalOrders > 0 ? ecommerceTotalRevenue / ecommerceTotalOrders : 0;
 
     // Busca métricas financeiras
     const { data: financialMetrics } = await supabase
@@ -141,6 +148,19 @@ Deno.serve(async (req) => {
       ];
       const ws4 = XLSX.utils.aoa_to_sheet(roiData);
       XLSX.utils.book_append_sheet(wb, ws4, 'ROI Detalhado');
+    }
+
+    // Aba 5: E-commerce
+    if (includeEcommerce && ecommerceEvents.length > 0) {
+      const ecommerceData = [
+        ['MÉTRICAS DE E-COMMERCE'],
+        [''],
+        ['Receita Total', `R$ ${ecommerceTotalRevenue.toFixed(2)}`],
+        ['Total de Pedidos', ecommerceTotalOrders],
+        ['Ticket Médio (AOV)', `R$ ${ecommerceAOV.toFixed(2)}`],
+      ];
+      const ws5 = XLSX.utils.aoa_to_sheet(ecommerceData);
+      XLSX.utils.book_append_sheet(wb, ws5, 'E-commerce');
     }
 
     // Converte para buffer
