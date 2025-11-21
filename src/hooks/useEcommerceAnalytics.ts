@@ -180,9 +180,26 @@ export const useEcommerceAnalytics = (
   });
 
   return {
-    metrics,
-    products,
-    funnel,
+    metrics: metrics || {
+      totalRevenue: 0,
+      totalOrders: 0,
+      averageOrderValue: 0,
+      productViews: 0,
+      addToCartEvents: 0,
+      checkoutStarts: 0,
+      conversionRate: 0
+    },
+    products: products || [],
+    funnel: funnel || {
+      productViews: 0,
+      addToCarts: 0,
+      checkouts: 0,
+      purchases: 0,
+      viewToCartRate: 0,
+      cartToCheckoutRate: 0,
+      checkoutToSaleRate: 0,
+      overallConversionRate: 0
+    },
     isLoading: metricsLoading || productsLoading || funnelLoading
   };
 };

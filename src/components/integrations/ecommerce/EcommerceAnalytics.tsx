@@ -35,30 +35,23 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
     );
   }
 
-  if (!metrics || metrics.totalOrders === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Analytics de E-commerce</CardTitle>
-          <CardDescription>
-            Nenhum evento de e-commerce registrado nos últimos 30 dias
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="p-8 text-center text-muted-foreground">
-            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-sm">
-              Certifique-se de que o pixel está instalado e que eventos de e-commerce 
-              estão sendo capturados (product_view, add_to_cart, purchase)
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-6">
+      {/* Alert informativo quando não há dados */}
+      {(!metrics || metrics.totalOrders === 0) && (
+        <Card className="border-dashed">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Nenhum evento de e-commerce registrado</CardTitle>
+            </div>
+            <CardDescription>
+              Os dados abaixo estão zerados. Certifique-se de que o pixel está instalado 
+              e que eventos de e-commerce estão sendo capturados (product_view, add_to_cart, purchase)
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
