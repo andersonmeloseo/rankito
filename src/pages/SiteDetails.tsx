@@ -144,7 +144,20 @@ const SiteDetails = () => {
       };
     },
     enabled: !!siteId,
+    staleTime: 0, // ✅ Força re-fetch sempre para garantir dados atualizados
   });
+
+  // 🔍 Debug temporário - verificar valor de is_ecommerce
+  useEffect(() => {
+    if (site) {
+      console.log('🔍 Site data loaded:', { 
+        id: site.site_id, 
+        name: site.site_name, 
+        is_ecommerce: site.is_ecommerce,
+        all_site_data: site
+      });
+    }
+  }, [site]);
 
 
   // Fetch last conversion city
