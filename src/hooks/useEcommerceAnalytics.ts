@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfDay, endOfDay, subDays } from "date-fns";
+import { startOfDay, endOfDay, subDays, format } from "date-fns";
 
 interface EcommerceMetrics {
   totalRevenue: number;
@@ -34,7 +34,7 @@ interface FunnelMetrics {
 }
 
 // Helper function to process all e-commerce data at once
-const processEcommerceData = (data: any[]) => {
+const processEcommerceData = (data: any[], days: number) => {
   // Calculate metrics
   const purchases = data.filter(e => e.event_type === 'purchase');
   const totalRevenue = purchases.reduce((sum, p) => {
@@ -104,6 +104,40 @@ const processEcommerceData = (data: any[]) => {
   const checkoutToSaleRate = checkouts > 0 ? (purchases.length / checkouts) * 100 : 0;
   const overallConversionRate = productViews > 0 ? (purchases.length / productViews) * 100 : 0;
 
+  // Calculate revenue evolution by date
+  const dateMap = new Map<string, { revenue: number; orders: number }>();
+  
+  // Initialize all dates in the range with zero values
+  const endDate = new Date();
+  for (let i = 0; i < days; i++) {
+    const date = format(subDays(endDate, days - 1 - i), 'yyyy-MM-dd');
+    dateMap.set(date, { revenue: 0, orders: 0 });
+  }
+
+  // Group purchases by date
+  data.forEach(event => {
+    if (event.event_type === 'purchase') {
+      const date = format(new Date(event.created_at), 'yyyy-MM-dd');
+      const metadata = event.metadata as any;
+      const revenue = parseFloat(metadata?.revenue || '0');
+      
+      if (dateMap.has(date)) {
+        const current = dateMap.get(date)!;
+        current.revenue += revenue;
+        current.orders += 1;
+      }
+    }
+  });
+
+  // Convert to array for chart
+  const revenueEvolution = Array.from(dateMap.entries())
+    .map(([date, stats]) => ({
+      date,
+      revenue: stats.revenue,
+      orders: stats.orders
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
   return {
     metrics: {
       totalRevenue,
@@ -124,7 +158,8 @@ const processEcommerceData = (data: any[]) => {
       cartToCheckoutRate,
       checkoutToSaleRate,
       overallConversionRate
-    }
+    },
+    revenueEvolution
   };
 };
 
@@ -161,7 +196,7 @@ export const useEcommerceAnalytics = (
       }
 
       console.log('✅ Query retornou:', { count: data?.length || 0 });
-      const processed = processEcommerceData(data || []);
+      const processed = processEcommerceData(data || [], days);
       console.log('✅ Dados processados:', processed);
       
       return processed;
@@ -194,6 +229,7 @@ export const useEcommerceAnalytics = (
       checkoutToSaleRate: 0,
       overallConversionRate: 0
     },
+    revenueEvolution: data?.revenueEvolution || [],
     isLoading
   };
 };
