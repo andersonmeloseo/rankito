@@ -2319,6 +2319,7 @@ export type Database = {
           id: string
           indexnow_key: string | null
           indexnow_validated: boolean | null
+          is_ecommerce: boolean
           is_rented: boolean | null
           location: string
           monthly_rent_value: number | null
@@ -2347,6 +2348,7 @@ export type Database = {
           id?: string
           indexnow_key?: string | null
           indexnow_validated?: boolean | null
+          is_ecommerce?: boolean
           is_rented?: boolean | null
           location: string
           monthly_rent_value?: number | null
@@ -2375,6 +2377,7 @@ export type Database = {
           id?: string
           indexnow_key?: string | null
           indexnow_validated?: boolean | null
+          is_ecommerce?: boolean
           is_rented?: boolean | null
           location?: string
           monthly_rent_value?: number | null
