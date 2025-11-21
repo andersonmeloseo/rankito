@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ export const EditSiteDialog = ({ site, open, onOpenChange }: EditSiteDialogProps
     location: site.location || "",
     monthly_rent_value: site.monthly_rent_value || 0,
     notes: site.notes || "",
+    isEcommerce: site.is_ecommerce || false,
   });
 
   useEffect(() => {
@@ -41,6 +43,7 @@ export const EditSiteDialog = ({ site, open, onOpenChange }: EditSiteDialogProps
       location: site.location || "",
       monthly_rent_value: site.monthly_rent_value || 0,
       notes: site.notes || "",
+      isEcommerce: site.is_ecommerce || false,
     });
   }, [site]);
 
@@ -58,6 +61,7 @@ export const EditSiteDialog = ({ site, open, onOpenChange }: EditSiteDialogProps
           location: formData.location,
           monthly_rent_value: formData.monthly_rent_value,
           notes: formData.notes,
+          is_ecommerce: formData.isEcommerce,
         })
         .eq("id", site.site_id);
 
@@ -148,6 +152,19 @@ export const EditSiteDialog = ({ site, open, onOpenChange }: EditSiteDialogProps
               value={formData.monthly_rent_value}
               onChange={(e) => setFormData({ ...formData, monthly_rent_value: parseFloat(e.target.value) })}
             />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="is_ecommerce"
+              checked={formData.isEcommerce}
+              onCheckedChange={(checked) => 
+                setFormData({ ...formData, isEcommerce: checked as boolean })
+              }
+            />
+            <Label htmlFor="is_ecommerce" className="cursor-pointer">
+              Este é um site de E-commerce
+            </Label>
           </div>
 
           <div className="space-y-2">
