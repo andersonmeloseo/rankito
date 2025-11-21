@@ -55,11 +55,10 @@ export const useGeolocationAnalytics = (
     queryFn: async () => {
       if (!userId) throw new Error('User ID required');
 
-      // Build base query
+      // Build base query (without geolocation filter initially)
       let query = supabase
         .from('rank_rent_conversions')
-        .select('*')
-        .not('country', 'is', null);
+        .select('*');
 
       // Get user's sites first (owner OR creator)
       const { data: sites, error: sitesError } = await supabase
@@ -111,6 +110,9 @@ export const useGeolocationAnalytics = (
       if (filters?.eventType && filters.eventType !== 'all') {
         query = query.eq('event_type', filters.eventType as any);
       }
+
+      // Apply geolocation filter AFTER all other filters
+      query = query.not('country', 'is', null);
 
       const { data: conversions, error } = await query;
 
