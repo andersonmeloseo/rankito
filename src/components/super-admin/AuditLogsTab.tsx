@@ -8,11 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Calendar, Filter, Loader2, RefreshCw, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, BarChart3 } from "lucide-react";
+import { Calendar, Filter, Loader2, RefreshCw, Download, FileSpreadsheet, FileText, ChevronLeft, ChevronRight, BarChart3, Shield } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { exportAuditLogsToExcel, exportAuditLogsToCSV } from "@/utils/exportAuditLogs";
 import { AuditLogsAnalytics } from "./AuditLogsAnalytics";
+import { useRunSystemAudit } from "@/hooks/useRunSystemAudit";
+import { SystemAuditResultsDialog } from "./SystemAuditResultsDialog";
+import type { AuditReport } from "@/hooks/useRunSystemAudit";
 
 const actionLabels: Record<string, { label: string; color: string }> = {
   user_created: { label: "Usuário Criado", color: "default" },
@@ -37,8 +40,20 @@ export const AuditLogsTab = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [showAnalytics, setShowAnalytics] = useState(true);
-  
+  const [auditReport, setAuditReport] = useState<AuditReport | null>(null);
+  const [showAuditDialog, setShowAuditDialog] = useState(false);
+
+  const { mutate: runAudit, isPending: isRunningAudit } = useRunSystemAudit();
   const { data: admins } = useSuperAdmins();
+
+  const handleRunAudit = () => {
+    runAudit(undefined, {
+      onSuccess: (data) => {
+        setAuditReport(data);
+        setShowAuditDialog(true);
+      }
+    });
+  };
   const { data, isLoading, refetch } = useAuditLogs({
     startDate: startDate || undefined,
     endDate: endDate || undefined,
@@ -72,6 +87,21 @@ export const AuditLogsTab = () => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleRunAudit}
+              disabled={isRunningAudit}
+              className="gap-2"
+            >
+              {isRunningAudit ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Shield className="h-4 w-4" />
+              )}
+              Executar Auditoria Completa
+            </Button>
+            
             <Button
               variant={showAnalytics ? "default" : "outline"}
               size="sm"
@@ -366,6 +396,12 @@ export const AuditLogsTab = () => {
           </>
         )}
       </CardContent>
+
+      <SystemAuditResultsDialog
+        open={showAuditDialog}
+        onOpenChange={setShowAuditDialog}
+        report={auditReport}
+      />
     </Card>
   );
 };
