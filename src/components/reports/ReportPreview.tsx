@@ -24,6 +24,7 @@ interface ReportPreviewProps {
   includePageViews: boolean;
   includeTopPages: boolean;
   includeReferrers: boolean;
+  includeEcommerce?: boolean;
   financialConfig?: {
     costPerConversion: number;
     currency: Currency;
@@ -41,6 +42,7 @@ export const ReportPreview = ({
   includePageViews,
   includeTopPages,
   includeReferrers,
+  includeEcommerce,
   financialConfig
 }: ReportPreviewProps) => {
   const { t } = useReportTranslation(financialConfig?.locale || 'pt-BR');
