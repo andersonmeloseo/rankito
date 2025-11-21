@@ -1433,12 +1433,7 @@ const SiteDetails = () => {
           {site?.is_ecommerce && (
             <TabsContent value="ecommerce" className="min-h-[400px]">
               {siteId ? (
-                <div className="space-y-4">
-                  <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                    Debug: Site ID = {siteId}
-                  </div>
-                  <EcommerceAnalytics siteId={siteId} />
-                </div>
+                <EcommerceAnalytics siteId={siteId} />
               ) : (
                 <div className="p-4">
                   <Card>
