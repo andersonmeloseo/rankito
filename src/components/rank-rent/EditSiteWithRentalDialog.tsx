@@ -33,6 +33,7 @@ export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteW
     niche: "",
     location: "",
     notes: "",
+    isEcommerce: false,
   });
 
   // Rental info
@@ -68,6 +69,7 @@ export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteW
         niche: site.niche || "",
         location: site.location || "",
         notes: site.notes || "",
+        isEcommerce: site.is_ecommerce || false,
       });
       setIsRented(site.is_rented || false);
       setSelectedClientId(site.client_id || "");
@@ -84,6 +86,7 @@ export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteW
     try {
       const updateData: any = {
         ...formData,
+        is_ecommerce: formData.isEcommerce,
         is_rented: isRented,
         monthly_rent_value: isRented && monthlyRent ? parseFloat(monthlyRent) : 0,
         client_id: isRented && selectedClientId ? selectedClientId : null,
@@ -193,6 +196,19 @@ export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteW
                 placeholder="Notas sobre o projeto..."
                 rows={3}
               />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="is_ecommerce"
+                checked={formData.isEcommerce}
+                onCheckedChange={(checked) => 
+                  setFormData({ ...formData, isEcommerce: checked as boolean })
+                }
+              />
+              <Label htmlFor="is_ecommerce" className="cursor-pointer">
+                Este é um site de E-commerce
+              </Label>
             </div>
           </div>
 
