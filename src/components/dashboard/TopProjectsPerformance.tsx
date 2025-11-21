@@ -29,6 +29,7 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
   const { data: topProjects, isLoading, error, refetch } = useQuery({
     queryKey: ["top-projects-performance", userId],
     queryFn: async () => {
+      console.log("🚀 Executing RPC function get_top_projects_performance");
       const { data, error } = await supabase.rpc(
         'get_top_projects_performance',
         { 
@@ -45,6 +46,8 @@ export const TopProjectsPerformance = ({ userId }: TopProjectsPerformanceProps) 
     staleTime: 60000, // 1 minute
     refetchInterval: 300000, // 5 minutes
   });
+
+  console.log("📊 Component state:", { hasData: !!topProjects, isLoading, hasError: !!error });
 
   if (error) {
     return (
