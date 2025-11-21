@@ -87,7 +87,12 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
       </Card>
 
       {/* Alert informativo quando não há dados */}
-      {(!metrics || metrics.totalOrders === 0) && (
+      {(!metrics || (
+        metrics.productViews === 0 && 
+        metrics.addToCartEvents === 0 && 
+        metrics.checkoutStarts === 0 && 
+        metrics.totalOrders === 0
+      )) && (
         <Card className="border-dashed">
           <CardHeader>
             <div className="flex items-center gap-2">
