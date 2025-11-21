@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useGeolocationAnalytics } from "@/hooks/useGeolocationAnalytics";
 import { GeolocationMetricsCards } from "./GeolocationMetricsCards";
 import { GeolocationFilters } from "./GeolocationFilters";
@@ -33,8 +33,8 @@ export const GeolocationAnalyticsTab = ({ userId }: GeolocationAnalyticsTabProps
     });
   };
 
-  // Calculate date range based on period filter
-  const getDateRange = () => {
+  // Calculate date range based on period filter (memoized to prevent infinite loop)
+  const dateRange = useMemo(() => {
     if (filters.period === 'all') return {};
     
     const endDate = new Date().toISOString();
@@ -45,10 +45,10 @@ export const GeolocationAnalyticsTab = ({ userId }: GeolocationAnalyticsTabProps
       startDate: startDate.toISOString(),
       endDate,
     };
-  };
+  }, [filters.period]);
 
   const { data, isLoading, error } = useGeolocationAnalytics(userId, {
-    ...getDateRange(),
+    ...dateRange,
     siteId: filters.siteId !== 'all' ? filters.siteId : undefined,
     eventType: filters.eventType !== 'all' ? filters.eventType : undefined,
   });
