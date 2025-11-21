@@ -54,6 +54,17 @@ export const InteractiveGeolocationMap = ({ cities, totalConversions }: Interact
   // Check Mapbox usage limit
   const { data: usageData, isLoading: isCheckingUsage, error: usageError } = useMapboxUsage();
 
+  // Debug logs
+  console.log('🗺️ Mapbox Debug:', {
+    tokenExists: !!mapboxToken,
+    tokenValue: mapboxToken?.substring(0, 30) + '...',
+    usageData,
+    usageError,
+    canLoad: usageData?.canLoad,
+    citiesCount: cities.length,
+    isCheckingUsage
+  });
+
   useEffect(() => {
     // Check for Mapbox token
     const token = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
@@ -170,7 +181,7 @@ export const InteractiveGeolocationMap = ({ cities, totalConversions }: Interact
   if (isCheckingUsage) {
     return (
       <Card className="p-6">
-        <div className="flex items-center justify-center h-[600px]">
+        <div className="flex items-center justify-center h-[500px] lg:h-[600px]">
           <div className="text-center space-y-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
             <p className="text-sm text-muted-foreground">Verificando limite de uso...</p>
@@ -180,8 +191,9 @@ export const InteractiveGeolocationMap = ({ cities, totalConversions }: Interact
     );
   }
 
-  // Show limit reached component if quota exceeded
-  if (usageData && !usageData.canLoad) {
+  // Only block if we successfully checked usage AND limit is reached
+  // If there's an error checking usage, allow map to load (fallback)
+  if (usageData && !usageData.canLoad && !usageError) {
     return (
       <MapboxLimitReached 
         currentCount={usageData.currentCount}
@@ -189,6 +201,11 @@ export const InteractiveGeolocationMap = ({ cities, totalConversions }: Interact
         resetDate={usageData.resetDate}
       />
     );
+  }
+
+  // Log warning if there was an error checking usage, but continue
+  if (usageError) {
+    console.warn('⚠️ Erro ao verificar quota do Mapbox, permitindo carregamento:', usageError);
   }
 
   if (error) {
@@ -212,7 +229,7 @@ export const InteractiveGeolocationMap = ({ cities, totalConversions }: Interact
 
   return (
     <Card className="overflow-hidden">
-      <div ref={mapContainer} className="w-full h-[600px]" />
+      <div ref={mapContainer} className="w-full h-[500px] lg:h-[600px]" />
     </Card>
   );
 };
