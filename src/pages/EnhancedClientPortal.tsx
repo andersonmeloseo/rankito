@@ -149,6 +149,20 @@ export const EnhancedClientPortal = () => {
   
   const liveMetrics = useRealtimeMetrics(analyticsData, realtimeConversions);
 
+  // Debug log para e-commerce
+  React.useEffect(() => {
+    if (analytics) {
+      console.log('[Portal] 🛒 E-commerce Debug COMPLETO:', {
+        hasAnalytics: !!analytics,
+        hasEcommerce: !!analytics?.ecommerce,
+        ecommerceData: analytics?.ecommerce,
+        totalConversions: analytics?.totalConversions,
+        clientId,
+        selectedProjectId
+      });
+    }
+  }, [analytics, clientId, selectedProjectId]);
+
   const isLoading = authLoading || projectsLoading || (clientId && analyticsLoading) || (clientId && projectLoading);
   const sparklineData = analytics?.dailyStats?.slice(-7).map((d: any) => d.conversions) || [];
 
@@ -300,14 +314,16 @@ export const EnhancedClientPortal = () => {
             <TabsTrigger value="overview">📊 Visão Geral</TabsTrigger>
             <TabsTrigger value="conversions">🎯 Conversões</TabsTrigger>
             <TabsTrigger value="pageviews">👁️ Visualizações</TabsTrigger>
-            <TabsTrigger value="ecommerce" className="relative">
-              🛒 E-commerce
-              {analytics?.ecommerce?.totalOrders > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                  {analytics.ecommerce.totalOrders}
-                </Badge>
-              )}
-            </TabsTrigger>
+            {analytics?.ecommerce && (
+              <TabsTrigger value="ecommerce" className="relative">
+                🛒 E-commerce
+                {analytics.ecommerce.totalOrders > 0 && (
+                  <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                    {analytics.ecommerce.totalOrders}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            )}
             <TabsTrigger value="financeiro">💰 Financeiro</TabsTrigger>
             <TabsTrigger value="relatorios">📄 Relatórios</TabsTrigger>
           </TabsList>
