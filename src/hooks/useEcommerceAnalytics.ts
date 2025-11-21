@@ -41,6 +41,20 @@ interface FunnelMetrics {
   overallConversionRate: number;
 }
 
+export interface PageAnalysis {
+  pagePath: string;
+  pageUrl: string;
+  revenue: number;
+  purchases: number;
+  views: number;
+  conversionRate: number;
+  topProducts: Array<{
+    productName: string;
+    purchases: number;
+    revenue: number;
+  }>;
+}
+
 // Helper function to process all e-commerce data at once
 const processEcommerceData = (data: any[], days: number) => {
   // Calculate metrics
@@ -175,6 +189,72 @@ const processEcommerceData = (data: any[], days: number) => {
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  // Process pages analysis
+  const pageMap = new Map<string, {
+    pageUrl: string;
+    purchases: number;
+    revenue: number;
+    views: number;
+    productSales: Map<string, { purchases: number; revenue: number }>;
+  }>();
+
+  data.forEach(event => {
+    const pagePath = event.page_path || '/';
+    const pageUrl = event.page_url || '';
+    
+    if (!pageMap.has(pagePath)) {
+      pageMap.set(pagePath, {
+        pageUrl,
+        purchases: 0,
+        revenue: 0,
+        views: 0,
+        productSales: new Map(),
+      });
+    }
+
+    const page = pageMap.get(pagePath)!;
+    const metadata = event.metadata as any;
+
+    if (event.event_type === 'purchase') {
+      page.purchases += 1;
+      page.revenue += parseFloat(metadata?.revenue || '0');
+
+      const productName = metadata?.product_name || 'Produto Desconhecido';
+      if (!page.productSales.has(productName)) {
+        page.productSales.set(productName, { purchases: 0, revenue: 0 });
+      }
+      const productSale = page.productSales.get(productName)!;
+      productSale.purchases += 1;
+      productSale.revenue += parseFloat(metadata?.revenue || '0');
+    } else if (event.event_type === 'product_view') {
+      page.views += 1;
+    }
+  });
+
+  const pages: PageAnalysis[] = Array.from(pageMap.entries())
+    .map(([pagePath, stats]) => {
+      const conversionRate = stats.views > 0 ? (stats.purchases / stats.views) * 100 : 0;
+      
+      const topProducts = Array.from(stats.productSales.entries())
+        .map(([productName, sales]) => ({
+          productName,
+          purchases: sales.purchases,
+          revenue: sales.revenue,
+        }))
+        .sort((a, b) => b.revenue - a.revenue);
+
+      return {
+        pagePath,
+        pageUrl: stats.pageUrl,
+        revenue: stats.revenue,
+        purchases: stats.purchases,
+        views: stats.views,
+        conversionRate,
+        topProducts,
+      };
+    })
+    .sort((a, b) => b.revenue - a.revenue);
+
   return {
     metrics: {
       totalRevenue,
@@ -189,6 +269,7 @@ const processEcommerceData = (data: any[], days: number) => {
       interestRate
     },
     products: productsWithBadges,
+    pages,
     funnel: {
       productViews,
       addToCarts,
@@ -304,6 +385,7 @@ export const useEcommerceAnalytics = (
     metrics: data?.current?.metrics || emptyMetrics,
     previousMetrics: data?.previous?.metrics || emptyMetrics,
     products: data?.current?.products || [],
+    pages: data?.current?.pages || [],
     funnel: data?.current?.funnel || emptyFunnel,
     revenueEvolution: data?.current?.revenueEvolution || [],
     isLoading

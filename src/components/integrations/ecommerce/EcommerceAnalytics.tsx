@@ -9,6 +9,7 @@ import { ConversionFunnelVisual } from "./ConversionFunnelVisual";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PeriodComparisonCard } from "./PeriodComparisonCard";
 import { ProductsFullTable } from "./ProductsFullTable";
+import { PageAnalysisTable } from "./PageAnalysisTable";
 
 interface EcommerceAnalyticsProps {
   siteId: string;
@@ -33,7 +34,7 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
       );
     }
 
-    const { metrics, previousMetrics, products, funnel, revenueEvolution, isLoading } = useEcommerceAnalytics(
+    const { metrics, previousMetrics, products, pages, funnel, revenueEvolution, isLoading } = useEcommerceAnalytics(
       siteId, 
       parseInt(period)
     );
@@ -182,6 +183,11 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
             }} />
           </CardContent>
         </Card>
+      )}
+
+      {/* Page Analysis Table */}
+      {pages && pages.length > 0 && (
+        <PageAnalysisTable pages={pages} siteId={siteId} />
       )}
 
       {/* Products Full Table */}
