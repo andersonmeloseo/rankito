@@ -8,7 +8,7 @@ import { RevenueEvolutionChart } from "@/components/dashboard/RevenueEvolutionCh
 import { ConversionFunnelVisual } from "./ConversionFunnelVisual";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PeriodComparisonCard } from "./PeriodComparisonCard";
-import { PerformanceBadge } from "./PerformanceBadge";
+import { ProductsFullTable } from "./ProductsFullTable";
 
 interface EcommerceAnalyticsProps {
   siteId: string;
@@ -184,46 +184,9 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
         </Card>
       )}
 
-      {/* Top Products */}
+      {/* Products Full Table */}
       {products && products.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Produtos</CardTitle>
-            <CardDescription>
-              Produtos com melhor desempenho
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {products.slice(0, 5).map((product, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium">{product.productName}</span>
-                      {product.performanceType && (
-                        <PerformanceBadge type={product.performanceType} />
-                      )}
-                    </div>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span>{product.views} visualizações</span>
-                      <span>{product.addToCarts} no carrinho</span>
-                      <span>{product.purchases} vendas</span>
-                      <span className="font-medium">{product.conversionRate.toFixed(1)}% conversão</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold">
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      }).format(product.revenue)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <ProductsFullTable products={products} siteId={siteId} />
       )}
     </div>
   );
