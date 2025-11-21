@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { usePortalAuth } from '@/hooks/usePortalAuth';
 import { useClientPortalAnalytics } from '@/hooks/useClientPortalAnalytics';
 import { useProjectData } from '@/hooks/useProjectData';
@@ -164,6 +165,14 @@ export const EnhancedClientPortal = () => {
     clientId
   });
 
+  console.log('[Portal] 🛒 E-commerce data:', {
+    hasEcommerce: !!analytics?.ecommerce,
+    totalRevenue: analytics?.ecommerce?.totalRevenue,
+    totalOrders: analytics?.ecommerce?.totalOrders,
+    topProducts: analytics?.ecommerce?.topProducts?.length,
+    funnel: analytics?.ecommerce?.funnel
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -287,11 +296,18 @@ export const EnhancedClientPortal = () => {
         />
 
         <Tabs defaultValue="overview" className="space-y-10">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-2">
             <TabsTrigger value="overview">📊 Visão Geral</TabsTrigger>
             <TabsTrigger value="conversions">🎯 Conversões</TabsTrigger>
             <TabsTrigger value="pageviews">👁️ Visualizações</TabsTrigger>
-            <TabsTrigger value="ecommerce">🛒 E-commerce</TabsTrigger>
+            <TabsTrigger value="ecommerce" className="relative">
+              🛒 E-commerce
+              {analytics?.ecommerce?.totalOrders > 0 && (
+                <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                  {analytics.ecommerce.totalOrders}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="financeiro">💰 Financeiro</TabsTrigger>
             <TabsTrigger value="relatorios">📄 Relatórios</TabsTrigger>
           </TabsList>

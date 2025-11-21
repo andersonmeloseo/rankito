@@ -12,6 +12,15 @@ interface EcommerceTabProps {
 export const EcommerceTab = ({ analytics }: EcommerceTabProps) => {
   const ecommerce = analytics?.ecommerce;
 
+  // Debug log
+  console.log('[EcommerceTab] 🛒 Renderizando componente:', {
+    hasEcommerce: !!ecommerce,
+    totalRevenue: ecommerce?.totalRevenue,
+    totalOrders: ecommerce?.totalOrders,
+    topProducts: ecommerce?.topProducts?.length,
+    analytics
+  });
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -22,10 +31,20 @@ export const EcommerceTab = ({ analytics }: EcommerceTabProps) => {
   if (!ecommerce) {
     return (
       <div className="space-y-6">
-        <Alert>
-          <ShoppingCart className="h-4 w-4" />
-          <AlertDescription>
-            Nenhum evento de e-commerce registrado ainda. Aguardando dados de vendas...
+        <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+          <ShoppingCart className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="space-y-3">
+            <p className="font-semibold text-foreground">Nenhum evento de e-commerce registrado ainda.</p>
+            <p className="text-sm text-muted-foreground">
+              Para começar a rastrear vendas, produtos e receita, certifique-se de que o pixel de rastreamento 
+              está instalado corretamente e que eventos de e-commerce estão sendo enviados:
+            </p>
+            <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+              <li><code className="text-xs bg-muted px-1 py-0.5 rounded">product_view</code> - Visualização de produto</li>
+              <li><code className="text-xs bg-muted px-1 py-0.5 rounded">add_to_cart</code> - Adição ao carrinho</li>
+              <li><code className="text-xs bg-muted px-1 py-0.5 rounded">begin_checkout</code> - Início do checkout</li>
+              <li><code className="text-xs bg-muted px-1 py-0.5 rounded">purchase</code> - Compra finalizada</li>
+            </ul>
           </AlertDescription>
         </Alert>
       </div>
