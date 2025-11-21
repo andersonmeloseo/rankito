@@ -3,9 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, subDays, format } from "date-fns";
 
-type PerformanceType = "top" | "featured" | "warning" | "growth" | "recovery";
+export type PerformanceType = "top" | "featured" | "warning" | "growth" | "recovery";
 
-interface EcommerceMetrics {
+export interface EcommerceMetrics {
   totalRevenue: number;
   totalOrders: number;
   averageOrderValue: number;
@@ -18,9 +18,10 @@ interface EcommerceMetrics {
   interestRate: number;
 }
 
-interface ProductPerformance {
+export interface ProductPerformance {
   productId: string;
   productName: string;
+  name?: string; // alias for productName
   views: number;
   addToCarts: number;
   purchases: number;
@@ -28,6 +29,7 @@ interface ProductPerformance {
   conversionRate: number;
   averagePrice: number;
   performanceType?: PerformanceType;
+  badges?: PerformanceType[];
 }
 
 interface FunnelMetrics {
