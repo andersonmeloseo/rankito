@@ -820,6 +820,12 @@ const SiteDetails = () => {
                   Analytics Avançado
                 </ClickUpTabTrigger>
                 
+                {site?.is_ecommerce && (
+                  <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
+                    E-commerce
+                  </ClickUpTabTrigger>
+                )}
+                
                 <ClickUpTabTrigger value="reports" icon={FileText}>
                   Relatórios
                 </ClickUpTabTrigger>
@@ -835,12 +841,6 @@ const SiteDetails = () => {
                 <ClickUpTabTrigger value="pixel-tracking" icon={Globe}>
                   Pixel & E-commerce
                 </ClickUpTabTrigger>
-                
-                {site?.is_ecommerce && (
-                  <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
-                    E-commerce
-                  </ClickUpTabTrigger>
-                )}
               </TabsList>
             </div>
           </div>
@@ -1429,6 +1429,13 @@ const SiteDetails = () => {
             </Tabs>
           </TabsContent>
 
+          {/* E-commerce Analytics Tab (Conditional) */}
+          {site?.is_ecommerce && (
+            <TabsContent value="ecommerce">
+              <EcommerceAnalytics siteId={siteId || ""} />
+            </TabsContent>
+          )}
+
           {/* Relatórios Tab */}
           <TabsContent value="reports">
             <ReportsTab siteId={siteId || ""} siteName={site.site_name} />
@@ -1476,13 +1483,6 @@ const SiteDetails = () => {
               pixelInstalled={site.tracking_pixel_installed}
             />
           </TabsContent>
-
-          {/* E-commerce Analytics Tab (Conditional) */}
-          {site?.is_ecommerce && (
-            <TabsContent value="ecommerce">
-              <EcommerceAnalytics siteId={siteId || ""} />
-            </TabsContent>
-          )}
 
         </Tabs>
       </div>
