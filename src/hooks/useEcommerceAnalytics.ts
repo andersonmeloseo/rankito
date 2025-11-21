@@ -1,6 +1,7 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfDay, endOfDay } from "date-fns";
+import { startOfDay, endOfDay, subDays } from "date-fns";
 
 interface EcommerceMetrics {
   totalRevenue: number;
@@ -129,14 +130,20 @@ const processEcommerceData = (data: any[]) => {
 
 export const useEcommerceAnalytics = (
   siteId: string,
-  startDate: Date,
-  endDate: Date
+  days: number = 30
 ) => {
-  console.log('🔄 useEcommerceAnalytics chamado:', { siteId, startDate, endDate });
+  // ✅ Memoize dates to prevent recreating on every render
+  const { startDate, endDate } = useMemo(() => {
+    const end = new Date();
+    const start = subDays(end, days);
+    return { startDate: start, endDate: end };
+  }, [days]);
+
+  console.log('🔄 useEcommerceAnalytics chamado:', { siteId, days, startDate, endDate });
 
   // ✅ Single optimized query for all e-commerce data
   const { data, isLoading, error } = useQuery({
-    queryKey: ['ecommerce-all-data', siteId, startDate, endDate],
+    queryKey: ['ecommerce-all-data', siteId, days],
     queryFn: async () => {
       console.log('📡 Executando query de e-commerce...');
       

@@ -10,7 +10,6 @@ import {
   CreditCard,
   ArrowRight
 } from "lucide-react";
-import { subDays } from "date-fns";
 
 interface EcommerceAnalyticsProps {
   siteId: string;
@@ -33,14 +32,7 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
       );
     }
 
-    const endDate = new Date();
-    const startDate = subDays(endDate, 30);
-
-    const { metrics, products, funnel, isLoading } = useEcommerceAnalytics(
-      siteId,
-      startDate,
-      endDate
-    );
+    const { metrics, products, funnel, isLoading } = useEcommerceAnalytics(siteId, 30);
 
     console.log('📊 Hook state:', { isLoading, hasMetrics: !!metrics, hasProducts: !!products });
 
