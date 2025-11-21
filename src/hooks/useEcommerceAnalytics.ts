@@ -19,12 +19,14 @@ interface EcommerceMetrics {
 }
 
 interface ProductPerformance {
+  productId: string;
   productName: string;
   views: number;
   addToCarts: number;
   purchases: number;
   revenue: number;
   conversionRate: number;
+  averagePrice: number;
   performanceType?: PerformanceType;
 }
 
@@ -92,12 +94,14 @@ const processEcommerceData = (data: any[], days: number) => {
   // Convert to array and calculate conversion rates
   const products = Array.from(productMap.entries())
     .map(([productName, stats]) => ({
+      productId: productName.toLowerCase().replace(/\s+/g, '-'),
       productName,
       views: stats.views,
       addToCarts: stats.addToCarts,
       purchases: stats.purchases,
       revenue: stats.revenue,
-      conversionRate: stats.views > 0 ? (stats.purchases / stats.views) * 100 : 0
+      conversionRate: stats.views > 0 ? (stats.purchases / stats.views) * 100 : 0,
+      averagePrice: stats.purchases > 0 ? stats.revenue / stats.purchases : 0
     }))
     .sort((a, b) => b.revenue - a.revenue);
 
