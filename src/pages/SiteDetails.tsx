@@ -138,14 +138,37 @@ const SiteDetails = () => {
 
       if (metricsError) throw metricsError;
 
-      return {
+      const finalData = {
         ...metricsData,
         is_ecommerce: siteData.is_ecommerce,
       };
+
+      console.log('[SiteDetails] 🛒 Site data fetched:', {
+        siteId,
+        site_name: finalData.site_name,
+        is_ecommerce: finalData.is_ecommerce,
+        is_ecommerce_type: typeof finalData.is_ecommerce
+      });
+
+      return finalData;
     },
     enabled: !!siteId,
-    staleTime: 5000,
+    staleTime: 0,
+    refetchOnMount: true,
   });
+
+  // Debug log when site data changes
+  useEffect(() => {
+    if (site) {
+      console.log('[SiteDetails] 🛒 Site data loaded in component:', {
+        siteId,
+        site_name: site.site_name,
+        is_ecommerce: site.is_ecommerce,
+        is_ecommerce_type: typeof site.is_ecommerce,
+        full_site_object: site
+      });
+    }
+  }, [site, siteId]);
 
   // Fetch last conversion city
   const { data: lastConversionCity } = useQuery({
@@ -823,6 +846,9 @@ const SiteDetails = () => {
                 {site?.is_ecommerce && (
                   <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
                     E-commerce
+                    <Badge variant="default" className="ml-2 bg-green-600 hover:bg-green-600">
+                      Ativo
+                    </Badge>
                   </ClickUpTabTrigger>
                 )}
                 
