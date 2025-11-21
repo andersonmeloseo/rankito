@@ -49,6 +49,18 @@ export interface LandingTranslations {
       description: string;
     }>;
   };
+  ecommerce: {
+    badge: string;
+    title: string;
+    painPoint: string;
+    description: string;
+    ctaButton: string;
+    highlight: string;
+    features: Array<{
+      title: string;
+      description: string;
+    }>;
+  };
   pricing: {
     badge: string;
     title: string;
@@ -259,6 +271,36 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         {
           title: 'Monitoramento em Tempo Real',
           description: 'Acompanhe o status de cada URL: pendente, indexado, erro. Saiba exatamente o que está acontecendo com suas páginas.',
+        },
+      ],
+    },
+    ecommerce: {
+      badge: '🌍 Pioneira Mundial',
+      title: 'A Única Plataforma Que Monitora Cada Ação do Seu E-commerce',
+      painPoint: 'Você tem um e-commerce de Rank & Rent mas não sabe quantas pessoas adicionam produtos ao carrinho? Não consegue rastrear a jornada de compra completa?',
+      description: 'Somos a ÚNICA plataforma do mundo que rastreia automaticamente TODAS as ações de e-commerce em sites Rank & Rent: visualizações de produtos, adição ao carrinho, checkout e compras. Tudo em tempo real com clareza total.',
+      ctaButton: 'Começar a Rastrear E-commerce',
+      highlight: '🏆 ÚNICA PLATAFORMA DO MUNDO COM RASTREAMENTO COMPLETO DE E-COMMERCE PARA RANK & RENT',
+      features: [
+        {
+          title: 'Rastreamento Universal de URLs',
+          description: 'Monitora TODAS as URLs de produtos automaticamente. Nenhum produto fica invisível. Sistema detecta e rastreia cada página do seu e-commerce sem configuração manual.',
+        },
+        {
+          title: 'Funil Completo da Jornada',
+          description: 'Acompanhe todo o fluxo: Visualização de Produto → Adição ao Carrinho → Início do Checkout → Compra Finalizada. Veja onde os clientes abandonam e otimize.',
+        },
+        {
+          title: 'Clareza Total das Ações',
+          description: 'Dashboard em tempo real mostra produtos mais visualizados, taxa de conversão por produto, horários de pico de compras, e receita detalhada por página.',
+        },
+        {
+          title: 'Indexação Automática de Produtos',
+          description: 'Todas as páginas de produtos são enviadas automaticamente para indexação no Google e Bing. Zero produtos invisíveis nas buscas. Máxima visibilidade orgânica.',
+        },
+        {
+          title: 'Integração com Todas Plataformas',
+          description: 'Funciona com Shopify, WooCommerce, e qualquer HTML customizado. Pixel universal que se adapta a qualquer plataforma de e-commerce.',
         },
       ],
     },
@@ -537,6 +579,36 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
       ],
     },
+    ecommerce: {
+      badge: '🌍 Pionera Mundial',
+      title: 'La Única Plataforma Que Monitorea Cada Acción de Tu E-commerce',
+      painPoint: '¿Tienes un e-commerce de Rank & Rent pero no sabes cuántas personas añaden productos al carrito? ¿No puedes rastrear el journey completo de compra?',
+      description: 'Somos la ÚNICA plataforma del mundo que rastrea automáticamente TODAS las acciones de e-commerce en sitios Rank & Rent: visualizaciones de productos, añadir al carrito, checkout y compras. Todo en tiempo real con claridad total.',
+      ctaButton: 'Empezar a Rastrear E-commerce',
+      highlight: '🏆 ÚNICA PLATAFORMA DEL MUNDO CON RASTREO COMPLETO DE E-COMMERCE PARA RANK & RENT',
+      features: [
+        {
+          title: 'Rastreo Universal de URLs',
+          description: 'Monitorea TODAS las URLs de productos automáticamente. Ningún producto queda invisible. El sistema detecta y rastrea cada página de tu e-commerce sin configuración manual.',
+        },
+        {
+          title: 'Embudo Completo del Journey',
+          description: 'Monitorea todo el flujo: Visualización de Producto → Añadir al Carrito → Inicio del Checkout → Compra Finalizada. Ve dónde los clientes abandonan y optimiza.',
+        },
+        {
+          title: 'Claridad Total de las Acciones',
+          description: 'Dashboard en tiempo real muestra productos más vistos, tasa de conversión por producto, horarios pico de compras, e ingresos detallados por página.',
+        },
+        {
+          title: 'Indexación Automática de Productos',
+          description: 'Todas las páginas de productos se envían automáticamente para indexación en Google y Bing. Cero productos invisibles en búsquedas. Máxima visibilidad orgánica.',
+        },
+        {
+          title: 'Integración con Todas las Plataformas',
+          description: 'Funciona con Shopify, WooCommerce, y cualquier HTML personalizado. Pixel universal que se adapta a cualquier plataforma de e-commerce.',
+        },
+      ],
+    },
     pricing: {
       badge: 'Precios',
       title: 'Planes Para Todos los Tamaños',
@@ -804,11 +876,41 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
         {
           title: 'Smart Scheduling',
-          description: 'Set automatic schedules for sitemap submission. The system manages everything without you having to remember.',
+          description: 'Configure automatic schedules for sitemap submission. The system manages everything without you having to remember.',
         },
         {
           title: 'Real-Time Monitoring',
-          description: 'Track the status of each URL: pending, indexed, error. Know exactly what is happening with your pages.',
+          description: 'Track the status of each URL: pending, indexed, error. Know exactly what\'s happening with your pages.',
+        },
+      ],
+    },
+    ecommerce: {
+      badge: '🌍 World Pioneer',
+      title: 'The Only Platform That Monitors Every E-commerce Action',
+      painPoint: 'Do you have a Rank & Rent e-commerce but don\'t know how many people add products to cart? Can\'t track the complete purchase journey?',
+      description: 'We are the ONLY platform in the world that automatically tracks ALL e-commerce actions on Rank & Rent sites: product views, add to cart, checkout, and purchases. Everything in real-time with total clarity.',
+      ctaButton: 'Start Tracking E-commerce',
+      highlight: '🏆 ONLY PLATFORM IN THE WORLD WITH COMPLETE E-COMMERCE TRACKING FOR RANK & RENT',
+      features: [
+        {
+          title: 'Universal URL Tracking',
+          description: 'Monitors ALL product URLs automatically. No product stays invisible. System detects and tracks every page of your e-commerce without manual configuration.',
+        },
+        {
+          title: 'Complete Journey Funnel',
+          description: 'Track the entire flow: Product View → Add to Cart → Checkout Start → Purchase Complete. See where customers abandon and optimize.',
+        },
+        {
+          title: 'Total Action Clarity',
+          description: 'Real-time dashboard shows most viewed products, conversion rate per product, purchase peak hours, and detailed revenue per page.',
+        },
+        {
+          title: 'Automatic Product Indexing',
+          description: 'All product pages are automatically sent for indexing to Google and Bing. Zero invisible products in searches. Maximum organic visibility.',
+        },
+        {
+          title: 'Integration with All Platforms',
+          description: 'Works with Shopify, WooCommerce, and any custom HTML. Universal pixel that adapts to any e-commerce platform.',
         },
       ],
     },
@@ -1087,6 +1189,36 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
       ],
     },
+    ecommerce: {
+      badge: '🌍 Pionnière Mondiale',
+      title: 'La Seule Plateforme Qui Surveille Chaque Action E-commerce',
+      painPoint: 'Vous avez un e-commerce Rank & Rent mais ne savez pas combien de personnes ajoutent des produits au panier? Vous ne pouvez pas suivre le parcours d\'achat complet?',
+      description: 'Nous sommes la SEULE plateforme au monde qui suit automatiquement TOUTES les actions e-commerce sur les sites Rank & Rent: vues de produits, ajout au panier, checkout et achats. Tout en temps réel avec une clarté totale.',
+      ctaButton: 'Commencer à Suivre l\'E-commerce',
+      highlight: '🏆 SEULE PLATEFORME AU MONDE AVEC SUIVI COMPLET E-COMMERCE POUR RANK & RENT',
+      features: [
+        {
+          title: 'Suivi Universel des URLs',
+          description: 'Surveille TOUTES les URLs de produits automatiquement. Aucun produit ne reste invisible. Le système détecte et suit chaque page de votre e-commerce sans configuration manuelle.',
+        },
+        {
+          title: 'Entonnoir Complet du Parcours',
+          description: 'Suivez tout le flux: Vue du Produit → Ajout au Panier → Début du Checkout → Achat Finalisé. Voyez où les clients abandonnent et optimisez.',
+        },
+        {
+          title: 'Clarté Totale des Actions',
+          description: 'Tableau de bord en temps réel montre les produits les plus vus, taux de conversion par produit, heures de pointe d\'achat, et revenus détaillés par page.',
+        },
+        {
+          title: 'Indexation Automatique des Produits',
+          description: 'Toutes les pages de produits sont automatiquement envoyées pour indexation sur Google et Bing. Zéro produit invisible dans les recherches. Visibilité organique maximale.',
+        },
+        {
+          title: 'Intégration avec Toutes les Plateformes',
+          description: 'Fonctionne avec Shopify, WooCommerce, et tout HTML personnalisé. Pixel universel qui s\'adapte à toute plateforme e-commerce.',
+        },
+      ],
+    },
     pricing: {
       badge: 'Tarifs',
       title: 'Plans Pour Toutes les Tailles',
@@ -1359,6 +1491,36 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         {
           title: 'Monitorização em Tempo Real',
           description: 'Acompanha o estado de cada URL: pendente, indexado, erro. Sabe exatamente o que está a acontecer com as tuas páginas.',
+        },
+      ],
+    },
+    ecommerce: {
+      badge: '🌍 Pioneira Mundial',
+      title: 'A Única Plataforma Que Monitoriza Cada Ação do Teu E-commerce',
+      painPoint: 'Tens um e-commerce de Rank & Rent mas não sabes quantas pessoas adicionam produtos ao carrinho? Não consegues rastrear a jornada de compra completa?',
+      description: 'Somos a ÚNICA plataforma do mundo que rastreia automaticamente TODAS as ações de e-commerce em sites Rank & Rent: visualizações de produtos, adição ao carrinho, checkout e compras. Tudo em tempo real com clareza total.',
+      ctaButton: 'Começar a Rastrear E-commerce',
+      highlight: '🏆 ÚNICA PLATAFORMA DO MUNDO COM RASTREAMENTO COMPLETO DE E-COMMERCE PARA RANK & RENT',
+      features: [
+        {
+          title: 'Rastreamento Universal de URLs',
+          description: 'Monitoriza TODAS as URLs de produtos automaticamente. Nenhum produto fica invisível. O sistema deteta e rastreia cada página do teu e-commerce sem configuração manual.',
+        },
+        {
+          title: 'Funil Completo da Jornada',
+          description: 'Acompanha todo o fluxo: Visualização de Produto → Adição ao Carrinho → Início do Checkout → Compra Finalizada. Vê onde os clientes abandonam e otimiza.',
+        },
+        {
+          title: 'Clareza Total das Ações',
+          description: 'Painel em tempo real mostra produtos mais visualizados, taxa de conversão por produto, horários de pico de compras, e receita detalhada por página.',
+        },
+        {
+          title: 'Indexação Automática de Produtos',
+          description: 'Todas as páginas de produtos são enviadas automaticamente para indexação no Google e Bing. Zero produtos invisíveis nas pesquisas. Máxima visibilidade orgânica.',
+        },
+        {
+          title: 'Integração com Todas as Plataformas',
+          description: 'Funciona com Shopify, WooCommerce, e qualquer HTML personalizado. Pixel universal que se adapta a qualquer plataforma de e-commerce.',
         },
       ],
     },

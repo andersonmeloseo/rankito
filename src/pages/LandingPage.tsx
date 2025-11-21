@@ -3,6 +3,7 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { GSCShowcase } from "@/components/landing/GSCShowcase";
+import { EcommerceShowcase } from "@/components/landing/EcommerceShowcase";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { FAQSection } from "@/components/landing/FAQSection";
@@ -54,6 +55,9 @@ const LandingPageContent = () => {
               <a href="#gsc" className="text-muted-foreground hover:text-foreground transition-colors">
                 {t.nav.gsc}
               </a>
+              <a href="#ecommerce" className="text-muted-foreground hover:text-foreground transition-colors">
+                E-commerce
+              </a>
               <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">
                 {t.nav.pricing}
               </a>
@@ -92,6 +96,10 @@ const LandingPageContent = () => {
       
       <div id="gsc">
         <GSCShowcase />
+      </div>
+      
+      <div id="ecommerce">
+        <EcommerceShowcase />
       </div>
       
       <div id="pricing">
