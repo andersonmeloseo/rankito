@@ -3014,6 +3014,48 @@ export type Database = {
           },
         ]
       }
+      system_audit_reports: {
+        Row: {
+          created_at: string | null
+          critical_count: number
+          executed_at: string | null
+          executed_by: string | null
+          execution_time_ms: number | null
+          id: string
+          info_count: number
+          overall_status: string
+          report_data: Json
+          total_issues: number
+          warning_count: number
+        }
+        Insert: {
+          created_at?: string | null
+          critical_count?: number
+          executed_at?: string | null
+          executed_by?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          info_count?: number
+          overall_status: string
+          report_data?: Json
+          total_issues?: number
+          warning_count?: number
+        }
+        Update: {
+          created_at?: string | null
+          critical_count?: number
+          executed_at?: string | null
+          executed_by?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          info_count?: number
+          overall_status?: string
+          report_data?: Json
+          total_issues?: number
+          warning_count?: number
+        }
+        Relationships: []
+      }
       training_modules: {
         Row: {
           created_at: string
