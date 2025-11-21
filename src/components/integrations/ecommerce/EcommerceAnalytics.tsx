@@ -10,7 +10,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PeriodComparisonCard } from "./PeriodComparisonCard";
 import { ProductsFullTable } from "./ProductsFullTable";
 import { PageAnalysisTable } from "./PageAnalysisTable";
-import { AutomaticInsights } from "./AutomaticInsights";
 
 interface EcommerceAnalyticsProps {
   siteId: string;
@@ -86,9 +85,6 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Insights Automáticos */}
-      <AutomaticInsights siteId={siteId} days={parseInt(period)} />
 
       {/* Alert informativo quando não há dados */}
       {(!metrics || metrics.totalOrders === 0) && (
