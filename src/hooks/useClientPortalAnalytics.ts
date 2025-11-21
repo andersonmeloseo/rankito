@@ -85,6 +85,12 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
       }
 
       console.log('[Analytics] Conversions found:', conversions?.length || 0);
+      console.log('[Analytics] 🔍 Query resultados:', {
+        totalConversions: conversions?.length,
+        ecommerceCount: conversions?.filter(c => c.is_ecommerce_event).length,
+        siteIds,
+        dateRange: { start: startDate, end: endDate }
+      });
 
       // Calculate metrics
       const totalPages = sites?.reduce((acc, s) => acc + (s.rank_rent_pages?.length || 0), 0) || 0;
@@ -280,8 +286,15 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         .sort((a: any, b: any) => b.count - a.count)
         .slice(0, 5);
 
-      // E-commerce data processing
+      // E-commerce data processing - Buscar de TODOS os sites do cliente
       const ecommerceEvents = conversions?.filter(c => c.is_ecommerce_event) || [];
+      
+      console.log('[Analytics] 🛒 E-commerce events total:', {
+        totalConversions: conversions?.length,
+        ecommerceEventsCount: ecommerceEvents.length,
+        siteIds: siteIds,
+        eventTypes: ecommerceEvents.map(e => e.event_type)
+      });
       
       const ecommerce = ecommerceEvents.length > 0 ? (() => {
         const purchases = ecommerceEvents.filter(e => e.event_type === 'purchase');
@@ -348,6 +361,12 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
           }
         };
       })() : null;
+
+      console.log('[Analytics] 🛒 E-commerce processado:', {
+        ecommerceEventsCount: ecommerceEvents.length,
+        hasEcommerce: !!ecommerce,
+        ecommerceData: ecommerce
+      });
 
       return {
         totalSites: sites?.length || 0,
