@@ -1,17 +1,14 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ShoppingCart, TrendingUp, Eye, DollarSign, AlertCircle, ShoppingBag, Package } from "lucide-react";
 import { useEcommerceAnalytics } from "@/hooks/useEcommerceAnalytics";
-import { formatCurrency } from "@/lib/utils";
-import { 
-  ShoppingCart, 
-  TrendingUp, 
-  DollarSign, 
-  Package, 
-  Eye
-} from "lucide-react";
-import { ConversionFunnelVisual } from "./ConversionFunnelVisual";
 import { RevenueEvolutionChart } from "@/components/dashboard/RevenueEvolutionChart";
+import { ConversionFunnelVisual } from "./ConversionFunnelVisual";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PeriodComparisonCard } from "./PeriodComparisonCard";
+import { PerformanceBadge } from "./PerformanceBadge";
 
 interface EcommerceAnalyticsProps {
   siteId: string;
@@ -36,7 +33,7 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
       );
     }
 
-    const { metrics, products, funnel, revenueEvolution, isLoading } = useEcommerceAnalytics(
+    const { metrics, previousMetrics, products, funnel, revenueEvolution, isLoading } = useEcommerceAnalytics(
       siteId, 
       parseInt(period)
     );
@@ -103,75 +100,67 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
           </CardHeader>
         </Card>
       )}
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardDescription>Receita Total</CardDescription>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(metrics.totalRevenue)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {metrics.totalOrders} pedidos
-            </p>
-          </CardContent>
-        </Card>
+      {/* Métricas Principais com Comparação */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <PeriodComparisonCard
+          title="Receita Total"
+          currentValue={metrics.totalRevenue}
+          previousValue={previousMetrics.totalRevenue}
+          formatter={(val) => new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(val)}
+          icon={DollarSign}
+        />
 
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardDescription>Ticket Médio</CardDescription>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(metrics.averageOrderValue)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Por pedido
-            </p>
-          </CardContent>
-        </Card>
+        <PeriodComparisonCard
+          title="Ticket Médio"
+          currentValue={metrics.averageOrderValue}
+          previousValue={previousMetrics.averageOrderValue}
+          formatter={(val) => new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(val)}
+          icon={TrendingUp}
+        />
 
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardDescription>Taxa de Conversão</CardDescription>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics.conversionRate.toFixed(2)}%
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Visualizações → Compras
-            </p>
-          </CardContent>
-        </Card>
+        <PeriodComparisonCard
+          title="Taxa de Conversão"
+          currentValue={metrics.conversionRate}
+          previousValue={previousMetrics.conversionRate}
+          formatter={(val) => `${val.toFixed(2)}%`}
+          icon={ShoppingCart}
+        />
 
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardDescription>Visualizações</CardDescription>
-              <Eye className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics.productViews.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Produtos visualizados
-            </p>
-          </CardContent>
-        </Card>
+        <PeriodComparisonCard
+          title="Visualizações"
+          currentValue={metrics.productViews}
+          previousValue={previousMetrics.productViews}
+          formatter={(val) => val.toLocaleString('pt-BR')}
+          icon={Eye}
+        />
+      </div>
+
+      {/* Métricas Avançadas */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <PeriodComparisonCard
+          title="Taxa de Abandono de Carrinho"
+          currentValue={metrics.cartAbandonmentRate}
+          previousValue={previousMetrics.cartAbandonmentRate}
+          formatter={(val) => `${val.toFixed(2)}%`}
+          icon={ShoppingBag}
+        />
+
+        <PeriodComparisonCard
+          title="Valor Médio por Produto"
+          currentValue={metrics.averageProductValue}
+          previousValue={previousMetrics.averageProductValue}
+          formatter={(val) => new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(val)}
+          icon={Package}
+        />
       </div>
 
       {/* Revenue Evolution Chart */}
@@ -201,7 +190,7 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
           <CardHeader>
             <CardTitle>Top Produtos</CardTitle>
             <CardDescription>
-              Produtos com melhor desempenho nos últimos 30 dias
+              Produtos com melhor desempenho
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -211,19 +200,23 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm font-medium">{product.productName}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {product.conversionRate.toFixed(1)}% conversão
-                      </span>
+                      {product.performanceType && (
+                        <PerformanceBadge type={product.performanceType} />
+                      )}
                     </div>
                     <div className="flex gap-4 text-xs text-muted-foreground">
                       <span>{product.views} visualizações</span>
                       <span>{product.addToCarts} no carrinho</span>
                       <span>{product.purchases} vendas</span>
+                      <span className="font-medium">{product.conversionRate.toFixed(1)}% conversão</span>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-bold">
-                      {formatCurrency(product.revenue)}
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(product.revenue)}
                     </div>
                   </div>
                 </div>
