@@ -368,7 +368,7 @@ const Dashboard = () => {
                   </ClickUpTabTrigger>
 
                   <ClickUpTabTrigger value="communication" icon={MessageCircle}>
-                    Comunicação
+                    Suporte
                     {unreadCount > 0 && (
                       <Badge variant="destructive" className="ml-2 animate-pulse">
                         {unreadCount}
