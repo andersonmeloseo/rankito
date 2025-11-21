@@ -1431,11 +1431,22 @@ const SiteDetails = () => {
 
           {/* E-commerce Analytics Tab (Conditional) */}
           {site?.is_ecommerce && (
-            <TabsContent value="ecommerce">
+            <TabsContent value="ecommerce" className="min-h-[400px]">
               {siteId ? (
-                <EcommerceAnalytics siteId={siteId} />
+                <div className="space-y-4">
+                  <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                    Debug: Site ID = {siteId}
+                  </div>
+                  <EcommerceAnalytics siteId={siteId} />
+                </div>
               ) : (
-                <div className="text-muted-foreground">Carregando...</div>
+                <div className="p-4">
+                  <Card>
+                    <CardContent className="p-6">
+                      <p className="text-muted-foreground">Aguardando ID do site...</p>
+                    </CardContent>
+                  </Card>
+                </div>
               )}
             </TabsContent>
           )}

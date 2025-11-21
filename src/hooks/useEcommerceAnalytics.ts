@@ -132,10 +132,14 @@ export const useEcommerceAnalytics = (
   startDate: Date,
   endDate: Date
 ) => {
+  console.log('🔄 useEcommerceAnalytics chamado:', { siteId, startDate, endDate });
+
   // ✅ Single optimized query for all e-commerce data
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['ecommerce-all-data', siteId, startDate, endDate],
     queryFn: async () => {
+      console.log('📡 Executando query de e-commerce...');
+      
       const { data, error } = await supabase
         .from('rank_rent_conversions')
         .select('event_type, metadata')
@@ -144,14 +148,23 @@ export const useEcommerceAnalytics = (
         .gte('created_at', startOfDay(startDate).toISOString())
         .lte('created_at', endOfDay(endDate).toISOString());
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro na query:', error);
+        throw error;
+      }
 
-      return processEcommerceData(data || []);
+      console.log('✅ Query retornou:', { count: data?.length || 0 });
+      const processed = processEcommerceData(data || []);
+      console.log('✅ Dados processados:', processed);
+      
+      return processed;
     },
     enabled: !!siteId,
     staleTime: 30000, // Cache for 30 seconds
     retry: 2, // Retry twice on failure
   });
+
+  console.log('📊 Hook retornando:', { isLoading, hasData: !!data, error });
 
   return {
     metrics: data?.metrics || {
