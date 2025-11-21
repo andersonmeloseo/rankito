@@ -83,8 +83,12 @@ export const EcommerceShowcase = () => {
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-orange-100">
               <img
                 src="/images/screenshots/ecommerce-dashboard-full.png"
-                alt="E-commerce Analytics Dashboard"
+                alt="Dashboard de Monitoramento E-commerce"
                 className="w-full h-auto"
+                onError={(e) => {
+                  console.error('Erro ao carregar imagem do dashboard e-commerce');
+                  e.currentTarget.src = '/images/screenshots/dashboard-overview.png';
+                }}
               />
             </div>
 
