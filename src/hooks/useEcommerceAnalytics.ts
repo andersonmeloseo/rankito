@@ -327,7 +327,7 @@ export const useEcommerceAnalytics = (
       // Query período atual
       const { data: currentData, error: currentError } = await supabase
         .from('rank_rent_conversions')
-        .select('event_type, metadata, created_at')
+        .select('event_type, metadata, created_at, page_url')
         .eq('site_id', siteId)
         .in('event_type', ['product_view', 'add_to_cart', 'begin_checkout', 'purchase'])
         .gte('created_at', startOfDay(startDate).toISOString())
@@ -341,7 +341,7 @@ export const useEcommerceAnalytics = (
       // Query período anterior
       const { data: previousData, error: previousError } = await supabase
         .from('rank_rent_conversions')
-        .select('event_type, metadata, created_at')
+        .select('event_type, metadata, created_at, page_url')
         .eq('site_id', siteId)
         .in('event_type', ['product_view', 'add_to_cart', 'begin_checkout', 'purchase'])
         .gte('created_at', startOfDay(previousStartDate).toISOString())
