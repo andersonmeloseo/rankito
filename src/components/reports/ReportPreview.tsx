@@ -391,6 +391,150 @@ export const ReportPreview = ({
             </div>
           </div>
         )}
+
+        {/* Seção de E-commerce */}
+        {includeEcommerce && reportData.ecommerce && (
+          <div className="space-y-6 mt-8">
+            <h3 className="text-2xl font-bold flex items-center gap-2">
+              🛒 E-commerce Analytics
+            </h3>
+            
+            {/* Cards de Métricas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Receita Total</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(reportData.ecommerce.totalRevenue, financialConfig?.currency || 'BRL', financialConfig?.locale)}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{reportData.ecommerce.totalOrders}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Médio</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(reportData.ecommerce.averageOrderValue, financialConfig?.currency || 'BRL', financialConfig?.locale)}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Top Produtos */}
+            {reportData.ecommerce.topProducts && reportData.ecommerce.topProducts.length > 0 && (
+              <div>
+                <h4 className="text-lg font-semibold mb-3">📦 Top 10 Produtos</h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Produto</TableHead>
+                        <TableHead className="text-right">Visualizações</TableHead>
+                        <TableHead className="text-right">Add to Cart</TableHead>
+                        <TableHead className="text-right">Compras</TableHead>
+                        <TableHead className="text-right">Receita</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reportData.ecommerce.topProducts.slice(0, 10).map((product, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{product.name}</TableCell>
+                          <TableCell className="text-right">{product.views || 0}</TableCell>
+                          <TableCell className="text-right">{product.addToCarts || 0}</TableCell>
+                          <TableCell className="text-right">{product.purchases || 0}</TableCell>
+                          <TableCell className="text-right font-semibold">
+                            {formatCurrency(product.revenue || 0, financialConfig?.currency || 'BRL', financialConfig?.locale)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
+            {/* Funil de Conversão */}
+            {reportData.ecommerce.funnel && (
+              <div>
+                <h4 className="text-lg font-semibold mb-3">🎯 Funil de Conversão</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xs font-medium text-muted-foreground">
+                        Visualizações
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">{reportData.ecommerce.funnel.productViews || 0}</div>
+                      <div className="text-xs text-muted-foreground mt-1">100%</div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xs font-medium text-muted-foreground">
+                        Add to Cart
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">{reportData.ecommerce.funnel.addToCarts || 0}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {reportData.ecommerce.funnel.productViews > 0
+                          ? `${((reportData.ecommerce.funnel.addToCarts / reportData.ecommerce.funnel.productViews) * 100).toFixed(1)}%`
+                          : '0%'}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xs font-medium text-muted-foreground">
+                        Checkouts
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">{reportData.ecommerce.funnel.checkouts || 0}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {reportData.ecommerce.funnel.productViews > 0
+                          ? `${((reportData.ecommerce.funnel.checkouts / reportData.ecommerce.funnel.productViews) * 100).toFixed(1)}%`
+                          : '0%'}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xs font-medium text-muted-foreground">
+                        Compras
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">{reportData.ecommerce.funnel.purchases || 0}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {reportData.ecommerce.funnel.productViews > 0
+                          ? `${((reportData.ecommerce.funnel.purchases / reportData.ecommerce.funnel.productViews) * 100).toFixed(1)}%`
+                          : '0%'}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

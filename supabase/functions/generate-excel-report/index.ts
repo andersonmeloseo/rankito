@@ -152,13 +152,63 @@ Deno.serve(async (req) => {
 
     // Aba 5: E-commerce
     if (includeEcommerce && ecommerceEvents.length > 0) {
+      // Process product data
+      const productMap = new Map();
+      ecommerceEvents.forEach(event => {
+        const productId = event.metadata?.product_id || 'unknown';
+        if (!productMap.has(productId)) {
+          productMap.set(productId, {
+            product_id: productId,
+            product_name: event.metadata?.product_name || productId,
+            views: 0,
+            addToCarts: 0,
+            purchases: 0,
+            revenue: 0
+          });
+        }
+        const product = productMap.get(productId);
+        if (event.event_type === 'product_view') product.views++;
+        if (event.event_type === 'add_to_cart') product.addToCarts++;
+        if (event.event_type === 'purchase') {
+          product.purchases++;
+          product.revenue += parseFloat(event.metadata?.revenue || '0');
+        }
+      });
+
+      const topProducts = Array.from(productMap.values())
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+
+      // Funnel metrics
+      const productViews = ecommerceEvents.filter(e => e.event_type === 'product_view').length;
+      const addToCarts = ecommerceEvents.filter(e => e.event_type === 'add_to_cart').length;
+      const checkouts = ecommerceEvents.filter(e => e.event_type === 'begin_checkout').length;
+
       const ecommerceData = [
         ['MÉTRICAS DE E-COMMERCE'],
         [''],
         ['Receita Total', `R$ ${ecommerceTotalRevenue.toFixed(2)}`],
         ['Total de Pedidos', ecommerceTotalOrders],
         ['Ticket Médio (AOV)', `R$ ${ecommerceAOV.toFixed(2)}`],
+        [''],
+        ['FUNIL DE CONVERSÃO'],
+        ['Visualizações de Produto', productViews],
+        ['Adições ao Carrinho', addToCarts],
+        ['Checkouts Iniciados', checkouts],
+        ['Compras Finalizadas', ecommerceTotalOrders],
+        ['Taxa de Conversão', `${productViews > 0 ? ((ecommerceTotalOrders / productViews) * 100).toFixed(2) : 0}%`],
+        [''],
+        ['TOP 10 PRODUTOS'],
+        ['Produto', 'Visualizações', 'Add to Cart', 'Compras', 'Receita (R$)'],
+        ...topProducts.map(p => [
+          p.product_name,
+          p.views,
+          p.addToCarts,
+          p.purchases,
+          p.revenue.toFixed(2)
+        ])
       ];
+      
       const ws5 = XLSX.utils.aoa_to_sheet(ecommerceData);
       XLSX.utils.book_append_sheet(wb, ws5, 'E-commerce');
     }

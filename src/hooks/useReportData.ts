@@ -87,6 +87,24 @@ export interface ReportData {
     fullMark: number;
   }>;
   insights: string[];
+  ecommerce?: {
+    totalRevenue: number;
+    totalOrders: number;
+    averageOrderValue: number;
+    topProducts: Array<{
+      name: string;
+      views: number;
+      addToCarts: number;
+      purchases: number;
+      revenue: number;
+    }>;
+    funnel: {
+      productViews: number;
+      addToCarts: number;
+      checkouts: number;
+      purchases: number;
+    };
+  };
 }
 
 export const useReportData = () => {
@@ -121,6 +139,15 @@ export const useReportData = () => {
         .eq('site_id', siteId);
 
       if (pageError) throw pageError;
+
+      // Fetch e-commerce events
+      const { data: ecommerceEvents } = await supabase
+        .from('rank_rent_conversions')
+        .select('*')
+        .eq('site_id', siteId)
+        .eq('is_ecommerce_event', true)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
 
       const totalConversions = conversions?.length || 0;
       const totalPageViews = pageMetrics?.reduce((sum, p) => sum + (Number(p.total_page_views) || 0), 0) || 0;
@@ -302,6 +329,55 @@ export const useReportData = () => {
           currency: financialConfig.currency,
           locale: financialConfig.locale,
           totalValue
+        };
+      }
+
+      // Process e-commerce data
+      if (ecommerceEvents && ecommerceEvents.length > 0) {
+        const productMap = new Map();
+        
+        ecommerceEvents.forEach(event => {
+          const metadata = event.metadata as any;
+          const productId = metadata?.product_id || 'unknown';
+          if (!productMap.has(productId)) {
+            productMap.set(productId, {
+              name: metadata?.product_name || productId,
+              views: 0,
+              addToCarts: 0,
+              purchases: 0,
+              revenue: 0
+            });
+          }
+          const product = productMap.get(productId);
+          if (event.event_type === 'product_view') product.views++;
+          if (event.event_type === 'add_to_cart') product.addToCarts++;
+          if (event.event_type === 'purchase') {
+            product.purchases++;
+            product.revenue += parseFloat(metadata?.revenue || '0');
+          }
+        });
+
+        const topProducts = Array.from(productMap.values())
+          .sort((a, b) => b.revenue - a.revenue);
+
+        const purchases = ecommerceEvents.filter(e => e.event_type === 'purchase');
+        const totalRevenue = purchases.reduce((sum, p) => {
+          const metadata = p.metadata as any;
+          return sum + parseFloat(metadata?.revenue || '0');
+        }, 0);
+        const totalOrders = purchases.length;
+
+        data.ecommerce = {
+          totalRevenue,
+          totalOrders,
+          averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+          topProducts,
+          funnel: {
+            productViews: ecommerceEvents.filter(e => e.event_type === 'product_view').length,
+            addToCarts: ecommerceEvents.filter(e => e.event_type === 'add_to_cart').length,
+            checkouts: ecommerceEvents.filter(e => e.event_type === 'begin_checkout').length,
+            purchases: totalOrders
+          }
         };
       }
 
