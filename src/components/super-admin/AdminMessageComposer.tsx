@@ -20,7 +20,7 @@ export function AdminMessageComposer({ open, onOpenChange }: AdminMessageCompose
   const [type, setType] = useState<'broadcast' | 'individual'>('individual');
   const [recipientId, setRecipientId] = useState<string>("");
   const [subject, setSubject] = useState("");
-  const [category, setCategory] = useState("announcement");
+  const [category, setCategory] = useState("question");
   const [priority, setPriority] = useState("medium");
   const [message, setMessage] = useState("");
 
@@ -59,7 +59,7 @@ export function AdminMessageComposer({ open, onOpenChange }: AdminMessageCompose
         setType('individual');
         setRecipientId("");
         setSubject("");
-        setCategory("announcement");
+        setCategory("question");
         setPriority("medium");
         setMessage("");
       }
@@ -137,11 +137,11 @@ export function AdminMessageComposer({ open, onOpenChange }: AdminMessageCompose
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="announcement">📢 Anúncio</SelectItem>
-                <SelectItem value="update">🔄 Atualização</SelectItem>
-                <SelectItem value="alert">⚠️ Alerta</SelectItem>
-                <SelectItem value="info">ℹ️ Informação</SelectItem>
+                <SelectItem value="question">❓ Pergunta/Dúvida</SelectItem>
                 <SelectItem value="technical_support">🛠️ Suporte Técnico</SelectItem>
+                <SelectItem value="bug_report">🐛 Relatório de Bug</SelectItem>
+                <SelectItem value="feature_request">✨ Solicitação de Funcionalidade</SelectItem>
+                <SelectItem value="other">📝 Outros</SelectItem>
               </SelectContent>
             </Select>
           </div>
