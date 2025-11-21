@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PerformanceBadge } from "./PerformanceBadge";
-import { Download, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Download, Search, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as XLSX from "xlsx";
 
 interface Product {
@@ -29,7 +30,7 @@ interface Product {
   purchases: number;
   revenue: number;
   conversionRate: number;
-  averagePrice: number;
+  productUrl?: string;
   performanceType?: "top" | "featured" | "warning" | "growth" | "recovery";
 }
 
@@ -38,7 +39,7 @@ interface ProductsFullTableProps {
   siteId: string;
 }
 
-type SortField = "productName" | "purchases" | "revenue" | "views" | "conversionRate" | "averagePrice";
+type SortField = "productName" | "purchases" | "revenue" | "views" | "conversionRate";
 type SortOrder = "asc" | "desc";
 
 export const ProductsFullTable = ({ products, siteId }: ProductsFullTableProps) => {
@@ -101,7 +102,7 @@ export const ProductsFullTable = ({ products, siteId }: ProductsFullTableProps) 
       Visualizações: product.views,
       "No Carrinho": product.addToCarts,
       "Taxa de Conversão (%)": product.conversionRate,
-      "Ticket Médio (R$)": product.averagePrice,
+      "URL do Produto": product.productUrl || 'N/A',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -115,7 +116,7 @@ export const ProductsFullTable = ({ products, siteId }: ProductsFullTableProps) 
       { wch: 15 },
       { wch: 15 },
       { wch: 18 },
-      { wch: 15 },
+      { wch: 50 },
     ];
     worksheet["!cols"] = colWidths;
 
@@ -131,7 +132,7 @@ export const ProductsFullTable = ({ products, siteId }: ProductsFullTableProps) 
       Visualizações: product.views,
       "No Carrinho": product.addToCarts,
       "Taxa de Conversão (%)": product.conversionRate,
-      "Ticket Médio (R$)": product.averagePrice,
+      "URL do Produto": product.productUrl || 'N/A',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -258,16 +259,7 @@ export const ProductsFullTable = ({ products, siteId }: ProductsFullTableProps) 
                   <SortIcon field="conversionRate" />
                 </Button>
               </TableHead>
-              <TableHead className="text-right">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("averagePrice")}
-                  className="flex items-center justify-end w-full p-0 hover:bg-transparent"
-                >
-                  Ticket Médio
-                  <SortIcon field="averagePrice" />
-                </Button>
-              </TableHead>
+              <TableHead>URL do Produto</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -294,7 +286,32 @@ export const ProductsFullTable = ({ products, siteId }: ProductsFullTableProps) 
                   </TableCell>
                   <TableCell className="text-right">{product.views}</TableCell>
                   <TableCell className="text-right">{product.conversionRate.toFixed(2)}%</TableCell>
-                  <TableCell className="text-right">{formatCurrency(product.averagePrice)}</TableCell>
+                  <TableCell>
+                    {product.productUrl ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={product.productUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-primary hover:underline max-w-[300px] truncate"
+                            >
+                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">
+                                {product.productUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                              </span>
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-[400px] break-all">{product.productUrl}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">N/A</span>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))
             )}

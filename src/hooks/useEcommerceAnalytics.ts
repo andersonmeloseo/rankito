@@ -27,7 +27,7 @@ export interface ProductPerformance {
   purchases: number;
   revenue: number;
   conversionRate: number;
-  averagePrice: number;
+  productUrl?: string;
   performanceType?: PerformanceType;
   badges?: PerformanceType[];
 }
@@ -82,22 +82,34 @@ const processEcommerceData = (data: any[], days: number) => {
     addToCarts: number;
     purchases: number;
     revenue: number;
+    url: string;
   }>();
 
   data.forEach(event => {
     const metadata = event.metadata as any;
     const productName = metadata?.product_name || 'Produto Desconhecido';
+    const pageUrl = event.page_url || '';
     
     if (!productMap.has(productName)) {
       productMap.set(productName, {
         views: 0,
         addToCarts: 0,
         purchases: 0,
-        revenue: 0
+        revenue: 0,
+        url: ''
       });
     }
 
     const product = productMap.get(productName)!;
+
+    // Priorizar URL de eventos de purchase, depois add_to_cart, depois product_view
+    if (event.event_type === 'purchase' && pageUrl) {
+      product.url = pageUrl;
+    } else if (event.event_type === 'add_to_cart' && pageUrl && !product.url) {
+      product.url = pageUrl;
+    } else if (event.event_type === 'product_view' && pageUrl && !product.url) {
+      product.url = pageUrl;
+    }
 
     if (event.event_type === 'product_view') product.views++;
     if (event.event_type === 'add_to_cart') product.addToCarts++;
@@ -117,7 +129,7 @@ const processEcommerceData = (data: any[], days: number) => {
       purchases: stats.purchases,
       revenue: stats.revenue,
       conversionRate: stats.views > 0 ? (stats.purchases / stats.views) * 100 : 0,
-      averagePrice: stats.purchases > 0 ? stats.revenue / stats.purchases : 0
+      productUrl: stats.url || undefined
     }))
     .sort((a, b) => b.revenue - a.revenue);
 
