@@ -17,6 +17,10 @@ interface EcommerceAnalyticsProps {
 }
 
 export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
+  if (!siteId) {
+    return <div className="text-muted-foreground">ID do site inválido</div>;
+  }
+
   const endDate = new Date();
   const startDate = subDays(endDate, 30);
 
