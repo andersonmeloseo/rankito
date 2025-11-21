@@ -6,10 +6,9 @@ import {
   TrendingUp, 
   DollarSign, 
   Package, 
-  Eye,
-  CreditCard,
-  ArrowRight
+  Eye
 } from "lucide-react";
+import { ConversionFunnelVisual } from "./ConversionFunnelVisual";
 
 interface EcommerceAnalyticsProps {
   siteId: string;
@@ -151,7 +150,7 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
         </Card>
       </div>
 
-      {/* Conversion Funnel */}
+      {/* Conversion Funnel Visual */}
       {funnel && (
         <Card>
           <CardHeader>
@@ -161,108 +160,10 @@ export const EcommerceAnalytics = ({ siteId }: EcommerceAnalyticsProps) => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {/* Step 1 */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm font-medium">Visualizações de Produto</span>
-                    </div>
-                    <span className="text-sm font-bold">{funnel.productViews}</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500" style={{ width: '100%' }} />
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-
-              {/* Step 2 */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <ShoppingCart className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-medium">Adicionar ao Carrinho</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold">{funnel.addToCarts}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({funnel.viewToCartRate.toFixed(1)}%)
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-green-500" 
-                      style={{ width: `${funnel.viewToCartRate}%` }} 
-                    />
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-
-              {/* Step 3 */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4 text-yellow-500" />
-                      <span className="text-sm font-medium">Iniciar Checkout</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold">{funnel.checkouts}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({funnel.cartToCheckoutRate.toFixed(1)}%)
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-yellow-500" 
-                      style={{ width: `${funnel.cartToCheckoutRate}%` }} 
-                    />
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-
-              {/* Step 4 */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-purple-500" />
-                      <span className="text-sm font-medium">Compra Finalizada</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold">{funnel.purchases}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({funnel.checkoutToSaleRate.toFixed(1)}%)
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-purple-500" 
-                      style={{ width: `${funnel.checkoutToSaleRate}%` }} 
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Overall Conversion */}
-              <div className="pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Taxa de Conversão Total</span>
-                  <span className="text-lg font-bold text-primary">
-                    {funnel.overallConversionRate.toFixed(2)}%
-                  </span>
-                </div>
-              </div>
-            </div>
+            <ConversionFunnelVisual funnel={{
+              ...funnel,
+              checkoutToPurchaseRate: funnel.checkoutToSaleRate
+            }} />
           </CardContent>
         </Card>
       )}
