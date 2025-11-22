@@ -197,13 +197,28 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
     );
   };
 
-  const toggleAll = () => {
-    if (!paginatedUrls) return;
-    if (selectedUrls.length === paginatedUrls.length && paginatedUrls.length > 0) {
-      setSelectedUrls([]);
-    } else {
-      setSelectedUrls(paginatedUrls.map(u => u.url));
-    }
+  const toggleAll = useMemo(() => {
+    return () => {
+      const currentPageUrls = paginatedUrls.map(u => u.url);
+      const allSelected = currentPageUrls.every(url => selectedUrls.includes(url));
+      
+      if (allSelected && currentPageUrls.length > 0) {
+        setSelectedUrls(prev => prev.filter(url => !currentPageUrls.includes(url)));
+      } else {
+        setSelectedUrls(prev => [...new Set([...prev, ...currentPageUrls])]);
+      }
+    };
+  }, [paginatedUrls, selectedUrls]);
+
+  const selectAllFiltered = () => {
+    const allFilteredUrls = processedUrls.map(u => u.url);
+    setSelectedUrls(allFilteredUrls);
+    toast.success(`${allFilteredUrls.length} URLs selecionadas`);
+  };
+
+  const clearSelection = () => {
+    setSelectedUrls([]);
+    toast.success('Seleção limpa');
   };
 
   const handleSend = () => {
@@ -277,13 +292,33 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
                 Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, processedUrls.length)} de {processedUrls.length} URLs
               </p>
             </div>
-            <Button
-              onClick={handleSend}
-              disabled={selectedUrls.length === 0 || sendToIndexNow.isPending}
-            >
-              <Send className={`h-4 w-4 mr-2 ${sendToIndexNow.isPending ? 'animate-spin' : ''}`} />
-              Enviar {selectedUrls.length} URLs ao IndexNow
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={selectAllFiltered}
+                disabled={processedUrls.length === 0}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Selecionar Todas ({processedUrls.length})
+              </Button>
+              
+              {selectedUrls.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={clearSelection}
+                >
+                  Limpar ({selectedUrls.length})
+                </Button>
+              )}
+              
+              <Button
+                onClick={handleSend}
+                disabled={selectedUrls.length === 0 || sendToIndexNow.isPending}
+              >
+                <Send className={`h-4 w-4 mr-2 ${sendToIndexNow.isPending ? 'animate-spin' : ''}`} />
+                Enviar ao IndexNow
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -341,7 +376,7 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={paginatedUrls && selectedUrls.length === paginatedUrls.length && paginatedUrls.length > 0}
+                      checked={paginatedUrls.length > 0 && paginatedUrls.every(u => selectedUrls.includes(u.url))}
                       onCheckedChange={toggleAll}
                     />
                   </TableHead>
