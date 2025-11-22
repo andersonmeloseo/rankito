@@ -26,7 +26,7 @@ const featureScreenshots = [
   "/images/screenshots/dashboard-overview.png",
   "/images/screenshots/crm-pipeline.png",
   "/images/screenshots/gsc-monitoring.png",
-  "/images/screenshots/ecommerce-tracking.png",
+  "/images/screenshots/ecommerce-dashboard-full.png",
   "/images/screenshots/financial-performance.png",
   "/images/screenshots/client-portal.png",
   "/images/screenshots/analytics-charts.png",
