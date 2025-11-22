@@ -104,35 +104,21 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
 
       // Fetch page visits for common sequences
       const sessionIds = sessions.map(s => s.id);
-      const { data: visits, error: visitsError } = await supabase
+      const { data: visits } = await supabase
         .from('rank_rent_page_visits')
-        .select('session_id, page_url, sequence_number, time_spent_seconds')
+        .select('session_id, page_url, sequence_number, time_spent_seconds, created_at')
         .in('session_id', sessionIds)
         .order('session_id')
         .order('sequence_number');
 
-      console.log('🔍 User Journey Debug:', {
-        totalSessions: sessions.length,
-        sessionIds: sessionIds.slice(0, 3),
-        visitsCount: visits?.length || 0,
-        visitsError,
-        sampleVisit: visits?.[0],
-        visitsWithTime: visits?.filter(v => v.time_spent_seconds && v.time_spent_seconds > 0).length || 0
-      });
-
-      // Fetch clicks for sessions
-      const { data: clicks, error: clicksError } = await supabase
+      // Fetch clicks with date filters (including clicks without session_id)
+      const { data: clicks } = await supabase
         .from('rank_rent_conversions')
-        .select('session_id, event_type, page_url, metadata, cta_text')
-        .in('session_id', sessionIds)
-        .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit']);
-
-      console.log('🔍 Clicks Debug:', {
-        clicksCount: clicks?.length || 0,
-        clicksError,
-        sampleClick: clicks?.[0],
-        clickEventTypes: clicks?.map(c => c.event_type) || []
-      });
+        .select('session_id, event_type, page_url, metadata, cta_text, created_at')
+        .eq('site_id', siteId)
+        .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'])
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
 
       // Build sequences with enriched data
       const sequencesMap = new Map<string, {
@@ -144,8 +130,25 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       }>();
       
       if (visits) {
+        // Calculate time fallback when time_spent_seconds is null
+        const enrichedVisits = visits.map((visit, index) => {
+          let timeSpent = visit.time_spent_seconds;
+          
+          // If time is null, calculate from timestamps
+          if (!timeSpent && index < visits.length - 1) {
+            const nextVisit = visits[index + 1];
+            if (visit.session_id === nextVisit.session_id) {
+              const timeDiff = new Date(nextVisit.created_at).getTime() - 
+                               new Date(visit.created_at).getTime();
+              timeSpent = Math.floor(timeDiff / 1000); // Convert to seconds
+            }
+          }
+          
+          return { ...visit, time_spent_seconds: timeSpent || 0 };
+        });
+
         const sessionSequences = new Map<string, { urls: string[]; duration: number }>();
-        visits.forEach(v => {
+        enrichedVisits.forEach(v => {
           if (!sessionSequences.has(v.session_id)) {
             sessionSequences.set(v.session_id, { urls: [], duration: 0 });
           }
@@ -172,7 +175,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         });
 
         // Aggregate time spent per specific URL
-        visits.forEach(v => {
+        enrichedVisits.forEach(v => {
           const sessionData = sessionSequences.get(v.session_id);
           if (sessionData && sessionData.urls.length >= 1) {
             const key = sessionData.urls.join(' → ');
@@ -187,11 +190,17 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         });
       }
 
-      // Add click events to sequences
+      // Add click events to sequences (by session_id OR by page_url)
       if (clicks) {
         clicks.forEach(click => {
           sequencesMap.forEach((data, key) => {
-            if (data.sessionIds.includes(click.session_id)) {
+            const sequence = key.split(' → ');
+            
+            // Associate by session_id (preferred) OR by page_url if URL is in sequence
+            const matchesBySession = click.session_id && data.sessionIds.includes(click.session_id);
+            const matchesByUrl = sequence.some(url => url.includes(click.page_url) || click.page_url.includes(url));
+            
+            if (matchesBySession || matchesByUrl) {
               const clickKey = `${click.page_url}-${click.event_type}`;
               const existing = data.clickEvents.get(clickKey) || {
                 pageUrl: click.page_url,
