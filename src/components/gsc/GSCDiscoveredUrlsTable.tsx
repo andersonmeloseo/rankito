@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useGSCDiscoveredUrls } from '@/hooks/useGSCDiscoveredUrls';
+import { useGSCMonitoring } from '@/hooks/useGSCMonitoring';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { 
@@ -23,7 +24,10 @@ import {
   TrendingUp,
   Clock,
   Activity,
-  Calendar
+  Calendar,
+  Shield,
+  RefreshCw,
+  Eye
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
@@ -32,6 +36,9 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { URLValidationBadge } from './URLValidationBadge';
+import { RetryStatusBadge } from './RetryStatusBadge';
+import { GoogleInspectionBadge } from './GoogleInspectionBadge';
 
 interface GSCDiscoveredUrlsTableProps {
   siteId: string;
@@ -66,6 +73,8 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   const { urls, isLoading, totalCount } = useGSCDiscoveredUrls(siteId, {
     searchTerm,
   });
+
+  const { validationStats, retryStats, inspectionStats } = useGSCMonitoring(siteId);
 
   // Query para contar URLs enviadas (global)
   const { data: sentCount } = useQuery({
@@ -143,6 +152,8 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
       queryClient.invalidateQueries({ queryKey: ['gsc-discovered-urls'] });
       queryClient.invalidateQueries({ queryKey: ['gsc-indexing-jobs'] });
       queryClient.invalidateQueries({ queryKey: ['gsc-aggregated-quota'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-validation-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-retry-stats'] });
     },
     onError: (error: any) => {
       const errorMessage = error.message?.toLowerCase() || '';
@@ -163,6 +174,25 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
       } else {
         toast.error(`Erro ao enviar URLs: ${error.message}`);
       }
+    }
+  });
+
+  // ✅ FASE 1: Mutation para validar URLs manualmente
+  const validateUrls = useMutation({
+    mutationFn: async (urlsToValidate: string[]) => {
+      const { data, error } = await supabase.functions.invoke('gsc-validate-urls', {
+        body: { site_id: siteId, urls: urlsToValidate }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`${data.valid} URLs válidas, ${data.invalid_domain + data.unreachable + data.duplicate} com problemas`);
+      queryClient.invalidateQueries({ queryKey: ['gsc-discovered-urls'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-validation-stats'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao validar URLs: ${error.message}`);
     }
   });
 
@@ -456,6 +486,84 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
         </CardContent>
       </Card>
 
+      {/* ✅ Dashboard de Monitoramento - FASE 5 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-white dark:from-green-950 dark:to-background">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="h-4 w-4 text-green-600" />
+              Sistema de Validação
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">✅ Válidas:</span>
+              <span className="font-bold text-green-600">{validationStats?.valid || 0}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">❌ Inválidas:</span>
+              <span className="font-bold text-red-600">{validationStats?.invalid_domain || 0}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">⚠️ Inacessíveis:</span>
+              <span className="font-bold text-orange-600">{validationStats?.unreachable || 0}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">📋 Pendentes:</span>
+              <span className="font-bold">{validationStats?.pending || 0}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950 dark:to-background">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 text-amber-600" />
+              Sistema de Retry
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">🔄 Em retry:</span>
+              <span className="font-bold text-amber-600">{retryStats?.totalInRetry || 0}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">🚫 Esgotados:</span>
+              <span className="font-bold text-red-600">{retryStats?.maxedOut || 0}</span>
+            </div>
+            {retryStats?.nextRetryAt && (
+              <div className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                Próximo retry: {format(new Date(retryStats.nextRetryAt), "HH:mm", { locale: ptBR })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950 dark:to-background">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Eye className="h-4 w-4 text-blue-600" />
+              Inspection API
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">✅ Inspecionadas:</span>
+              <span className="font-bold text-blue-600">{inspectionStats?.inspected || 0}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">⏳ Aguardando:</span>
+              <span className="font-bold">{inspectionStats?.needsInspection || 0}</span>
+            </div>
+            {inspectionStats?.lastInspectedAt && (
+              <div className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                Última: {format(new Date(inspectionStats.lastInspectedAt), "dd/MM HH:mm", { locale: ptBR })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader className="pb-4">
           <CardTitle>URLs Descobertas</CardTitle>
@@ -534,26 +642,32 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                   >
                     Limpar
                   </Button>
+                  {/* ✅ FASE 1: Botão Validar URLs */}
+                  <Button 
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      const urlsToValidate = selectedUrls.map(u => u.url);
+                      validateUrls.mutate(urlsToValidate);
+                    }}
+                    disabled={validateUrls.isPending}
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    {validateUrls.isPending ? 'Validando...' : 'Validar URLs'}
+                  </Button>
                   <Button 
                     size="sm"
                     onClick={() => {
-                      console.log('🚀 Send button clicked:', { 
-                        selectedUrlsLength: selectedUrls.length,
-                        selectedUrls: selectedUrls 
-                      });
-                      
                       if (selectedUrls.length === 0) {
                         toast.error('Selecione pelo menos uma URL para indexar');
                         return;
                       }
-                      
-                      console.log('✅ Calling sendToIndexing mutation with URLs:', selectedUrls.map(u => u.url));
                       sendToIndexing.mutate(selectedUrls);
                     }}
                     disabled={sendToIndexing.isPending || selectedUrls.length === 0}
                   >
                     <Send className="h-4 w-4 mr-2" />
-                    Enviar {selectedUrls.length > 0 ? `${selectedUrls.length} URL${selectedUrls.length > 1 ? 's' : ''}` : ''} para Indexação GSC
+                    Enviar para Indexação GSC
                   </Button>
                 </div>
               </AlertDescription>
@@ -631,18 +745,19 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                     />
                   </TableHead>
                   <SortableHeader field="url" label="URL" currentSort={urlsSort} onSort={handleUrlsSort} />
-                  <SortableHeader field="current_status" label="Status Indexação" currentSort={urlsSort} onSort={handleUrlsSort} className="w-40" />
-                  <SortableHeader field="impressions" label="Impressões" currentSort={urlsSort} onSort={handleUrlsSort} className="w-32" />
-                  <SortableHeader field="clicks" label="Cliques" currentSort={urlsSort} onSort={handleUrlsSort} className="w-28" />
-                  <SortableHeader field="ctr" label="CTR" currentSort={urlsSort} onSort={handleUrlsSort} className="w-28" />
-                  <SortableHeader field="position" label="Posição" currentSort={urlsSort} onSort={handleUrlsSort} className="w-28" />
-                  <SortableHeader field="last_seen_at" label="Última Visualização" currentSort={urlsSort} onSort={handleUrlsSort} className="w-44" />
+                  <SortableHeader field="current_status" label="Status GSC" currentSort={urlsSort} onSort={handleUrlsSort} className="w-36" />
+                  <TableHead className="w-36">Validação</TableHead>
+                  <TableHead className="w-36">Retry</TableHead>
+                  <TableHead className="w-36">Google Status</TableHead>
+                  <SortableHeader field="impressions" label="Impressões" currentSort={urlsSort} onSort={handleUrlsSort} className="w-28" />
+                  <SortableHeader field="clicks" label="Cliques" currentSort={urlsSort} onSort={handleUrlsSort} className="w-24" />
+                  <SortableHeader field="last_seen_at" label="Última Vista" currentSort={urlsSort} onSort={handleUrlsSort} className="w-36" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {processedUrls.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                       Nenhuma URL encontrada
                     </TableCell>
                   </TableRow>
@@ -652,10 +767,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                       <TableCell>
                         <Checkbox 
                           checked={selectedUrls.some(u => u.id === url.id)}
-                          onCheckedChange={() => {
-                            console.log('📋 Individual checkbox clicked:', url.id);
-                            toggleUrl(url.id);
-                          }}
+                          onCheckedChange={() => toggleUrl(url.id)}
                         />
                       </TableCell>
                       <TableCell className="max-w-md">
@@ -664,7 +776,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                             href={url.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 dark:text-blue-400 hover:underline truncate"
+                            className="text-blue-600 dark:text-blue-400 hover:underline truncate text-sm"
                           >
                             {url.url}
                           </a>
@@ -672,12 +784,32 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(url.current_status)}</TableCell>
-                      <TableCell className="text-right">{url.impressions?.toLocaleString('pt-BR') || '-'}</TableCell>
-                      <TableCell className="text-right">{url.clicks?.toLocaleString('pt-BR') || '-'}</TableCell>
-                      <TableCell className="text-right">{url.ctr ? `${(url.ctr * 100).toFixed(2)}%` : '-'}</TableCell>
-                      <TableCell className="text-right">{url.position ? url.position.toFixed(1) : '-'}</TableCell>
+                      {/* ✅ FASE 1: Coluna Validação */}
                       <TableCell>
-                        {url.last_seen_at ? format(new Date(url.last_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR }) : '-'}
+                        <URLValidationBadge 
+                          validationStatus={url.validation_status} 
+                          validationError={url.validation_error}
+                        />
+                      </TableCell>
+                      {/* ✅ FASE 2: Coluna Retry */}
+                      <TableCell>
+                        <RetryStatusBadge 
+                          retryCount={url.retry_count}
+                          nextRetryAt={url.next_retry_at}
+                          retryReason={url.retry_reason}
+                        />
+                      </TableCell>
+                      {/* ✅ FASE 3: Coluna Google Status */}
+                      <TableCell>
+                        <GoogleInspectionBadge 
+                          inspectionStatus={url.google_inspection_status}
+                          lastInspectedAt={url.google_last_inspected_at}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right text-sm">{url.impressions?.toLocaleString('pt-BR') || '-'}</TableCell>
+                      <TableCell className="text-right text-sm">{url.clicks?.toLocaleString('pt-BR') || '-'}</TableCell>
+                      <TableCell className="text-sm">
+                        {url.last_seen_at ? format(new Date(url.last_seen_at), "dd/MM HH:mm", { locale: ptBR }) : '-'}
                       </TableCell>
                     </TableRow>
                   ))

@@ -20,7 +20,19 @@ export const useGSCDiscoveredUrls = (
     queryFn: async () => {
       let query = supabase
         .from('gsc_discovered_urls')
-        .select('*')
+        .select(`
+          *,
+          validation_status,
+          validation_error,
+          validated_at,
+          retry_count,
+          last_retry_at,
+          next_retry_at,
+          retry_reason,
+          google_inspection_status,
+          google_last_inspected_at,
+          google_inspection_data
+        `)
         .eq('site_id', siteId)
         .order('last_seen_at', { ascending: false });
 

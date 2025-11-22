@@ -7,7 +7,8 @@
 -- 2. Sincronizar status real do Google via Inspection API (diariamente)
 --
 -- INSTRUÇÕES:
--- Execute este SQL no Supabase SQL Editor ou via migration
+-- Execute este SQL no Supabase SQL Editor
+-- IMPORTANTE: Substitua o Authorization header pelo seu service_role_key
 -- ============================================================
 
 -- Habilitar extensões necessárias
@@ -25,7 +26,10 @@ SELECT cron.schedule(
   $$
   SELECT net.http_post(
     url := 'https://jhzmgexprjnpgadkxjup.supabase.co/functions/v1/gsc-process-retries',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer ' || current_setting('app.settings.service_role_key') || '"}'::jsonb,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impoem1nZXhwcmpucGdhZGt4anVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3MTM0MjQsImV4cCI6MjA3NjI4OTQyNH0.D1Rwcr_EC_AXc2O7dem2WgjG-7XiTazG0zTv936ONKM'
+    ),
     body := '{}'::jsonb
   );
   $$
@@ -42,7 +46,10 @@ SELECT cron.schedule(
   $$
   SELECT net.http_post(
     url := 'https://jhzmgexprjnpgadkxjup.supabase.co/functions/v1/gsc-sync-inspection-status',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer ' || current_setting('app.settings.service_role_key') || '"}'::jsonb,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impoem1nZXhwcmpucGdhZGt4anVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3MTM0MjQsImV4cCI6MjA3NjI4OTQyNH0.D1Rwcr_EC_AXc2O7dem2WgjG-7XiTazG0zTv936ONKM'
+    ),
     body := '{}'::jsonb
   );
   $$

@@ -186,6 +186,39 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
 
       if (error) throw error;
 
+      // ✅ FASE 1: Validar URLs descobertas automaticamente
+      if (data?.newPages > 0) {
+        try {
+          const { data: site } = await supabase
+            .from('rank_rent_sites')
+            .select('site_url')
+            .eq('id', siteId)
+            .single();
+
+          if (site?.site_url) {
+            // Buscar URLs recém-descobertas sem validação
+            const { data: urlsToValidate } = await supabase
+              .from('gsc_discovered_urls')
+              .select('url')
+              .eq('site_id', siteId)
+              .is('validation_status', null)
+              .limit(100);
+
+            if (urlsToValidate && urlsToValidate.length > 0) {
+              await supabase.functions.invoke('gsc-validate-urls', {
+                body: {
+                  site_id: siteId,
+                  urls: urlsToValidate.map(u => u.url)
+                }
+              });
+            }
+          }
+        } catch (validationError) {
+          console.error('Erro ao validar URLs:', validationError);
+          // Não bloqueia importação se validação falhar
+        }
+      }
+
       // Add expected URLs to result
       data.expectedUrls = totalExpectedUrls;
       data.selectedSitemapsCount = selectedSitemaps.length;
