@@ -35,7 +35,7 @@ async function createJWT(credentials: ServiceAccountCredentials): Promise<string
     iss: credentials.client_email,
     sub: credentials.client_email,
     aud: credentials.token_uri,
-    scope: 'https://www.googleapis.com/auth/webmasters https://www.googleapis.com/auth/indexing',
+    scope: 'https://www.googleapis.com/auth/webmasters',
     iat: now,
     exp: now + 3600, // 1 hora
   })
