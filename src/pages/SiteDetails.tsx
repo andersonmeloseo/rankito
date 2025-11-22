@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe, FileText, Search, Plug, ShoppingCart } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe, FileText, Search, Plug, ShoppingCart, Route } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -58,6 +58,7 @@ import { GSCTabContent } from "@/components/gsc/GSCTabContent";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
 import { EcommerceAnalytics } from "@/components/integrations/ecommerce/EcommerceAnalytics";
+import { UserJourneyTab } from "@/components/rank-rent/journey/UserJourneyTab";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -843,6 +844,10 @@ const SiteDetails = () => {
                   Analytics Avançado
                 </ClickUpTabTrigger>
                 
+                <ClickUpTabTrigger value="journey" icon={Route}>
+                  Jornada do Usuário
+                </ClickUpTabTrigger>
+                
                 {site?.is_ecommerce && (
                   <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
                     E-commerce
@@ -1518,6 +1523,11 @@ const SiteDetails = () => {
               siteName={site.site_name}
               pixelInstalled={site.tracking_pixel_installed}
             />
+          </TabsContent>
+
+          {/* Jornada do Usuário Tab */}
+          <TabsContent value="journey">
+            <UserJourneyTab siteId={siteId || ""} />
           </TabsContent>
 
         </Tabs>

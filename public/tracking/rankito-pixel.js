@@ -120,6 +120,10 @@
       page_url: window.location.href,
       event_type: eventType,
       cta_text: eventData.cta_text || null,
+      session_id: eventData.session_id || null,
+      sequence_number: eventData.sequence_number || null,
+      time_spent_seconds: eventData.time_spent_seconds || null,
+      exit_url: eventData.exit_url || null,
       metadata: {
         device: getDevice(),
         platform: config.platform,
@@ -168,13 +172,92 @@
   // Process queue every 30 seconds
   setInterval(processQueue, 30000);
 
-  // Track Page View
+  // Session Management
+  const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
+  function getSessionId() {
+    const storageKey = 'rankito_session';
+    let sessionData = sessionStorage.getItem(storageKey);
+    
+    if (sessionData) {
+      try {
+        const { id, lastActivity, sequence } = JSON.parse(sessionData);
+        if (Date.now() - lastActivity < SESSION_TIMEOUT) {
+          // Update activity and increment sequence
+          sessionData = { id, lastActivity: Date.now(), sequence: sequence + 1 };
+          sessionStorage.setItem(storageKey, JSON.stringify(sessionData));
+          return { sessionId: id, sequence: sessionData.sequence };
+        }
+      } catch (e) {
+        log('Error parsing session data:', e);
+      }
+    }
+    
+    // Create new session
+    const newId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const newData = { id: newId, lastActivity: Date.now(), sequence: 1 };
+    sessionStorage.setItem(storageKey, JSON.stringify(newData));
+    return { sessionId: newId, sequence: 1 };
+  }
+
+  // Track Page View with session
+  let pageEntryTime = Date.now();
+  let currentPageUrl = window.location.href;
+
   function trackPageView() {
-    log('Tracking page view');
+    const { sessionId, sequence } = getSessionId();
+    log('Tracking page view with session:', sessionId, 'sequence:', sequence);
+    
+    pageEntryTime = Date.now();
+    currentPageUrl = window.location.href;
+    
     sendEvent('page_view', {
       page_title: document.title,
-      page_path: window.location.pathname
+      page_path: window.location.pathname,
+      session_id: sessionId,
+      sequence_number: sequence
     });
+  }
+
+  // Track Page Exit
+  function trackPageExit() {
+    const { sessionId } = getSessionId();
+    const timeSpent = Math.floor((Date.now() - pageEntryTime) / 1000);
+    
+    if (timeSpent < 1) return; // Ignore very short visits
+    
+    log('Tracking page exit:', timeSpent, 'seconds');
+    
+    // Use sendBeacon for reliable delivery on page unload
+    const payload = {
+      site_name: document.title || window.location.hostname,
+      page_url: currentPageUrl,
+      event_type: 'page_exit',
+      cta_text: null,
+      session_id: sessionId,
+      time_spent_seconds: timeSpent,
+      exit_url: window.location.href,
+      metadata: {
+        device: getDevice(),
+        platform: config.platform,
+        referrer: document.referrer || null
+      }
+    };
+
+    const beaconUrl = `${API_URL}?token=${config.token}`;
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(beaconUrl, blob);
+    } else {
+      // Fallback for older browsers
+      fetch(beaconUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true
+      }).catch(err => log('Error sending page_exit:', err));
+    }
   }
 
   // Track Scroll Depth
@@ -603,6 +686,16 @@
     document.addEventListener('click', trackClicks, true);
     window.addEventListener('scroll', trackScrollDepth, { passive: true });
     window.addEventListener('beforeunload', trackTimeOnPage);
+    
+    // Session tracking - page exit listeners
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden') {
+        trackPageExit();
+      }
+    });
+    
+    window.addEventListener('beforeunload', trackPageExit);
+    window.addEventListener('pagehide', trackPageExit);
 
     // Initialize e-commerce tracking
     initEcommerce();
