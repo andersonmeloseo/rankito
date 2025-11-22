@@ -9,6 +9,7 @@ import { Zap, AlertTriangle, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useGSCDiscoveredUrls } from '@/hooks/useGSCDiscoveredUrls';
+import { useGSCQuotaStatus } from '@/hooks/useGSCQuotaStatus';
 
 interface InstantIndexDialogProps {
   open: boolean;
@@ -22,27 +23,14 @@ export const InstantIndexDialog = ({ open, onOpenChange, siteId, integrationId }
     status: 'discovered', // Only show non-indexed URLs
   });
 
+  const { quotaStatus } = useGSCQuotaStatus(siteId);
+
   const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
   const [isIndexing, setIsIndexing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [quotaRemaining, setQuotaRemaining] = useState<number | null>(null);
-
-  // Fetch quota on dialog open
-  const fetchQuota = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const { count } = await supabase
-        .from('gsc_indexing_jobs')
-        .select('*', { count: 'exact', head: true })
-        .eq('integration_id', integrationId)
-        .gte('created_at', today);
-
-      const used = count || 0;
-      setQuotaRemaining(200 - used);
-    } catch (error) {
-      setQuotaRemaining(null);
-    }
-  };
+  
+  const quotaRemaining = quotaStatus?.total_remaining ?? null;
+  const quotaTotal = quotaStatus?.total_limit ?? 200;
 
   const handleSelectAll = () => {
     if (selectedUrls.length === urls?.length) {
@@ -65,7 +53,7 @@ export const InstantIndexDialog = ({ open, onOpenChange, siteId, integrationId }
     }
 
     if (quotaRemaining !== null && selectedUrls.length > quotaRemaining) {
-      toast.error(`Você só pode indexar ${quotaRemaining} URLs hoje (quota diária: 200)`);
+      toast.error(`Você só pode indexar ${quotaRemaining} URLs hoje (quota diária agregada: ${quotaTotal})`);
       return;
     }
 
@@ -99,11 +87,6 @@ export const InstantIndexDialog = ({ open, onOpenChange, siteId, integrationId }
     }
   };
 
-  // Fetch quota when dialog opens
-  if (open && quotaRemaining === null) {
-    fetchQuota();
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -122,7 +105,12 @@ export const InstantIndexDialog = ({ open, onOpenChange, siteId, integrationId }
           <Alert variant={quotaRemaining > 50 ? 'default' : 'destructive'}>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Quota disponível hoje: <strong>{quotaRemaining} / 200 URLs</strong>
+              Quota disponível hoje: <strong>{quotaRemaining} / {quotaTotal} URLs</strong>
+              {quotaStatus && quotaStatus.integrations_count > 1 && (
+                <span className="text-xs ml-2 opacity-75">
+                  ({quotaStatus.integrations_count} conexões ativas)
+                </span>
+              )}
             </AlertDescription>
           </Alert>
         )}
