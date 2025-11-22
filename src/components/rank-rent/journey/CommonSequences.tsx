@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
+import { SequenceStepBadge } from "./SequenceStepBadge";
+import { SequenceFlowLine } from "./SequenceFlowLine";
+import { SequenceMetrics } from "./SequenceMetrics";
 
 interface CommonSequence {
   sequence: string[];
@@ -12,15 +14,6 @@ interface CommonSequencesProps {
 }
 
 export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
-  const formatUrl = (url: string) => {
-    try {
-      const path = new URL(url).pathname;
-      return path === '/' ? 'Home' : path.split('/').filter(Boolean).join(' / ');
-    } catch {
-      return url;
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -32,34 +25,41 @@ export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
             Nenhuma sequência de navegação registrada ainda. Aguarde mais visitas.
           </p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {sequences.map((seq, index) => (
-              <div key={index} className="border rounded-lg p-4 hover:bg-accent/5 transition-colors">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-2">
-                      {seq.sequence.map((page, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <div className="bg-muted px-3 py-1.5 rounded-md text-sm font-medium truncate max-w-[200px]">
-                            {formatUrl(page)}
-                          </div>
-                          {i < seq.sequence.length - 1 && (
-                            <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          )}
+              <Card key={index} className="shadow-sm hover:shadow-md transition-shadow duration-200">
+                <CardContent className="pt-6">
+                  {/* Metrics Header */}
+                  <SequenceMetrics
+                    rank={index + 1}
+                    sessionCount={seq.count}
+                    percentage={seq.percentage}
+                    pageCount={seq.sequence.length}
+                  />
+
+                  {/* Vertical Timeline */}
+                  <div className="mt-6 space-y-0">
+                    {seq.sequence.map((page, pageIndex) => {
+                      const isFirst = pageIndex === 0;
+                      const isLast = pageIndex === seq.sequence.length - 1;
+                      const type = isFirst ? "entry" : isLast ? "exit" : "intermediate";
+
+                      return (
+                        <div key={pageIndex}>
+                          <SequenceStepBadge
+                            url={page}
+                            type={type}
+                            sequenceNumber={pageIndex + 1}
+                            totalSteps={seq.sequence.length}
+                          />
+                          
+                          {!isLast && <SequenceFlowLine />}
                         </div>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{seq.count} sessões</span>
-                      <span>•</span>
-                      <span>{seq.percentage.toFixed(1)}% do total</span>
-                    </div>
+                      );
+                    })}
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
