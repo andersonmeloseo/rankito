@@ -31,6 +31,7 @@ interface CommonSequence {
   avgDuration: number;
   avgTimePerPage: number;
   clickEvents: ClickEventSummary[];
+  timePerUrl: Record<string, number>;
 }
 
 interface CommonSequencesProps {
@@ -141,14 +142,14 @@ export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
 
                       return (
                         <div key={pageIndex}>
-                          <SequenceStepBadge
-                            url={page}
-                            type={type}
-                            sequenceNumber={pageIndex + 1}
-                            totalSteps={seq.sequence.length}
-                            avgTimeSpent={seq.avgTimePerPage}
-                            clickEvents={pageClicks}
-                          />
+                  <SequenceStepBadge
+                    url={page}
+                    type={type}
+                    sequenceNumber={pageIndex + 1}
+                    totalSteps={seq.sequence.length}
+                    avgTimeSpent={seq.timePerUrl[page] || 0}
+                    clickEvents={pageClicks}
+                  />
                           
                           {!isLast && <SequenceFlowLine />}
                         </div>
