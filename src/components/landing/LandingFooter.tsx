@@ -23,17 +23,7 @@ export const LandingFooter = () => {
           </p>
         </div>
 
-        <div className="border-t mt-12 pt-8 flex flex-col items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">R</span>
-            </div>
-            <div>
-              <div className="font-bold text-foreground">Rankito CRM</div>
-              <div className="text-sm text-muted-foreground">Sistema de Gestão de Rank & Rent</div>
-            </div>
-          </div>
-          
+        <div className="border-t mt-12 pt-8 text-center">
           <div className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} Rankito CRM. Todos os direitos reservados.
           </div>
