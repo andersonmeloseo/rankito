@@ -19,6 +19,7 @@ interface CommonSequence {
   sequence: string[];
   count: number;
   percentage: number;
+  pageCount: number;
 }
 
 interface SessionAnalytics {
@@ -105,7 +106,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
 
         sessionSequences.forEach(sequence => {
           if (sequence.length >= 2) {
-            const key = sequence.slice(0, 4).join(' → '); // Max 4 pages
+            const key = sequence.join(' → '); // Sequência completa sem limite
             const count = sequencesMap.get(key) || 0;
             sequencesMap.set(key, count + 1);
           }
@@ -116,10 +117,10 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         .map(([sequenceStr, count]) => ({
           sequence: sequenceStr.split(' → '),
           count,
-          percentage: (count / totalSessions) * 100
+          percentage: (count / totalSessions) * 100,
+          pageCount: sequenceStr.split(' → ').length
         }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
+        .sort((a, b) => b.count - a.count);
 
       return {
         metrics: {
