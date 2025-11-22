@@ -187,7 +187,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`${data.valid} URLs válidas, ${data.invalid_domain + data.unreachable + data.duplicate} com problemas`);
+      toast.success(`${data.valid} URLs válidas, ${data.invalid_domain + data.unreachable} com problemas`);
       queryClient.invalidateQueries({ queryKey: ['gsc-discovered-urls'] });
       queryClient.invalidateQueries({ queryKey: ['gsc-validation-stats'] });
     },
