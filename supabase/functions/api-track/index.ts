@@ -105,6 +105,34 @@ serve(async (req) => {
       exit_url
     } = await req.json();
 
+    // Lista de event_types válidos
+    const validEventTypes = [
+      'page_view', 
+      'page_exit',
+      'whatsapp_click', 
+      'phone_click', 
+      'email_click', 
+      'button_click',
+      'form_submit',
+      'test',
+      // E-commerce events
+      'product_view', 
+      'add_to_cart', 
+      'remove_from_cart', 
+      'begin_checkout', 
+      'purchase', 
+      'search'
+    ];
+
+    // Rejeitar silenciosamente eventos não suportados (ex: scroll_depth)
+    if (!validEventTypes.includes(event_type)) {
+      console.log(`⚠️ Ignoring unsupported event type: ${event_type}`);
+      return new Response(
+        JSON.stringify({ success: true, message: 'Event ignored - unsupported type' }), 
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Detectar se é evento e-commerce
     const ecommerceEvents = [
       'product_view', 
@@ -116,11 +144,11 @@ serve(async (req) => {
     ];
     const isEcommerceEvent = ecommerceEvents.includes(event_type);
 
-    console.log('Tracking event:', { token, site_name, page_url, event_type, is_ecommerce: isEcommerceEvent });
+    console.log('✅ Valid tracking event:', { token, site_name, page_url, event_type, is_ecommerce: isEcommerceEvent, session_id, sequence_number });
 
     // Validate required fields
     if (!page_url || !event_type) {
-      console.error('Missing required fields:', { page_url, event_type });
+      console.error('❌ Missing required fields:', { page_url, event_type });
       return new Response(
         JSON.stringify({ 
           error: 'Campos obrigatórios faltando',
@@ -437,7 +465,10 @@ serve(async (req) => {
       }
 
       // Handle page_view event - create page visit
-      if (event_type === 'page_view' && dbSessionId && sequence_number !== undefined) {
+      // CRITICAL: Only create page_visits when ALL session data is present
+      if (event_type === 'page_view' && dbSessionId && sequence_number !== undefined && sequence_number !== null) {
+        console.log('📄 Creating page visit:', { dbSessionId, sequence_number, page_url });
+        
         const { error: visitError } = await supabase
           .from('rank_rent_page_visits')
           .insert({
@@ -449,7 +480,9 @@ serve(async (req) => {
           });
 
         if (visitError) {
-          console.error('Error creating page visit:', visitError);
+          console.error('❌ Error creating page visit:', visitError);
+        } else {
+          console.log('✅ Page visit created successfully');
         }
 
         // Update session pages count
@@ -459,6 +492,12 @@ serve(async (req) => {
             pages_visited: existingSession ? existingSession.pages_visited + 1 : 1 
           })
           .eq('id', dbSessionId);
+      } else if (event_type === 'page_view') {
+        console.log('⚠️ Skipping page visit creation - missing required data:', { 
+          hasDbSessionId: !!dbSessionId, 
+          hasSequenceNumber: sequence_number !== undefined && sequence_number !== null,
+          sequence_number 
+        });
       }
 
       // Handle page_exit event - update visit time and session exit
