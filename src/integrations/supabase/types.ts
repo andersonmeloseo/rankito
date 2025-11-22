@@ -4100,6 +4100,7 @@ export type Database = {
         | "begin_checkout"
         | "purchase"
         | "search"
+        | "page_exit"
       external_source_type:
         | "wordpress"
         | "webhook"
@@ -4275,6 +4276,7 @@ export const Constants = {
         "begin_checkout",
         "purchase",
         "search",
+        "page_exit",
       ],
       external_source_type: [
         "wordpress",
