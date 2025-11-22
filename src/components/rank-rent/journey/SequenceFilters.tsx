@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { X, Filter } from "lucide-react";
+import { X, Filter, MapPin, Target } from "lucide-react";
 
 interface SequenceFiltersProps {
   totalSequences: number;
@@ -15,6 +15,11 @@ interface SequenceFiltersProps {
   onMinPagesChange: (value: number) => void;
   onMinPercentageChange: (value: number) => void;
   onReset: () => void;
+  locationFilter?: string;
+  onLocationFilterChange?: (value: string) => void;
+  conversionFilter?: string;
+  onConversionFilterChange?: (value: string) => void;
+  uniqueLocations?: string[];
 }
 
 export const SequenceFilters = ({
@@ -26,9 +31,14 @@ export const SequenceFilters = ({
   onLimitChange,
   onMinPagesChange,
   onMinPercentageChange,
-  onReset
+  onReset,
+  locationFilter = 'all',
+  onLocationFilterChange,
+  conversionFilter = 'all',
+  onConversionFilterChange,
+  uniqueLocations = []
 }: SequenceFiltersProps) => {
-  const isFiltered = limit !== 10 || minPages !== 1 || minPercentage !== 0;
+  const isFiltered = limit !== 10 || minPages !== 1 || minPercentage !== 0 || locationFilter !== 'all' || conversionFilter !== 'all';
 
   return (
     <Card className="bg-muted/30 border-border/50">
@@ -54,7 +64,7 @@ export const SequenceFilters = ({
           </div>
 
           {/* Filters Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Limit Dropdown */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground">
@@ -109,6 +119,47 @@ export const SequenceFilters = ({
                 />
               </div>
             </div>
+
+            {/* Location Filter */}
+            {onLocationFilterChange && uniqueLocations.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Localização
+                </label>
+                <Select value={locationFilter} onValueChange={onLocationFilterChange}>
+                  <SelectTrigger className="h-9">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas Localizações</SelectItem>
+                    {uniqueLocations.map(loc => (
+                      <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Conversion Filter */}
+            {onConversionFilterChange && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Conversão
+                </label>
+                <Select value={conversionFilter} onValueChange={onConversionFilterChange}>
+                  <SelectTrigger className="h-9">
+                    <Target className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas Sequências</SelectItem>
+                    <SelectItem value="converted">Apenas com Cliques</SelectItem>
+                    <SelectItem value="not_converted">Sem Conversão</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           {/* Results Counter */}

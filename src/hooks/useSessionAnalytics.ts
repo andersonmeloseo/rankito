@@ -15,11 +15,28 @@ interface TopPage {
   exits: number;
 }
 
+interface LocationData {
+  city: string;
+  country: string;
+  count: number;
+}
+
+interface ClickEventSummary {
+  pageUrl: string;
+  eventType: string;
+  count: number;
+  ctaText?: string;
+}
+
 interface CommonSequence {
   sequence: string[];
   count: number;
   percentage: number;
   pageCount: number;
+  locations: LocationData[];
+  avgDuration: number;
+  avgTimePerPage: number;
+  clickEvents: ClickEventSummary[];
 }
 
 interface SessionAnalytics {
@@ -88,38 +105,103 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       const sessionIds = sessions.map(s => s.id);
       const { data: visits } = await supabase
         .from('rank_rent_page_visits')
-        .select('session_id, page_url, sequence_number')
+        .select('session_id, page_url, sequence_number, time_spent_seconds')
         .in('session_id', sessionIds)
         .order('session_id')
         .order('sequence_number');
 
-      // Build sequences
-      const sequencesMap = new Map<string, number>();
+      // Fetch clicks for sessions
+      const { data: clicks } = await supabase
+        .from('rank_rent_conversions')
+        .select('session_id, event_type, page_url, metadata, cta_text')
+        .in('session_id', sessionIds)
+        .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit']);
+
+      // Build sequences with enriched data
+      const sequencesMap = new Map<string, {
+        count: number;
+        sessionIds: string[];
+        totalDuration: number;
+        clickEvents: Map<string, ClickEventSummary>;
+      }>();
+      
       if (visits) {
-        const sessionSequences = new Map<string, string[]>();
+        const sessionSequences = new Map<string, { urls: string[]; duration: number }>();
         visits.forEach(v => {
           if (!sessionSequences.has(v.session_id)) {
-            sessionSequences.set(v.session_id, []);
+            sessionSequences.set(v.session_id, { urls: [], duration: 0 });
           }
-          sessionSequences.get(v.session_id)!.push(v.page_url);
+          const session = sessionSequences.get(v.session_id)!;
+          session.urls.push(v.page_url);
+          session.duration += v.time_spent_seconds || 0;
         });
 
-        sessionSequences.forEach(sequence => {
-          if (sequence.length >= 1) {
-            const key = sequence.join(' → '); // Sequência completa sem limite
-            const count = sequencesMap.get(key) || 0;
-            sequencesMap.set(key, count + 1);
+        sessionSequences.forEach((data, sessionId) => {
+          if (data.urls.length >= 1) {
+            const key = data.urls.join(' → ');
+            const existing = sequencesMap.get(key) || {
+              count: 0,
+              sessionIds: [],
+              totalDuration: 0,
+              clickEvents: new Map()
+            };
+            existing.count++;
+            existing.sessionIds.push(sessionId);
+            existing.totalDuration += data.duration;
+            sequencesMap.set(key, existing);
           }
         });
       }
 
+      // Add click events to sequences
+      if (clicks) {
+        clicks.forEach(click => {
+          sequencesMap.forEach((data, key) => {
+            if (data.sessionIds.includes(click.session_id)) {
+              const clickKey = `${click.page_url}-${click.event_type}`;
+              const existing = data.clickEvents.get(clickKey) || {
+                pageUrl: click.page_url,
+                eventType: click.event_type,
+                count: 0,
+                ctaText: click.cta_text || undefined
+              };
+              existing.count++;
+              data.clickEvents.set(clickKey, existing);
+            }
+          });
+        });
+      }
+
+      // Calculate locations for each sequence
       const commonSequences = Array.from(sequencesMap.entries())
-        .map(([sequenceStr, count]) => ({
-          sequence: sequenceStr.split(' → '),
-          count,
-          percentage: (count / totalSessions) * 100,
-          pageCount: sequenceStr.split(' → ').length
-        }))
+        .map(([sequenceStr, data]) => {
+          const locations = new Map<string, LocationData>();
+          
+          data.sessionIds.forEach(sessionId => {
+            const session = sessions.find(s => s.id === sessionId);
+            if (session?.city && session?.country) {
+              const key = `${session.city}-${session.country}`;
+              const existing = locations.get(key) || {
+                city: session.city,
+                country: session.country,
+                count: 0
+              };
+              existing.count++;
+              locations.set(key, existing);
+            }
+          });
+
+          return {
+            sequence: sequenceStr.split(' → '),
+            count: data.count,
+            percentage: (data.count / totalSessions) * 100,
+            pageCount: sequenceStr.split(' → ').length,
+            locations: Array.from(locations.values()).sort((a, b) => b.count - a.count),
+            avgDuration: data.totalDuration / data.count,
+            avgTimePerPage: data.totalDuration / data.count / sequenceStr.split(' → ').length,
+            clickEvents: Array.from(data.clickEvents.values())
+          };
+        })
         .sort((a, b) => b.count - a.count);
 
       return {

@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useSessionDetails } from "@/hooks/useSessionDetails";
-import { Clock, MapPin, Monitor, ExternalLink } from "lucide-react";
+import { Clock, MapPin, Monitor, ExternalLink, MessageCircle, Phone, Mail, MousePointerClick, FileSignature } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -14,6 +14,31 @@ interface SessionDetailsDialogProps {
 
 export const SessionDetailsDialog = ({ sessionId, open, onOpenChange }: SessionDetailsDialogProps) => {
   const { data: session, isLoading } = useSessionDetails(sessionId || '');
+
+  const getClickIcon = (eventType: string) => {
+    switch (eventType) {
+      case 'whatsapp_click': return MessageCircle;
+      case 'phone_click': return Phone;
+      case 'email_click': return Mail;
+      case 'form_submit': return FileSignature;
+      default: return MousePointerClick;
+    }
+  };
+
+  const getClickLabel = (eventType: string) => {
+    switch (eventType) {
+      case 'whatsapp_click': return 'WhatsApp';
+      case 'phone_click': return 'Telefone';
+      case 'email_click': return 'Email';
+      case 'form_submit': return 'Formulário';
+      case 'button_click': return 'Botão';
+      default: return 'Clique';
+    }
+  };
+
+  const getClicksForPage = (pageUrl: string) => {
+    return session?.clicks.filter(click => click.page_url === pageUrl) || [];
+  };
 
   if (!sessionId) return null;
 
@@ -122,6 +147,25 @@ export const SessionDetailsDialog = ({ sessionId, open, onOpenChange }: SessionD
                           </span>
                         )}
                       </div>
+
+                      {/* Click Events */}
+                      {getClicksForPage(visit.page_url).length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {getClicksForPage(visit.page_url).map(click => {
+                            const ClickIcon = getClickIcon(click.event_type);
+                            return (
+                              <Badge 
+                                key={click.id} 
+                                variant="secondary" 
+                                className="text-xs gap-1"
+                              >
+                                <ClickIcon className="h-3 w-3" />
+                                {click.cta_text || getClickLabel(click.event_type)}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                     <div className="flex-shrink-0">
                       {index === 0 ? (
