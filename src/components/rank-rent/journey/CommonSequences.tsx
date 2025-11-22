@@ -33,6 +33,7 @@ interface CommonSequence {
   avgTimePerPage: number;
   clickEvents: ClickEventSummary[];
   timePerUrl: Record<string, number>;
+  firstAccessTime: string;
 }
 
 interface CommonSequencesProps {
@@ -106,6 +107,7 @@ export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
                     sessionCount={seq.count}
                     percentage={seq.percentage}
                     pageCount={seq.sequence.length}
+                    firstAccessTime={seq.firstAccessTime}
                   />
 
                   {/* Location Summary */}

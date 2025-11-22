@@ -38,6 +38,7 @@ interface CommonSequence {
   avgTimePerPage: number;
   clickEvents: ClickEventSummary[];
   timePerUrl: Record<string, number>;
+  firstAccessTime: string;
 }
 
 interface SessionAnalytics {
@@ -129,6 +130,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         totalDuration: number;
         clickEvents: Map<string, ClickEventSummary>;
         timePerUrl: Map<string, { totalTime: number; count: number }>;
+        firstAccessTime: string;
       }>();
       
       if (visits) {
@@ -162,13 +164,21 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         sessionSequences.forEach((data, sessionId) => {
           if (data.urls.length >= 1) {
             const key = data.urls.join(' → ');
+            const session = sessions.find(s => s.id === sessionId);
             const existing = sequencesMap.get(key) || {
               count: 0,
               sessionIds: [],
               totalDuration: 0,
               clickEvents: new Map(),
-              timePerUrl: new Map()
+              timePerUrl: new Map(),
+              firstAccessTime: session?.entry_time || new Date().toISOString()
             };
+            
+            // Manter o timestamp mais antigo
+            if (session?.entry_time && new Date(session.entry_time) < new Date(existing.firstAccessTime)) {
+              existing.firstAccessTime = session.entry_time;
+            }
+            
             existing.count++;
             existing.sessionIds.push(sessionId);
             existing.totalDuration += data.duration;
@@ -250,10 +260,11 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
                 url,
                 Math.round(totalTime / count)
               ])
-            )
+            ),
+            firstAccessTime: data.firstAccessTime
           };
         })
-        .sort((a, b) => b.count - a.count);
+        .sort((a, b) => new Date(b.firstAccessTime).getTime() - new Date(a.firstAccessTime).getTime());
 
       // Calculate step volumes for the most common sequence
       const stepVolumes = new Map<string, number>();

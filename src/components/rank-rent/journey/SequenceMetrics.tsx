@@ -1,15 +1,18 @@
 import { Badge } from "@/components/ui/badge";
-import { Users, FileStack } from "lucide-react";
+import { Users, FileStack, Calendar, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface SequenceMetricsProps {
   rank: number;
   sessionCount: number;
   percentage: number;
   pageCount: number;
+  firstAccessTime?: string;
 }
 
-export const SequenceMetrics = ({ rank, sessionCount, percentage, pageCount }: SequenceMetricsProps) => {
+export const SequenceMetrics = ({ rank, sessionCount, percentage, pageCount, firstAccessTime }: SequenceMetricsProps) => {
   const getRankBadge = (rank: number) => {
     if (rank === 1) return { emoji: "🥇", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100" };
     if (rank === 2) return { emoji: "🥈", color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100" };
@@ -38,6 +41,15 @@ export const SequenceMetrics = ({ rank, sessionCount, percentage, pageCount }: S
             <span className="font-semibold">{pageCount}</span>
             <span>{pageCount === 1 ? 'página' : 'páginas'}</span>
           </div>
+
+          {firstAccessTime && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              <span>{format(new Date(firstAccessTime), "dd/MM/yyyy", { locale: ptBR })}</span>
+              <Clock className="h-3 w-3 ml-1" />
+              <span>{format(new Date(firstAccessTime), "HH:mm", { locale: ptBR })}</span>
+            </div>
+          )}
         </div>
 
         <Badge variant="outline" className="text-sm font-semibold">
