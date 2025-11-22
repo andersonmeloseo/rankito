@@ -4,6 +4,7 @@ import { ProblemSection } from "@/components/landing/ProblemSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { GSCShowcase } from "@/components/landing/GSCShowcase";
 import { EcommerceShowcase } from "@/components/landing/EcommerceShowcase";
+import { UserJourneyShowcase } from "@/components/landing/UserJourneyShowcase";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { FAQSection } from "@/components/landing/FAQSection";
@@ -59,6 +60,9 @@ const LandingPageContent = () => {
               <a href="#ecommerce" className="text-muted-foreground hover:text-foreground transition-colors">
                 E-commerce
               </a>
+              <a href="#user-journey" className="text-muted-foreground hover:text-foreground transition-colors">
+                Jornada do Usuário
+              </a>
               <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">
                 {t.nav.pricing}
               </a>
@@ -101,6 +105,10 @@ const LandingPageContent = () => {
       
       <div id="ecommerce">
         <EcommerceShowcase />
+      </div>
+      
+      <div id="user-journey">
+        <UserJourneyShowcase />
       </div>
       
       <div id="pricing">
