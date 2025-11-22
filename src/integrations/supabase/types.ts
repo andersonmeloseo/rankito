@@ -2107,6 +2107,81 @@ export type Database = {
           },
         ]
       }
+      rank_rent_page_visits: {
+        Row: {
+          created_at: string | null
+          entry_time: string
+          exit_time: string | null
+          id: string
+          page_title: string | null
+          page_url: string
+          sequence_number: number
+          session_id: string
+          site_id: string
+          time_spent_seconds: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          entry_time?: string
+          exit_time?: string | null
+          id?: string
+          page_title?: string | null
+          page_url: string
+          sequence_number: number
+          session_id: string
+          site_id: string
+          time_spent_seconds?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          entry_time?: string
+          exit_time?: string | null
+          id?: string
+          page_title?: string | null
+          page_url?: string
+          sequence_number?: number
+          session_id?: string
+          site_id?: string
+          time_spent_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_page_visits_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_page_visits_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_page_visits_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_page_visits_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_page_visits_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rank_rent_pages: {
         Row: {
           client_id: string | null
@@ -2342,6 +2417,89 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      rank_rent_sessions: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string | null
+          device: string | null
+          entry_page_url: string
+          entry_time: string
+          exit_page_url: string | null
+          exit_time: string | null
+          id: string
+          ip_address: string | null
+          pages_visited: number | null
+          referrer: string | null
+          session_id: string
+          site_id: string
+          total_duration_seconds: number | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          device?: string | null
+          entry_page_url: string
+          entry_time?: string
+          exit_page_url?: string | null
+          exit_time?: string | null
+          id?: string
+          ip_address?: string | null
+          pages_visited?: number | null
+          referrer?: string | null
+          session_id: string
+          site_id: string
+          total_duration_seconds?: number | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          device?: string | null
+          entry_page_url?: string
+          entry_time?: string
+          exit_page_url?: string | null
+          exit_time?: string | null
+          id?: string
+          ip_address?: string | null
+          pages_visited?: number | null
+          referrer?: string | null
+          session_id?: string
+          site_id?: string
+          total_duration_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_sessions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_sessions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_sessions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_sessions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rank_rent_sites: {
         Row: {
