@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
 import { getIntegrationWithValidToken } from '../_shared/gsc-helpers.ts';
+import { selectBestIntegration } from '../_shared/gsc-rotation-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,59 +64,62 @@ Deno.serve(async (req) => {
         const urls = submission.urls || [];
         console.log(`📤 Processando submissão ${submission.id}: ${urls.length} URLs`);
 
-        // Buscar integração com quota disponível
-        const { data: integration } = await supabase
+        // **FASE 2: BUSCAR TODAS INTEGRAÇÕES SAUDÁVEIS (não apenas 1)**
+        const { data: allIntegrations, error: intError } = await supabase
           .from('google_search_console_integrations')
           .select('*')
           .eq('site_id', submission.site_id)
           .eq('is_active', true)
-          .eq('health_status', 'healthy')
-          .limit(1)
-          .single();
+          .eq('health_status', 'healthy');
 
-        if (!integration) {
+        if (intError || !allIntegrations || allIntegrations.length === 0) {
           throw new Error('Nenhuma integração saudável disponível');
         }
 
-        // Verificar quota diária
-        const today = new Date().toISOString().split('T')[0];
-        const { count: usedToday } = await supabase
-          .from('gsc_url_indexing_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('integration_id', integration.id)
-          .gte('created_at', `${today}T00:00:00Z`);
+        console.log(`🔍 Found ${allIntegrations.length} healthy integrations for rotation`);
 
-        const DAILY_LIMIT = 200;
-        const remaining = DAILY_LIMIT - (usedToday || 0);
-
-        if (remaining <= 0) {
-          console.log(`⚠️ Quota esgotada para integração ${integration.connection_name}`);
-          // Reagendar para amanhã
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          tomorrow.setHours(0, 30, 0, 0);
-
-          await supabase
-            .from('gsc_scheduled_submissions')
-            .update({
-              status: 'pending',
-              scheduled_for: tomorrow.toISOString(),
-              started_at: null,
-            })
-            .eq('id', submission.id);
-
-          continue;
-        }
-
-        // Processar URLs (até o limite da quota)
-        const urlsToProcess = urls.slice(0, remaining);
         let successful = 0;
         let failed = 0;
+        const processedByIntegration = new Map<string, number>();
 
-        const { access_token, gsc_property_url } = await getIntegrationWithValidToken(integration.id);
-
-        for (const url of urlsToProcess) {
+        // **ROTACIONAR AUTOMATICAMENTE ENTRE INTEGRAÇÕES**
+        for (const url of urls) {
           try {
+            // Selecionar melhor integração DINAMICAMENTE para cada URL
+            const bestIntegration = await selectBestIntegration(supabase as any, allIntegrations);
+
+            if (!bestIntegration || bestIntegration.remaining <= 0) {
+              console.log('⚠️ Todas integrações esgotaram quota, reagendando...');
+              
+              // Reagendar para amanhã
+              const tomorrow = new Date();
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              tomorrow.setHours(0, 30, 0, 0);
+
+              await supabase
+                .from('gsc_scheduled_submissions')
+                .update({
+                  status: 'pending',
+                  scheduled_for: tomorrow.toISOString(),
+                  started_at: null,
+                  urls_submitted: successful + failed,
+                  urls_successful: successful,
+                  urls_failed: failed,
+                })
+                .eq('id', submission.id);
+
+              break; // Parar processamento desta submissão
+            }
+
+            const integrationName = allIntegrations.find(i => i.id === bestIntegration.id)?.connection_name || 'Unknown';
+            console.log(`🔄 Using integration: ${integrationName} (${bestIntegration.remaining} URLs remaining)`);
+
+            // Rastrear uso por integração
+            const currentCount = processedByIntegration.get(bestIntegration.id) || 0;
+            processedByIntegration.set(bestIntegration.id, currentCount + 1);
+
+            const { access_token } = await getIntegrationWithValidToken(bestIntegration.id);
+
             // Indexar URL via GSC API
             const indexResponse = await fetch(
               `https://indexing.googleapis.com/v3/urlNotifications:publish`,
@@ -140,7 +144,7 @@ Deno.serve(async (req) => {
                 .from('gsc_url_indexing_requests')
                 .insert({
                   site_id: submission.site_id,
-                  integration_id: integration.id,
+                  integration_id: bestIntegration.id,
                   url: url,
                   status: 'sent',
                   response_data: await indexResponse.json(),
@@ -152,9 +156,12 @@ Deno.serve(async (req) => {
                 .update({
                   current_status: 'sent',
                   last_checked_at: new Date().toISOString(),
+                  integration_id: bestIntegration.id,
                 })
                 .eq('site_id', submission.site_id)
                 .eq('url', url);
+
+              console.log(`✅ URL indexed successfully: ${url}`);
 
             } else {
               failed++;
@@ -164,12 +171,14 @@ Deno.serve(async (req) => {
                 .from('gsc_url_indexing_requests')
                 .insert({
                   site_id: submission.site_id,
-                  integration_id: integration.id,
+                  integration_id: bestIntegration.id,
                   url: url,
                   status: 'failed',
                   error_message: errorData.error?.message || 'Unknown error',
                   response_data: errorData,
                 });
+
+              console.error(`❌ URL indexing failed: ${url}`, errorData.error?.message);
             }
 
             // Rate limiting: aguardar entre requisições
@@ -181,13 +190,20 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Log da distribuição
+        console.log(`\n📊 Distribution summary for submission ${submission.id}:`);
+        for (const [integrationId, count] of processedByIntegration) {
+          const integration = allIntegrations.find(i => i.id === integrationId);
+          console.log(`  - ${integration?.connection_name}: ${count} URLs`);
+        }
+
         // Atualizar submissão com resultados
         await supabase
           .from('gsc_scheduled_submissions')
           .update({
             status: 'completed',
             completed_at: new Date().toISOString(),
-            urls_submitted: urlsToProcess.length,
+            urls_submitted: successful + failed,
             urls_successful: successful,
             urls_failed: failed,
           })
