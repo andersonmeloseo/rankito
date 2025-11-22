@@ -506,11 +506,13 @@ serve(async (req) => {
         event_type,
         cta_text,
         is_ecommerce_event: isEcommerceEvent,
+        session_id: session_id || null,
+        sequence_number: sequence_number || null,
+        time_spent_seconds: time_spent_seconds || null,
         metadata: { 
           ...metadata, 
           device,
-          detected_at: new Date().toISOString(),
-          session_id: session_id || null
+          detected_at: new Date().toISOString()
         },
         ip_address,
         user_agent,
