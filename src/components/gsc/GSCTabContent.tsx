@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList } from '@/components/ui/tabs';
 import { ClickUpTabTrigger } from '@/components/ui/custom-tabs';
-import { Globe, BarChart3, Clock, Zap } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Globe, BarChart3, Clock, Zap, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useGSCIntegrations } from '@/hooks/useGSCIntegrations';
+import { useGSCDiagnose } from '@/hooks/useGSCDiagnose';
 import { GSCIntegrationsManager } from './GSCIntegrationsManager';
 import { GSCIntegrationHealthCard } from './GSCIntegrationHealthCard';
 import { GSCIndexingControls } from './GSCIndexingControls';
@@ -15,6 +17,13 @@ import { GSCSchedulingPanel } from './GSCSchedulingPanel';
 import { GSCSitemapsManager } from './GSCSitemapsManager';
 import { IndexNowManager } from './IndexNowManager';
 import { IndexingWorkflowGuide } from './IndexingWorkflowGuide';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from '@/components/ui/dialog';
 
 interface GSCTabContentProps {
   siteId: string;
@@ -27,10 +36,13 @@ interface GSCTabContentProps {
 
 export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
   const { integrations } = useGSCIntegrations(siteId, userId);
+  const diagnoseMutation = useGSCDiagnose();
   const [selectedGSCIntegrationId, setSelectedGSCIntegrationId] = useState<string | undefined>();
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [activeTab, setActiveTab] = useState('config');
   const [activeSubTab, setActiveSubTab] = useState('sitemaps');
+  const [showDiagnoseDialog, setShowDiagnoseDialog] = useState(false);
+  const [diagnoseResults, setDiagnoseResults] = useState<any>(null);
 
   // Auto-select first integration
   useEffect(() => {
@@ -71,6 +83,16 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
       toast.error(`Erro ao testar conexão: ${error.message}`);
     } finally {
       setIsTestingConnection(false);
+    }
+  };
+
+  const handleDiagnose = async (integrationId: string) => {
+    try {
+      const results = await diagnoseMutation.mutateAsync(integrationId);
+      setDiagnoseResults(results);
+      setShowDiagnoseDialog(true);
+    } catch (error: any) {
+      toast.error(`Erro ao diagnosticar: ${error.message}`);
     }
   };
 
@@ -146,7 +168,9 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
           <GSCIntegrationHealthCard 
             integration={selectedIntegration}
             onTestConnection={handleTestConnection}
+            onDiagnose={handleDiagnose}
             isTestingConnection={isTestingConnection}
+            isDiagnosing={diagnoseMutation.isPending}
           />
         )}
       </TabsContent>
@@ -200,6 +224,140 @@ export const GSCTabContent = ({ siteId, userId, site }: GSCTabContentProps) => {
       <TabsContent value="agendamento" className="space-y-6">
         <GSCSchedulingPanel siteId={siteId} />
       </TabsContent>
+
+      {/* Diagnose Dialog */}
+      <Dialog open={showDiagnoseDialog} onOpenChange={setShowDiagnoseDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Diagnóstico Completo da Integração GSC</DialogTitle>
+            <DialogDescription>
+              Análise detalhada de autenticação e permissões das APIs do Google
+            </DialogDescription>
+          </DialogHeader>
+          {diagnoseResults && (
+            <div className="space-y-4">
+              {/* Integration Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Informações da Integração</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-muted-foreground">Nome:</span> <span className="font-medium">{diagnoseResults.integration?.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Email:</span> <span className="font-medium">{diagnoseResults.integration?.email}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">URL Propriedade:</span> <span className="font-medium">{diagnoseResults.integration?.propertyUrl}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Token Generation */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    {diagnoseResults.tokenGeneration?.success ? <CheckCircle2 className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
+                    Geração de Access Token
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div>
+                    <Badge className={diagnoseResults.tokenGeneration?.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                      {diagnoseResults.tokenGeneration?.success ? 'Sucesso' : 'Falhou'}
+                    </Badge>
+                  </div>
+                  {diagnoseResults.tokenGeneration?.error && (
+                    <p className="text-red-600">Erro: {diagnoseResults.tokenGeneration.error}</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Search Console API */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    {diagnoseResults.searchConsoleApi?.success ? <CheckCircle2 className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
+                    Search Console API
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div>
+                    <Badge className={diagnoseResults.searchConsoleApi?.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                      Status: {diagnoseResults.searchConsoleApi?.status} - {diagnoseResults.searchConsoleApi?.statusText}
+                    </Badge>
+                  </div>
+                  {diagnoseResults.searchConsoleApi?.error && (
+                    <p className="text-red-600">Erro: {diagnoseResults.searchConsoleApi.error}</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Indexing API */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    {diagnoseResults.indexingApi?.success ? <CheckCircle2 className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
+                    Web Search Indexing API
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div>
+                    <Badge className={diagnoseResults.indexingApi?.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                      Status: {diagnoseResults.indexingApi?.status} - {diagnoseResults.indexingApi?.statusText}
+                    </Badge>
+                  </div>
+                  {diagnoseResults.indexingApi?.error && (
+                    <p className="text-red-600">Erro: {diagnoseResults.indexingApi.error}</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Inspection API */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    {diagnoseResults.inspectionApi?.success ? <CheckCircle2 className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
+                    URL Inspection API
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div>
+                    <Badge className={diagnoseResults.inspectionApi?.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                      Status: {diagnoseResults.inspectionApi?.status} - {diagnoseResults.inspectionApi?.statusText}
+                    </Badge>
+                  </div>
+                  {diagnoseResults.inspectionApi?.error && (
+                    <p className="text-red-600">Erro: {diagnoseResults.inspectionApi.error}</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Recommendations */}
+              {diagnoseResults.recommendations && diagnoseResults.recommendations.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Recomendações</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {diagnoseResults.recommendations.map((rec: string, index: number) => (
+                        <li key={index} className="text-sm flex items-start gap-2">
+                          <span className="mt-1">{rec.startsWith('✅') ? '✅' : rec.startsWith('⚠️') ? '⚠️' : '❌'}</span>
+                          <span>{rec.replace(/^[✅⚠️❌]\s*/, '')}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Tabs>
   );
 };
