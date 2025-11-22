@@ -30,14 +30,15 @@ export const SequenceStepBadge = ({ url, type, sequenceNumber, totalSteps, avgTi
     }
   };
 
-  const getClickLabel = (eventType: string) => {
+  const getClickLabel = (eventType: string, count: number) => {
+    const plural = count !== 1;
     switch (eventType) {
-      case 'whatsapp_click': return 'WhatsApp';
-      case 'phone_click': return 'Telefone';
-      case 'email_click': return 'Email';
-      case 'form_submit': return 'Formulário';
-      case 'button_click': return 'Botão';
-      default: return 'Clique';
+      case 'whatsapp_click': return plural ? 'cliques WhatsApp' : 'clique WhatsApp';
+      case 'phone_click': return plural ? 'cliques Telefone' : 'clique Telefone';
+      case 'email_click': return plural ? 'cliques Email' : 'clique Email';
+      case 'form_submit': return plural ? 'envios Formulário' : 'envio Formulário';
+      case 'button_click': return plural ? 'cliques em Botões' : 'clique em Botão';
+      default: return plural ? 'Cliques' : 'Clique';
     }
   };
   const formatUrl = (url: string) => {
@@ -139,7 +140,7 @@ export const SequenceStepBadge = ({ url, type, sequenceNumber, totalSteps, avgTi
                 return (
                   <Badge key={idx} variant="secondary" className="gap-1">
                     <ClickIcon className="h-3 w-3" />
-                    {click.count} {getClickLabel(click.eventType)}
+                    {click.count} {getClickLabel(click.eventType, click.count)}
                   </Badge>
                 );
               })}
