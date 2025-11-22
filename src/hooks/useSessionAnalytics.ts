@@ -37,6 +37,7 @@ interface CommonSequence {
   avgDuration: number;
   avgTimePerPage: number;
   clickEvents: ClickEventSummary[];
+  timePerUrl: Record<string, number>;
 }
 
 interface SessionAnalytics {
@@ -123,6 +124,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         sessionIds: string[];
         totalDuration: number;
         clickEvents: Map<string, ClickEventSummary>;
+        timePerUrl: Map<string, { totalTime: number; count: number }>;
       }>();
       
       if (visits) {
@@ -143,12 +145,28 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
               count: 0,
               sessionIds: [],
               totalDuration: 0,
-              clickEvents: new Map()
+              clickEvents: new Map(),
+              timePerUrl: new Map()
             };
             existing.count++;
             existing.sessionIds.push(sessionId);
             existing.totalDuration += data.duration;
             sequencesMap.set(key, existing);
+          }
+        });
+
+        // Aggregate time spent per specific URL
+        visits.forEach(v => {
+          const sessionData = sessionSequences.get(v.session_id);
+          if (sessionData && sessionData.urls.length >= 1) {
+            const key = sessionData.urls.join(' → ');
+            const seqData = sequencesMap.get(key);
+            if (seqData) {
+              const urlTime = seqData.timePerUrl.get(v.page_url) || { totalTime: 0, count: 0 };
+              urlTime.totalTime += v.time_spent_seconds || 0;
+              urlTime.count++;
+              seqData.timePerUrl.set(v.page_url, urlTime);
+            }
           }
         });
       }
@@ -199,7 +217,13 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
             locations: Array.from(locations.values()).sort((a, b) => b.count - a.count),
             avgDuration: data.totalDuration / data.count,
             avgTimePerPage: data.totalDuration / data.count / sequenceStr.split(' → ').length,
-            clickEvents: Array.from(data.clickEvents.values())
+            clickEvents: Array.from(data.clickEvents.values()),
+            timePerUrl: Object.fromEntries(
+              Array.from(data.timePerUrl.entries()).map(([url, { totalTime, count }]) => [
+                url,
+                Math.round(totalTime / count)
+              ])
+            )
           };
         })
         .sort((a, b) => b.count - a.count);
