@@ -90,7 +90,7 @@ serve(async (req) => {
         }
 
         const integration = integrations[0];
-        const integrationData = await getIntegrationWithValidToken(integration);
+        const integrationData = await getIntegrationWithValidToken(integration.id);
         const accessToken = integrationData.accessToken;
 
         // Processar URLs deste site
