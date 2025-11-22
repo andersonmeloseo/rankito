@@ -32,7 +32,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -269,33 +269,30 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
     });
   };
 
-  // Aplicar filtros e ordenação ANTES da paginação
-  const filteredAndSorted = sortData(filterUrlsData(urls || []), urlsSort);
+  // Aplicar filtros e ordenação ANTES da paginação (com useMemo para performance)
+  const filteredAndSorted = useMemo(() => {
+    return sortData(filterUrlsData(urls || []), urlsSort);
+  }, [urls, urlsSort, urlsFilters]);
   
   // Calcular paginação baseada em dados filtrados
   const filteredCount = filteredAndSorted.length;
   const totalPagesAdjusted = Math.ceil(filteredCount / pageSize);
   
-  // ENTÃO aplicar paginação no frontend
-  const from = (currentPage - 1) * pageSize;
-  const to = from + pageSize;
-  const processedUrls = filteredAndSorted.slice(from, to);
+  // ENTÃO aplicar paginação no frontend (com useMemo)
+  const processedUrls = useMemo(() => {
+    const from = (currentPage - 1) * pageSize;
+    const to = from + pageSize;
+    return filteredAndSorted.slice(from, to);
+  }, [filteredAndSorted, currentPage, pageSize]);
 
   const toggleUrl = (urlId: string) => {
-    console.log('🔍 toggleUrl called:', { urlId, processedUrlsLength: processedUrls?.length });
     setSelectedUrls(prev => {
       const exists = prev.find(u => u.id === urlId);
       if (exists) {
-        console.log('✅ URL already selected, removing:', urlId);
         return prev.filter(u => u.id !== urlId);
       } else {
         const urlObj = processedUrls?.find(u => u.id === urlId);
-        console.log('🔍 Looking for URL in processedUrls:', { found: !!urlObj, urlId });
-        if (!urlObj) {
-          console.error('❌ URL not found in processedUrls!', { urlId, processedUrlsLength: processedUrls?.length });
-          return prev;
-        }
-        console.log('✅ Adding URL to selection:', urlObj);
+        if (!urlObj) return prev;
         return [...prev, { id: urlObj.id, url: urlObj.url }];
       }
     });
@@ -303,26 +300,27 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
 
   const toggleAll = () => {
     const paginatedUrls = processedUrls || [];
-    console.log('🔍 toggleAll called', { 
-      paginatedUrlsLength: paginatedUrls.length,
-      selectedUrlsLength: selectedUrls.length 
-    });
-    
     const allCurrentSelected = paginatedUrls.every(u => selectedUrls.some(s => s.id === u.id));
-    console.log('📊 Selection state', { allCurrentSelected });
     
     if (allCurrentSelected) {
-      console.log('🔄 Deselecting all from current page');
       setSelectedUrls(prev => prev.filter(s => !paginatedUrls.some(u => u.id === s.id)));
     } else {
-      console.log('✅ Selecting all from current page');
       const newSelections = paginatedUrls.filter(u => !selectedUrls.some(s => s.id === u.id));
-      console.log('📝 New selections', { count: newSelections.length });
       setSelectedUrls(prev => [...prev, ...newSelections.map(u => ({ id: u.id, url: u.url }))]);
     }
   };
 
-  const clearSelection = () => setSelectedUrls([]);
+  // Selecionar TODAS as URLs filtradas (não só da página atual)
+  const selectAllFiltered = () => {
+    const allFiltered = filteredAndSorted.map(u => ({ id: u.id, url: u.url }));
+    setSelectedUrls(allFiltered);
+    toast.success(`${allFiltered.length} URLs selecionadas`);
+  };
+
+  const clearSelection = () => {
+    setSelectedUrls([]);
+    toast.success('Seleção limpa');
+  };
   
   const processedHistory = sortData(filterHistoryData(indexingHistory || []), historySort);
 
@@ -608,14 +606,27 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                 <span className="text-blue-900 dark:text-blue-300">
                   {selectedUrls.length} URL(s) selecionada(s)
                 </span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    onClick={selectAllFiltered}
+                    variant="outline"
+                    size="sm"
+                    disabled={filteredCount === 0}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Selecionar Todas ({filteredCount})
+                  </Button>
+                  
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={clearSelection}
+                    disabled={selectedUrls.length === 0}
                   >
-                    Limpar
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Limpar ({selectedUrls.length})
                   </Button>
+                  
                   {/* ✅ FASE 1: Botão Validar URLs */}
                   <Button 
                     variant="secondary"
@@ -624,11 +635,12 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                       const urlsToValidate = selectedUrls.map(u => u.url);
                       validateUrls.mutate(urlsToValidate);
                     }}
-                    disabled={validateUrls.isPending}
+                    disabled={validateUrls.isPending || selectedUrls.length === 0}
                   >
                     <Shield className="h-4 w-4 mr-2" />
                     {validateUrls.isPending ? 'Validando...' : 'Validar URLs'}
                   </Button>
+                  
                   <Button 
                     size="sm"
                     onClick={() => {
