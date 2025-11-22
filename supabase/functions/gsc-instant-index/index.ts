@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { getIntegrationWithValidToken, markIntegrationUnhealthy, markIntegrationHealthy } from '../_shared/gsc-jwt-auth.ts';
+import { distributeUrls } from '../_shared/gsc-rotation-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,48 +52,6 @@ async function sendToGSC(url: string, accessToken: string): Promise<{ success: b
   }
 }
 
-/**
- * Busca automaticamente uma integração ativa para o site
- * Prioriza integrações com health_status = 'healthy'
- */
-async function findActiveIntegration(supabase: any, siteId: string): Promise<string | null> {
-  console.log(`🔍 Auto-detecting GSC integration for site ${siteId}...`);
-  
-  // Buscar integração healthy ativa
-  const { data: healthyIntegration } = await supabase
-    .from('google_search_console_integrations')
-    .select('id')
-    .eq('site_id', siteId)
-    .eq('is_active', true)
-    .eq('health_status', 'healthy')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-  
-  if (healthyIntegration) {
-    console.log(`✅ Found healthy integration: ${healthyIntegration.id}`);
-    return healthyIntegration.id;
-  }
-  
-  // Fallback: buscar qualquer integração ativa
-  const { data: anyIntegration } = await supabase
-    .from('google_search_console_integrations')
-    .select('id')
-    .eq('site_id', siteId)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-  
-  if (anyIntegration) {
-    console.log(`⚠️ Found active integration (not healthy): ${anyIntegration.id}`);
-    return anyIntegration.id;
-  }
-  
-  console.log(`❌ No active integration found for site ${siteId}`);
-  return null;
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -141,179 +100,202 @@ Deno.serve(async (req) => {
       throw new Error('Site not found');
     }
 
-    // Auto-detectar integração se não fornecida
-    let finalIntegrationId = integration_id;
+    // **FASE 1: DISTRIBUIÇÃO INTELIGENTE**
+    // Buscar TODAS integrações ativas (não apenas 1)
+    const { data: allIntegrations, error: intError } = await supabase
+      .from('google_search_console_integrations')
+      .select('*')
+      .eq('site_id', site_id)
+      .eq('is_active', true);
 
-    if (!finalIntegrationId) {
-      console.log('🔄 No integration_id provided, auto-detecting...');
-      finalIntegrationId = await findActiveIntegration(supabase, site_id);
-      
-      if (!finalIntegrationId) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'No active GSC integration found for this site. Please configure at least one GSC integration in the Configuração tab.' 
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    if (intError || !allIntegrations || allIntegrations.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'No active GSC integration found for this site. Please configure at least one GSC integration in the Configuração tab.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Buscar integração
-    const integration = await getIntegrationWithValidToken(finalIntegrationId);
+    console.log(`🔍 Found ${allIntegrations.length} active integrations for distribution`);
 
-    // Criar job
-    const { data: job, error: jobError } = await supabase
-      .from('gsc_indexing_jobs')
-      .insert({
-        site_id,
-        integration_id: finalIntegrationId,
-        job_type: 'instant',
-        status: 'running',
-        started_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    // Distribuir URLs uniformemente entre integrações
+    const distribution = await distributeUrls(supabase as any, allIntegrations, urls, 'even');
 
-    if (jobError) {
-      throw jobError;
+    // Logging detalhado da distribuição
+    console.log(`🔀 URL distribution across ${distribution.size} integrations:`);
+    let distributionLog = '';
+    for (const [integrationId, urlsForIntegration] of distribution) {
+      const integration = allIntegrations.find(i => i.id === integrationId);
+      distributionLog += `\n  - ${integration?.connection_name || integrationId}: ${urlsForIntegration.length} URLs`;
     }
-
-    console.log(`✅ Job created: ${job.id}`);
+    console.log(distributionLog);
 
     const results: any[] = [];
     let successCount = 0;
     let failCount = 0;
+    const jobsByIntegration = new Map();
 
-    // Processar cada URL
-    for (const url of urls) {
-      const urlResult: any = { url, gsc: null };
+    // Processar URLs por integração
+    for (const [integrationId, urlsForIntegration] of distribution) {
+      const integration = allIntegrations.find(i => i.id === integrationId);
+      if (!integration) continue;
 
-      // Enviar para GSC
-      const gscResult = await sendToGSC(url, integration.access_token);
-      urlResult.gsc = gscResult.success ? 'success' : 'failed';
+      console.log(`\n📤 Processing ${urlsForIntegration.length} URLs with integration: ${integration.connection_name}`);
 
-      if (!gscResult.success) {
-        console.error(`❌ GSC failed for ${url}:`, gscResult.error);
-      } else {
-        console.log(`✅ GSC success for ${url}`);
-      }
+      // Buscar token válido para esta integração
+      const { access_token } = await getIntegrationWithValidToken(integrationId);
 
-      // Status baseado apenas no GSC
-      const overallSuccess = urlResult.gsc === 'success';
-      
-      // Detectar se é erro de quota (429 ou rate limit)
-      const isQuotaError = !overallSuccess && (
-        gscResult.error?.type === 'quota_exceeded' ||
-        gscResult.error?.data?.error?.status === 'RESOURCE_EXHAUSTED' ||
-        gscResult.error?.data?.error?.message?.toLowerCase().includes('quota')
-      );
-      
-      // Detectar tipo de erro para retry
-      let retryReason = null;
-      if (!overallSuccess) {
-        if (isQuotaError) {
-          retryReason = 'quota_exceeded';
-        } else if (gscResult.error?.data?.error?.status === 'RATE_LIMIT_EXCEEDED') {
-          retryReason = 'rate_limit';
-        } else if (gscResult.error?.type === 'auth_error') {
-          retryReason = 'auth_error';
-        } else {
-          retryReason = 'temporary_error';
-        }
-      }
-
-      // REGISTRAR URL NA TABELA DE QUOTA
-      const supabaseAdmin = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-      );
-
-      // Inserir registro de requisição para rastreamento de quota
-      await supabaseAdmin
-        .from('gsc_url_indexing_requests')
+      // Criar job para esta integração
+      const { data: job, error: jobError } = await supabase
+        .from('gsc_indexing_jobs')
         .insert({
-          site_id: site_id,
-          integration_id: finalIntegrationId,
-          url: url,
-          status: overallSuccess ? 'success' : 'failed',
-          error_message: !overallSuccess ? JSON.stringify(gscResult.error) : null,
-          response_data: gscResult,
-        });
+          site_id,
+          integration_id: integrationId,
+          job_type: 'instant',
+          status: 'running',
+          started_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
 
-      // Atualizar status e configurar retry se necessário
-      if (!isQuotaError) {
-        // Buscar retry_count atual
-        const { data: currentUrl } = await supabaseAdmin
-          .from('gsc_discovered_urls')
-          .select('retry_count')
-          .eq('site_id', site_id)
-          .eq('url', url)
-          .maybeSingle();
-        
-        const currentRetryCount = currentUrl?.retry_count || 0;
-        
-        // Calcular próximo retry se falhou e ainda não atingiu limite
-        let nextRetryAt = null;
-        if (!overallSuccess && currentRetryCount < 3 && retryReason !== 'auth_error') {
-          const backoffHours = [1, 6, 24];
-          const hours = backoffHours[currentRetryCount];
-          nextRetryAt = new Date();
-          nextRetryAt.setHours(nextRetryAt.getHours() + hours);
-        }
-        
-        const { error: updateError } = await supabaseAdmin
-          .from('gsc_discovered_urls')
-          .update({
-            current_status: overallSuccess ? 'sent' : 'failed',
-            last_checked_at: new Date().toISOString(),
-            retry_count: overallSuccess ? 0 : (currentRetryCount + 1),
-            last_retry_at: !overallSuccess ? new Date().toISOString() : null,
-            next_retry_at: nextRetryAt ? nextRetryAt.toISOString() : null,
-            retry_reason: !overallSuccess ? retryReason : null,
-          })
-          .eq('site_id', site_id)
-          .eq('url', url);
-        
-        if (updateError) {
-          console.error(`⚠️ Failed to update status for ${url}:`, updateError);
+      if (jobError) {
+        console.error(`❌ Failed to create job for ${integration.connection_name}:`, jobError);
+        continue;
+      }
+
+      jobsByIntegration.set(integrationId, job);
+
+      let integrationSuccessCount = 0;
+      let integrationFailCount = 0;
+
+      // Processar cada URL desta integração
+      for (const url of urlsForIntegration) {
+        const urlResult: any = { url, gsc: null, integration: integration.connection_name };
+
+        // Enviar para GSC
+        const gscResult = await sendToGSC(url, access_token);
+        urlResult.gsc = gscResult.success ? 'success' : 'failed';
+
+        if (!gscResult.success) {
+          console.error(`❌ GSC failed for ${url}:`, gscResult.error);
         } else {
-          console.log(`✅ Status updated to '${overallSuccess ? 'sent' : 'failed'}' for ${url}${!overallSuccess && nextRetryAt ? ` (retry scheduled for ${nextRetryAt.toISOString()})` : ''}`);
+          console.log(`✅ GSC success for ${url}`);
         }
-      } else {
-        console.log(`⏭️ Quota exceeded for ${url} - preserving current status`);
+
+        const overallSuccess = urlResult.gsc === 'success';
+        
+        // Detectar se é erro de quota
+        const isQuotaError = !overallSuccess && (
+          gscResult.error?.type === 'quota_exceeded' ||
+          gscResult.error?.data?.error?.status === 'RESOURCE_EXHAUSTED' ||
+          gscResult.error?.data?.error?.message?.toLowerCase().includes('quota')
+        );
+        
+        // Detectar tipo de erro para retry
+        let retryReason = null;
+        if (!overallSuccess) {
+          if (isQuotaError) {
+            retryReason = 'quota_exceeded';
+          } else if (gscResult.error?.data?.error?.status === 'RATE_LIMIT_EXCEEDED') {
+            retryReason = 'rate_limit';
+          } else if (gscResult.error?.type === 'auth_error') {
+            retryReason = 'auth_error';
+          } else {
+            retryReason = 'temporary_error';
+          }
+        }
+
+        // Registrar na tabela de quota
+        await supabase
+          .from('gsc_url_indexing_requests')
+          .insert({
+            site_id: site_id,
+            integration_id: integrationId,
+            url: url,
+            status: overallSuccess ? 'success' : 'failed',
+            error_message: !overallSuccess ? JSON.stringify(gscResult.error) : null,
+            response_data: gscResult,
+          });
+
+        // Atualizar status e configurar retry se necessário
+        if (!isQuotaError) {
+          const { data: currentUrl } = await supabase
+            .from('gsc_discovered_urls')
+            .select('retry_count')
+            .eq('site_id', site_id)
+            .eq('url', url)
+            .maybeSingle();
+          
+          const currentRetryCount = currentUrl?.retry_count || 0;
+          
+          let nextRetryAt = null;
+          if (!overallSuccess && currentRetryCount < 3 && retryReason !== 'auth_error') {
+            const backoffHours = [1, 6, 24];
+            const hours = backoffHours[currentRetryCount];
+            nextRetryAt = new Date();
+            nextRetryAt.setHours(nextRetryAt.getHours() + hours);
+          }
+          
+          await supabase
+            .from('gsc_discovered_urls')
+            .update({
+              current_status: overallSuccess ? 'sent' : 'failed',
+              last_checked_at: new Date().toISOString(),
+              retry_count: overallSuccess ? 0 : (currentRetryCount + 1),
+              last_retry_at: !overallSuccess ? new Date().toISOString() : null,
+              next_retry_at: nextRetryAt ? nextRetryAt.toISOString() : null,
+              retry_reason: !overallSuccess ? retryReason : null,
+              integration_id: integrationId, // Armazenar qual integração processou
+            })
+            .eq('site_id', site_id)
+            .eq('url', url);
+        } else {
+          console.log(`⏭️ Quota exceeded for ${url} - preserving current status`);
+        }
+
+        if (overallSuccess) {
+          successCount++;
+          integrationSuccessCount++;
+        } else {
+          failCount++;
+          integrationFailCount++;
+        }
+
+        results.push(urlResult);
+
+        // Rate limiting entre requisições
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      if (overallSuccess) {
-        successCount++;
-      } else {
-        failCount++;
+      // Atualizar job desta integração
+      const duration = Date.now() - startTime;
+      await supabase
+        .from('gsc_indexing_jobs')
+        .update({
+          status: 'completed',
+          urls_processed: urlsForIntegration.length,
+          urls_successful: integrationSuccessCount,
+          urls_failed: integrationFailCount,
+          completed_at: new Date().toISOString(),
+          results: { 
+            urls: results.filter(r => r.integration === integration.connection_name), 
+            duration_ms: duration 
+          },
+        })
+        .eq('id', job.id);
+
+      // Atualizar health status
+      if (integrationFailCount === urlsForIntegration.length) {
+        await markIntegrationUnhealthy(integrationId, 'All indexing requests failed');
+      } else if (integrationSuccessCount > 0) {
+        await markIntegrationHealthy(integrationId);
       }
 
-      results.push(urlResult);
+      console.log(`✅ Integration ${integration.connection_name}: ${integrationSuccessCount} success, ${integrationFailCount} failed`);
     }
 
-    // Atualizar job
-    const duration = Date.now() - startTime;
-    await supabase
-      .from('gsc_indexing_jobs')
-      .update({
-        status: 'completed',
-        urls_processed: urls.length,
-        urls_successful: successCount,
-        urls_failed: failCount,
-        completed_at: new Date().toISOString(),
-        results: { urls: results, duration_ms: duration },
-      })
-      .eq('id', job.id);
-
-    // Atualizar health status da integração
-    if (failCount === urls.length) {
-      await markIntegrationUnhealthy(finalIntegrationId, 'All indexing requests failed');
-    } else if (successCount > 0) {
-      await markIntegrationHealthy(finalIntegrationId);
-    }
-
-    console.log(`✅ Indexing completed: ${successCount} success, ${failCount} failed`);
+    console.log(`\n🏁 Indexing completed: ${successCount} success, ${failCount} failed across ${distribution.size} integrations`);
 
     return new Response(
       JSON.stringify({
@@ -321,9 +303,9 @@ Deno.serve(async (req) => {
         urls_processed: urls.length,
         urls_successful: successCount,
         urls_failed: failCount,
-        job_id: job.id,
+        integrations_used: distribution.size,
         results,
-        duration_ms: duration,
+        duration_ms: Date.now() - startTime,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
