@@ -165,13 +165,19 @@ async function processSitemap(
 
     // Atualizar sitemap submission
     if (sitemapId) {
+      const updateData: any = {
+        sitemap_type: type,
+        updated_at: new Date().toISOString(),
+      };
+      
+      // SOMENTE atualizar page_count se for 'urlset' (não sitemap index)
+      if (type === 'urlset') {
+        updateData.page_count = urlsInserted;
+      }
+      
       await supabase
         .from('gsc_sitemap_submissions')
-        .update({
-          sitemap_type: type,
-          page_count: urlsInserted,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', sitemapId);
     }
 

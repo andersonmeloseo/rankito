@@ -296,8 +296,12 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
     historySort
   );
 
-  const totalDiscoveredPages = processedSitemaps.reduce((sum, s) => sum + (s.page_count || 0), 0);
-  const totalHistoryPages = processedHistory.reduce((sum, s) => sum + (s.page_count || 0), 0);
+  const totalDiscoveredPages = processedSitemaps
+    .filter(s => s.sitemap_type !== 'sitemapindex')
+    .reduce((sum, s) => sum + (s.page_count || 0), 0);
+  const totalHistoryPages = processedHistory
+    .filter(s => s.sitemap_type !== 'sitemapindex')
+    .reduce((sum, s) => sum + (s.page_count || 0), 0);
 
   const getStatusBadge = (status: string | null) => {
     switch (status?.toLowerCase()) {
@@ -546,7 +550,16 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
                     <TableCell>
                       <Badge variant="outline">{sitemap.sitemap_type || 'urlset'}</Badge>
                     </TableCell>
-                    <TableCell>{sitemap.page_count || 0}</TableCell>
+                    <TableCell>
+                      {sitemap.sitemap_type === 'sitemapindex' ? (
+                        <Badge variant="secondary" className="gap-1">
+                          <FileText className="h-3 w-3" />
+                          Index (não contabilizado)
+                        </Badge>
+                      ) : (
+                        <span>{sitemap.page_count || 0}</span>
+                      )}
+                    </TableCell>
                     <TableCell>{getStatusBadge(sitemap.gsc_status)}</TableCell>
                   </TableRow>
                 ))}
@@ -692,7 +705,16 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
                         ? format(new Date(submission.gsc_last_downloaded), "dd/MM/yyyy HH:mm", { locale: ptBR })
                         : '-'}
                     </TableCell>
-                    <TableCell>{submission.page_count || 0}</TableCell>
+                    <TableCell>
+                      {submission.sitemap_type === 'sitemapindex' ? (
+                        <Badge variant="secondary" className="gap-1">
+                          <FileText className="h-3 w-3" />
+                          Index (não contabilizado)
+                        </Badge>
+                      ) : (
+                        <span>{submission.page_count || 0}</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {submission.errors_count ? (
                         <Badge variant="destructive">{submission.errors_count}</Badge>
