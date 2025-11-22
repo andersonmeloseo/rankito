@@ -45,6 +45,7 @@ interface SessionAnalytics {
   topEntryPages: TopPage[];
   topExitPages: TopPage[];
   commonSequences: CommonSequence[];
+  stepVolumes: Map<string, number>;
 }
 
 export const useSessionAnalytics = (siteId: string, days: number = 30) => {
@@ -64,11 +65,12 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         .order('entry_time', { ascending: false });
 
       if (sessionsError) throw sessionsError;
-      if (!sessions) return {
+      if (!sessions || sessions.length === 0) return {
         metrics: { totalSessions: 0, avgDuration: 0, avgPagesPerSession: 0, bounceRate: 0 },
         topEntryPages: [],
         topExitPages: [],
-        commonSequences: []
+        commonSequences: [],
+        stepVolumes: new Map()
       };
 
       // Calculate metrics
@@ -253,6 +255,43 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         })
         .sort((a, b) => b.count - a.count);
 
+      // Calculate step volumes for the most common sequence
+      const stepVolumes = new Map<string, number>();
+      if (commonSequences.length > 0 && visits) {
+        const mostCommonSequence = commonSequences[0].sequence;
+        
+        // For each URL in the most common sequence, count unique sessions that reached it
+        mostCommonSequence.forEach((targetUrl, stepIndex) => {
+          const sessionsThatReachedStep = new Set<string>();
+          
+          // Group visits by session
+          const sessionVisitsMap = new Map<string, string[]>();
+          visits.forEach(visit => {
+            if (!sessionVisitsMap.has(visit.session_id)) {
+              sessionVisitsMap.set(visit.session_id, []);
+            }
+            sessionVisitsMap.get(visit.session_id)!.push(visit.page_url);
+          });
+          
+          // Count sessions that followed the sequence up to this step
+          sessionVisitsMap.forEach((urls, sessionId) => {
+            // Check if session followed the sequence up to this step
+            let matches = true;
+            for (let i = 0; i <= stepIndex; i++) {
+              if (i >= urls.length || urls[i] !== mostCommonSequence[i]) {
+                matches = false;
+                break;
+              }
+            }
+            if (matches) {
+              sessionsThatReachedStep.add(sessionId);
+            }
+          });
+          
+          stepVolumes.set(targetUrl, sessionsThatReachedStep.size);
+        });
+      }
+
       return {
         metrics: {
           totalSessions,
@@ -262,7 +301,8 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         },
         topEntryPages,
         topExitPages,
-        commonSequences
+        commonSequences,
+        stepVolumes
       };
     },
     enabled: !!siteId,
