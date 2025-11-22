@@ -37,7 +37,6 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { URLValidationBadge } from './URLValidationBadge';
-import { RetryStatusBadge } from './RetryStatusBadge';
 import { GoogleInspectionBadge } from './GoogleInspectionBadge';
 
 interface GSCDiscoveredUrlsTableProps {
@@ -713,7 +712,6 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                   <SortableHeader field="url" label="URL" currentSort={urlsSort} onSort={handleUrlsSort} />
                   <SortableHeader field="current_status" label="Status GSC" currentSort={urlsSort} onSort={handleUrlsSort} className="w-36" />
                   <TableHead className="w-36">Validação</TableHead>
-                  <TableHead className="w-36">Retry</TableHead>
                   <TableHead className="w-36">Google Status</TableHead>
                   <SortableHeader field="impressions" label="Impressões" currentSort={urlsSort} onSort={handleUrlsSort} className="w-28" />
                   <SortableHeader field="clicks" label="Cliques" currentSort={urlsSort} onSort={handleUrlsSort} className="w-24" />
@@ -755,14 +753,6 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                         <URLValidationBadge 
                           validationStatus={url.validation_status} 
                           validationError={url.validation_error}
-                        />
-                      </TableCell>
-                      {/* ✅ FASE 2: Coluna Retry */}
-                      <TableCell>
-                        <RetryStatusBadge 
-                          retryCount={url.retry_count}
-                          nextRetryAt={url.next_retry_at}
-                          retryReason={url.retry_reason}
                         />
                       </TableCell>
                       {/* ✅ FASE 3: Coluna Google Status */}
