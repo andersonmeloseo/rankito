@@ -9,7 +9,7 @@ const isValidUUID = (uuid: string): boolean => {
 
 export const usePortalAuth = (token: string | undefined) => {
   return useQuery({
-    queryKey: ['portal-auth', token],
+    queryKey: ['portal-auth', token, Date.now()], // Timestamp força cache bypass total
     queryFn: async () => {
       if (!token) {
         throw new Error('Token não fornecido');
@@ -49,6 +49,7 @@ export const usePortalAuth = (token: string | undefined) => {
 
       console.log('[Portal Auth] ✅ Token válido para cliente:', data.clientData?.name);
       console.log('[Portal Auth] ✅ UUID validado:', data.clientId);
+      console.log('[Portal Auth] 🔍 UUID ANTES DE RETORNAR:', data.clientId);
       console.log('🔄 [Portal Auth] Dados customizados:', data.portalData?.report_config);
       console.log('🔄 [Portal Auth] Cores recebidas:', {
         primary: data.portalData?.report_config?.branding?.primary_color,
@@ -56,13 +57,16 @@ export const usePortalAuth = (token: string | undefined) => {
         accent: data.portalData?.report_config?.branding?.accent_color
       });
 
-      return {
+      const returnData = {
         portalData: data.portalData,
         clientData: data.clientData,
         clientId: data.clientId,
         customization: data.portalData?.report_config || {},
         isValid: true,
       };
+      
+      console.log('[Portal Auth] 🔍 RETORNANDO clientId:', returnData.clientId);
+      return returnData;
     },
     enabled: !!token,
     staleTime: 0, // Força re-fetch imediato - sem cache

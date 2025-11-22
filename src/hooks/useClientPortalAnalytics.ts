@@ -12,8 +12,10 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
   });
   
   const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery({
-    queryKey: ['client-portal-analytics', clientId, periodDays, siteId],
+    queryKey: ['client-portal-analytics', clientId, periodDays, siteId, Date.now()], // Timestamp força cache bypass
     queryFn: async () => {
+      console.log('[Analytics] 🔍 UUID RECEBIDO NO HOOK:', clientId);
+      
       // Validação crítica do clientId
       if (!clientId || clientId === 'undefined' || clientId === 'null') {
         console.error('[Analytics] Client ID inválido:', clientId);
@@ -38,6 +40,8 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
 
       const { data: sites, error: sitesError } = await sitesQuery;
 
+      console.log('[Analytics] 🔍 UUID USADO NA QUERY SUPABASE:', clientId);
+      
       if (sitesError) {
         console.error('[Analytics] Error fetching sites:', sitesError);
         throw sitesError;
