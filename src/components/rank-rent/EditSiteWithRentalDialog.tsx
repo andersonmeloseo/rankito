@@ -15,6 +15,17 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { AlertTriangle } from "lucide-react";
 
 interface EditSiteWithRentalDialogProps {
   open: boolean;
@@ -25,6 +36,8 @@ interface EditSiteWithRentalDialogProps {
 export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteWithRentalDialogProps) => {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const [showEcommerceWarning, setShowEcommerceWarning] = useState(false);
+  const [pendingEcommerceValue, setPendingEcommerceValue] = useState<boolean | null>(null);
 
   // Site basic info
   const [formData, setFormData] = useState({
@@ -206,18 +219,30 @@ export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteW
               />
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="is_ecommerce"
-                checked={formData.isEcommerce}
-                onCheckedChange={(checked) => 
-                  setFormData({ ...formData, isEcommerce: checked as boolean })
+          <div className="flex items-center space-x-3 p-4 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            <Checkbox
+              id="is_ecommerce"
+              checked={formData.isEcommerce}
+              onCheckedChange={(checked) => {
+                // Se estava marcado e agora está desmarcando
+                if (formData.isEcommerce && !checked) {
+                  setPendingEcommerceValue(checked as boolean);
+                  setShowEcommerceWarning(true);
+                } else {
+                  // Se está marcando, aplicar diretamente
+                  setFormData({ ...formData, isEcommerce: checked as boolean });
                 }
-              />
-              <Label htmlFor="is_ecommerce" className="cursor-pointer">
-                Este é um site de E-commerce
+              }}
+            />
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="is_ecommerce" className="cursor-pointer font-medium text-sm">
+                🛒 Este é um site de E-commerce
               </Label>
+              <p className="text-xs text-muted-foreground">
+                Ative para rastrear métricas de produtos, vendas e receita específicas
+              </p>
             </div>
+          </div>
           </div>
 
           {/* Rental Configuration */}
@@ -339,6 +364,41 @@ export const EditSiteWithRentalDialog = ({ open, onOpenChange, site }: EditSiteW
           </div>
         </form>
       </DialogContent>
+
+      <AlertDialog open={showEcommerceWarning} onOpenChange={setShowEcommerceWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Desativar Rastreamento de E-commerce?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Ao desmarcar esta opção, a aba "E-commerce" ficará oculta no dashboard deste projeto.
+              </p>
+              <p className="font-medium text-foreground">
+                ⚠️ Os dados de e-commerce já coletados NÃO serão deletados e continuarão armazenados no banco de dados.
+              </p>
+              <p>
+                Você pode reativar o rastreamento a qualquer momento marcando esta opção novamente.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                setFormData({ ...formData, isEcommerce: pendingEcommerceValue as boolean });
+                setPendingEcommerceValue(null);
+              }}
+            >
+              Confirmar Desativação
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
