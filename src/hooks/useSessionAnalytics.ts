@@ -2,33 +2,33 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 
-interface SessionMetrics {
+export interface SessionMetrics {
   totalSessions: number;
   avgDuration: number;
   avgPagesPerSession: number;
   bounceRate: number;
 }
 
-interface TopPage {
+export interface TopPage {
   page_url: string;
   entries: number;
   exits: number;
 }
 
-interface LocationData {
+export interface LocationData {
   city: string;
   country: string;
   count: number;
 }
 
-interface ClickEventSummary {
+export interface ClickEventSummary {
   pageUrl: string;
   eventType: string;
   count: number;
   ctaText?: string;
 }
 
-interface CommonSequence {
+export interface CommonSequence {
   sequence: string[];
   count: number;
   percentage: number;
@@ -37,6 +37,7 @@ interface CommonSequence {
   avgDuration: number;
   avgTimePerPage: number;
   clickEvents: ClickEventSummary[];
+  sessionsWithClicks: number;
   timePerUrl: Record<string, number>;
   firstAccessTime: string;
 }
@@ -127,6 +128,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       const sequencesMap = new Map<string, {
         count: number;
         sessionIds: string[];
+        sessionIdsWithClicks: Set<string>;
         totalDuration: number;
         clickEvents: Map<string, ClickEventSummary>;
         timePerUrl: Map<string, { totalTime: number; count: number }>;
@@ -168,6 +170,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
             const existing = sequencesMap.get(key) || {
               count: 0,
               sessionIds: [],
+              sessionIdsWithClicks: new Set<string>(),
               totalDuration: 0,
               clickEvents: new Map(),
               timePerUrl: new Map(),
@@ -202,17 +205,21 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         });
       }
 
-      // Add click events to sequences (by session_id OR by page_url)
+      // Add click events to sequences (ONLY by session_id to prevent duplication)
       if (clicks) {
         clicks.forEach(click => {
+          // Only process clicks that have a valid session_id
+          if (!click.session_id) return;
+          
           sequencesMap.forEach((data, key) => {
-            const sequence = key.split(' → ');
-            
-            // Associate by session_id (preferred) OR by page_url if URL is in sequence
-            const matchesBySession = click.session_id && data.sessionIds.includes(click.session_id);
-            const matchesByUrl = sequence.some(url => url.includes(click.page_url) || click.page_url.includes(url));
-            
-            if (matchesBySession || matchesByUrl) {
+            // Associate ONLY by session_id (no URL matching to prevent duplication)
+            if (data.sessionIds.includes(click.session_id)) {
+              // Track unique sessions with clicks for conversion rate
+              if (!data.sessionIdsWithClicks) {
+                data.sessionIdsWithClicks = new Set();
+              }
+              data.sessionIdsWithClicks.add(click.session_id);
+              
               const clickKey = `${click.page_url}-${click.event_type}`;
               const existing = data.clickEvents.get(clickKey) || {
                 pageUrl: click.page_url,
@@ -259,6 +266,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
             avgDuration: data.totalDuration / data.count,
             avgTimePerPage: data.totalDuration / data.count / sequenceStr.split(' → ').length,
             clickEvents: Array.from(data.clickEvents.values()),
+            sessionsWithClicks: data.sessionIdsWithClicks?.size || 0,
             timePerUrl: Object.fromEntries(
               Array.from(data.timePerUrl.entries()).map(([url, { totalTime, count }]) => [
                 url,
