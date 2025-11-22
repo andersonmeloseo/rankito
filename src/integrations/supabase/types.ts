@@ -1894,7 +1894,10 @@ export type Database = {
           page_url: string
           referrer: string | null
           region: string | null
+          sequence_number: number | null
+          session_id: string | null
           site_id: string
+          time_spent_seconds: number | null
           user_agent: string | null
         }
         Insert: {
@@ -1913,7 +1916,10 @@ export type Database = {
           page_url: string
           referrer?: string | null
           region?: string | null
+          sequence_number?: number | null
+          session_id?: string | null
           site_id: string
+          time_spent_seconds?: number | null
           user_agent?: string | null
         }
         Update: {
@@ -1932,7 +1938,10 @@ export type Database = {
           page_url?: string
           referrer?: string | null
           region?: string | null
+          sequence_number?: number | null
+          session_id?: string | null
           site_id?: string
+          time_spent_seconds?: number | null
           user_agent?: string | null
         }
         Relationships: [
