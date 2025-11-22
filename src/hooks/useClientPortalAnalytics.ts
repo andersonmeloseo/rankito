@@ -404,7 +404,9 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
       };
     },
     enabled: !!clientId && clientId !== 'undefined' && clientId !== 'null' && clientId !== '',
-    staleTime: 30000, // 30 segundos
+    staleTime: 0, // Força re-fetch imediato - sem cache
+    gcTime: 0, // Remove cache completamente
+    refetchOnMount: 'always', // Sempre re-fetch ao montar
     refetchInterval: 60000, // Refetch every minute
     retry: 2,
     retryDelay: 1000,
