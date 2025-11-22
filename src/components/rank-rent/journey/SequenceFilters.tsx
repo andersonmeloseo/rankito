@@ -28,7 +28,7 @@ export const SequenceFilters = ({
   onMinPercentageChange,
   onReset
 }: SequenceFiltersProps) => {
-  const isFiltered = limit !== 10 || minPages !== 2 || minPercentage !== 0;
+  const isFiltered = limit !== 10 || minPages !== 1 || minPercentage !== 0;
 
   return (
     <Card className="bg-muted/30 border-border/50">
@@ -85,7 +85,7 @@ export const SequenceFilters = ({
                 <Slider
                   value={[minPages]}
                   onValueChange={(value) => onMinPagesChange(value[0])}
-                  min={2}
+                  min={1}
                   max={10}
                   step={1}
                   className="cursor-pointer"
