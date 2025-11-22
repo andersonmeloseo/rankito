@@ -535,7 +535,11 @@ serve(async (req) => {
     }
 
     // Extract cta_text from metadata if not provided at root level
-    const finalCtaText = cta_text || metadata?.cta_text || null;
+    const finalCtaText = (() => {
+      const root = cta_text?.trim();
+      const meta = metadata?.cta_text?.trim();
+      return root || meta || null;
+    })();
 
     // Insert conversion
     const { error: insertError } = await supabase

@@ -218,7 +218,11 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
                 pageUrl: click.page_url,
                 eventType: click.event_type,
                 count: 0,
-                ctaText: click.cta_text || (click.metadata as any)?.cta_text || undefined
+                ctaText: (() => {
+                  const rootCta = click.cta_text?.trim();
+                  const metaCta = (click.metadata as any)?.cta_text?.trim();
+                  return rootCta || metaCta || undefined;
+                })()
               };
               existing.count++;
               data.clickEvents.set(clickKey, existing);
