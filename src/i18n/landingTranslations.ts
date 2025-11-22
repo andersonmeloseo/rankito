@@ -61,6 +61,18 @@ export interface LandingTranslations {
       description: string;
     }>;
   };
+  userJourney: {
+    badge: string;
+    title: string;
+    painPoint: string;
+    description: string;
+    ctaButton: string;
+    highlight: string;
+    features: Array<{
+      title: string;
+      description: string;
+    }>;
+  };
   pricing: {
     badge: string;
     title: string;
@@ -301,6 +313,32 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         {
           title: 'Funciona em Qualquer Plataforma',
           description: 'Compatível com Shopify, WooCommerce, WordPress e qualquer HTML. Pixel universal que rastreia tudo sem precisar configuração complexa.',
+        },
+      ],
+    },
+    userJourney: {
+      badge: '🎯 Rastreamento Inteligente',
+      title: 'Veja a Jornada Completa dos Seus Visitantes com Precisão de Sniper',
+      painPoint: 'Você sabe EXATAMENTE quais páginas seus visitantes acessam, por quanto tempo ficam, e onde saem? Ou está no escuro?',
+      description: 'Sistema de rastreamento avançado que captura cada passo da jornada do usuário - desde a primeira página até a conversão ou saída - com precisão milimétrica.',
+      ctaButton: 'Ver Jornada em Ação',
+      highlight: 'Descubra ONDE seus visitantes estão desistindo e OTIMIZE seu funil com dados reais',
+      features: [
+        {
+          title: 'Sequências Completas',
+          description: 'Veja o caminho exato que cada visitante faz: Home (2m34s) → Serviços (45s) → Contato (1m12s). Não é só "X pageviews", é a jornada completa.',
+        },
+        {
+          title: 'Tempo Real por Página',
+          description: 'Cada segundo contabilizado. Saiba exatamente quanto tempo os visitantes gastam em cada etapa do funil. Precisão milimétrica.',
+        },
+        {
+          title: 'Análise Comportamental',
+          description: 'Identifique padrões de navegação mais comuns. Descubra as sequências que levam à conversão e as que levam à desistência.',
+        },
+        {
+          title: 'Bounce Sessions',
+          description: 'Visualize páginas com alta taxa de saída. Entenda onde 80% dos visitantes estão abandonando seu funil e corrija com dados reais.',
         },
       ],
     },
@@ -609,6 +647,32 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
       ],
     },
+    userJourney: {
+      badge: '🎯 Rastreo Inteligente',
+      title: 'Ve el Recorrido Completo de Tus Visitantes con Precisión de Francotirador',
+      painPoint: '¿Sabes EXACTAMENTE qué páginas visitan tus usuarios, cuánto tiempo se quedan y dónde salen? ¿O estás a oscuras?',
+      description: 'Sistema de rastreo avanzado que captura cada paso del recorrido del usuario - desde la primera página hasta la conversión o salida - con precisión milimétrica.',
+      ctaButton: 'Ver Recorrido en Acción',
+      highlight: 'Descubre DÓNDE tus visitantes están abandonando y OPTIMIZA tu embudo con datos reales',
+      features: [
+        {
+          title: 'Secuencias Completas',
+          description: 'Ve el camino exacto de cada visitante: Inicio (2m34s) → Servicios (45s) → Contacto (1m12s). No solo "X pageviews", es el recorrido completo.',
+        },
+        {
+          title: 'Tiempo Real por Página',
+          description: 'Cada segundo contabilizado. Sabe exactamente cuánto tiempo los visitantes gastan en cada etapa del embudo. Precisión milimétrica.',
+        },
+        {
+          title: 'Análisis de Comportamiento',
+          description: 'Identifica patrones de navegación más comunes. Descubre las secuencias que llevan a la conversión y las que llevan al abandono.',
+        },
+        {
+          title: 'Sesiones de Rebote',
+          description: 'Visualiza páginas con alta tasa de salida. Entiende dónde el 80% de los visitantes está abandonando tu embudo y corrígelo con datos reales.',
+        },
+      ],
+    },
     pricing: {
       badge: 'Precios',
       title: 'Planes Para Todos los Tamaños',
@@ -911,6 +975,32 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         {
           title: 'Works on Any Platform',
           description: 'Compatible with Shopify, WooCommerce, WordPress, and any HTML. Universal pixel that tracks everything without complex configuration.',
+        },
+      ],
+    },
+    userJourney: {
+      badge: '🎯 Smart Tracking',
+      title: 'See Your Visitors\' Complete Journey with Sniper Precision',
+      painPoint: 'Do you know EXACTLY which pages your visitors access, how long they stay, and where they exit? Or are you in the dark?',
+      description: 'Advanced tracking system that captures every step of the user journey - from first page to conversion or exit - with pinpoint accuracy.',
+      ctaButton: 'See Journey in Action',
+      highlight: 'Discover WHERE your visitors are dropping off and OPTIMIZE your funnel with real data',
+      features: [
+        {
+          title: 'Complete Sequences',
+          description: 'See the exact path each visitor takes: Home (2m34s) → Services (45s) → Contact (1m12s). Not just "X pageviews", it\'s the complete journey.',
+        },
+        {
+          title: 'Real-Time per Page',
+          description: 'Every second counted. Know exactly how much time visitors spend at each funnel stage. Pinpoint accuracy.',
+        },
+        {
+          title: 'Behavioral Analysis',
+          description: 'Identify the most common navigation patterns. Discover the sequences that lead to conversion and those that lead to drop-off.',
+        },
+        {
+          title: 'Bounce Sessions',
+          description: 'Visualize pages with high exit rates. Understand where 80% of visitors are abandoning your funnel and fix it with real data.',
         },
       ],
     },
@@ -1219,6 +1309,32 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
       ],
     },
+    userJourney: {
+      badge: '🎯 Suivi Intelligent',
+      title: 'Voyez le Parcours Complet de Vos Visiteurs avec Précision de Sniper',
+      painPoint: 'Savez-vous EXACTEMENT quelles pages vos visiteurs consultent, combien de temps ils restent et où ils sortent? Ou êtes-vous dans le noir?',
+      description: 'Système de suivi avancé qui capture chaque étape du parcours utilisateur - de la première page jusqu\'à la conversion ou la sortie - avec une précision millimétrique.',
+      ctaButton: 'Voir le Parcours en Action',
+      highlight: 'Découvrez OÙ vos visiteurs abandonnent et OPTIMISEZ votre entonnoir avec des données réelles',
+      features: [
+        {
+          title: 'Séquences Complètes',
+          description: 'Voyez le chemin exact de chaque visiteur: Accueil (2m34s) → Services (45s) → Contact (1m12s). Pas seulement "X pages vues", c\'est le parcours complet.',
+        },
+        {
+          title: 'Temps Réel par Page',
+          description: 'Chaque seconde comptabilisée. Sachez exactement combien de temps les visiteurs passent à chaque étape de l\'entonnoir. Précision millimétrique.',
+        },
+        {
+          title: 'Analyse Comportementale',
+          description: 'Identifiez les modèles de navigation les plus courants. Découvrez les séquences qui mènent à la conversion et celles qui mènent à l\'abandon.',
+        },
+        {
+          title: 'Sessions de Rebond',
+          description: 'Visualisez les pages avec un taux de sortie élevé. Comprenez où 80% des visiteurs abandonnent votre entonnoir et corrigez avec des données réelles.',
+        },
+      ],
+    },
     pricing: {
       badge: 'Tarifs',
       title: 'Plans Pour Toutes les Tailles',
@@ -1521,6 +1637,32 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         {
           title: 'Funciona em Qualquer Plataforma',
           description: 'Compatível com Shopify, WooCommerce, WordPress e qualquer HTML. Pixel universal que rastreia tudo sem precisar configuração complexa.',
+        },
+      ],
+    },
+    userJourney: {
+      badge: '🎯 Rastreamento Inteligente',
+      title: 'Vê a Jornada Completa dos Teus Visitantes com Precisão de Sniper',
+      painPoint: 'Sabes EXATAMENTE quais páginas os teus visitantes acedem, quanto tempo ficam e onde saem? Ou estás no escuro?',
+      description: 'Sistema de rastreamento avançado que captura cada passo da jornada do utilizador - desde a primeira página até à conversão ou saída - com precisão milimétrica.',
+      ctaButton: 'Ver Jornada em Ação',
+      highlight: 'Descobre ONDE os teus visitantes estão a desistir e OTIMIZA o teu funil com dados reais',
+      features: [
+        {
+          title: 'Sequências Completas',
+          description: 'Vê o caminho exato que cada visitante faz: Início (2m34s) → Serviços (45s) → Contacto (1m12s). Não é só "X visualizações", é a jornada completa.',
+        },
+        {
+          title: 'Tempo Real por Página',
+          description: 'Cada segundo contabilizado. Sabe exatamente quanto tempo os visitantes gastam em cada etapa do funil. Precisão milimétrica.',
+        },
+        {
+          title: 'Análise Comportamental',
+          description: 'Identifica padrões de navegação mais comuns. Descobre as sequências que levam à conversão e as que levam ao abandono.',
+        },
+        {
+          title: 'Sessões de Rebote',
+          description: 'Visualiza páginas com alta taxa de saída. Entende onde 80% dos visitantes estão a abandonar o teu funil e corrige com dados reais.',
         },
       ],
     },
