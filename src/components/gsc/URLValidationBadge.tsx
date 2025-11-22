@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, AlertTriangle, XCircle, Clock, Copy } from "lucide-react";
+import { CheckCircle, AlertTriangle, XCircle, Clock } from "lucide-react";
 
 interface URLValidationBadgeProps {
   validationStatus?: string;
@@ -38,14 +38,6 @@ export const URLValidationBadge = ({ validationStatus, validationError }: URLVal
         <Badge variant="destructive" className="gap-1 bg-orange-100 text-orange-800 border-orange-200" title={validationError}>
           <AlertTriangle className="h-3 w-3" />
           Inacessível
-        </Badge>
-      );
-    
-    case 'duplicate':
-      return (
-        <Badge variant="secondary" className="gap-1" title={validationError}>
-          <Copy className="h-3 w-3" />
-          Duplicada
         </Badge>
       );
     
