@@ -196,6 +196,28 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
     }
   });
 
+  // ✅ Mutation para consultar status no Google manualmente
+  const syncGoogleStatus = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('gsc-sync-inspection-status', {
+        body: { site_id: siteId }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(
+        `✅ Consultadas ${data.total} URLs no Google: ${data.inspected} atualizadas, ${data.errors} erros`,
+        { duration: 5000 }
+      );
+      queryClient.invalidateQueries({ queryKey: ['gsc-discovered-urls'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-inspection-stats'] });
+    },
+    onError: (error: any) => {
+      toast.error(`❌ Erro ao consultar Google: ${error.message}`);
+    }
+  });
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
@@ -562,6 +584,28 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Botão de Consulta Manual do Google Status */}
+      <div className="flex justify-center mb-6">
+        <Button
+          onClick={() => syncGoogleStatus.mutate()}
+          disabled={syncGoogleStatus.isPending}
+          size="lg"
+          className="gap-2"
+        >
+          {syncGoogleStatus.isPending ? (
+            <>
+              <RefreshCw className="h-5 w-5 animate-spin" />
+              Consultando Google... Isso pode levar alguns minutos
+            </>
+          ) : (
+            <>
+              <Eye className="h-5 w-5" />
+              Consultar Status no Google (Todas as URLs)
+            </>
+          )}
+        </Button>
       </div>
 
       <Card>
