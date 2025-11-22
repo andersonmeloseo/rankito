@@ -774,6 +774,7 @@ export type Database = {
         Row: {
           auto_submit_new_pages: boolean | null
           auto_submit_sitemaps: boolean | null
+          avg_response_time_ms: number | null
           connection_name: string
           consecutive_failures: number | null
           created_at: string | null
@@ -785,15 +786,18 @@ export type Database = {
           id: string
           is_active: boolean | null
           last_error: string | null
+          last_performance_update: string | null
           last_sync_at: string | null
           service_account_json: Json | null
           site_id: string
+          success_rate: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           auto_submit_new_pages?: boolean | null
           auto_submit_sitemaps?: boolean | null
+          avg_response_time_ms?: number | null
           connection_name?: string
           consecutive_failures?: number | null
           created_at?: string | null
@@ -805,15 +809,18 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           last_error?: string | null
+          last_performance_update?: string | null
           last_sync_at?: string | null
           service_account_json?: Json | null
           site_id: string
+          success_rate?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           auto_submit_new_pages?: boolean | null
           auto_submit_sitemaps?: boolean | null
+          avg_response_time_ms?: number | null
           connection_name?: string
           consecutive_failures?: number | null
           created_at?: string | null
@@ -825,9 +832,11 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           last_error?: string | null
+          last_performance_update?: string | null
           last_sync_at?: string | null
           service_account_json?: Json | null
           site_id?: string
+          success_rate?: number | null
           updated_at?: string | null
           user_id?: string
         }
@@ -870,20 +879,30 @@ export type Database = {
           ctr: number | null
           current_status: string | null
           discovered_at: string | null
+          google_inspection_data: Json | null
+          google_inspection_status: string | null
+          google_last_inspected_at: string | null
           gsc_data: boolean | null
           id: string
           impressions: number | null
           indexnow_data: boolean | null
           integration_id: string | null
           last_checked_at: string | null
+          last_retry_at: string | null
           last_seen_at: string | null
+          next_retry_at: string | null
           position: number | null
           priority: number | null
+          retry_count: number | null
+          retry_reason: string | null
           scheduled_for: string | null
           sent_to_indexnow: boolean | null
           site_id: string
           updated_at: string | null
           url: string
+          validated_at: string | null
+          validation_error: string | null
+          validation_status: string | null
         }
         Insert: {
           auto_schedule_enabled?: boolean | null
@@ -892,20 +911,30 @@ export type Database = {
           ctr?: number | null
           current_status?: string | null
           discovered_at?: string | null
+          google_inspection_data?: Json | null
+          google_inspection_status?: string | null
+          google_last_inspected_at?: string | null
           gsc_data?: boolean | null
           id?: string
           impressions?: number | null
           indexnow_data?: boolean | null
           integration_id?: string | null
           last_checked_at?: string | null
+          last_retry_at?: string | null
           last_seen_at?: string | null
+          next_retry_at?: string | null
           position?: number | null
           priority?: number | null
+          retry_count?: number | null
+          retry_reason?: string | null
           scheduled_for?: string | null
           sent_to_indexnow?: boolean | null
           site_id: string
           updated_at?: string | null
           url: string
+          validated_at?: string | null
+          validation_error?: string | null
+          validation_status?: string | null
         }
         Update: {
           auto_schedule_enabled?: boolean | null
@@ -914,20 +943,30 @@ export type Database = {
           ctr?: number | null
           current_status?: string | null
           discovered_at?: string | null
+          google_inspection_data?: Json | null
+          google_inspection_status?: string | null
+          google_last_inspected_at?: string | null
           gsc_data?: boolean | null
           id?: string
           impressions?: number | null
           indexnow_data?: boolean | null
           integration_id?: string | null
           last_checked_at?: string | null
+          last_retry_at?: string | null
           last_seen_at?: string | null
+          next_retry_at?: string | null
           position?: number | null
           priority?: number | null
+          retry_count?: number | null
+          retry_reason?: string | null
           scheduled_for?: string | null
           sent_to_indexnow?: boolean | null
           site_id?: string
           updated_at?: string | null
           url?: string
+          validated_at?: string | null
+          validation_error?: string | null
+          validation_status?: string | null
         }
         Relationships: [
           {

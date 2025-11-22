@@ -158,3 +158,23 @@ verify_jwt = false
 
 [functions.mapbox-reset-monthly.schedule]
 every = "0 0 1 * *"
+
+# ===== NOVAS FUNÇÕES DE MELHORIA DO SISTEMA DE INDEXAÇÃO =====
+
+# Melhoria 1: Validação de URLs
+[functions.gsc-validate-urls]
+verify_jwt = true
+
+# Melhoria 2: Sistema de Retry Inteligente
+[functions.gsc-process-retries]
+verify_jwt = false
+
+[functions.gsc-process-retries.schedule]
+every = "2 hours"
+
+# Melhoria 4: Status Real do Google via Inspection API
+[functions.gsc-sync-inspection-status]
+verify_jwt = false
+
+[functions.gsc-sync-inspection-status.schedule]
+every = "1 day"

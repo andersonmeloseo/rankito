@@ -19,7 +19,7 @@ interface IntegrationWithQuota extends Integration {
 }
 
 /**
- * Calcula score de uma integração baseado em quota disponível e uso recente
+ * Calcula score de uma integração baseado em quota disponível, uso recente, taxa de sucesso e tempo de resposta
  */
 export function calculateIntegrationScore(
   integration: Integration,
@@ -32,8 +32,24 @@ export function calculateIntegrationScore(
   // Penalizar integrações com uso muito recente (últimas 100 URLs)
   const recentUsagePenalty = Math.min(recentUsage / 100, 1);
   
-  // Score final: 70% quota + 30% uso recente invertido
-  const score = (quotaPercent * 0.7) + ((1 - recentUsagePenalty) * 0.3);
+  // Bonus por alta taxa de sucesso (0-100%)
+  const successRate = (integration as any).success_rate || 100;
+  const successBonus = successRate / 100;
+  
+  // Penalty por tempo de resposta lento
+  const avgResponseTime = (integration as any).avg_response_time_ms || 0;
+  let responsePenalty = 0;
+  if (avgResponseTime > 2000) {
+    responsePenalty = 0.2; // -20% se resposta > 2s
+  } else if (avgResponseTime > 1000) {
+    responsePenalty = 0.1; // -10% se resposta > 1s
+  }
+  
+  // Score final: 50% quota + 20% uso recente invertido + 20% sucesso + 10% velocidade
+  const score = (quotaPercent * 0.5) + 
+                ((1 - recentUsagePenalty) * 0.2) + 
+                (successBonus * 0.2) + 
+                ((1 - responsePenalty) * 0.1);
   
   return score;
 }
