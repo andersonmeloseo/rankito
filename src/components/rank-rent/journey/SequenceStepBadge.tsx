@@ -1,5 +1,6 @@
 import { Home, FileText, Phone, LogOut, Clock, MessageCircle, Mail, MousePointerClick, FileSignature } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/utils";
 
@@ -97,12 +98,13 @@ export const SequenceStepBadge = ({ url, type, sequenceNumber, totalSteps, avgTi
   const formattedUrl = formatUrl(url);
 
   return (
-    <div className={cn(
-      "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
-      config.bgColor,
-      config.borderColor
-    )}>
-      <div className="flex items-start gap-3">
+    <TooltipProvider>
+      <div className={cn(
+        "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
+        config.bgColor,
+        config.borderColor
+      )}>
+        <div className="flex items-start gap-3">
         <div className={cn(
           "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
           config.textColor,
@@ -137,17 +139,39 @@ export const SequenceStepBadge = ({ url, type, sequenceNumber, totalSteps, avgTi
               )}
               {clickEvents?.map((click, idx) => {
                 const ClickIcon = getClickIcon(click.eventType);
+                
+                // Se não há ctaText, renderiza badge simples
+                if (!click.ctaText) {
+                  return (
+                    <Badge key={idx} variant="secondary" className="gap-1">
+                      <ClickIcon className="h-3 w-3" />
+                      {click.count} {getClickLabel(click.eventType, click.count)}
+                    </Badge>
+                  );
+                }
+                
+                // Se há ctaText, renderiza com tooltip
                 return (
-                  <Badge key={idx} variant="secondary" className="gap-1">
-                    <ClickIcon className="h-3 w-3" />
-                    {click.count} {getClickLabel(click.eventType, click.count)}
-                  </Badge>
+                  <Tooltip key={idx}>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary" className="gap-1 cursor-help">
+                        <ClickIcon className="h-3 w-3" />
+                        {click.count} {getClickLabel(click.eventType, click.count)}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-sm">
+                        <span className="font-semibold">Texto do botão:</span> "{click.ctaText}"
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
             </div>
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
