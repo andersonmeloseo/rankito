@@ -67,7 +67,6 @@ serve(async (req) => {
       valid: 0,
       invalid_domain: 0,
       unreachable: 0,
-      duplicate: 0,
       details: [] as any[]
     };
 
@@ -79,21 +78,19 @@ serve(async (req) => {
         error: result.error
       });
 
-      // Atualizar banco se URL já existe
-      if (result.status === 'duplicate') {
-        await supabase
-          .from('gsc_discovered_urls')
-          .update({
-            validation_status: result.status,
-            validation_error: result.error,
-            validated_at: new Date().toISOString()
-          })
-          .eq('site_id', site_id)
-          .eq('url', url);
-      }
+      // Atualizar banco com status de validação
+      await supabase
+        .from('gsc_discovered_urls')
+        .update({
+          validation_status: result.status,
+          validation_error: result.error,
+          validated_at: new Date().toISOString()
+        })
+        .eq('site_id', site_id)
+        .eq('url', url);
     }
 
-    console.log(`✅ Validation complete: ${results.valid} valid, ${results.invalid_domain} invalid domain, ${results.unreachable} unreachable, ${results.duplicate} duplicates`);
+    console.log(`✅ Validation complete: ${results.valid} valid, ${results.invalid_domain} invalid domain, ${results.unreachable} unreachable`);
 
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

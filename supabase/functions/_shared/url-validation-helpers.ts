@@ -2,7 +2,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 interface ValidationResult {
   isValid: boolean;
-  status: 'valid' | 'invalid_domain' | 'unreachable' | 'duplicate';
+  status: 'valid' | 'invalid_domain' | 'unreachable';
   error?: string;
 }
 
@@ -44,30 +44,7 @@ export async function checkUrlAccessibility(url: string): Promise<boolean> {
 }
 
 /**
- * Verifica se URL já existe no banco
- */
-export async function checkDuplicate(
-  supabase: SupabaseClient,
-  siteId: string,
-  url: string
-): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('gsc_discovered_urls')
-    .select('id')
-    .eq('site_id', siteId)
-    .eq('url', url)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Error checking duplicate:', error);
-    return false;
-  }
-
-  return !!data;
-}
-
-/**
- * Validação completa de URL
+ * Validação completa de URL (sem check de duplicata)
  */
 export async function validateUrl(
   supabase: SupabaseClient,
@@ -84,17 +61,7 @@ export async function validateUrl(
     };
   }
 
-  // 2. Verificar duplicata
-  const isDuplicate = await checkDuplicate(supabase, siteId, url);
-  if (isDuplicate) {
-    return {
-      isValid: false,
-      status: 'duplicate',
-      error: 'URL já existe no banco de dados'
-    };
-  }
-
-  // 3. Verificar acessibilidade
+  // 2. Verificar acessibilidade
   const isAccessible = await checkUrlAccessibility(url);
   if (!isAccessible) {
     return {
