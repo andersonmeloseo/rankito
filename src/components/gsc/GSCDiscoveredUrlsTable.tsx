@@ -289,20 +289,6 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
     });
   };
 
-  const toggleAll = () => {
-    const paginatedUrls = processedUrls || [];
-    const allCurrentSelected = paginatedUrls.every(u => selectedUrls.some(s => s.id === u.id));
-    
-    if (allCurrentSelected) {
-      setSelectedUrls(prev => prev.filter(s => !paginatedUrls.some(u => u.id === s.id)));
-    } else {
-      const newSelections = paginatedUrls.filter(u => !selectedUrls.some(s => s.id === u.id));
-      setSelectedUrls(prev => [...prev, ...newSelections.map(u => ({ id: u.id, url: u.url }))]);
-    }
-  };
-
-  const clearSelection = () => setSelectedUrls([]);
-
   // Aplicar filtros e ordenação ANTES da paginação
   const filteredAndSorted = sortData(filterUrlsData(urls || []), urlsSort);
   
@@ -314,6 +300,29 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   const from = (currentPage - 1) * pageSize;
   const to = from + pageSize;
   const processedUrls = filteredAndSorted.slice(from, to);
+
+  const toggleAll = () => {
+    const paginatedUrls = processedUrls || [];
+    console.log('🔍 toggleAll called', { 
+      paginatedUrlsLength: paginatedUrls.length,
+      selectedUrlsLength: selectedUrls.length 
+    });
+    
+    const allCurrentSelected = paginatedUrls.every(u => selectedUrls.some(s => s.id === u.id));
+    console.log('📊 Selection state', { allCurrentSelected });
+    
+    if (allCurrentSelected) {
+      console.log('🔄 Deselecting all from current page');
+      setSelectedUrls(prev => prev.filter(s => !paginatedUrls.some(u => u.id === s.id)));
+    } else {
+      console.log('✅ Selecting all from current page');
+      const newSelections = paginatedUrls.filter(u => !selectedUrls.some(s => s.id === u.id));
+      console.log('📝 New selections', { count: newSelections.length });
+      setSelectedUrls(prev => [...prev, ...newSelections.map(u => ({ id: u.id, url: u.url }))]);
+    }
+  };
+
+  const clearSelection = () => setSelectedUrls([]);
   
   const processedHistory = sortData(filterHistoryData(indexingHistory || []), historySort);
 
