@@ -4,7 +4,6 @@ import { SessionMetrics } from "./SessionMetrics";
 import { SessionsTable } from "./SessionsTable";
 import { TopPagesAnalysis } from "./TopPagesAnalysis";
 import { CommonSequences } from "./CommonSequences";
-import { JourneyConversionFunnel } from "./JourneyConversionFunnel";
 import { useSessionAnalytics } from "@/hooks/useSessionAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
@@ -62,15 +61,6 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
   return (
     <div className="space-y-6">
       <SessionMetrics metrics={analytics.metrics} />
-
-      {/* Conversion Funnel - Only show if we have sequences */}
-      {analytics.commonSequences.length > 0 && analytics.stepVolumes.size > 0 && (
-        <JourneyConversionFunnel 
-          sequence={analytics.commonSequences[0].sequence}
-          stepVolumes={analytics.stepVolumes}
-          totalSessions={analytics.metrics.totalSessions}
-        />
-      )}
 
       <Tabs defaultValue="sequences" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
