@@ -1,15 +1,45 @@
-import { Home, FileText, Phone, LogOut } from "lucide-react";
+import { Home, FileText, Phone, LogOut, Clock, MessageCircle, Mail, MousePointerClick, FileSignature } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { formatTime } from "@/lib/utils";
+
+interface ClickEventSummary {
+  pageUrl: string;
+  eventType: string;
+  count: number;
+  ctaText?: string;
+}
 
 interface SequenceStepBadgeProps {
   url: string;
   type: "entry" | "intermediate" | "exit";
   sequenceNumber: number;
   totalSteps: number;
+  avgTimeSpent?: number;
+  clickEvents?: ClickEventSummary[];
 }
 
-export const SequenceStepBadge = ({ url, type, sequenceNumber, totalSteps }: SequenceStepBadgeProps) => {
+export const SequenceStepBadge = ({ url, type, sequenceNumber, totalSteps, avgTimeSpent, clickEvents }: SequenceStepBadgeProps) => {
+  const getClickIcon = (eventType: string) => {
+    switch (eventType) {
+      case 'whatsapp_click': return MessageCircle;
+      case 'phone_click': return Phone;
+      case 'email_click': return Mail;
+      case 'form_submit': return FileSignature;
+      default: return MousePointerClick;
+    }
+  };
+
+  const getClickLabel = (eventType: string) => {
+    switch (eventType) {
+      case 'whatsapp_click': return 'WhatsApp';
+      case 'phone_click': return 'Telefone';
+      case 'email_click': return 'Email';
+      case 'form_submit': return 'Formulário';
+      case 'button_click': return 'Botão';
+      default: return 'Clique';
+    }
+  };
   const formatUrl = (url: string) => {
     try {
       const path = new URL(url).pathname;
@@ -94,6 +124,27 @@ export const SequenceStepBadge = ({ url, type, sequenceNumber, totalSteps }: Seq
           <div className={cn("font-medium text-sm break-words", config.textColor)} title={url}>
             {formattedUrl}
           </div>
+
+          {/* Time and Clicks Info */}
+          {(avgTimeSpent !== undefined || (clickEvents && clickEvents.length > 0)) && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+              {avgTimeSpent !== undefined && avgTimeSpent > 0 && (
+                <Badge variant="outline" className="gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatTime(Math.round(avgTimeSpent))}
+                </Badge>
+              )}
+              {clickEvents?.map((click, idx) => {
+                const ClickIcon = getClickIcon(click.eventType);
+                return (
+                  <Badge key={idx} variant="secondary" className="gap-1">
+                    <ClickIcon className="h-3 w-3" />
+                    {click.count} {getClickLabel(click.eventType)}
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

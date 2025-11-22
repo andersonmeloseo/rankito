@@ -1,17 +1,36 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, MapPin } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { SequenceStepBadge } from "./SequenceStepBadge";
 import { SequenceFlowLine } from "./SequenceFlowLine";
 import { SequenceMetrics } from "./SequenceMetrics";
 import { SequenceFilters } from "./SequenceFilters";
+import { SequenceInsights } from "./SequenceInsights";
+
+interface LocationData {
+  city: string;
+  country: string;
+  count: number;
+}
+
+interface ClickEventSummary {
+  pageUrl: string;
+  eventType: string;
+  count: number;
+  ctaText?: string;
+}
 
 interface CommonSequence {
   sequence: string[];
   count: number;
   percentage: number;
   pageCount: number;
+  locations: LocationData[];
+  avgDuration: number;
+  avgTimePerPage: number;
+  clickEvents: ClickEventSummary[];
 }
 
 interface CommonSequencesProps {
@@ -37,7 +56,7 @@ export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
 
   const handleReset = () => {
     setLimit(10);
-    setMinPages(2);
+    setMinPages(1);
     setMinPercentage(0);
   };
 
@@ -77,7 +96,7 @@ export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
               <div className="space-y-6">
                 {filteredSequences.map((seq, index) => (
               <Card key={index} className="shadow-sm hover:shadow-md transition-shadow duration-200">
-                <CardContent className="pt-6">
+                <CardContent className="pt-6 space-y-6">
                   {/* Metrics Header */}
                   <SequenceMetrics
                     rank={index + 1}
@@ -86,12 +105,39 @@ export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
                     pageCount={seq.sequence.length}
                   />
 
+                  {/* Location Summary */}
+                  {seq.locations.length > 0 && (
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Origem dos Visitantes</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {seq.locations.slice(0, 3).map((loc, idx) => (
+                          <Badge key={idx} variant="outline" className="gap-1">
+                            🌍 {loc.city}, {loc.country} ({Math.round((loc.count / seq.count) * 100)}%)
+                          </Badge>
+                        ))}
+                        {seq.locations.length > 3 && (
+                          <Badge variant="outline">
+                            +{seq.locations.length - 3} mais
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Insights */}
+                  <SequenceInsights sequence={seq} />
+
                   {/* Vertical Timeline */}
                   <div className="mt-6 space-y-0">
                     {seq.sequence.map((page, pageIndex) => {
                       const isFirst = pageIndex === 0;
                       const isLast = pageIndex === seq.sequence.length - 1;
                       const type = isFirst ? "entry" : isLast ? "exit" : "intermediate";
+                      
+                      const pageClicks = seq.clickEvents.filter(c => c.pageUrl === page);
 
                       return (
                         <div key={pageIndex}>
@@ -100,6 +146,8 @@ export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
                             type={type}
                             sequenceNumber={pageIndex + 1}
                             totalSteps={seq.sequence.length}
+                            avgTimeSpent={seq.avgTimePerPage}
+                            clickEvents={pageClicks}
                           />
                           
                           {!isLast && <SequenceFlowLine />}

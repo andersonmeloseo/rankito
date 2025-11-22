@@ -11,6 +11,15 @@ interface PageVisit {
   time_spent_seconds: number | null;
 }
 
+interface ClickEvent {
+  id: string;
+  event_type: string;
+  page_url: string;
+  created_at: string;
+  cta_text: string | null;
+  metadata: any;
+}
+
 interface SessionDetails {
   id: string;
   session_id: string;
@@ -25,6 +34,7 @@ interface SessionDetails {
   city: string | null;
   country: string | null;
   visits: PageVisit[];
+  clicks: ClickEvent[];
 }
 
 export const useSessionDetails = (sessionId: string) => {
@@ -50,9 +60,20 @@ export const useSessionDetails = (sessionId: string) => {
 
       if (visitsError) throw visitsError;
 
+      // Fetch clicks for this session
+      const { data: clicks, error: clicksError } = await supabase
+        .from('rank_rent_conversions')
+        .select('id, event_type, page_url, created_at, cta_text, metadata')
+        .eq('session_id', sessionId)
+        .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'])
+        .order('created_at');
+
+      if (clicksError) throw clicksError;
+
       return {
         ...session,
-        visits: visits || []
+        visits: visits || [],
+        clicks: clicks || []
       };
     },
     enabled: !!sessionId
