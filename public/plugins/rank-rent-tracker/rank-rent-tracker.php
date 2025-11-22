@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: RankIto LeadGen
- * Description: Rastreamento automático de conversões (cliques, page views, formulários) para Rankito CRM
- * Version: 1.0.1
+ * Description: Rastreamento automático de conversões (cliques, page views, formulários) + Session Tracking para Rankito CRM
+ * Version: 2.0.0
  * Author: Anderson Melo SEO
  * Author URI: https://andersonmeloseo.com.br
  */
@@ -56,6 +56,88 @@ class RankRentTracker {
             'use strict';
             
             const TRACKING_URL = '<?php echo $tracking_url; ?>';
+            const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutos
+            
+            // ==================== SESSION TRACKING ====================
+            
+            // Gerar ou recuperar session_id
+            function getSessionId() {
+                const now = Date.now();
+                let sessionData = sessionStorage.getItem('rankito_session');
+                
+                if (sessionData) {
+                    try {
+                        const parsed = JSON.parse(sessionData);
+                        const elapsed = now - parsed.timestamp;
+                        
+                        if (elapsed < SESSION_TIMEOUT) {
+                            parsed.timestamp = now; // Renovar sessão
+                            sessionStorage.setItem('rankito_session', JSON.stringify(parsed));
+                            return parsed.sessionId;
+                        }
+                    } catch (e) {
+                        console.error('Session parse error:', e);
+                    }
+                }
+                
+                // Nova sessão
+                const newSessionId = 'session_' + now + '_' + Math.random().toString(36).substr(2, 9);
+                sessionStorage.setItem('rankito_session', JSON.stringify({
+                    sessionId: newSessionId,
+                    timestamp: now
+                }));
+                return newSessionId;
+            }
+            
+            // Contador de sequência de páginas
+            function getSequenceNumber() {
+                let seq = parseInt(sessionStorage.getItem('rankito_sequence') || '0', 10);
+                seq++;
+                sessionStorage.setItem('rankito_sequence', seq.toString());
+                return seq;
+            }
+            
+            // Rastrear tempo de saída da página
+            let entryTime = Date.now();
+            
+            function trackPageExit() {
+                const timeSpent = Math.round((Date.now() - entryTime) / 1000);
+                
+                const payload = {
+                    page_url: window.location.href,
+                    page_title: document.title,
+                    event_type: 'page_exit',
+                    time_spent_seconds: timeSpent,
+                    session_id: getSessionId(),
+                    sequence_number: parseInt(sessionStorage.getItem('rankito_sequence') || '1', 10)
+                };
+                
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon(
+                        TRACKING_URL,
+                        new Blob([JSON.stringify(payload)], { type: 'application/json' })
+                    );
+                } else {
+                    fetch(TRACKING_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        keepalive: true
+                    }).catch(() => {});
+                }
+            }
+            
+            // Listeners para page exit
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    trackPageExit();
+                }
+            });
+            
+            window.addEventListener('beforeunload', trackPageExit);
+            window.addEventListener('pagehide', trackPageExit);
+            
+            // ==================== EVENT TRACKING ====================
             
             // Função para enviar eventos
             async function trackEvent(eventType, data = {}) {
@@ -64,6 +146,8 @@ class RankRentTracker {
                         page_url: window.location.href,
                         page_title: document.title,
                         event_type: eventType,
+                        session_id: getSessionId(),
+                        sequence_number: parseInt(sessionStorage.getItem('rankito_sequence') || '1', 10),
                         ...data
                     };
                     
@@ -79,7 +163,8 @@ class RankRentTracker {
                 }
             }
             
-            // Rastrear page view
+            // Rastrear page view (com session tracking)
+            const currentSequence = getSequenceNumber();
             trackEvent('page_view');
             
             // Rastrear cliques em links
@@ -113,7 +198,10 @@ class RankRentTracker {
                     eventType = 'button_click';
                 }
                 
-                trackEvent(eventType, { metadata });
+                trackEvent(eventType, { 
+                    cta_text: text,
+                    metadata 
+                });
             }, true);
             
             // Rastrear envio de formulários
