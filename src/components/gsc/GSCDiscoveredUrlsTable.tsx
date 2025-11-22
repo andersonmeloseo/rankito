@@ -702,7 +702,10 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox 
-                      checked={processedUrls?.length > 0 && selectedUrls.length === processedUrls.length}
+                      checked={
+                        processedUrls?.length > 0 && 
+                        processedUrls.every(u => selectedUrls.some(s => s.id === u.id))
+                      }
                       onCheckedChange={() => {
                         console.log('📋 Select all checkbox clicked');
                         toggleAll();
