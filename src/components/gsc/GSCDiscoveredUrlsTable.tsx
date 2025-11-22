@@ -269,6 +269,18 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
     });
   };
 
+  // Aplicar filtros e ordenação ANTES da paginação
+  const filteredAndSorted = sortData(filterUrlsData(urls || []), urlsSort);
+  
+  // Calcular paginação baseada em dados filtrados
+  const filteredCount = filteredAndSorted.length;
+  const totalPagesAdjusted = Math.ceil(filteredCount / pageSize);
+  
+  // ENTÃO aplicar paginação no frontend
+  const from = (currentPage - 1) * pageSize;
+  const to = from + pageSize;
+  const processedUrls = filteredAndSorted.slice(from, to);
+
   const toggleUrl = (urlId: string) => {
     console.log('🔍 toggleUrl called:', { urlId, processedUrlsLength: processedUrls?.length });
     setSelectedUrls(prev => {
@@ -288,18 +300,6 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
       }
     });
   };
-
-  // Aplicar filtros e ordenação ANTES da paginação
-  const filteredAndSorted = sortData(filterUrlsData(urls || []), urlsSort);
-  
-  // Calcular paginação baseada em dados filtrados
-  const filteredCount = filteredAndSorted.length;
-  const totalPagesAdjusted = Math.ceil(filteredCount / pageSize);
-  
-  // ENTÃO aplicar paginação no frontend
-  const from = (currentPage - 1) * pageSize;
-  const to = from + pageSize;
-  const processedUrls = filteredAndSorted.slice(from, to);
 
   const toggleAll = () => {
     const paginatedUrls = processedUrls || [];
