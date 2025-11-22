@@ -20,7 +20,7 @@ interface CommonSequencesProps {
 
 export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
   const [limit, setLimit] = useState<number | 'all'>(10);
-  const [minPages, setMinPages] = useState<number>(2);
+  const [minPages, setMinPages] = useState<number>(1);
   const [minPercentage, setMinPercentage] = useState<number>(0);
 
   const filteredSequences = useMemo(() => {

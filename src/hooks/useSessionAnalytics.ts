@@ -105,7 +105,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         });
 
         sessionSequences.forEach(sequence => {
-          if (sequence.length >= 2) {
+          if (sequence.length >= 1) {
             const key = sequence.join(' → '); // Sequência completa sem limite
             const count = sequencesMap.get(key) || 0;
             sequencesMap.set(key, count + 1);
