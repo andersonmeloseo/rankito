@@ -13,14 +13,10 @@ interface SequenceMetricsProps {
 }
 
 export const SequenceMetrics = ({ rank, sessionCount, percentage, pageCount, firstAccessTime }: SequenceMetricsProps) => {
-  const getRankBadge = (rank: number) => {
-    if (rank === 1) return { emoji: "🥇", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100" };
-    if (rank === 2) return { emoji: "🥈", color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100" };
-    if (rank === 3) return { emoji: "🥉", color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100" };
-    return { emoji: `#${rank}`, color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100" };
+  const rankBadge = {
+    emoji: `#${rank}`,
+    color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100"
   };
-
-  const rankBadge = getRankBadge(rank);
 
   return (
     <div className="flex flex-col gap-3">
