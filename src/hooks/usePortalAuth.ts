@@ -9,7 +9,7 @@ const isValidUUID = (uuid: string): boolean => {
 
 export const usePortalAuth = (token: string | undefined) => {
   return useQuery({
-    queryKey: ['portal-auth', token, Date.now()], // Timestamp força cache bypass total
+    queryKey: ['portal-auth-v2', token], // v2 força nova entrada de cache
     queryFn: async () => {
       if (!token) {
         throw new Error('Token não fornecido');
