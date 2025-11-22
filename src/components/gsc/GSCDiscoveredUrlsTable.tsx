@@ -26,8 +26,7 @@ import {
   Activity,
   Calendar,
   Shield,
-  RefreshCw,
-  Eye
+  X
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
@@ -37,7 +36,6 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { URLValidationBadge } from './URLValidationBadge';
-import { GoogleInspectionBadge } from './GoogleInspectionBadge';
 
 interface GSCDiscoveredUrlsTableProps {
   siteId: string;
@@ -195,27 +193,6 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
     }
   });
 
-  // ✅ Mutation para consultar status no Google manualmente
-  const syncGoogleStatus = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('gsc-sync-inspection-status', {
-        body: { site_id: siteId }
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      toast.success(
-        `✅ Consultadas ${data.total} URLs no Google: ${data.inspected} atualizadas, ${data.errors} erros`,
-        { duration: 5000 }
-      );
-      queryClient.invalidateQueries({ queryKey: ['gsc-discovered-urls'] });
-      queryClient.invalidateQueries({ queryKey: ['gsc-inspection-stats'] });
-    },
-    onError: (error: any) => {
-      toast.error(`❌ Erro ao consultar Google: ${error.message}`);
-    }
-  });
 
   useEffect(() => {
     setCurrentPage(1);
@@ -514,27 +491,6 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
         </CardContent>
       </Card>
 
-      {/* Botão de Consulta Manual do Google Status */}
-      <div className="flex justify-center mb-6">
-        <Button
-          onClick={() => syncGoogleStatus.mutate()}
-          disabled={syncGoogleStatus.isPending}
-          size="lg"
-          className="gap-2"
-        >
-          {syncGoogleStatus.isPending ? (
-            <>
-              <RefreshCw className="h-5 w-5 animate-spin" />
-              Consultando Google... Isso pode levar alguns minutos
-            </>
-          ) : (
-            <>
-              <Eye className="h-5 w-5" />
-              Consultar Status no Google (Todas as URLs)
-            </>
-          )}
-        </Button>
-      </div>
 
       <Card>
         <CardHeader className="pb-4">
@@ -623,7 +579,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                     onClick={clearSelection}
                     disabled={selectedUrls.length === 0}
                   >
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <X className="h-4 w-4 mr-2" />
                     Limpar ({selectedUrls.length})
                   </Button>
                   
@@ -736,7 +692,6 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                   <SortableHeader field="url" label="URL" currentSort={urlsSort} onSort={handleUrlsSort} />
                   <SortableHeader field="current_status" label="Status GSC" currentSort={urlsSort} onSort={handleUrlsSort} className="w-36" />
                   <TableHead className="w-36">Validação</TableHead>
-                  <TableHead className="w-36">Google Status</TableHead>
                   <SortableHeader field="impressions" label="Impressões" currentSort={urlsSort} onSort={handleUrlsSort} className="w-28" />
                   <SortableHeader field="clicks" label="Cliques" currentSort={urlsSort} onSort={handleUrlsSort} className="w-24" />
                   <SortableHeader field="last_seen_at" label="Última Vista" currentSort={urlsSort} onSort={handleUrlsSort} className="w-36" />
@@ -745,7 +700,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
               <TableBody>
                 {processedUrls.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                       Nenhuma URL encontrada
                     </TableCell>
                   </TableRow>
@@ -777,13 +732,6 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                         <URLValidationBadge 
                           validationStatus={url.validation_status} 
                           validationError={url.validation_error}
-                        />
-                      </TableCell>
-                      {/* ✅ FASE 3: Coluna Google Status */}
-                      <TableCell>
-                        <GoogleInspectionBadge 
-                          inspectionStatus={url.google_inspection_status}
-                          lastInspectedAt={url.google_last_inspected_at}
                         />
                       </TableCell>
                       <TableCell className="text-right text-sm">{url.impressions?.toLocaleString('pt-BR') || '-'}</TableCell>
