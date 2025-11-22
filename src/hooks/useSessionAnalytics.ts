@@ -104,19 +104,35 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
 
       // Fetch page visits for common sequences
       const sessionIds = sessions.map(s => s.id);
-      const { data: visits } = await supabase
+      const { data: visits, error: visitsError } = await supabase
         .from('rank_rent_page_visits')
         .select('session_id, page_url, sequence_number, time_spent_seconds')
         .in('session_id', sessionIds)
         .order('session_id')
         .order('sequence_number');
 
+      console.log('🔍 User Journey Debug:', {
+        totalSessions: sessions.length,
+        sessionIds: sessionIds.slice(0, 3),
+        visitsCount: visits?.length || 0,
+        visitsError,
+        sampleVisit: visits?.[0],
+        visitsWithTime: visits?.filter(v => v.time_spent_seconds && v.time_spent_seconds > 0).length || 0
+      });
+
       // Fetch clicks for sessions
-      const { data: clicks } = await supabase
+      const { data: clicks, error: clicksError } = await supabase
         .from('rank_rent_conversions')
         .select('session_id, event_type, page_url, metadata, cta_text')
         .in('session_id', sessionIds)
         .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit']);
+
+      console.log('🔍 Clicks Debug:', {
+        clicksCount: clicks?.length || 0,
+        clicksError,
+        sampleClick: clicks?.[0],
+        clickEventTypes: clicks?.map(c => c.event_type) || []
+      });
 
       // Build sequences with enriched data
       const sequencesMap = new Map<string, {
