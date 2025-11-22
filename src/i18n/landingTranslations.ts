@@ -263,6 +263,17 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
             'Plugin WordPress incluso',
           ],
         },
+        {
+          title: 'Jornada do Usuário',
+          description: 'Não sabe por onde seus visitantes navegam nem onde desistem? Rastreie cada passo da jornada do cliente - da entrada até a saída - com precisão de sniper. Veja sequências completas, tempo gasto por página e identifique gargalos no funil.',
+          benefits: [
+            'Sequências completas de navegação página por página',
+            'Tempo real gasto em cada etapa da jornada',
+            'Identificação de bounce sessions e páginas problemáticas',
+            'Análise comportamental de padrões de navegação',
+            'Filtros inteligentes por volume de sessões',
+          ],
+        },
       ],
     },
     gsc: {
@@ -592,6 +603,17 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
             'Origen de tráfico detallado',
             'Horarios pico',
             'Plugin WordPress incluido',
+          ],
+        },
+        {
+          title: 'Recorrido del Usuario',
+          description: '¿No sabes por dónde navegan tus visitantes ni dónde abandonan? Rastrea cada paso del recorrido del cliente - desde la entrada hasta la salida - con precisión de francotirador. Ve secuencias completas, tiempo invertido por página e identifica cuellos de botella en el embudo.',
+          benefits: [
+            'Secuencias completas de navegación página por página',
+            'Tiempo real invertido en cada etapa del recorrido',
+            'Identificación de bounce sessions y páginas problemáticas',
+            'Análisis comportamental de patrones de navegación',
+            'Filtros inteligentes por volumen de sesiones',
           ],
         },
       ],
@@ -925,6 +947,17 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
             'WordPress plugin included',
           ],
         },
+        {
+          title: 'User Journey',
+          description: "Don't know where your visitors navigate or where they drop off? Track every step of the customer journey - from entry to exit - with sniper precision. See complete sequences, time spent per page, and identify funnel bottlenecks.",
+          benefits: [
+            'Complete page-by-page navigation sequences',
+            'Real-time spent on each journey step',
+            'Bounce session and problematic page identification',
+            'Behavioral analysis of navigation patterns',
+            'Smart filters by session volume',
+          ],
+        },
       ],
     },
     gsc: {
@@ -1256,6 +1289,17 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
             'Plugin WordPress inclus',
           ],
         },
+        {
+          title: 'Parcours Utilisateur',
+          description: 'Vous ne savez pas où vos visiteurs naviguent ni où ils abandonnent? Suivez chaque étape du parcours client - de l\'entrée à la sortie - avec une précision de tireur d\'élite. Voyez les séquences complètes, le temps passé par page et identifiez les goulets d\'étranglement dans l\'entonnoir.',
+          benefits: [
+            'Séquences complètes de navigation page par page',
+            'Temps réel passé à chaque étape du parcours',
+            'Identification des bounce sessions et pages problématiques',
+            'Analyse comportementale des modèles de navigation',
+            'Filtres intelligents par volume de sessions',
+          ],
+        },
       ],
     },
     gsc: {
@@ -1585,6 +1629,17 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
             'Origem de tráfego detalhada',
             'Horários de pico',
             'Plugin WordPress incluído',
+          ],
+        },
+        {
+          title: 'Jornada do Utilizador',
+          description: 'Não sabes por onde os teus visitantes navegam nem onde desistem? Rastreia cada passo da jornada do cliente - da entrada até à saída - com precisão de atirador. Vê sequências completas, tempo gasto por página e identifica estrangulamentos no funil.',
+          benefits: [
+            'Sequências completas de navegação página por página',
+            'Tempo real gasto em cada etapa da jornada',
+            'Identificação de bounce sessions e páginas problemáticas',
+            'Análise comportamental de padrões de navegação',
+            'Filtros inteligentes por volume de sessões',
           ],
         },
       ],

@@ -5,7 +5,8 @@ import {
   ShoppingCart,
   DollarSign, 
   Users, 
-  BarChart3 
+  BarChart3,
+  Route
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,8 @@ const featureIcons = [
   ShoppingCart,
   DollarSign,
   Users,
-  BarChart3
+  BarChart3,
+  Route
 ];
 
 const featureScreenshots = [
@@ -30,6 +32,7 @@ const featureScreenshots = [
   "/images/screenshots/financial-performance.png",
   "/images/screenshots/client-portal.png",
   "/images/screenshots/analytics-charts.png",
+  "/images/screenshots/user-journey-dashboard.png",
 ];
 
 export const FeaturesSection = () => {
