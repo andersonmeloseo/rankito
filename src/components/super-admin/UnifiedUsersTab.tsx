@@ -29,7 +29,7 @@ export const UnifiedUsersTab = () => {
         <TabsTrigger value="approvals" className="gap-2">
           <UserCheck className="h-4 w-4" />
           Aprovações Pendentes
-          {pendingCount && pendingCount > 0 && (
+          {(pendingCount ?? 0) > 0 && (
             <Badge variant="destructive" className="ml-2">
               {pendingCount}
             </Badge>
