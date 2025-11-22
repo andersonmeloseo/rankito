@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Package, TrendingUp, Search, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLandingTranslation } from "@/hooks/useLandingTranslation";
-import ecommerceDashboardImg from "/images/screenshots/ecommerce-dashboard-full.png";
 
 const featureIcons = [Globe, ShoppingCart, TrendingUp, Search, Package];
 
@@ -83,9 +82,10 @@ export const EcommerceShowcase = () => {
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-orange-100">
               <img
-                src={ecommerceDashboardImg}
+                src="/images/screenshots/ecommerce-dashboard-full.png"
                 alt="Dashboard de Monitoramento E-commerce"
                 className="w-full h-auto"
+                loading="lazy"
                 onError={(e) => {
                   console.error('Erro ao carregar imagem do dashboard e-commerce');
                   e.currentTarget.src = '/images/screenshots/dashboard-overview.png';
