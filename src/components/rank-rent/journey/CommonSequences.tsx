@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { SequenceStepBadge } from "./SequenceStepBadge";
 import { SequenceFlowLine } from "./SequenceFlowLine";
 import { SequenceMetrics } from "./SequenceMetrics";
@@ -62,11 +63,12 @@ export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Sequências Mais Comuns de Navegação</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <TooltipProvider>
+      <Card>
+        <CardHeader>
+          <CardTitle>Sequências Mais Comuns de Navegação</CardTitle>
+        </CardHeader>
+        <CardContent>
         {sequences.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
             Nenhuma sequência de navegação registrada ainda. Aguarde mais visitas.
@@ -163,7 +165,8 @@ export const CommonSequences = ({ sequences }: CommonSequencesProps) => {
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 };

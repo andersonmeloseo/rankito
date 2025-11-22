@@ -98,13 +98,12 @@ export const SequenceStepBadge = ({ url, type, sequenceNumber, totalSteps, avgTi
   const formattedUrl = formatUrl(url);
 
   return (
-    <TooltipProvider>
-      <div className={cn(
-        "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
-        config.bgColor,
-        config.borderColor
-      )}>
-        <div className="flex items-start gap-3">
+    <div className={cn(
+      "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
+      config.bgColor,
+      config.borderColor
+    )}>
+      <div className="flex items-start gap-3">
         <div className={cn(
           "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
           config.textColor,
@@ -170,8 +169,7 @@ export const SequenceStepBadge = ({ url, type, sequenceNumber, totalSteps, avgTi
             </div>
           )}
         </div>
-        </div>
       </div>
-    </TooltipProvider>
+    </div>
   );
 };
