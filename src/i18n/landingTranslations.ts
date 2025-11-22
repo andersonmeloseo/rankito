@@ -210,9 +210,9 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
         {
           title: 'E-commerce Tracking',
-          description: 'Rastreie vendas, produtos e receita diretamente nos seus sites rank & rent com a primeira ferramenta do mundo com tracking de e-commerce para rank & rent.',
+          description: 'Rastreie vendas, produtos e receita diretamente nos seus sites com tracking completo de e-commerce.',
           benefits: [
-            'Primeira plataforma do mundo com tracking de e-commerce para rank & rent',
+            'Plataforma pioneira com tracking de e-commerce completo',
             'Rastreamento automático de visualizações de produtos',
             'Captura de adições ao carrinho e checkouts',
             'Atribuição de receita por produto e página',
@@ -515,9 +515,9 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
         {
           title: 'E-commerce Tracking',
-          description: 'Rastrea ventas, productos e ingresos directamente en tus sitios rank & rent con la primera herramienta del mundo con tracking de e-commerce para rank & rent.',
+          description: 'Rastrea ventas, productos e ingresos directamente en tus sitios con tracking completo de e-commerce.',
           benefits: [
-            'Primera plataforma del mundo con tracking de e-commerce para rank & rent',
+            'Plataforma pionera con tracking de e-commerce completo',
             'Rastreo automático de visualizaciones de productos',
             'Captura de adiciones al carrito y checkouts',
             'Atribución de ingresos por producto y página',
@@ -820,9 +820,9 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
         {
           title: 'E-commerce Tracking',
-          description: 'Track sales, products, and revenue directly on your rank & rent sites with the world\'s first e-commerce tracking tool for rank & rent.',
+          description: 'Track sales, products, and revenue directly on your sites with complete e-commerce tracking.',
           benefits: [
-            'World\'s first platform with e-commerce tracking for rank & rent',
+            'Pioneer platform with complete e-commerce tracking',
             'Automatic product view tracking',
             'Capture add-to-cart and checkout events',
             'Revenue attribution per product and page',
@@ -1125,9 +1125,9 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
         {
           title: 'E-commerce Tracking',
-          description: 'Suivez les ventes, produits et revenus directement sur vos sites rank & rent avec le premier outil au monde avec tracking e-commerce pour rank & rent.',
+          description: 'Suivez les ventes, produits et revenus directement sur vos sites avec tracking e-commerce complet.',
           benefits: [
-            'Première plateforme au monde avec tracking e-commerce pour rank & rent',
+            'Plateforme pionnière avec tracking e-commerce complet',
             'Suivi automatique des vues de produits',
             'Capture des ajouts au panier et checkouts',
             'Attribution des revenus par produit et page',
@@ -1430,9 +1430,9 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
         {
           title: 'E-commerce Tracking',
-          description: 'Rastreia vendas, produtos e receita diretamente nos teus sites rank & rent com a primeira ferramenta do mundo com tracking de e-commerce para rank & rent.',
+          description: 'Rastreia vendas, produtos e receita diretamente nos teus sites com tracking completo de e-commerce.',
           benefits: [
-            'Primeira plataforma do mundo com tracking de e-commerce para rank & rent',
+            'Plataforma pioneira com tracking de e-commerce completo',
             'Rastreamento automático de visualizações de produtos',
             'Captura de adições ao carrinho e checkouts',
             'Atribuição de receita por produto e página',
