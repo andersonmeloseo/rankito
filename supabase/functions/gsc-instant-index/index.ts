@@ -207,6 +207,20 @@ Deno.serve(async (req) => {
         gscResult.error?.data?.error?.status === 'RESOURCE_EXHAUSTED' ||
         gscResult.error?.data?.error?.message?.toLowerCase().includes('quota')
       );
+      
+      // Detectar tipo de erro para retry
+      let retryReason = null;
+      if (!overallSuccess) {
+        if (isQuotaError) {
+          retryReason = 'quota_exceeded';
+        } else if (gscResult.error?.data?.error?.status === 'RATE_LIMIT_EXCEEDED') {
+          retryReason = 'rate_limit';
+        } else if (gscResult.error?.type === 'auth_error') {
+          retryReason = 'auth_error';
+        } else {
+          retryReason = 'temporary_error';
+        }
+      }
 
       // REGISTRAR URL NA TABELA DE QUOTA
       const supabaseAdmin = createClient(
@@ -226,14 +240,36 @@ Deno.serve(async (req) => {
           response_data: gscResult,
         });
 
-      // Só atualizar status se NÃO for erro de quota
-      // Erros de quota preservam o status atual da URL
+      // Atualizar status e configurar retry se necessário
       if (!isQuotaError) {
+        // Buscar retry_count atual
+        const { data: currentUrl } = await supabaseAdmin
+          .from('gsc_discovered_urls')
+          .select('retry_count')
+          .eq('site_id', site_id)
+          .eq('url', url)
+          .maybeSingle();
+        
+        const currentRetryCount = currentUrl?.retry_count || 0;
+        
+        // Calcular próximo retry se falhou e ainda não atingiu limite
+        let nextRetryAt = null;
+        if (!overallSuccess && currentRetryCount < 3 && retryReason !== 'auth_error') {
+          const backoffHours = [1, 6, 24];
+          const hours = backoffHours[currentRetryCount];
+          nextRetryAt = new Date();
+          nextRetryAt.setHours(nextRetryAt.getHours() + hours);
+        }
+        
         const { error: updateError } = await supabaseAdmin
           .from('gsc_discovered_urls')
           .update({
             current_status: overallSuccess ? 'sent' : 'failed',
             last_checked_at: new Date().toISOString(),
+            retry_count: overallSuccess ? 0 : (currentRetryCount + 1),
+            last_retry_at: !overallSuccess ? new Date().toISOString() : null,
+            next_retry_at: nextRetryAt ? nextRetryAt.toISOString() : null,
+            retry_reason: !overallSuccess ? retryReason : null,
           })
           .eq('site_id', site_id)
           .eq('url', url);
@@ -241,7 +277,7 @@ Deno.serve(async (req) => {
         if (updateError) {
           console.error(`⚠️ Failed to update status for ${url}:`, updateError);
         } else {
-          console.log(`✅ Status updated to '${overallSuccess ? 'sent' : 'failed'}' for ${url}`);
+          console.log(`✅ Status updated to '${overallSuccess ? 'sent' : 'failed'}' for ${url}${!overallSuccess && nextRetryAt ? ` (retry scheduled for ${nextRetryAt.toISOString()})` : ''}`);
         }
       } else {
         console.log(`⏭️ Quota exceeded for ${url} - preserving current status`);
