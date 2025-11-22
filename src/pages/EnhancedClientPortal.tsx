@@ -33,6 +33,18 @@ export const EnhancedClientPortal = () => {
   const [endDate, setEndDate] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
+  // Limpar cache corrompido ao montar o portal
+  useEffect(() => {
+    console.log('[Portal] 🧹 Limpando storage cache...');
+    try {
+      localStorage.removeItem('portal-auth-cache');
+      sessionStorage.clear();
+      console.log('[Portal] ✅ Storage limpo');
+    } catch (e) {
+      console.warn('[Portal] ⚠️ Não foi possível limpar storage:', e);
+    }
+  }, [token]);
+
   // Initialize with last 30 days
   React.useEffect(() => {
     if (!startDate && !endDate) {
@@ -58,6 +70,12 @@ export const EnhancedClientPortal = () => {
   };
 
   const { data: authData, isLoading: authLoading, error: authError } = usePortalAuth(token);
+  
+  console.log('[Portal] 🔍 authData recebido:', { 
+    hasAuthData: !!authData, 
+    clientId: authData?.clientId 
+  });
+  
   const clientId = authData?.clientId;
   const clientData = authData?.clientData;
   const customization = authData?.customization || {};
