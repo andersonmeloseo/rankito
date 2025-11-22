@@ -20,15 +20,16 @@ const LandingPageContent = () => {
   const navigate = useNavigate();
   const { t, locale, setLocale, isTransitioning } = useLandingTranslation();
 
-  useEffect(() => {
-    const checkAuthAndRedirect = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session && window.location.pathname === '/') {
-        navigate('/dashboard', { replace: true });
-      }
-    };
-    checkAuthAndRedirect();
-  }, [navigate]);
+  // Redirecionamento temporariamente desabilitado para edição
+  // useEffect(() => {
+  //   const checkAuthAndRedirect = async () => {
+  //     const { data: { session } } = await supabase.auth.getSession();
+  //     if (session && window.location.pathname === '/') {
+  //       navigate('/dashboard', { replace: true });
+  //     }
+  //   };
+  //   checkAuthAndRedirect();
+  // }, [navigate]);
 
   return (
     <div 
