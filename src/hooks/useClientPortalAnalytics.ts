@@ -12,7 +12,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
   });
   
   const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery({
-    queryKey: ['client-portal-analytics', clientId, periodDays, siteId, Date.now()], // Timestamp força cache bypass
+    queryKey: ['client-portal-analytics-v2', clientId, periodDays, siteId], // v2 força nova entrada de cache
     queryFn: async () => {
       console.log('[Analytics] 🔍 UUID RECEBIDO NO HOOK:', clientId);
       

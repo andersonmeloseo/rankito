@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,17 +33,26 @@ export const EnhancedClientPortal = () => {
   const [endDate, setEndDate] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
-  // Limpar cache corrompido ao montar o portal
+  // Destruir cache completamente ao montar o portal
+  const queryClient = useQueryClient();
+  
   useEffect(() => {
-    console.log('[Portal] 🧹 Limpando storage cache...');
+    console.log('[Portal] 🧹 INVALIDANDO TODAS AS QUERIES DO REACT QUERY...');
     try {
+      // Remove TODAS as queries do cache
+      queryClient.clear();
+      // Invalida todas as queries
+      queryClient.invalidateQueries();
+      
+      // Limpa storage
       localStorage.removeItem('portal-auth-cache');
       sessionStorage.clear();
-      console.log('[Portal] ✅ Storage limpo');
+      
+      console.log('[Portal] ✅ Cache React Query e Storage completamente limpos');
     } catch (e) {
-      console.warn('[Portal] ⚠️ Não foi possível limpar storage:', e);
+      console.warn('[Portal] ⚠️ Erro ao limpar cache:', e);
     }
-  }, [token]);
+  }, [token, queryClient]);
 
   // Initialize with last 30 days
   React.useEffect(() => {

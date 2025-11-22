@@ -64,6 +64,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('[Validate Portal Token] ✅ Token válido! Cliente:', portalData.rank_rent_clients?.name)
+    console.log('[Validate Portal Token] 🔍 CLIENT_ID RETORNADO:', portalData.client_id)
 
     return new Response(
       JSON.stringify({
@@ -72,7 +73,15 @@ Deno.serve(async (req) => {
         clientId: portalData.client_id,
         isValid: true,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        } 
+      }
     )
   } catch (error) {
     console.error('[Validate Portal Token] 💥 Erro na validação:', error)
