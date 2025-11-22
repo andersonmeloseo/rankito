@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, XCircle, AlertTriangle, RefreshCw, Stethoscope } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -17,17 +17,13 @@ interface GSCIntegrationHealthCardProps {
     is_active: boolean | null;
   };
   onTestConnection?: (integrationId: string) => void;
-  onDiagnose?: (integrationId: string) => void;
   isTestingConnection?: boolean;
-  isDiagnosing?: boolean;
 }
 
 export const GSCIntegrationHealthCard = ({
   integration,
   onTestConnection,
-  onDiagnose,
   isTestingConnection = false,
-  isDiagnosing = false,
 }: GSCIntegrationHealthCardProps) => {
   const getHealthIcon = () => {
     switch (integration.health_status) {
@@ -101,28 +97,15 @@ export const GSCIntegrationHealthCard = ({
         )}
 
         {onTestConnection && (
-          <div className="flex gap-2">
-            <Button
-              onClick={() => onTestConnection(integration.id)}
-              disabled={isTestingConnection || isDiagnosing}
-              className="flex-1"
-              variant="outline"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isTestingConnection ? 'animate-spin' : ''}`} />
-              {isTestingConnection ? 'Testando...' : 'Testar Conexão'}
-            </Button>
-            {onDiagnose && (
-              <Button
-                onClick={() => onDiagnose(integration.id)}
-                disabled={isTestingConnection || isDiagnosing}
-                className="flex-1"
-                variant="default"
-              >
-                <Stethoscope className={`h-4 w-4 mr-2 ${isDiagnosing ? 'animate-pulse' : ''}`} />
-                {isDiagnosing ? 'Diagnosticando...' : 'Diagnosticar'}
-              </Button>
-            )}
-          </div>
+          <Button
+            onClick={() => onTestConnection(integration.id)}
+            disabled={isTestingConnection}
+            className="w-full"
+            variant="outline"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isTestingConnection ? 'animate-spin' : ''}`} />
+            {isTestingConnection ? 'Testando...' : 'Testar Conexão'}
+          </Button>
         )}
       </CardContent>
     </Card>
