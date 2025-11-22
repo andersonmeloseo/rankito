@@ -534,6 +534,9 @@ serve(async (req) => {
       }
     }
 
+    // Extract cta_text from metadata if not provided at root level
+    const finalCtaText = cta_text || metadata?.cta_text || null;
+
     // Insert conversion
     const { error: insertError } = await supabase
       .from('rank_rent_conversions')
@@ -543,7 +546,7 @@ serve(async (req) => {
         page_url,
         page_path,
         event_type,
-        cta_text,
+        cta_text: finalCtaText,
         is_ecommerce_event: isEcommerceEvent,
         session_id: session_id || null,
         sequence_number: sequence_number || null,
