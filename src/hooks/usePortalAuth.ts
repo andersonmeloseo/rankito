@@ -1,6 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+// Validação de UUID
+const isValidUUID = (uuid: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
+
 export const usePortalAuth = (token: string | undefined) => {
   return useQuery({
     queryKey: ['portal-auth', token],
@@ -35,7 +41,14 @@ export const usePortalAuth = (token: string | undefined) => {
         throw new Error('Token inválido ou portal desativado');
       }
 
+      // Validação de UUID corrompido
+      if (data.clientId && !isValidUUID(data.clientId)) {
+        console.error('[Portal Auth] ⚠️ UUID CORROMPIDO detectado:', data.clientId);
+        throw new Error('UUID do cliente está corrompido. Por favor, recarregue a página.');
+      }
+
       console.log('[Portal Auth] ✅ Token válido para cliente:', data.clientData?.name);
+      console.log('[Portal Auth] ✅ UUID validado:', data.clientId);
       console.log('🔄 [Portal Auth] Dados customizados:', data.portalData?.report_config);
       console.log('🔄 [Portal Auth] Cores recebidas:', {
         primary: data.portalData?.report_config?.branding?.primary_color,
@@ -52,7 +65,9 @@ export const usePortalAuth = (token: string | undefined) => {
       };
     },
     enabled: !!token,
-    staleTime: 5000, // 5 segundos - permite revalidação rápida após customizações
+    staleTime: 0, // Força re-fetch imediato - sem cache
+    gcTime: 0, // Remove cache completamente (v5)
+    refetchOnMount: 'always', // Sempre re-fetch ao montar
     retry: 2,
   });
 };
