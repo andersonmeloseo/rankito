@@ -66,19 +66,21 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 [gsc-sync-inspection-status] Starting inspection sync');
+    // Verificar se é consulta manual (com site_id) ou automática (cron)
+    const body = req.method === 'POST' ? await req.json() : {};
+    const { site_id } = body;
+    const isManualQuery = !!site_id;
+
+    console.log(`🔍 [gsc-sync-inspection-status] Mode: ${isManualQuery ? 'MANUAL' : 'CRON'}`);
+    if (site_id) console.log(`📌 site_id: ${site_id}`);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Buscar URLs que foram enviadas mas não têm inspection status
-    // OU que não foram inspecionadas há mais de 7 dias
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const { data: urlsToInspect, error: fetchError } = await supabase
+    // Construir query base
+    let query = supabase
       .from('gsc_discovered_urls')
       .select(`
         id,
@@ -88,11 +90,27 @@ serve(async (req) => {
         current_status,
         google_inspection_status,
         google_last_inspected_at
-      `)
-      .eq('current_status', 'sent')
-      .or(`google_inspection_status.is.null,google_last_inspected_at.lt.${sevenDaysAgo.toISOString()}`)
+      `);
+
+    // Se site_id fornecido (consulta manual), filtrar apenas esse site
+    if (site_id) {
+      query = query.eq('site_id', site_id);
+    } else {
+      // Modo cron: apenas URLs 'sent' sem status ou desatualizadas
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      query = query
+        .eq('current_status', 'sent')
+        .or(`google_inspection_status.is.null,google_last_inspected_at.lt.${sevenDaysAgo.toISOString()}`);
+    }
+
+    // Ordenar e limitar
+    query = query
       .order('google_last_inspected_at', { ascending: true, nullsFirst: true })
-      .limit(50); // Processar 50 URLs por execução (quota do Inspection API é limitada)
+      .limit(site_id ? 500 : 50); // Mais URLs para consultas manuais
+
+    const { data: urlsToInspect, error: fetchError } = await query;
 
     if (fetchError) {
       throw fetchError;
@@ -100,13 +118,18 @@ serve(async (req) => {
 
     if (!urlsToInspect || urlsToInspect.length === 0) {
       console.log('✅ No URLs pending inspection');
-      return new Response(JSON.stringify({ message: 'No URLs to inspect', inspected: 0 }), {
+      return new Response(JSON.stringify({ 
+        message: 'No URLs to inspect', 
+        total: 0,
+        inspected: 0,
+        errors: 0
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
 
-    console.log(`📋 Found ${urlsToInspect.length} URLs to inspect`);
+    console.log(`📋 Found ${urlsToInspect.length} URLs to inspect (mode: ${isManualQuery ? 'MANUAL' : 'CRON'})`);
 
     let inspectedCount = 0;
     let errorCount = 0;
