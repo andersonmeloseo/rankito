@@ -15,32 +15,7 @@ import { SequenceFlowLine } from "./SequenceFlowLine";
 import { SequenceMetrics } from "./SequenceMetrics";
 import { SequenceFilters } from "./SequenceFilters";
 import { SequenceInsights } from "./SequenceInsights";
-
-interface LocationData {
-  city: string;
-  country: string;
-  count: number;
-}
-
-interface ClickEventSummary {
-  pageUrl: string;
-  eventType: string;
-  count: number;
-  ctaText?: string;
-}
-
-interface CommonSequence {
-  sequence: string[];
-  count: number;
-  percentage: number;
-  pageCount: number;
-  locations: LocationData[];
-  avgDuration: number;
-  avgTimePerPage: number;
-  clickEvents: ClickEventSummary[];
-  timePerUrl: Record<string, number>;
-  firstAccessTime: string;
-}
+import type { CommonSequence } from "@/hooks/useSessionAnalytics";
 
 interface CommonSequencesProps {
   sequences: CommonSequence[];

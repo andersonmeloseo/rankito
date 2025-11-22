@@ -1,39 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Target, AlertTriangle } from "lucide-react";
 import { formatTime } from "@/lib/utils";
-
-interface LocationData {
-  city: string;
-  country: string;
-  count: number;
-}
-
-interface ClickEventSummary {
-  pageUrl: string;
-  eventType: string;
-  count: number;
-  ctaText?: string;
-}
-
-interface CommonSequence {
-  sequence: string[];
-  count: number;
-  percentage: number;
-  pageCount: number;
-  locations: LocationData[];
-  avgDuration: number;
-  avgTimePerPage: number;
-  clickEvents: ClickEventSummary[];
-}
+import type { CommonSequence } from "@/hooks/useSessionAnalytics";
 
 interface SequenceInsightsProps {
   sequence: CommonSequence;
 }
 
 export const SequenceInsights = ({ sequence }: SequenceInsightsProps) => {
-  // Calculate conversion rate (sessions with clicks)
+  // Calculate conversion rate (sessions with at least 1 click)
   const totalClicks = sequence.clickEvents.reduce((acc, click) => acc + click.count, 0);
-  const conversionRate = totalClicks > 0 ? (totalClicks / sequence.count) * 100 : 0;
+  const conversionRate = sequence.count > 0 ? (sequence.sessionsWithClicks / sequence.count) * 100 : 0;
 
   // Find most engaged page (highest time spent + most clicks)
   const pageEngagement = sequence.sequence.map(page => {
@@ -78,7 +55,7 @@ export const SequenceInsights = ({ sequence }: SequenceInsightsProps) => {
               {conversionRate.toFixed(1)}%
             </span>
             <span className="ml-1 text-xs text-muted-foreground">
-              ({totalClicks} cliques em {sequence.count} sessões)
+              ({sequence.sessionsWithClicks} de {sequence.count} sessões)
             </span>
           </div>
         </div>
