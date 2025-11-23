@@ -51,7 +51,9 @@ Deno.serve(async (req) => {
 
     // Get OAuth2 credentials
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
-    const redirectUri = `${Deno.env.get('VITE_SUPABASE_URL')}/functions/v1/gbp-oauth-callback`;
+    const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/gbp-oauth-callback`;
+    
+    console.log('🔗 Redirect URI:', redirectUri);
 
     if (!clientId) {
       throw new Error('Google OAuth2 not configured. Contact support.');
