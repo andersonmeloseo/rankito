@@ -269,6 +269,10 @@ const Dashboard = () => {
         // Navigate to Academia tab where tracking instructions are available
         handleTabChange("academia");
         break;
+      case "download-plugin":
+        // Navigate to integrations tab where WordPress plugin download is available
+        handleTabChange("integrações");
+        break;
       case "add-client":
         // Navigate to clients tab to add new clients
         handleTabChange("clients");
