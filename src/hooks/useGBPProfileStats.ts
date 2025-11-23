@@ -8,6 +8,7 @@ interface ProfileStats {
   totalPhotos: number;
   scheduledPosts: number;
   unreadReviews: number;
+  respondedReviews: number;
   profileViews?: number;
   profileSearches?: number;
 }
@@ -19,7 +20,7 @@ export const useGBPProfileStats = (profileId: string) => {
       // Fetch reviews stats
       const { data: reviews, error: reviewsError } = await supabase
         .from('gbp_reviews')
-        .select('star_rating, is_read')
+        .select('star_rating, is_read, is_replied')
         .eq('profile_id', profileId);
 
       if (reviewsError) throw reviewsError;
@@ -59,6 +60,7 @@ export const useGBPProfileStats = (profileId: string) => {
 
       const totalReviews = reviews?.length || 0;
       const unreadReviews = reviews?.filter(r => !r.is_read).length || 0;
+      const respondedReviews = reviews?.filter(r => r.is_replied).length || 0;
 
       const totalPosts = posts?.filter(p => p.status === 'published').length || 0;
       const scheduledPosts = posts?.filter(p => p.status === 'scheduled').length || 0;
@@ -77,6 +79,7 @@ export const useGBPProfileStats = (profileId: string) => {
         totalPhotos,
         scheduledPosts,
         unreadReviews,
+        respondedReviews,
         profileViews,
         profileSearches,
       };
