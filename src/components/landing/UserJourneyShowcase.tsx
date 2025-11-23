@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Route, Target, Clock, TrendingUp, ArrowRight } from "lucide-react";
 import { useLandingTranslation } from "@/hooks/useLandingTranslation";
+import userJourneyScreenshot from "@/assets/user-journey-screenshot.png";
 
 const featureIcons = [Route, Clock, TrendingUp, Target];
 
@@ -80,14 +81,10 @@ export const UserJourneyShowcase = () => {
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-purple-100 dark:border-purple-800">
               <img
-                src="/images/screenshots/user-journey-dashboard.png"
-                alt="Dashboard de Jornada do Usuário mostrando sessões recentes, sequências de navegação completas, tempo gasto por página e análise comportamental"
+                src={userJourneyScreenshot}
+                alt="Dashboard de Jornada do Usuário mostrando sessões recentes com entradas, navegação e saídas marcadas, tempo gasto por página e análise comportamental detalhada"
                 className="w-full h-auto"
                 loading="lazy"
-                onError={(e) => {
-                  console.error('Erro ao carregar imagem do dashboard user journey');
-                  e.currentTarget.src = '/images/screenshots/analytics-charts.png';
-                }}
               />
             </div>
 
