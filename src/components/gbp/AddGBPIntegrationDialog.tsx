@@ -37,7 +37,23 @@ export function AddGBPIntegrationDialog({
   const tutorialSteps = [
     { text: "Acesse o Google Cloud Console", link: "https://console.cloud.google.com" },
     { text: "Crie um projeto ou selecione um existente" },
-    { text: "Ative a Google My Business API", link: "https://console.cloud.google.com/apis/library/mybusiness.googleapis.com" },
+    { 
+      text: "Ative as 3 APIs necessárias (clique em cada link abaixo):",
+      subSteps: [
+        { 
+          text: "My Business Account Management API", 
+          link: "https://console.cloud.google.com/apis/library/mybusinessaccountmanagement.googleapis.com"
+        },
+        { 
+          text: "My Business Business Information API", 
+          link: "https://console.cloud.google.com/apis/library/mybusinessbusinessinformation.googleapis.com"
+        },
+        { 
+          text: "Google My Business API", 
+          link: "https://console.cloud.google.com/apis/library/mybusiness.googleapis.com"
+        }
+      ]
+    },
     { text: "Crie uma Service Account: IAM & Admin > Service Accounts > Create" },
     { text: "Baixe o arquivo JSON da Service Account (Create Key > JSON)" },
     { text: "Copie o client_email do JSON" },
@@ -170,23 +186,58 @@ export function AddGBPIntegrationDialog({
 
             <div className="space-y-2">
               {tutorialSteps.map((step, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-                    {index + 1}
+                <div key={index} className="space-y-2">
+                  <div className="flex items-start gap-3 p-3 border rounded-lg">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{step.text}</p>
+                        {step.subSteps && (
+                          <div className="flex items-center gap-1">
+                            <AlertCircle className="h-4 w-4 text-orange-500" />
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+                              3 APIs
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {step.link && (
+                        <a
+                          href={step.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                        >
+                          Abrir link <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm">{step.text}</p>
-                    {step.link && (
-                      <a
-                        href={step.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
-                      >
-                        Abrir link <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
+                  
+                  {step.subSteps && (
+                    <div className="ml-12 space-y-2">
+                      {step.subSteps.map((subStep: any, subIndex: number) => (
+                        <div key={subIndex} className="flex items-start gap-2 p-2 border-l-2 border-primary/20 pl-3">
+                          <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-xs font-medium">{subStep.text}</p>
+                            {subStep.link && (
+                              <a
+                                href={subStep.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                              >
+                                Ativar API <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
