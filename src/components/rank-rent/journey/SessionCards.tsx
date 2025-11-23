@@ -97,9 +97,6 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
                         {format(new Date(session.entry_time), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                       </span>
                     </div>
-                    <Badge variant="outline" className="text-xs">
-                      {session.percentOfTotal.toFixed(1)}% do total
-                    </Badge>
                   </div>
 
                   {/* Page Title Preview */}
