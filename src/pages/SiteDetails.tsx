@@ -856,7 +856,7 @@ const SiteDetails = () => {
                 </ClickUpTabTrigger>
                 
                 <ClickUpTabTrigger value="gbp" icon={Store}>
-                  Google Business
+                  Google Business Profile
                 </ClickUpTabTrigger>
                 
                 {site?.is_ecommerce && (
