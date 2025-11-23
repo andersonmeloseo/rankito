@@ -133,7 +133,7 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
                         key={visit.id}
                         pageUrl={visit.page_url}
                         pageTitle={visit.page_title}
-                        sequenceNumber={visit.sequence_number}
+                        sequenceNumber={index + 1}
                         timeSpent={visit.time_spent_seconds}
                         type={getStepType(index, session.visits.length)}
                         clicks={getClicksForPage(session, visit.page_url)}
