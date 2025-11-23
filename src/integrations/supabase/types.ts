@@ -4107,6 +4107,7 @@ export type Database = {
         | "chatbot"
         | "api"
         | "manual"
+      notification_type: "broadcast_sent"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       subscription_status:
         | "trial"
@@ -4285,6 +4286,7 @@ export const Constants = {
         "api",
         "manual",
       ],
+      notification_type: ["broadcast_sent"],
       payment_status: ["pending", "paid", "failed", "refunded"],
       subscription_status: [
         "trial",
