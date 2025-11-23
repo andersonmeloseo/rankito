@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin, MessageCircle, GraduationCap } from "lucide-react";
+import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin, MessageCircle, GraduationCap, Rocket } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Breadcrumb,
@@ -60,6 +60,8 @@ import { useUnreadCommunications } from "@/hooks/useUnreadCommunications";
 import { CommunicationNotificationBadge } from "@/components/dashboard/CommunicationNotificationBadge";
 import { UserCommunicationsTab } from "@/components/dashboard/UserCommunicationsTab";
 import { AcademyTab } from "@/components/training/AcademyTab";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
@@ -73,6 +75,7 @@ const Dashboard = () => {
   const queryClient = useQueryClient();
   const { role, isSuperAdmin, isEndClient, isLoading: roleLoading, user } = useRole();
   const { viewMode, setViewMode } = useViewMode("sites-view", "table");
+  const { restartOnboarding } = useOnboarding();
 
   // Handle tab changes with URL sync
   const handleTabChange = (value: string) => {
@@ -248,12 +251,43 @@ const Dashboard = () => {
     setShowBulkDeleteDialog(true);
   };
 
+  // Handle onboarding actions
+  const handleOnboardingAction = (action: string) => {
+    switch (action) {
+      case "add-site":
+        setShowAddSite(true);
+        break;
+      case "setup-gsc":
+        // Navigate to first site's GSC tab if exists, otherwise create site
+        if (allSites && allSites.length > 0) {
+          navigate(`/dashboard/site/${allSites[0].id}?tab=gsc`);
+        } else {
+          setShowAddSite(true);
+        }
+        break;
+      case "view-tracking":
+        // Navigate to first site's tracking tab
+        if (allSites && allSites.length > 0) {
+          navigate(`/dashboard/site/${allSites[0].id}?tab=tracking`);
+        } else {
+          setShowAddSite(true);
+        }
+        break;
+      case "explore":
+        handleTabChange("overview");
+        break;
+    }
+  };
+
   if (roleLoading) {
     return null;
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* Onboarding Tour */}
+      <OnboardingTour onAction={handleOnboardingAction} />
+      
       {isSuperAdmin && <SuperAdminBanner currentView="client" />}
       
       {/* Trial Expired Banner */}
@@ -302,30 +336,42 @@ const Dashboard = () => {
               </div>
             </div>
             
-            {/* Action Button */}
-            <Button 
-              size="lg"
-              onClick={() => setShowAddSite(true)} 
-              className="gap-2 transition-all hover:scale-105 hover:shadow-lg"
-              disabled={!limits?.canCreateSite}
-            >
-              <Plus className="w-5 h-5" />
-              <span className="font-medium">Adicionar Projeto</span>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={restartOnboarding}
+                className="gap-2"
+              >
+                <Rocket className="w-4 h-4" />
+                Tutorial
+              </Button>
               
-              {/* Badge dinâmico com quota */}
-              {limits && !limits.isUnlimited && limits.remainingSites !== null && (
-                <Badge 
-                  variant={limits.remainingSites <= 2 ? "destructive" : "default"}
-                  className={limits.remainingSites <= 2 ? "animate-pulse" : ""}
-                >
-                  +{limits.remainingSites > 0 ? limits.remainingSites : 0}
-                </Badge>
-              )}
+              <Button 
+                size="lg"
+                onClick={() => setShowAddSite(true)} 
+                className="gap-2 transition-all hover:scale-105 hover:shadow-lg"
+                disabled={!limits?.canCreateSite}
+              >
+                <Plus className="w-5 h-5" />
+                <span className="font-medium">Adicionar Projeto</span>
               
-              {limits?.isUnlimited && (
-                <Badge variant="default">∞</Badge>
-              )}
-            </Button>
+                {/* Badge dinâmico com quota */}
+                {limits && !limits.isUnlimited && limits.remainingSites !== null && (
+                  <Badge 
+                    variant={limits.remainingSites <= 2 ? "destructive" : "default"}
+                    className={limits.remainingSites <= 2 ? "animate-pulse" : ""}
+                  >
+                    +{limits.remainingSites > 0 ? limits.remainingSites : 0}
+                  </Badge>
+                )}
+                
+                {limits?.isUnlimited && (
+                  <Badge variant="default">∞</Badge>
+                )}
+              </Button>
+            </div>
           </div>
           
           {/* Subscription Status */}
