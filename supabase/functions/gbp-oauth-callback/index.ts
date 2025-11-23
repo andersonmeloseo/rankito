@@ -18,15 +18,17 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse request body
-    const { code, state, connection_name } = await req.json();
+    // Parse URL query parameters (Google sends OAuth params via URL, not body)
+    const url = new URL(req.url);
+    const code = url.searchParams.get('code');
+    const state = url.searchParams.get('state');
     
     if (!code || !state) {
       throw new Error('Missing code or state parameter');
     }
 
     // Decode state
-    let stateData: { site_id: string; user_id: string; timestamp: number };
+    let stateData: { user_id: string; timestamp: number; connection_name?: string };
     try {
       stateData = JSON.parse(atob(state));
     } catch {
@@ -140,7 +142,7 @@ Deno.serve(async (req) => {
       .insert({
         // site_id is now optional - GBP profiles are global
         user_id: stateData.user_id,
-        connection_name: connection_name || 'Google Business Profile',
+        connection_name: stateData.connection_name || 'Google Business Profile',
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
         token_expires_at: expiresAt.toISOString(),

@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { } = await req.json();
+    const { connection_name } = await req.json();
     
     // No longer need site_id - GBP profiles are global now
 
@@ -51,10 +51,11 @@ Deno.serve(async (req) => {
       'https://www.googleapis.com/auth/business.manage',
     ];
 
-    // Generate state parameter (includes user_id for callback)
+    // Generate state parameter (includes user_id and connection_name for callback)
     const state = JSON.stringify({
       user_id: user.id,
       timestamp: Date.now(),
+      connection_name: connection_name || 'Google Business Profile',
     });
 
     // Encode state as base64
