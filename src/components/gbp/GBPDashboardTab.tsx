@@ -17,6 +17,7 @@ import { GBPProfileAnalyticsDashboard } from './GBPProfileAnalyticsDashboard';
 import { GBPPhotosManager } from './GBPPhotosManager';
 import { GBPQuestionsManager } from './GBPQuestionsManager';
 import { GBPProfileOverview } from './GBPProfileOverview';
+import { GBPProfileCard } from './GBPProfileCard';
 
 interface GBPDashboardTabProps {
   userId: string;
@@ -170,73 +171,13 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
                   Demo
                 </Badge>
               </div>
-              <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {mockProfiles.map((profile) => (
-                  <Card 
-                    key={profile.id} 
-                    className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-purple-300 dark:hover:border-purple-700"
+                  <GBPProfileCard
+                    key={profile.id}
+                    profile={profile}
                     onClick={() => setSelectedProfile(profile)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Store className="w-6 h-6 text-purple-500" />
-                          <div>
-                            <h3 className="text-xl font-semibold">{profile.business_name || profile.connection_name}</h3>
-                            <p className="text-sm text-muted-foreground">{profile.google_email}</p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                          {profile.business_address && (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <MapPin className="w-4 h-4" />
-                              <span>{profile.business_address}</span>
-                            </div>
-                          )}
-                          {profile.business_phone && (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Phone className="w-4 h-4" />
-                              <span>{profile.business_phone}</span>
-                            </div>
-                          )}
-                          {profile.business_categories && profile.business_categories.length > 0 && (
-                            <div className="flex items-center gap-2 text-muted-foreground col-span-2">
-                              <Activity className="w-4 h-4" />
-                              <div className="flex flex-wrap gap-1">
-                                {profile.business_categories.map((cat, idx) => (
-                                  <Badge key={idx} variant="outline" className="text-xs">
-                                    {cat}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-3 mt-4">
-                          <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            Demo
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setProfileToDelete(profile.id);
-                          }}
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
+                  />
                 ))}
               </div>
             </div>
@@ -254,97 +195,13 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
                   </Badge>
                 </div>
               )}
-              <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {realProfiles.map((profile) => (
-                  <Card 
-                    key={profile.id} 
-                    className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-blue-300 dark:hover:border-blue-700"
+                  <GBPProfileCard
+                    key={profile.id}
+                    profile={profile}
                     onClick={() => setSelectedProfile(profile)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Store className="w-6 h-6 text-primary" />
-                          <div>
-                            <h3 className="text-xl font-semibold">{profile.business_name || profile.connection_name}</h3>
-                            <p className="text-sm text-muted-foreground">{profile.google_email}</p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                          {profile.business_address && (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <MapPin className="w-4 h-4" />
-                              <span>{profile.business_address}</span>
-                            </div>
-                          )}
-                          {profile.business_phone && (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Phone className="w-4 h-4" />
-                              <span>{profile.business_phone}</span>
-                            </div>
-                          )}
-                          {profile.business_categories && profile.business_categories.length > 0 && (
-                            <div className="flex items-center gap-2 text-muted-foreground col-span-2">
-                              <Activity className="w-4 h-4" />
-                              <div className="flex flex-wrap gap-1">
-                                {profile.business_categories.map((cat, idx) => (
-                                  <Badge key={idx} variant="outline" className="text-xs">
-                                    {cat}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-3 mt-4">
-                          <Badge 
-                            variant={profile.health_status === 'healthy' ? 'default' : 'destructive'}
-                            className="text-xs"
-                          >
-                            {profile.health_status === 'healthy' ? '✓ Ativo' : '✗ Erro'}
-                          </Badge>
-                          {profile.last_sync_at && (
-                            <span className="text-xs text-muted-foreground">
-                              Última sync: {new Date(profile.last_sync_at).toLocaleString('pt-BR')}
-                            </span>
-                          )}
-                        </div>
-
-                        {profile.last_error && (
-                          <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                            <p className="text-sm text-destructive">{profile.last_error}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            testConnection.mutate(profile.id);
-                          }}
-                          disabled={isTesting}
-                        >
-                          <RefreshCw className={`w-4 h-4 ${isTesting ? 'animate-spin' : ''}`} />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setProfileToDelete(profile.id);
-                          }}
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
+                  />
                 ))}
               </div>
             </div>

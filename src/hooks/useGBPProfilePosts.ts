@@ -34,6 +34,7 @@ export const useGBPProfilePosts = (profileId: string) => {
           profile_id: profileId,
           site_id: profile?.site_id,
           ...postData,
+          media_urls: postData.media_urls || [],
         });
 
       if (error) throw error;

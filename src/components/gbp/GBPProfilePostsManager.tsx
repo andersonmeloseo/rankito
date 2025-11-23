@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calendar, Trash2, Edit, Loader2 } from "lucide-react";
+import { Plus, Calendar, Trash2, Edit, Loader2, Image as ImageIcon } from "lucide-react";
+import { GBPImageUploader } from "./GBPImageUploader";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ export const GBPProfilePostsManager = ({ profileId }: GBPProfilePostsManagerProp
     title: '',
     content: '',
     scheduled_for: '',
+    media_urls: [] as string[],
   });
 
   if (isLoading) {
@@ -59,7 +61,7 @@ export const GBPProfilePostsManager = ({ profileId }: GBPProfilePostsManagerProp
       status: formData.scheduled_for ? 'scheduled' : 'draft',
     });
     setShowCreateDialog(false);
-    setFormData({ post_type: 'update', title: '', content: '', scheduled_for: '' });
+    setFormData({ post_type: 'update', title: '', content: '', scheduled_for: '', media_urls: [] });
   };
 
   const publishedPosts = posts?.filter(p => p.status === 'published') || [];
@@ -78,7 +80,27 @@ export const GBPProfilePostsManager = ({ profileId }: GBPProfilePostsManagerProp
               <Badge variant="outline">{post.post_type}</Badge>
             </div>
             {post.title && <h3 className="font-semibold mb-2">{post.title}</h3>}
-            <p className="text-sm text-muted-foreground">{post.content}</p>
+            <p className="text-sm text-muted-foreground mb-3">{post.content}</p>
+            
+            {post.media_urls && post.media_urls.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+                {post.media_urls.slice(0, 6).map((url: string, idx: number) => (
+                  <img
+                    key={idx}
+                    src={url}
+                    alt={`Post image ${idx + 1}`}
+                    className="w-full h-24 object-cover rounded-md border"
+                  />
+                ))}
+                {post.media_urls.length > 6 && (
+                  <div className="w-full h-24 rounded-md border bg-muted flex items-center justify-center">
+                    <span className="text-sm text-muted-foreground">
+                      +{post.media_urls.length - 6}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" size="icon" onClick={() => deletePost(post.id)}>
@@ -86,9 +108,25 @@ export const GBPProfilePostsManager = ({ profileId }: GBPProfilePostsManagerProp
             </Button>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground">
-          {post.published_at && `Publicado em ${format(new Date(post.published_at), 'dd/MM/yyyy HH:mm')}`}
-          {post.scheduled_for && `Agendado para ${format(new Date(post.scheduled_for), 'dd/MM/yyyy HH:mm')}`}
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+          {post.published_at && (
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              Publicado: {format(new Date(post.published_at), 'dd/MM/yyyy HH:mm')}
+            </div>
+          )}
+          {post.scheduled_for && (
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              Agendado: {format(new Date(post.scheduled_for), 'dd/MM/yyyy HH:mm')}
+            </div>
+          )}
+          {post.media_urls && post.media_urls.length > 0 && (
+            <div className="flex items-center gap-1">
+              <ImageIcon className="h-3 w-3" />
+              {post.media_urls.length} foto(s)
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -202,6 +240,11 @@ export const GBPProfilePostsManager = ({ profileId }: GBPProfilePostsManagerProp
                 onChange={(e) => setFormData({ ...formData, scheduled_for: e.target.value })}
               />
             </div>
+
+            <GBPImageUploader
+              onImagesChange={(urls) => setFormData({ ...formData, media_urls: urls })}
+              existingUrls={formData.media_urls}
+            />
           </div>
 
           <DialogFooter>
