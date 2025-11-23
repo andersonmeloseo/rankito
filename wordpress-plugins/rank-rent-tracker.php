@@ -3,7 +3,7 @@
  * Plugin Name: Rankito Tracking
  * Plugin URI: https://rankitocrm.com
  * Description: Rastreamento automático de conversões para Rankito CRM
- * Version: 2.0.5
+ * Version: 2.0.9
  * Author: Anderson Melo SEO
  * Author URI: https://rankitocrm.com
  * Text Domain: rankito-tracking
@@ -111,13 +111,14 @@ class RankRentTracker {
             const pageEntryTime = Date.now();
             
             function trackEvent(eventType, metadata = {}) {
+                const sequenceNumber = getSequenceNumber();
                 const data = {
                     site_name: siteName,
                     page_url: window.location.href,
                     page_title: document.title,
                     event_type: eventType,
                     session_id: sessionId,
-                    sequence_number: eventType === 'page_view' ? getSequenceNumber() : undefined,
+                    sequence_number: sequenceNumber,
                     referrer: document.referrer || null,
                     cta_text: metadata.cta_text || null,
                     metadata: metadata
@@ -133,12 +134,14 @@ class RankRentTracker {
             
             function trackPageExit() {
                 const timeSpent = Math.round((Date.now() - pageEntryTime) / 1000);
+                const sequenceNumber = getSequenceNumber();
                 const exitData = {
                     site_name: siteName,
                     page_url: window.location.href,
                     page_title: document.title,
                     event_type: 'page_exit',
                     session_id: sessionId,
+                    sequence_number: sequenceNumber,
                     time_spent_seconds: timeSpent,
                     referrer: document.referrer || null,
                     metadata: {}
