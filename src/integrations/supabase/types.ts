@@ -772,6 +772,365 @@ export type Database = {
         }
         Relationships: []
       }
+      gbp_analytics: {
+        Row: {
+          actions_directions: number | null
+          actions_phone: number | null
+          actions_website: number | null
+          created_at: string | null
+          id: string
+          metric_date: string
+          photos_count_customers: number | null
+          photos_count_merchant: number | null
+          photos_views_customers: number | null
+          photos_views_merchant: number | null
+          profile_clicks: number | null
+          profile_id: string
+          profile_views: number | null
+          searches_branded: number | null
+          searches_direct: number | null
+          searches_discovery: number | null
+          site_id: string
+        }
+        Insert: {
+          actions_directions?: number | null
+          actions_phone?: number | null
+          actions_website?: number | null
+          created_at?: string | null
+          id?: string
+          metric_date: string
+          photos_count_customers?: number | null
+          photos_count_merchant?: number | null
+          photos_views_customers?: number | null
+          photos_views_merchant?: number | null
+          profile_clicks?: number | null
+          profile_id: string
+          profile_views?: number | null
+          searches_branded?: number | null
+          searches_direct?: number | null
+          searches_discovery?: number | null
+          site_id: string
+        }
+        Update: {
+          actions_directions?: number | null
+          actions_phone?: number | null
+          actions_website?: number | null
+          created_at?: string | null
+          id?: string
+          metric_date?: string
+          photos_count_customers?: number | null
+          photos_count_merchant?: number | null
+          photos_views_customers?: number | null
+          photos_views_merchant?: number | null
+          profile_clicks?: number | null
+          profile_id?: string
+          profile_views?: number | null
+          searches_branded?: number | null
+          searches_direct?: number | null
+          searches_discovery?: number | null
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbp_analytics_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "google_business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_analytics_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_analytics_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gbp_analytics_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_analytics_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gbp_oauth_states: {
+        Row: {
+          connection_name: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          site_id: string
+          state_token: string
+          user_id: string
+        }
+        Insert: {
+          connection_name: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          site_id: string
+          state_token: string
+          user_id: string
+        }
+        Update: {
+          connection_name?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          site_id?: string
+          state_token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbp_oauth_states_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_oauth_states_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gbp_oauth_states_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_oauth_states_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gbp_posts: {
+        Row: {
+          clicks_count: number | null
+          content: string
+          created_at: string | null
+          cta_type: string | null
+          cta_url: string | null
+          error_message: string | null
+          event_end_date: string | null
+          event_start_date: string | null
+          google_post_id: string | null
+          id: string
+          media_urls: string[] | null
+          offer_coupon_code: string | null
+          offer_terms: string | null
+          post_type: string
+          profile_id: string
+          published_at: string | null
+          scheduled_for: string | null
+          site_id: string
+          status: string | null
+          title: string | null
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          clicks_count?: number | null
+          content: string
+          created_at?: string | null
+          cta_type?: string | null
+          cta_url?: string | null
+          error_message?: string | null
+          event_end_date?: string | null
+          event_start_date?: string | null
+          google_post_id?: string | null
+          id?: string
+          media_urls?: string[] | null
+          offer_coupon_code?: string | null
+          offer_terms?: string | null
+          post_type: string
+          profile_id: string
+          published_at?: string | null
+          scheduled_for?: string | null
+          site_id: string
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          clicks_count?: number | null
+          content?: string
+          created_at?: string | null
+          cta_type?: string | null
+          cta_url?: string | null
+          error_message?: string | null
+          event_end_date?: string | null
+          event_start_date?: string | null
+          google_post_id?: string | null
+          id?: string
+          media_urls?: string[] | null
+          offer_coupon_code?: string | null
+          offer_terms?: string | null
+          post_type?: string
+          profile_id?: string
+          published_at?: string | null
+          scheduled_for?: string | null
+          site_id?: string
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbp_posts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "google_business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_posts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_posts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gbp_posts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_posts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gbp_reviews: {
+        Row: {
+          created_at: string
+          google_review_id: string
+          id: string
+          is_read: boolean | null
+          is_replied: boolean | null
+          profile_id: string
+          review_reply: string | null
+          review_reply_at: string | null
+          review_text: string | null
+          reviewer_name: string | null
+          reviewer_photo_url: string | null
+          sentiment: string | null
+          site_id: string
+          star_rating: number
+          synced_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at: string
+          google_review_id: string
+          id?: string
+          is_read?: boolean | null
+          is_replied?: boolean | null
+          profile_id: string
+          review_reply?: string | null
+          review_reply_at?: string | null
+          review_text?: string | null
+          reviewer_name?: string | null
+          reviewer_photo_url?: string | null
+          sentiment?: string | null
+          site_id: string
+          star_rating: number
+          synced_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          google_review_id?: string
+          id?: string
+          is_read?: boolean | null
+          is_replied?: boolean | null
+          profile_id?: string
+          review_reply?: string | null
+          review_reply_at?: string | null
+          review_text?: string | null
+          reviewer_name?: string | null
+          reviewer_photo_url?: string | null
+          sentiment?: string | null
+          site_id?: string
+          star_rating?: number
+          synced_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbp_reviews_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "google_business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_reviews_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_reviews_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gbp_reviews_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_reviews_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geolocation_api_configs: {
         Row: {
           api_key: string
@@ -825,6 +1184,104 @@ export type Database = {
           usage_count?: number | null
         }
         Relationships: []
+      }
+      google_business_profiles: {
+        Row: {
+          access_token: string
+          business_address: string | null
+          business_categories: string[] | null
+          business_name: string | null
+          business_phone: string | null
+          connection_name: string
+          consecutive_failures: number | null
+          created_at: string | null
+          google_email: string
+          health_status: string | null
+          id: string
+          is_active: boolean | null
+          last_error: string | null
+          last_sync_at: string | null
+          location_name: string | null
+          refresh_token: string
+          site_id: string
+          token_expires_at: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          business_address?: string | null
+          business_categories?: string[] | null
+          business_name?: string | null
+          business_phone?: string | null
+          connection_name: string
+          consecutive_failures?: number | null
+          created_at?: string | null
+          google_email: string
+          health_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_error?: string | null
+          last_sync_at?: string | null
+          location_name?: string | null
+          refresh_token: string
+          site_id: string
+          token_expires_at: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          business_address?: string | null
+          business_categories?: string[] | null
+          business_name?: string | null
+          business_phone?: string | null
+          connection_name?: string
+          consecutive_failures?: number | null
+          created_at?: string | null
+          google_email?: string
+          health_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_error?: string | null
+          last_sync_at?: string | null
+          location_name?: string | null
+          refresh_token?: string
+          site_id?: string
+          token_expires_at?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_business_profiles_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "google_business_profiles_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "google_business_profiles_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "google_business_profiles_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       google_search_console_integrations: {
         Row: {
@@ -3194,6 +3651,7 @@ export type Database = {
           features: Json | null
           id: string
           is_active: boolean | null
+          max_gbp_integrations: number | null
           max_gsc_integrations: number | null
           max_pages_per_site: number | null
           max_sites: number | null
@@ -3212,6 +3670,7 @@ export type Database = {
           features?: Json | null
           id?: string
           is_active?: boolean | null
+          max_gbp_integrations?: number | null
           max_gsc_integrations?: number | null
           max_pages_per_site?: number | null
           max_sites?: number | null
@@ -3230,6 +3689,7 @@ export type Database = {
           features?: Json | null
           id?: string
           is_active?: boolean | null
+          max_gbp_integrations?: number | null
           max_gsc_integrations?: number | null
           max_pages_per_site?: number | null
           max_sites?: number | null
