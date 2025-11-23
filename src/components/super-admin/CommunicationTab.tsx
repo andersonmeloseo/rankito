@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Send, User, Mail, Trash2 } from "lucide-react";
-import { useAllTickets, useTicketMessages, useSendMessage, useUpdateTicketStatus, useUpdateTicketPriority, useTicketStats, useDeleteMessage } from "@/hooks/useSupportTickets";
+import { MessageSquare, Send, User, Mail, Trash2, Archive, ArchiveRestore } from "lucide-react";
+import { useAllTickets, useTicketMessages, useSendMessage, useUpdateTicketStatus, useUpdateTicketPriority, useTicketStats, useDeleteMessage, useDeleteTicket, useArchiveTicket } from "@/hooks/useSupportTickets";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { StatusBadge } from "@/components/support/StatusBadge";
 import { PriorityBadge } from "@/components/support/PriorityBadge";
@@ -22,11 +22,13 @@ export function CommunicationTab() {
   const [newMessage, setNewMessage] = useState("");
   const [showMessageComposer, setShowMessageComposer] = useState(false);
   const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
+  const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     status: 'all',
     category: 'all',
     priority: 'all',
     search: '',
+    archived: 'active', // 'active', 'archived', 'all'
   });
 
   const { data: tickets } = useAllTickets(filters);
@@ -36,8 +38,17 @@ export function CommunicationTab() {
   const updateStatus = useUpdateTicketStatus();
   const updatePriority = useUpdateTicketPriority();
   const deleteMessage = useDeleteMessage();
+  const deleteTicket = useDeleteTicket();
+  const archiveTicket = useArchiveTicket();
 
   const selectedTicket = tickets?.find(t => t.id === selectedTicketId);
+
+  // Apply archived filter
+  const filteredTickets = tickets?.filter((ticket) => {
+    if (filters.archived === 'active' && ticket.archived) return false;
+    if (filters.archived === 'archived' && !ticket.archived) return false;
+    return true;
+  });
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedTicketId) return;
@@ -160,8 +171,8 @@ export function CommunicationTab() {
               {/* Tickets List */}
               <ScrollArea className="h-[calc(100%-140px)]">
                 <div className="px-4 space-y-2 pb-4">
-                  {tickets && tickets.length > 0 ? (
-                    tickets.map((ticket) => {
+                  {filteredTickets && filteredTickets.length > 0 ? (
+                    filteredTickets.map((ticket) => {
                       const userName = ticket.user_profile?.full_name || ticket.user_profile?.email || 'Usuário';
                       const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
@@ -170,7 +181,7 @@ export function CommunicationTab() {
                           key={ticket.id}
                           className={`p-3 cursor-pointer transition-colors ${
                             selectedTicketId === ticket.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
-                          }`}
+                          } ${ticket.archived ? 'opacity-60' : ''}`}
                           onClick={() => setSelectedTicketId(ticket.id)}
                         >
                           <div className="flex items-start gap-3">
@@ -178,13 +189,19 @@ export function CommunicationTab() {
                               <AvatarFallback>{initials}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <StatusBadge status={ticket.status} className="text-xs" />
                                 {ticket.priority === 'urgent' && (
                                   <Badge variant="destructive" className="text-xs">Urgente</Badge>
                                 )}
                                 {ticket.unread_admin_count > 0 && (
                                   <Badge className="text-xs">{ticket.unread_admin_count}</Badge>
+                                )}
+                                {ticket.archived && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <Archive className="h-3 w-3 mr-1" />
+                                    Arquivado
+                                  </Badge>
                                 )}
                               </div>
                               <p className="text-sm font-medium truncate">{userName}</p>
@@ -221,7 +238,15 @@ export function CommunicationTab() {
                 <CardHeader className="border-b">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg mb-2">{selectedTicket.subject}</CardTitle>
+                      <div className="flex items-center gap-2 mb-2">
+                        <CardTitle className="text-lg">{selectedTicket.subject}</CardTitle>
+                        {selectedTicket.archived && (
+                          <Badge variant="outline">
+                            <Archive className="h-3 w-3 mr-1" />
+                            Arquivado
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">
@@ -231,7 +256,35 @@ export function CommunicationTab() {
                         <CategoryIcon category={selectedTicket.category} />
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => archiveTicket.mutate({ 
+                          ticketId: selectedTicket.id, 
+                          archived: !selectedTicket.archived 
+                        })}
+                      >
+                        {selectedTicket.archived ? (
+                          <>
+                            <ArchiveRestore className="h-4 w-4 mr-2" />
+                            Desarquivar
+                          </>
+                        ) : (
+                          <>
+                            <Archive className="h-4 w-4 mr-2" />
+                            Arquivar
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteTicketId(selectedTicket.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Deletar Ticket
+                      </Button>
                       <Select
                         value={selectedTicket.priority}
                         onValueChange={(v) => updatePriority.mutate({ ticket_id: selectedTicket.id, priority: v })}
@@ -380,6 +433,35 @@ export function CommunicationTab() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteTicketId} onOpenChange={() => setDeleteTicketId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar ticket inteiro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O ticket e todas as mensagens serão permanentemente deletados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteTicketId) {
+                  deleteTicket.mutate(deleteTicketId, {
+                    onSuccess: () => {
+                      setSelectedTicketId(null);
+                      setDeleteTicketId(null);
+                    }
+                  });
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Deletar Ticket
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
