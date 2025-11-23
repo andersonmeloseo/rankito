@@ -1,29 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
+import { getIntegrationWithValidToken } from '../_shared/gbp-jwt-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-async function refreshAccessToken(refreshToken: string): Promise<string> {
-  const response = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: Deno.env.get('GOOGLE_CLIENT_ID') || '',
-      client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') || '',
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to refresh access token');
-  }
-
-  const data = await response.json();
-  return data.access_token;
-}
 
 async function analyzeSentiment(reviewText: string, rating: number): Promise<string> {
   // Simple sentiment based on rating
@@ -67,25 +48,10 @@ Deno.serve(async (req) => {
       try {
         console.log(`🔄 Processing profile: ${profile.connection_name}`);
 
-        // Check if token needs refresh
-        const tokenExpiresAt = new Date(profile.token_expires_at);
-        let accessToken = profile.access_token;
-
-        if (tokenExpiresAt <= new Date()) {
-          console.log('🔄 Refreshing access token...');
-          accessToken = await refreshAccessToken(profile.refresh_token);
-          
-          const newExpiresAt = new Date();
-          newExpiresAt.setHours(newExpiresAt.getHours() + 1);
-
-          await supabase
-            .from('google_business_profiles')
-            .update({
-              access_token: accessToken,
-              token_expires_at: newExpiresAt.toISOString(),
-            })
-            .eq('id', profile.id);
-        }
+        // Generate access token via JWT
+        console.log(`🔐 Generating token for profile ${profile.id}...`);
+        const integration = await getIntegrationWithValidToken(profile.id);
+        const accessToken = integration.access_token;
 
         if (!profile.location_name) {
           console.log('⚠️ No location name, skipping...');
