@@ -10,13 +10,16 @@ interface GBPProfileCardProps {
   onClick: () => void;
 }
 
-const StarRating = ({ rating }: { rating: number }) => {
+const StarRating = ({ rating, size = "default" }: { rating: number; size?: "default" | "large" }) => {
+  const sizeClasses = size === "large" ? "w-6 h-6" : "w-4 h-4";
+  const glowEffect = size === "large" ? "drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" : "";
+  
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          className={`w-4 h-4 ${
+          className={`${sizeClasses} ${glowEffect} ${
             star <= Math.round(rating)
               ? 'fill-yellow-400 text-yellow-400'
               : 'fill-muted text-muted'
@@ -61,49 +64,68 @@ export const GBPProfileCard = ({ profile, onClick }: GBPProfileCardProps) => {
           </div>
         </div>
 
-        {/* Reviews Section - Destaque Principal */}
+        {/* Premium Review Hero Section */}
         {statsLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-4 w-48" />
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950/20 dark:via-yellow-950/20 dark:to-orange-950/20 border-2 border-amber-200/60 dark:border-amber-800/30 p-5 shadow-inner">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+            <div className="relative space-y-3">
+              <div className="flex justify-center">
+                <Skeleton className="h-6 w-40" />
+              </div>
+              <div className="text-center">
+                <Skeleton className="h-14 w-24 mx-auto" />
+              </div>
+              <div className="text-center">
+                <Skeleton className="h-5 w-48 mx-auto" />
+              </div>
+            </div>
           </div>
         ) : stats && stats.totalReviews > 0 ? (
-          <div className="space-y-2 p-3 rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 border border-yellow-100 dark:border-yellow-900/30">
-            {/* Rating com estrelas */}
-            <div className="flex items-center gap-2">
-              <StarRating rating={stats.averageRating || 0} />
-              <span className="font-bold text-xl text-foreground">
-                {(stats.averageRating || 0).toFixed(1)}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                ({stats.totalReviews} {stats.totalReviews === 1 ? 'review' : 'reviews'})
-              </span>
-            </div>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950/20 dark:via-yellow-950/20 dark:to-orange-950/20 border-2 border-amber-200/60 dark:border-amber-800/30 p-5 shadow-inner transition-all duration-300 hover:scale-[1.02]">
+            {/* Decorative glow overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
             
-            {/* Taxa de Resposta e Pendentes */}
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-1.5">
-                <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Resposta:</span>
-                <Badge 
-                  variant="secondary" 
-                  className={`text-xs ${
-                    responseRate >= 80 
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
-                      : responseRate >= 50
-                      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                  }`}
-                >
-                  {responseRate}%
-                </Badge>
+            <div className="relative space-y-3">
+              {/* Large Stars */}
+              <div className="flex justify-center">
+                <StarRating rating={stats.averageRating || 0} size="large" />
               </div>
-              {unreadCount > 0 && (
-                <Badge variant="destructive" className="text-xs">
-                  <AlertCircle className="w-3 h-3 mr-1" />
-                  {unreadCount} {unreadCount === 1 ? 'pendente' : 'pendentes'}
-                </Badge>
-              )}
+              
+              {/* Giant Rating with Golden Gradient */}
+              <div className="text-center">
+                <span className="text-5xl font-black bg-gradient-to-br from-amber-600 via-yellow-500 to-orange-500 bg-clip-text text-transparent drop-shadow-sm tracking-tight">
+                  {(stats.averageRating || 0).toFixed(1)}
+                </span>
+              </div>
+              
+              {/* Secondary Info */}
+              <div className="text-center text-base font-medium text-muted-foreground">
+                {stats.totalReviews} {stats.totalReviews === 1 ? "review" : "reviews"}
+                {" • "}
+                <span className="font-semibold">
+                  {responseRate}% respondidos
+                </span>
+              </div>
+              
+              {/* Action Badges - Horizontal */}
+              <div className="flex gap-2 justify-center flex-wrap">
+                {stats.respondedReviews > 0 && (
+                  <Badge 
+                    variant="success" 
+                    className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800"
+                  >
+                    ✓ {stats.respondedReviews} respondidas
+                  </Badge>
+                )}
+                {unreadCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="text-xs bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-800 animate-pulse"
+                  >
+                    ⚠ {unreadCount} pendentes
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
         ) : (
