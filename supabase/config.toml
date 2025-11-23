@@ -205,6 +205,16 @@ verify_jwt = false
 [functions.gbp-publish-post.schedule]
 every = "0 * * * *"
 
+# GBP: OAuth2 Authorization Flow
+[functions.gbp-oauth-authorize]
+verify_jwt = true
+
+[functions.gbp-oauth-callback]
+verify_jwt = false
+
+[functions.gbp-oauth-refresh]
+verify_jwt = true
+
 # GBP: Testar Conexão
 [functions.gbp-test-connection]
 verify_jwt = true

@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
-import { getIntegrationWithValidToken } from '../_shared/gbp-jwt-auth.ts';
+import { getIntegrationWithValidToken } from '../_shared/gbp-oauth-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
