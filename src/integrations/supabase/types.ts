@@ -674,6 +674,54 @@ export type Database = {
           },
         ]
       }
+      early_access_leads: {
+        Row: {
+          accept_communication: boolean | null
+          campaign_id: string | null
+          converted_to_user_id: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          main_pain: string
+          num_sites: string
+          referral_source: string | null
+          status: string | null
+          utm_params: Json | null
+          whatsapp: string
+        }
+        Insert: {
+          accept_communication?: boolean | null
+          campaign_id?: string | null
+          converted_to_user_id?: string | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          main_pain: string
+          num_sites: string
+          referral_source?: string | null
+          status?: string | null
+          utm_params?: Json | null
+          whatsapp: string
+        }
+        Update: {
+          accept_communication?: boolean | null
+          campaign_id?: string | null
+          converted_to_user_id?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          main_pain?: string
+          num_sites?: string
+          referral_source?: string | null
+          status?: string | null
+          utm_params?: Json | null
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       external_lead_sources: {
         Row: {
           api_token: string
