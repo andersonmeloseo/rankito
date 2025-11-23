@@ -49,7 +49,6 @@ Deno.serve(async (req) => {
     // Required scopes for GBP
     const scopes = [
       'https://www.googleapis.com/auth/business.manage',
-      'https://www.googleapis.com/auth/businessprofileperformance',
     ];
 
     // Generate state parameter (includes user_id for callback)
