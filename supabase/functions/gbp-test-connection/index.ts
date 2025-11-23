@@ -61,20 +61,18 @@ Deno.serve(async (req) => {
     // Get profile
     const { data: profile, error: profileError } = await supabase
       .from('google_business_profiles')
-      .select(`
-        *,
-        rank_rent_sites!inner(owner_user_id)
-      `)
+      .select('*')
       .eq('id', profile_id)
       .single();
 
     if (profileError || !profile) {
+      console.error('Profile query error:', profileError);
       throw new Error('Profile not found');
     }
 
-    // Check ownership
-    if (profile.rank_rent_sites.owner_user_id !== user.id) {
-      throw new Error('Unauthorized');
+    // Check ownership (directly from profile user_id)
+    if (profile.user_id !== user.id) {
+      throw new Error('Unauthorized - profile does not belong to user');
     }
 
     // Check if token needs refresh
