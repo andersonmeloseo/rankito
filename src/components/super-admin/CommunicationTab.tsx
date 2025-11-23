@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Send, User, Mail } from "lucide-react";
-import { useAllTickets, useTicketMessages, useSendMessage, useUpdateTicketStatus, useUpdateTicketPriority, useTicketStats } from "@/hooks/useSupportTickets";
+import { MessageSquare, Send, User, Mail, Trash2 } from "lucide-react";
+import { useAllTickets, useTicketMessages, useSendMessage, useUpdateTicketStatus, useUpdateTicketPriority, useTicketStats, useDeleteMessage } from "@/hooks/useSupportTickets";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { StatusBadge } from "@/components/support/StatusBadge";
 import { PriorityBadge } from "@/components/support/PriorityBadge";
 import { CategoryIcon } from "@/components/support/CategoryIcon";
@@ -20,6 +21,7 @@ export function CommunicationTab() {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [showMessageComposer, setShowMessageComposer] = useState(false);
+  const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     status: 'all',
     category: 'all',
@@ -33,6 +35,7 @@ export function CommunicationTab() {
   const sendMessage = useSendMessage();
   const updateStatus = useUpdateTicketStatus();
   const updatePriority = useUpdateTicketPriority();
+  const deleteMessage = useDeleteMessage();
 
   const selectedTicket = tickets?.find(t => t.id === selectedTicketId);
 
@@ -272,7 +275,7 @@ export function CommunicationTab() {
                       return (
                         <div
                           key={message.id}
-                          className={`flex gap-3 ${message.is_admin_reply ? 'flex-row-reverse' : 'flex-row'}`}
+                          className={`flex gap-3 ${message.is_admin_reply ? 'flex-row-reverse' : 'flex-row'} group`}
                         >
                           <Avatar className="h-8 w-8">
                             <AvatarFallback className={message.is_admin_reply ? 'bg-primary text-primary-foreground' : 'bg-muted'}>
@@ -288,6 +291,14 @@ export function CommunicationTab() {
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(message.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                               </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => setDeleteMessageId(message.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
                             </div>
                             <div
                               className={`rounded-lg p-3 ${
@@ -346,6 +357,33 @@ export function CommunicationTab() {
       </div>
 
       <AdminMessageComposer open={showMessageComposer} onOpenChange={setShowMessageComposer} />
+      
+      <AlertDialog open={!!deleteMessageId} onOpenChange={() => setDeleteMessageId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir mensagem?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. A mensagem será permanentemente excluída.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteMessageId && selectedTicketId) {
+                  deleteMessage.mutate(
+                    { message_id: deleteMessageId, ticket_id: selectedTicketId },
+                    { onSuccess: () => setDeleteMessageId(null) }
+                  );
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
