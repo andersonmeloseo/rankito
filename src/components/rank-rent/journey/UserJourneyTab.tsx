@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SessionMetrics } from "./SessionMetrics";
 import { SessionsTable } from "./SessionsTable";
 import { TopPagesAnalysis } from "./TopPagesAnalysis";
-import { CommonSequences } from "./CommonSequences";
+import { SessionCards } from "./SessionCards";
 import { JourneyFunnelChart } from "./visualizations/JourneyFunnelChart";
 import { DeviceDistributionChart } from "./visualizations/DeviceDistributionChart";
 import { JourneyHeatmapGrid } from "./visualizations/JourneyHeatmapGrid";
@@ -185,7 +185,7 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
         </TabsContent>
 
         <TabsContent value="sequences" className="space-y-6 mt-6">
-          <CommonSequences sequences={analytics.commonSequences} />
+          <SessionCards siteId={siteId} />
         </TabsContent>
 
         <TabsContent value="sessions" className="space-y-6 mt-6">
