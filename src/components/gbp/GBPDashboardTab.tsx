@@ -164,12 +164,24 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
           {/* Perfis Mockados */}
           {mockProfiles.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <h3 className="text-lg font-semibold">Perfis de Demonstração</h3>
-                <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  Demo
-                </Badge>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold">Perfis de Demonstração</h3>
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Demo
+                  </Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateMockData({ clearExisting: true })}
+                  disabled={isGenerating}
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950/30"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
+                  Regenerar Dados
+                </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {mockProfiles.map((profile) => (
