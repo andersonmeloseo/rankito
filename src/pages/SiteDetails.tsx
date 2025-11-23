@@ -60,6 +60,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
 import { EcommerceAnalytics } from "@/components/integrations/ecommerce/EcommerceAnalytics";
 import { UserJourneyTab } from "@/components/rank-rent/journey/UserJourneyTab";
+import { GBPIntegrationCard } from "@/components/gbp/GBPIntegrationCard";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -731,6 +732,11 @@ const SiteDetails = () => {
 
       {/* KPI Cards */}
       <div className="container mx-auto px-4 lg:px-8 xl:px-12 py-8">
+        {/* GBP Integration Card */}
+        <div className="mb-6">
+          <GBPIntegrationCard siteId={siteId || ""} />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
           <Card className="shadow-card">
             <CardContent className="pt-6">
