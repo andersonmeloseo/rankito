@@ -2,13 +2,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const useGBPMockData = (siteId: string) => {
+export const useGBPMockData = (siteId?: string) => {
   const queryClient = useQueryClient();
 
   const generateMockData = useMutation({
     mutationFn: async ({ clearExisting = false }: { clearExisting?: boolean }) => {
       const { data, error } = await supabase.functions.invoke('gbp-seed-mock-data', {
-        body: { site_id: siteId, clear_existing: clearExisting },
+        body: { site_id: siteId || null, clear_existing: clearExisting },
       });
 
       if (error) throw error;
