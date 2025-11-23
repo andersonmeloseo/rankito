@@ -53,46 +53,72 @@ export const useRecentSessionsEnriched = (siteId: string, limit: number = 50) =>
       if (sessionsError) throw sessionsError;
       if (!sessions || sessions.length === 0) return [];
 
-      const sessionIds = sessions.map(s => s.id);
+      // Usar session_id (string token) ao invés de id (UUID)
+      const sessionTokens = sessions.map(s => s.session_id);
 
-      // Buscar todas as visitas de página
-      const { data: allVisits, error: visitsError } = await supabase
-        .from('rank_rent_page_visits')
+      // Buscar TODOS os eventos de rank_rent_conversions
+      const { data: allEvents, error: eventsError } = await supabase
+        .from('rank_rent_conversions')
         .select('*')
-        .in('session_id', sessionIds)
+        .in('session_id', sessionTokens)
         .order('sequence_number');
 
-      if (visitsError) throw visitsError;
+      if (eventsError) throw eventsError;
 
-      // Buscar todos os cliques
-      const { data: allClicks, error: clicksError } = await supabase
-        .from('rank_rent_conversions')
-        .select('id, event_type, page_url, created_at, cta_text, metadata, session_id')
-        .in('session_id', sessionIds)
-        .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'])
-        .order('created_at');
-
-      if (clicksError) throw clicksError;
-
-      // Agrupar visitas e cliques por sessão
+      // Processar eventos por sessão
       const visitsMap = new Map<string, PageVisit[]>();
       const clicksMap = new Map<string, ClickEvent[]>();
-
-      allVisits?.forEach(visit => {
-        const existing = visitsMap.get(visit.session_id) || [];
-        visitsMap.set(visit.session_id, [...existing, visit]);
-      });
-
-      allClicks?.forEach(click => {
-        const existing = clicksMap.get(click.session_id) || [];
-        clicksMap.set(click.session_id, [...existing, click]);
-      });
-
-      // Calcular duração total por sessão
       const durationMap = new Map<string, number>();
-      allVisits?.forEach(visit => {
-        const current = durationMap.get(visit.session_id) || 0;
-        durationMap.set(visit.session_id, current + (visit.time_spent_seconds || 0));
+
+      sessions.forEach(session => {
+        const sessionEvents = allEvents?.filter(e => e.session_id === session.session_id) || [];
+        
+        // Extrair page_views e calcular tempo gasto
+        const pageViews = sessionEvents.filter(e => e.event_type === 'page_view');
+        const visits: PageVisit[] = pageViews.map((pageView, index) => {
+          // Encontrar page_exit correspondente
+          const pageExit = sessionEvents.find(e => 
+            e.event_type === 'page_exit' && 
+            e.page_url === pageView.page_url &&
+            e.sequence_number > pageView.sequence_number
+          );
+          
+          // Calcular tempo gasto
+          let timeSpent = 0;
+          if (pageExit) {
+            timeSpent = Math.floor((new Date(pageExit.created_at).getTime() - new Date(pageView.created_at).getTime()) / 1000);
+          }
+          
+          return {
+            id: pageView.id,
+            page_url: pageView.page_url,
+            page_title: (pageView.metadata as any)?.page_title || null,
+            sequence_number: pageView.sequence_number || index + 1,
+            entry_time: pageView.created_at,
+            exit_time: pageExit?.created_at || null,
+            time_spent_seconds: timeSpent > 0 ? timeSpent : null,
+          };
+        });
+        
+        visitsMap.set(session.session_id, visits);
+        
+        // Extrair cliques
+        const clicks: ClickEvent[] = sessionEvents
+          .filter(e => ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'].includes(e.event_type))
+          .map(click => ({
+            id: click.id,
+            event_type: click.event_type,
+            page_url: click.page_url,
+            created_at: click.created_at,
+            cta_text: click.cta_text,
+            metadata: click.metadata,
+          }));
+        
+        clicksMap.set(session.session_id, clicks);
+        
+        // Calcular duração total
+        const totalDuration = visits.reduce((sum, v) => sum + (v.time_spent_seconds || 0), 0);
+        durationMap.set(session.session_id, totalDuration);
       });
 
       // Total de sessões para calcular %
@@ -101,9 +127,9 @@ export const useRecentSessionsEnriched = (siteId: string, limit: number = 50) =>
       // Enriquecer cada sessão
       return sessions.map(session => ({
         ...session,
-        total_duration_seconds: durationMap.get(session.id) || 0,
-        visits: visitsMap.get(session.id) || [],
-        clicks: clicksMap.get(session.id) || [],
+        total_duration_seconds: durationMap.get(session.session_id) || 0,
+        visits: visitsMap.get(session.session_id) || [],
+        clicks: clicksMap.get(session.session_id) || [],
         percentOfTotal: totalSessions > 0 ? (1 / totalSessions) * 100 : 0,
       }));
     },
