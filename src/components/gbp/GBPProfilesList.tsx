@@ -17,6 +17,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GBPProfileOverview } from "./GBPProfileOverview";
 import { GBPPhotosManager } from "./GBPPhotosManager";
 import { GBPQuestionsManager } from "./GBPQuestionsManager";
+import { GBPProfileEditor } from "./GBPProfileEditor";
+import { GBPProfileReviewsManager } from "./GBPProfileReviewsManager";
+import { GBPProfilePostsManager } from "./GBPProfilePostsManager";
+import { GBPProfileAnalyticsDashboard } from "./GBPProfileAnalyticsDashboard";
 import { AddGBPIntegrationDialog } from "./AddGBPIntegrationDialog";
 
 interface GBPProfilesListProps {
@@ -271,15 +275,35 @@ export const GBPProfilesList = ({ userId, siteId, siteName }: GBPProfilesListPro
 
           {selectedProfile && (
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="edit">Editar</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                <TabsTrigger value="posts">Posts</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="photos">Fotos</TabsTrigger>
                 <TabsTrigger value="questions">Perguntas</TabsTrigger>
-                <TabsTrigger value="info">Informações</TabsTrigger>
+                <TabsTrigger value="info">Info</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
                 <GBPProfileOverview profile={selectedProfile} />
+              </TabsContent>
+
+              <TabsContent value="edit" className="space-y-6">
+                <GBPProfileEditor profileId={selectedProfile.id} />
+              </TabsContent>
+
+              <TabsContent value="reviews" className="space-y-6">
+                <GBPProfileReviewsManager profileId={selectedProfile.id} />
+              </TabsContent>
+
+              <TabsContent value="posts" className="space-y-6">
+                <GBPProfilePostsManager profileId={selectedProfile.id} />
+              </TabsContent>
+
+              <TabsContent value="analytics" className="space-y-6">
+                <GBPProfileAnalyticsDashboard profileId={selectedProfile.id} />
               </TabsContent>
 
               <TabsContent value="photos" className="space-y-6">
