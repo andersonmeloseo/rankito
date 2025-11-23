@@ -1,10 +1,14 @@
 import { useEffect } from "react";
 import { HeroSection } from "@/components/landing/HeroSection";
+import { CommunicationPillarsSection } from "@/components/landing/CommunicationPillarsSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
+import { WhoIsItForSection } from "@/components/landing/WhoIsItForSection";
 import { GSCShowcase } from "@/components/landing/GSCShowcase";
 import { EcommerceShowcase } from "@/components/landing/EcommerceShowcase";
 import { UserJourneyShowcase } from "@/components/landing/UserJourneyShowcase";
+import { ROICalculator } from "@/components/landing/ROICalculator";
+import { ComparisonSection } from "@/components/landing/ComparisonSection";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { FAQSection } from "@/components/landing/FAQSection";
@@ -93,11 +97,15 @@ const LandingPageContent = () => {
       {/* Sections */}
       <HeroSection />
       
+      <CommunicationPillarsSection />
+      
       <ProblemSection />
       
       <div id="features">
         <FeaturesSection />
       </div>
+      
+      <WhoIsItForSection />
       
       <div id="gsc">
         <GSCShowcase />
@@ -110,6 +118,10 @@ const LandingPageContent = () => {
       <div id="user-journey">
         <UserJourneyShowcase />
       </div>
+      
+      <ROICalculator />
+      
+      <ComparisonSection />
       
       <div id="pricing">
         <PricingSection />

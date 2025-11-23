@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
+import EarlyAccessPage from "./pages/EarlyAccessPage";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
@@ -30,6 +31,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/early-access" element={<EarlyAccessPage />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
             <Route 
