@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Target, AlertTriangle } from "lucide-react";
+import { TrendingUp, Target, AlertTriangle, Sparkles, Clock, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { formatTime } from "@/lib/utils";
 import type { CommonSequence } from "@/hooks/useSessionAnalytics";
 
@@ -38,15 +39,78 @@ export const SequenceInsights = ({ sequence }: SequenceInsightsProps) => {
     }
   };
 
+  // Automatic pattern detection
+  const insights = [];
+
+  // High conversion rate
+  if (conversionRate > 30) {
+    insights.push({
+      type: 'success' as const,
+      icon: Sparkles,
+      title: 'Alto Engajamento',
+      description: `Sequência com ${conversionRate.toFixed(1)}% de taxa de conversão - muito acima da média!`,
+    });
+  }
+
+  // High drop-off
+  if (dropOffRate > 70) {
+    insights.push({
+      type: 'warning' as const,
+      icon: AlertTriangle,
+      title: 'Alto Drop-off',
+      description: `${dropOffRate.toFixed(0)}% dos usuários saem sem converter. Revise CTAs e velocidade da página.`,
+    });
+  }
+
+  // Long session duration
+  if (sequence.avgDuration > 180) {
+    insights.push({
+      type: 'info' as const,
+      icon: Clock,
+      title: 'Sessão Longa',
+      description: `Usuários passam ${formatTime(Math.round(sequence.avgDuration))} nesta jornada - alto engajamento.`,
+    });
+  }
+
+  // Multiple pages
+  if (sequence.pageCount >= 5) {
+    insights.push({
+      type: 'info' as const,
+      icon: Users,
+      title: 'Jornada Complexa',
+      description: `${sequence.pageCount} páginas visitadas - usuários explorando bastante o conteúdo.`,
+    });
+  }
+
   return (
-    <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+    <Card className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
-          <TrendingUp className="h-4 w-4" />
-          Insights desta Sequência
+          <Sparkles className="h-4 w-4" />
+          Insights Inteligentes
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 text-sm">
+      <CardContent className="space-y-3 text-sm">
+        {/* Automatic Insights */}
+        {insights.length > 0 && (
+          <div className="space-y-2 pb-3 border-b">
+            {insights.map((insight, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <insight.icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+                  insight.type === 'success' ? 'text-green-600 dark:text-green-400' :
+                  insight.type === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
+                  'text-blue-600 dark:text-blue-400'
+                }`} />
+                <div>
+                  <div className="font-medium">{insight.title}</div>
+                  <div className="text-xs text-muted-foreground">{insight.description}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Core Metrics */}
         <div className="flex items-start gap-2">
           <Target className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
           <div>

@@ -57,16 +57,43 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       const startDate = startOfDay(subDays(new Date(), days));
       const endDate = endOfDay(new Date());
 
-      // Fetch sessions
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('rank_rent_sessions')
-        .select('*')
-        .eq('site_id', siteId)
-        .gte('entry_time', startDate.toISOString())
-        .lte('entry_time', endDate.toISOString())
-        .order('entry_time', { ascending: false });
+      // OTIMIZAÇÃO: Query única consolidada com Promise.all para máxima performance
+      const [sessionsResponse, visitsResponse, clicksResponse] = await Promise.all([
+        supabase
+          .from('rank_rent_sessions')
+          .select('id, session_id, entry_page_url, exit_page_url, entry_time, pages_visited, total_duration_seconds, device, city, country, referrer')
+          .eq('site_id', siteId)
+          .gte('entry_time', startDate.toISOString())
+          .lte('entry_time', endDate.toISOString())
+          .order('entry_time', { ascending: false })
+          .range(0, 9999999),
+        
+        supabase
+          .from('rank_rent_page_visits')
+          .select('session_id, page_url, sequence_number, time_spent_seconds, created_at')
+          .eq('site_id', siteId)
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+          .order('session_id')
+          .order('sequence_number')
+          .range(0, 9999999),
+        
+        supabase
+          .from('rank_rent_conversions')
+          .select('session_id, event_type, page_url, metadata, cta_text, created_at')
+          .eq('site_id', siteId)
+          .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'])
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+          .range(0, 9999999)
+      ]);
 
-      if (sessionsError) throw sessionsError;
+      if (sessionsResponse.error) throw sessionsResponse.error;
+      
+      const sessions = sessionsResponse.data;
+      const visits = visitsResponse.data;
+      const clicks = clicksResponse.data;
+
       if (!sessions || sessions.length === 0) return {
         metrics: { totalSessions: 0, avgDuration: 0, avgPagesPerSession: 0, bounceRate: 0 },
         topEntryPages: [],
@@ -106,23 +133,9 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         .sort((a, b) => b.exits - a.exits)
         .slice(0, 10);
 
-      // Fetch page visits for common sequences
+      // Fetch page visits and clicks - já feito no Promise.all acima
+      // sessionIds calculation
       const sessionIds = sessions.map(s => s.id);
-      const { data: visits } = await supabase
-        .from('rank_rent_page_visits')
-        .select('session_id, page_url, sequence_number, time_spent_seconds, created_at')
-        .in('session_id', sessionIds)
-        .order('session_id')
-        .order('sequence_number');
-
-      // Fetch clicks with date filters (including clicks without session_id)
-      const { data: clicks } = await supabase
-        .from('rank_rent_conversions')
-        .select('session_id, event_type, page_url, metadata, cta_text, created_at')
-        .eq('site_id', siteId)
-        .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'])
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
 
       // Build sequences with enriched data
       const sequencesMap = new Map<string, {
@@ -329,7 +342,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       };
     },
     enabled: !!siteId,
-    staleTime: 30000,
-    refetchInterval: 60000
+    staleTime: 5 * 60 * 1000, // 5 minutos de cache inteligente
+    refetchInterval: 30000 // Atualiza a cada 30 segundos
   });
 };
