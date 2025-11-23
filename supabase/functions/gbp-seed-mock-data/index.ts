@@ -185,24 +185,50 @@ Deno.serve(async (req) => {
 
     const { site_id, clear_existing = false } = await req.json();
 
-    if (!site_id) {
-      throw new Error('site_id is required');
-    }
-
-    // Clear existing mock data if requested
+    // Se clear_existing for true, limpar dados mockados existentes
     if (clear_existing) {
-      const { data: existingProfiles } = await supabase
+      console.log('🗑️ Limpando dados mockados existentes...');
+      
+      // Build query based on whether site_id is provided
+      const profileQuery = supabase
         .from('google_business_profiles')
         .select('id')
         .eq('user_id', user.id)
-        .eq('site_id', site_id)
         .eq('is_mock', true);
-
-      if (existingProfiles && existingProfiles.length > 0) {
-        for (const profile of existingProfiles) {
-          await supabase.from('google_business_profiles').delete().eq('id', profile.id);
-        }
+      
+      if (site_id) {
+        profileQuery.eq('site_id', site_id);
+      } else {
+        profileQuery.is('site_id', null);
       }
+      
+      const { data: profilesToDelete } = await profileQuery;
+      const profileIds = profilesToDelete?.map(p => p.id) || [];
+      
+      if (profileIds.length > 0) {
+        // Delete associated data first (due to foreign keys)
+        await supabase.from('gbp_questions').delete().in('profile_id', profileIds);
+        await supabase.from('gbp_photos').delete().in('profile_id', profileIds);
+        await supabase.from('gbp_posts').delete().in('profile_id', profileIds);
+        await supabase.from('gbp_analytics').delete().in('profile_id', profileIds);
+        await supabase.from('gbp_reviews').delete().in('profile_id', profileIds);
+      }
+      
+      // Finally delete the profiles
+      const deleteQuery = supabase
+        .from('google_business_profiles')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('is_mock', true);
+      
+      if (site_id) {
+        deleteQuery.eq('site_id', site_id);
+      } else {
+        deleteQuery.is('site_id', null);
+      }
+      
+      const { error: deleteError } = await deleteQuery;
+      if (deleteError) throw deleteError;
     }
 
     const createdProfiles = [];
@@ -214,7 +240,7 @@ Deno.serve(async (req) => {
         .from('google_business_profiles')
         .insert({
           user_id: user.id,
-          site_id: site_id,
+          site_id: site_id || null,
           connection_name: mockProfile.name,
           business_name: mockProfile.name,
           business_address: mockProfile.address,
@@ -271,7 +297,7 @@ Deno.serve(async (req) => {
         
         reviewsToInsert.push({
           profile_id: profile.id,
-          site_id: site_id,
+          site_id: site_id || null,
           google_review_id: `mock_review_${profile.id}_${i}`,
           reviewer_name: `Cliente ${i + 1}`,
           reviewer_photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`,
@@ -303,7 +329,7 @@ Deno.serve(async (req) => {
         
         analyticsToInsert.push({
           profile_id: profile.id,
-          site_id: site_id,
+          site_id: site_id || null,
           metric_date: date.toISOString().split('T')[0],
           searches_direct: Math.floor(Math.random() * 100) + 50,
           searches_discovery: Math.floor(Math.random() * 80) + 30,
@@ -341,7 +367,7 @@ Deno.serve(async (req) => {
         
         postsToInsert.push({
           profile_id: profile.id,
-          site_id: site_id,
+          site_id: site_id || null,
           post_type: postType,
           title: `Novidade ${i + 1}`,
           content: `Confira nossa nova ${postType === 'offer' ? 'promoção' : 'novidade'}! Não perca essa oportunidade especial.`,
@@ -366,7 +392,7 @@ Deno.serve(async (req) => {
         const photoType = photoTypes[Math.floor(Math.random() * photoTypes.length)];
         photosToInsert.push({
           profile_id: profile.id,
-          site_id: site_id,
+          site_id: site_id || null,
           photo_type: photoType,
           photo_url: `https://images.unsplash.com/photo-${1500000000000 + i}?w=800&h=600&fit=crop`,
           caption: `Foto ${photoType} ${i + 1}`,
@@ -399,7 +425,7 @@ Deno.serve(async (req) => {
         const isAnswered = i < 5;
         questionsToInsert.push({
           profile_id: profile.id,
-          site_id: site_id,
+          site_id: site_id || null,
           question_text: questions[i],
           answer_text: isAnswered ? 'Sim, aceitamos! Entre em contato para mais informações.' : null,
           asked_by: `Usuário ${i + 1}`,
