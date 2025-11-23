@@ -15,52 +15,61 @@ interface GBPIntegrationCardProps {
 export function GBPIntegrationCard({ siteId }: GBPIntegrationCardProps) {
   const navigate = useNavigate();
 
-  // Fetch GBP profiles for this site
+  // Fetch GBP profiles associated with this site
   const { data: profiles, isLoading } = useQuery({
     queryKey: ["gbp-profiles-card", siteId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("google_business_profiles")
-        .select("*")
-        .eq("site_id", siteId)
-        .order("created_at", { ascending: false });
+      // Buscar associações do site com perfis GBP
+      const { data: associations, error } = await supabase
+        .from("gbp_site_associations")
+        .select(`
+          gbp_profile_id,
+          google_business_profiles(*)
+        `)
+        .eq("site_id", siteId);
       
       if (error) throw error;
-      return data;
+      return associations?.map(a => a.google_business_profiles).filter(Boolean) || [];
     },
     enabled: !!siteId,
   });
 
-  // Fetch unanswered reviews count
+  // Fetch unanswered reviews count (from associated profiles)
   const { data: unansweredCount } = useQuery({
     queryKey: ["gbp-unanswered-reviews", siteId],
     queryFn: async () => {
+      if (!profiles || profiles.length === 0) return 0;
+      
+      const profileIds = profiles.map(p => (p as any).id);
       const { count, error } = await supabase
         .from("gbp_reviews")
         .select("*", { count: "exact", head: true })
-        .eq("site_id", siteId)
+        .in("profile_id", profileIds)
         .eq("is_replied", false);
       
       if (error) throw error;
       return count || 0;
     },
-    enabled: !!siteId,
+    enabled: !!siteId && !!profiles && profiles.length > 0,
   });
 
-  // Fetch scheduled posts count
+  // Fetch scheduled posts count (from associated profiles)
   const { data: scheduledCount } = useQuery({
     queryKey: ["gbp-scheduled-posts", siteId],
     queryFn: async () => {
+      if (!profiles || profiles.length === 0) return 0;
+      
+      const profileIds = profiles.map(p => (p as any).id);
       const { count, error } = await supabase
         .from("gbp_posts")
         .select("*", { count: "exact", head: true })
-        .eq("site_id", siteId)
+        .in("profile_id", profileIds)
         .eq("status", "scheduled");
       
       if (error) throw error;
       return count || 0;
     },
-    enabled: !!siteId,
+    enabled: !!siteId && !!profiles && profiles.length > 0,
   });
 
   if (isLoading) {
@@ -93,25 +102,25 @@ export function GBPIntegrationCard({ siteId }: GBPIntegrationCardProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Nenhuma integração configurada
+            Nenhum perfil GBP associado a este projeto
           </p>
           <Button
             size="sm"
             variant="outline"
-            onClick={() => navigate(`/dashboard/site/${siteId}?tab=gbp`)}
+            onClick={() => navigate(`/dashboard?tab=gbp`)}
           >
-            Conectar GBP
+            Gerenciar Perfis GBP
           </Button>
         </CardContent>
       </Card>
     );
   }
 
-  const activeProfiles = profiles.filter((p) => p.is_active);
-  const hasErrors = profiles.some((p) => p.health_status === "unhealthy");
+  const activeProfiles = profiles.filter((p: any) => p.is_active);
+  const hasErrors = profiles.some((p: any) => p.health_status === "unhealthy");
   const latestSync = profiles
-    .filter((p) => p.last_sync_at)
-    .sort((a, b) => new Date(b.last_sync_at!).getTime() - new Date(a.last_sync_at!).getTime())[0];
+    .filter((p: any) => p.last_sync_at)
+    .sort((a: any, b: any) => new Date(b.last_sync_at!).getTime() - new Date(a.last_sync_at!).getTime())[0] as any;
 
   return (
     <Card>
@@ -177,7 +186,7 @@ export function GBPIntegrationCard({ siteId }: GBPIntegrationCardProps) {
           size="sm"
           variant="outline"
           className="w-full"
-          onClick={() => navigate(`/dashboard/site/${siteId}?tab=gbp`)}
+          onClick={() => navigate(`/dashboard?tab=gbp`)}
         >
           Gerenciar GBP
           <ExternalLink className="ml-2 h-3 w-3" />

@@ -1072,6 +1072,66 @@ export type Database = {
           },
         ]
       }
+      gbp_site_associations: {
+        Row: {
+          created_at: string
+          gbp_profile_id: string
+          id: string
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          gbp_profile_id: string
+          id?: string
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          gbp_profile_id?: string
+          id?: string
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbp_site_associations_gbp_profile_id_fkey"
+            columns: ["gbp_profile_id"]
+            isOneToOne: false
+            referencedRelation: "google_business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_site_associations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_site_associations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gbp_site_associations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_site_associations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geolocation_api_configs: {
         Row: {
           api_key: string
@@ -1144,7 +1204,7 @@ export type Database = {
           last_sync_at: string | null
           location_name: string | null
           refresh_token: string | null
-          site_id: string
+          site_id: string | null
           token_expires_at: string | null
           updated_at: string | null
           user_id: string
@@ -1166,7 +1226,7 @@ export type Database = {
           last_sync_at?: string | null
           location_name?: string | null
           refresh_token?: string | null
-          site_id: string
+          site_id?: string | null
           token_expires_at?: string | null
           updated_at?: string | null
           user_id: string
@@ -1188,7 +1248,7 @@ export type Database = {
           last_sync_at?: string | null
           location_name?: string | null
           refresh_token?: string | null
-          site_id?: string
+          site_id?: string | null
           token_expires_at?: string | null
           updated_at?: string | null
           user_id?: string

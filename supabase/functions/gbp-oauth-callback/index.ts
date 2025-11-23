@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
     const { data: integration, error: insertError } = await supabase
       .from('google_business_profiles')
       .insert({
-        site_id: stateData.site_id,
+        // site_id is now optional - GBP profiles are global
         user_id: stateData.user_id,
         connection_name: connection_name || 'Google Business Profile',
         access_token: tokenData.access_token,
@@ -163,26 +163,32 @@ Deno.serve(async (req) => {
 
     console.log('✅ Integration saved successfully');
 
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        integration_id: integration.id,
-        business_name: businessName,
-        locations_found: locations.length,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Redirect back to the frontend with success status
+    const appUrl = Deno.env.get('VITE_APP_URL') || 'https://rankitocrm.lovable.app';
+    const redirectUrl = `${appUrl}/oauth/gbp/callback?code=${code}&state=${state}`;
+
+    return new Response(null, {
+      status: 302,
+      headers: {
+        ...corsHeaders,
+        'Location': redirectUrl,
+      },
+    });
 
   } catch (error) {
     console.error('❌ Error in gbp-oauth-callback:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    // Redirect back to the frontend with error status
+    const appUrl = Deno.env.get('VITE_APP_URL') || 'https://rankitocrm.lovable.app';
+    const redirectUrl = `${appUrl}/oauth/gbp/callback?error=${encodeURIComponent(errorMessage)}`;
+
+    return new Response(null, {
+      status: 302,
+      headers: {
+        ...corsHeaders,
+        'Location': redirectUrl,
+      },
+    });
   }
 });

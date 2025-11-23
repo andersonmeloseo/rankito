@@ -10,15 +10,12 @@ import { Loader2 } from 'lucide-react';
 interface AddGBPIntegrationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  siteId: string;
-  siteUrl: string;
   onSuccess: () => void;
 }
 
 export function AddGBPIntegrationDialog({
   open,
   onOpenChange,
-  siteId,
   onSuccess,
 }: AddGBPIntegrationDialogProps) {
   const [connectionName, setConnectionName] = useState('');
@@ -32,8 +29,9 @@ export function AddGBPIntegrationDialog({
 
     setIsConnecting(true);
     try {
+      // Não precisa mais de site_id - perfis GBP são globais agora
       const { data, error } = await supabase.functions.invoke('gbp-oauth-authorize', {
-        body: { site_id: siteId },
+        body: {},
       });
 
       if (error) throw error;

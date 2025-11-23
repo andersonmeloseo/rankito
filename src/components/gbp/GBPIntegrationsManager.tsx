@@ -33,7 +33,7 @@ export function GBPIntegrationsManager({ siteId, userId }: GBPIntegrationsManage
     syncReviews,
     isSyncing,
     refetch,
-  } = useGBPProfiles(siteId, userId);
+  } = useGBPProfiles(userId);
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteDialogProfile, setDeleteDialogProfile] = useState<any>(null);
@@ -182,8 +182,6 @@ export function GBPIntegrationsManager({ siteId, userId }: GBPIntegrationsManage
       <AddGBPIntegrationDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
-        siteId={siteId}
-        siteUrl=""
         onSuccess={() => {
           refetch();
         }}
