@@ -396,7 +396,7 @@ const Dashboard = () => {
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="gbp" icon={Store}>
-                    Google Business
+                    Google Business Profile
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="crm" icon={Briefcase}>
