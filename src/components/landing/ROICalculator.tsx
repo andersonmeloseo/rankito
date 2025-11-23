@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Clock, DollarSign } from "lucide-react";
+import { TrendingUp, Clock, DollarSign, Calculator } from "lucide-react";
 
 export const ROICalculator = () => {
   const { t, formatCurrency } = useLandingTranslation();
@@ -105,6 +105,77 @@ export const ROICalculator = () => {
               <p className="text-sm text-muted-foreground">
                 {t.roiCalculator.inputs.rate.description}
               </p>
+            </div>
+
+            {/* Calculation Logic Explanation */}
+            <div className="mt-8 p-6 bg-background rounded-xl border-2 border-primary/20 shadow-sm">
+              <h4 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Calculator className="h-5 w-5 text-primary" />
+                {t.roiCalculator.calculationLogic.title}
+              </h4>
+              
+              <div className="space-y-3 text-sm">
+                {/* Step 1: Time per site */}
+                <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                  <span className="font-bold text-blue-600 dark:text-blue-400">1.</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{t.roiCalculator.calculationLogic.steps.timePerSite.title}</p>
+                    <p className="text-muted-foreground">
+                      {numSites} sites × 2h/{t.roiCalculator.results.week} = {timePerSite}h/{t.roiCalculator.results.week}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 2: Hours saved */}
+                <div className="flex items-start gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+                  <span className="font-bold text-purple-600 dark:text-purple-400">2.</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{t.roiCalculator.calculationLogic.steps.hoursSaved.title}</p>
+                    <p className="text-muted-foreground">
+                      {hoursSaved}h/{t.roiCalculator.results.week} {t.roiCalculator.calculationLogic.steps.hoursSaved.description}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 3: Monthly savings */}
+                <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                  <span className="font-bold text-green-600 dark:text-green-400">3.</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{t.roiCalculator.calculationLogic.steps.monthlySavings.title}</p>
+                    <p className="text-muted-foreground">
+                      {hoursSaved}h × 4 {t.roiCalculator.calculationLogic.steps.monthlySavings.weeks} × {formatCurrency(hourlyRate)}/h = {formatCurrency(monthlySavings)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 4: Rankito cost */}
+                <div className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                  <span className="font-bold text-orange-600 dark:text-orange-400">4.</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{t.roiCalculator.calculationLogic.steps.rankitoCost.title}</p>
+                    <p className="text-muted-foreground">
+                      {t.roiCalculator.calculationLogic.steps.rankitoCost.plan}: {formatCurrency(rankitoCost)}/{t.roiCalculator.results.month}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 5: Net profit */}
+                <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                  <span className="font-bold text-green-700 dark:text-green-400">✓</span>
+                  <div className="flex-1">
+                    <p className="font-bold text-foreground">{t.roiCalculator.calculationLogic.steps.netProfit.title}</p>
+                    <p className="text-green-700 dark:text-green-400 font-semibold">
+                      {formatCurrency(monthlySavings)} - {formatCurrency(rankitoCost)} = {formatCurrency(monthlyROI)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-xs text-muted-foreground text-center">
+                  💡 {t.roiCalculator.calculationLogic.footer.replace('{total}', formatCurrency(yearlyROI)).replace('{percentage}', roiPercentage)}
+                </p>
+              </div>
             </div>
           </div>
 
