@@ -1,8 +1,8 @@
 /**
  * Rankito Universal Tracking Pixel
- * Automatic tracking for Page Views, Clicks, E-commerce Events
+ * Automatic tracking for Page Views, Clicks, E-commerce Events, Session Journey
  * Compatible with: Shopify, WooCommerce, Generic HTML
- * Version: 1.0.0
+ * Version: 2.0.0 - Complete Session Tracking Refactor
  */
 
 (function() {
@@ -34,7 +34,7 @@
   // Debug logger
   function log(...args) {
     if (config.debug) {
-      console.log('[Rankito Pixel]', ...args);
+      console.log('[Rankito Pixel v2.0]', ...args);
     }
   }
 
@@ -58,7 +58,7 @@
       z-index: 999999;
       box-shadow: 0 4px 20px rgba(0,255,0,0.3);
     `;
-    panel.innerHTML = '<div style="font-weight: bold; margin-bottom: 10px; color: #00ff00;">🟢 RANKITO DEBUG MODE</div>';
+    panel.innerHTML = '<div style="font-weight: bold; margin-bottom: 10px; color: #00ff00;">🟢 RANKITO DEBUG v2.0 (Session Tracking)</div>';
     document.body.appendChild(panel);
     return panel;
   }
@@ -108,32 +108,88 @@
     return 'Desktop';
   }
 
-  // Send event to API
+  // Session Management
+  const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  let pageEntryTime = Date.now();
+  let currentPageUrl = window.location.href;
+
+  function getSessionId() {
+    const storageKey = 'rankito_session';
+    let sessionData = sessionStorage.getItem(storageKey);
+    
+    if (sessionData) {
+      try {
+        const { id, lastActivity, sequence } = JSON.parse(sessionData);
+        if (Date.now() - lastActivity < SESSION_TIMEOUT) {
+          // Update activity and increment sequence
+          sessionData = { id, lastActivity: Date.now(), sequence: sequence + 1 };
+          sessionStorage.setItem(storageKey, JSON.stringify(sessionData));
+          return { sessionId: id, sequence: sessionData.sequence };
+        }
+      } catch (e) {
+        log('Error parsing session data:', e);
+      }
+    }
+    
+    // Create new session
+    const newId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const newData = { id: newId, lastActivity: Date.now(), sequence: 1 };
+    sessionStorage.setItem(storageKey, JSON.stringify(newData));
+    return { sessionId: newId, sequence: 1 };
+  }
+
+  // ============================================
+  // PHASE 1: REFACTORED sendEvent() - UNIVERSAL SESSION TRACKING
+  // ============================================
+  
   function sendEvent(eventType, eventData = {}) {
     if (!config.token) {
       log('Error: No token configured');
       return;
     }
 
+    // ✅ ALWAYS get session data automatically
+    const { sessionId, sequence } = getSessionId();
+    
+    // Calculate time spent on current page
+    const timeOnCurrentPage = Math.floor((Date.now() - pageEntryTime) / 1000);
+    const currentScrollDepth = Math.round((window.scrollY / Math.max(document.documentElement.scrollHeight - window.innerHeight, 1)) * 100);
+
+    // ✅ Build standardized metadata structure (PHASE 7)
+    const metadata = {
+      // Device context
+      device: getDevice(),
+      platform: config.platform,
+      screen_width: window.innerWidth,
+      screen_height: window.innerHeight,
+      
+      // Page context
+      page_title: document.title,
+      page_path: window.location.pathname,
+      referrer: document.referrer || null,
+      
+      // Session context
+      viewport_scroll: currentScrollDepth,
+      time_on_current_page: timeOnCurrentPage,
+      
+      // Event-specific data
+      ...eventData
+    };
+
     const payload = {
       site_name: document.title || window.location.hostname,
       page_url: window.location.href,
       event_type: eventType,
       cta_text: eventData.cta_text || null,
-      session_id: eventData.session_id || null,
-      sequence_number: eventData.sequence_number || null,
+      session_id: sessionId,  // ✅ ALWAYS included
+      sequence_number: sequence,  // ✅ ALWAYS included
       time_spent_seconds: eventData.time_spent_seconds || null,
       exit_url: eventData.exit_url || null,
-      metadata: {
-        device: getDevice(),
-        platform: config.platform,
-        referrer: document.referrer || null,
-        ...eventData
-      }
+      metadata: metadata
     };
 
     log('Sending event:', eventType, payload);
-    showDebugPanel(eventType, payload.metadata);
+    showDebugPanel(eventType, { ...payload.metadata, session_id: sessionId, sequence: sequence });
 
     fetch(`${API_URL}?token=${config.token}`, {
       method: 'POST',
@@ -172,61 +228,30 @@
   // Process queue every 30 seconds
   setInterval(processQueue, 30000);
 
-  // Session Management
-  const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-
-  function getSessionId() {
-    const storageKey = 'rankito_session';
-    let sessionData = sessionStorage.getItem(storageKey);
-    
-    if (sessionData) {
-      try {
-        const { id, lastActivity, sequence } = JSON.parse(sessionData);
-        if (Date.now() - lastActivity < SESSION_TIMEOUT) {
-          // Update activity and increment sequence
-          sessionData = { id, lastActivity: Date.now(), sequence: sequence + 1 };
-          sessionStorage.setItem(storageKey, JSON.stringify(sessionData));
-          return { sessionId: id, sequence: sessionData.sequence };
-        }
-      } catch (e) {
-        log('Error parsing session data:', e);
-      }
-    }
-    
-    // Create new session
-    const newId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    const newData = { id: newId, lastActivity: Date.now(), sequence: 1 };
-    sessionStorage.setItem(storageKey, JSON.stringify(newData));
-    return { sessionId: newId, sequence: 1 };
-  }
-
-  // Track Page View with session
-  let pageEntryTime = Date.now();
-  let currentPageUrl = window.location.href;
+  // ============================================
+  // PAGE VIEW & EXIT TRACKING
+  // ============================================
 
   function trackPageView() {
-    const { sessionId, sequence } = getSessionId();
-    log('Tracking page view with session:', sessionId, 'sequence:', sequence);
+    log('Tracking page view with automatic session');
     
     pageEntryTime = Date.now();
     currentPageUrl = window.location.href;
     
     sendEvent('page_view', {
       page_title: document.title,
-      page_path: window.location.pathname,
-      session_id: sessionId,
-      sequence_number: sequence
+      page_path: window.location.pathname
     });
   }
 
-  // Track Page Exit
   function trackPageExit() {
-    const { sessionId } = getSessionId();
     const timeSpent = Math.floor((Date.now() - pageEntryTime) / 1000);
     
     if (timeSpent < 1) return; // Ignore very short visits
     
     log('Tracking page exit:', timeSpent, 'seconds');
+    
+    const { sessionId } = getSessionId();
     
     // Use sendBeacon for reliable delivery on page unload
     const payload = {
@@ -260,55 +285,61 @@
     }
   }
 
-  // Track Scroll Depth
+  // ============================================
+  // PHASE 4: SCROLL DEPTH WITH SESSION TRACKING
+  // ============================================
+  
   let maxScrollDepth = 0;
   const scrollMilestones = [25, 50, 75, 100];
   const trackedScrolls = new Set();
+  let scrollTimeout;
 
   function trackScrollDepth() {
-    const scrolled = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight * 100;
-    maxScrollDepth = Math.max(maxScrollDepth, scrolled);
+    // ✅ PHASE 9: Debounce scroll tracking for performance
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      const scrolled = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight * 100;
+      maxScrollDepth = Math.max(maxScrollDepth, scrolled);
 
-    scrollMilestones.forEach(milestone => {
-      if (maxScrollDepth >= milestone && !trackedScrolls.has(milestone)) {
-        trackedScrolls.add(milestone);
-        log(`Scroll depth: ${milestone}%`);
-        sendEvent('scroll_depth', {
-          scroll_depth: milestone,
-          page_title: document.title
-        });
-      }
-    });
-  }
-
-  // Track Time on Page (on page unload)
-  let pageLoadTime = Date.now();
-
-  function trackTimeOnPage() {
-    const timeSpent = Math.round((Date.now() - pageLoadTime) / 1000);
-    if (timeSpent > 5) { // Only track if more than 5 seconds
-      log(`Time on page: ${timeSpent}s`);
-      sendEvent('time_on_page', {
-        time_seconds: timeSpent,
-        page_title: document.title
+      scrollMilestones.forEach(milestone => {
+        if (maxScrollDepth >= milestone && !trackedScrolls.has(milestone)) {
+          trackedScrolls.add(milestone);
+          log(`Scroll depth: ${milestone}%`);
+          sendEvent('scroll_depth', {
+            scroll_depth: milestone,
+            max_scroll: Math.round(maxScrollDepth)
+          });
+        }
       });
-    }
+    }, 150); // Debounce 150ms
   }
 
-  // Track Clicks (WhatsApp, Phone, Email, Buttons)
+  // ============================================
+  // PHASE 2: CLICK TRACKING WITH RICH METADATA
+  // ============================================
+  
   function trackClicks(event) {
     const target = event.target.closest('a, button');
     if (!target) return;
 
     const href = target.href || '';
     const text = target.textContent?.trim() || target.innerText?.trim() || '';
+    
+    // ✅ Rich metadata about the clicked element
+    const elementMetadata = {
+      element_type: target.tagName.toLowerCase(),
+      element_classes: target.className || null,
+      element_id: target.id || null,
+      scroll_position: Math.round((window.scrollY / Math.max(document.documentElement.scrollHeight - window.innerHeight, 1)) * 100)
+    };
 
     // WhatsApp
     if (href.includes('wa.me') || href.includes('whatsapp') || href.includes('api.whatsapp.com')) {
       log('WhatsApp click detected:', text);
       sendEvent('whatsapp_click', {
         cta_text: text,
-        link_url: href
+        link_url: href,
+        ...elementMetadata
       });
     }
     // Phone
@@ -316,7 +347,8 @@
       log('Phone click detected:', text);
       sendEvent('phone_click', {
         cta_text: text,
-        phone_number: href.replace('tel:', '')
+        phone_number: href.replace('tel:', ''),
+        ...elementMetadata
       });
     }
     // Email
@@ -324,7 +356,8 @@
       log('Email click detected:', text);
       sendEvent('email_click', {
         cta_text: text,
-        email: href.replace('mailto:', '')
+        email: href.replace('mailto:', ''),
+        ...elementMetadata
       });
     }
     // Generic button/link
@@ -332,13 +365,44 @@
       log('Button click detected:', text);
       sendEvent('button_click', {
         cta_text: text,
-        link_url: href || window.location.href
+        link_url: href || window.location.href,
+        ...elementMetadata
       });
     }
   }
 
   // ============================================
-  // E-COMMERCE TRACKING
+  // PHASE 5: FORM SUBMISSION TRACKING
+  // ============================================
+  
+  function trackFormSubmission(event) {
+    const form = event.target;
+    if (!form.tagName || form.tagName !== 'FORM') return;
+    
+    const formData = new FormData(form);
+    const fields = {};
+    
+    // Capture field status (without sensitive values)
+    formData.forEach((value, key) => {
+      // Skip sensitive fields
+      if (!key.match(/password|senha|card|cvv|cpf|rg|ssn/i)) {
+        fields[key] = value ? 'filled' : 'empty';
+      }
+    });
+    
+    log('Form submission detected:', form.action);
+    sendEvent('form_submit', {
+      form_action: form.action || window.location.href,
+      form_method: form.method || 'POST',
+      form_id: form.id || null,
+      form_classes: form.className || null,
+      fields_count: Object.keys(fields).length,
+      is_checkout: form.action.includes('checkout') || form.classList.contains('checkout-form')
+    });
+  }
+
+  // ============================================
+  // PHASE 3 & 8: E-COMMERCE TRACKING WITH SESSION
   // ============================================
 
   // Shopify Integration
@@ -355,7 +419,10 @@
           product_id: String(meta.product.id),
           product_name: meta.product.title,
           price: meta.product.price,
-          currency: meta.currency?.active || 'BRL'
+          currency: meta.currency?.active || 'BRL',
+          category: meta.product.type || null,
+          variant: meta.product.variant || null,
+          is_ecommerce_event: true  // ✅ E-commerce flag
         });
       }
     }
@@ -369,25 +436,60 @@
           if (form) {
             const productId = form.querySelector('[name="id"]')?.value;
             const productName = document.querySelector('.product-title, .product__title, h1')?.textContent?.trim();
+            const price = document.querySelector('.price, .product-price')?.textContent?.replace(/[^\d.,]/g, '');
             
             log('Shopify add to cart:', productId);
             sendEvent('add_to_cart', {
-              product_id: productId,
-              product_name: productName
+              product_id: String(productId),
+              product_name: productName,
+              price: price ? parseFloat(price) : null,
+              quantity: 1,
+              is_ecommerce_event: true
             });
           }
         }, 500);
       }
     });
 
+    // ✅ PHASE 8: Remove from Cart detection
+    let previousCart = null;
+    setInterval(() => {
+      fetch('/cart.js')
+        .then(r => r.json())
+        .then(cart => {
+          if (previousCart && cart.items.length < previousCart.items.length) {
+            // Find removed items
+            const removedItems = previousCart.items.filter(prevItem => 
+              !cart.items.find(item => item.id === prevItem.id)
+            );
+            
+            removedItems.forEach(item => {
+              log('Shopify remove from cart detected:', item);
+              sendEvent('remove_from_cart', {
+                product_id: String(item.product_id),
+                product_name: item.product_title,
+                is_ecommerce_event: true
+              });
+            });
+          }
+          previousCart = cart;
+        })
+        .catch(err => log('Error tracking cart changes:', err));
+    }, 2000);
+
     // Begin Checkout (Checkout page)
     if (window.location.pathname.includes('/checkout')) {
       setTimeout(() => {
         const total = document.querySelector('.total-line__price, [data-checkout-total-price]')?.textContent?.replace(/[^\d.,]/g, '');
+        const itemsCount = document.querySelectorAll('.product, .line-item').length;
+        
         if (total) {
           log('Shopify begin_checkout');
           sendEvent('begin_checkout', {
-            cart_value: parseFloat(total) || null
+            cart_value: parseFloat(total) || null,
+            items_count: itemsCount || null,
+            currency: window.Shopify?.currency?.active || 'BRL',
+            is_ecommerce_event: true
           });
         }
       }, 1000);
@@ -401,7 +503,9 @@
         order_id: String(checkout.order_id),
         revenue: parseFloat(checkout.total_price),
         currency: checkout.currency,
-        order_name: checkout.order_number
+        order_name: checkout.order_number,
+        items_count: checkout.line_items?.length || null,
+        is_ecommerce_event: true
       });
     }
 
@@ -412,7 +516,8 @@
         log('Shopify search:', searchTerm);
         sendEvent('search', {
           search_term: searchTerm,
-          results_count: document.querySelectorAll('.product-item, .grid-product').length
+          results_count: document.querySelectorAll('.product-item, .grid-product').length,
+          is_ecommerce_event: true
         });
       }
     }
@@ -430,12 +535,15 @@
     if (productId && document.body.classList.contains('single-product')) {
       const productName = document.querySelector('.product_title, .product-title')?.textContent?.trim();
       const price = document.querySelector('.price .amount, .price')?.textContent?.replace(/[^\d.,]/g, '');
+      const category = document.querySelector('.product_meta .posted_in a')?.textContent?.trim();
       
       log('WooCommerce product view:', productId);
       sendEvent('product_view', {
         product_id: String(productId),
         product_name: productName,
-        price: price ? parseFloat(price) : null
+        price: price ? parseFloat(price) : null,
+        category: category || null,
+        is_ecommerce_event: true
       });
     }
 
@@ -444,11 +552,27 @@
       jQuery(document.body).on('added_to_cart', function(e, fragments, cart_hash, button) {
         const productId = button?.data('product_id');
         const productName = button?.data('product_name') || button?.closest('.product')?.find('.product-title')?.text()?.trim();
+        const quantity = button?.data('quantity') || 1;
         
         log('WooCommerce add to cart:', productId);
         sendEvent('add_to_cart', {
           product_id: String(productId),
-          product_name: productName
+          product_name: productName,
+          quantity: quantity,
+          is_ecommerce_event: true
+        });
+      });
+
+      // ✅ PHASE 8: Remove from Cart
+      jQuery(document.body).on('removed_from_cart', function(e, fragments, cart_hash, button) {
+        const productId = button?.data('product_id');
+        const productName = button?.data('product_name');
+        
+        log('WooCommerce remove from cart:', productId);
+        sendEvent('remove_from_cart', {
+          product_id: String(productId),
+          product_name: productName,
+          is_ecommerce_event: true
         });
       });
     }
@@ -457,10 +581,14 @@
     if (document.body.classList.contains('woocommerce-checkout')) {
       setTimeout(() => {
         const total = document.querySelector('.order-total .amount')?.textContent?.replace(/[^\d.,]/g, '');
+        const itemsCount = document.querySelectorAll('.cart-item, .cart_item').length;
+        
         if (total) {
           log('WooCommerce begin_checkout');
           sendEvent('begin_checkout', {
-            cart_value: parseFloat(total) || null
+            cart_value: parseFloat(total) || null,
+            items_count: itemsCount || null,
+            is_ecommerce_event: true
           });
         }
       }, 1000);
@@ -473,7 +601,9 @@
       sendEvent('purchase', {
         order_id: String(order.id),
         revenue: parseFloat(order.total),
-        currency: wc_ga_data.currency
+        currency: wc_ga_data.currency,
+        payment_method: order.payment_method || null,
+        is_ecommerce_event: true
       });
     }
 
@@ -484,7 +614,8 @@
         log('WooCommerce search:', searchTerm);
         sendEvent('search', {
           search_term: searchTerm,
-          results_count: document.querySelectorAll('.product, .product-item').length
+          results_count: document.querySelectorAll('.product, .product-item').length,
+          is_ecommerce_event: true
         });
       }
     }
@@ -502,7 +633,9 @@
           sendEvent('product_view', {
             product_id: data.sku || data.productID || 'generic',
             product_name: data.name,
-            price: data.offers?.price
+            price: data.offers?.price,
+            currency: data.offers?.priceCurrency || 'BRL',
+            is_ecommerce_event: true
           });
         }
       } catch (e) {
@@ -516,28 +649,31 @@
       if (button) {
         const productId = button.dataset.productId || button.dataset.id || 'generic';
         const productName = button.dataset.productName || button.dataset.name || '';
+        const price = button.dataset.price || null;
         
         log('Generic add to cart:', productId);
         sendEvent('add_to_cart', {
           product_id: productId,
-          product_name: productName
+          product_name: productName,
+          price: price ? parseFloat(price) : null,
+          is_ecommerce_event: true
         });
       }
-    });
-
-    // Fallback: Detect checkout form submissions
-    document.addEventListener('submit', function(e) {
-      const form = e.target;
-      if (form.classList.contains('checkout-form') || 
-          form.action.includes('checkout') ||
-          form.action.includes('payment') ||
-          form.action.includes('compra')) {
+      
+      // ✅ PHASE 8: Generic remove from cart
+      const removeBtn = e.target.closest('[data-remove], .remove-item, [class*="remove-from-cart"]');
+      if (removeBtn) {
+        const productId = removeBtn.dataset.productId || removeBtn.dataset.itemId;
+        const productName = removeBtn.dataset.productName || removeBtn.dataset.name;
         
-        log('Checkout form submitted');
-        sendEvent('begin_checkout', {
-          form_action: form.action,
-          page_url: window.location.href
-        });
+        if (productId) {
+          log('Generic remove from cart:', productId);
+          sendEvent('remove_from_cart', {
+            product_id: productId,
+            product_name: productName,
+            is_ecommerce_event: true
+          });
+        }
       }
     });
 
@@ -547,10 +683,14 @@
         window.location.pathname.includes('/carrinho')) {
       setTimeout(() => {
         const cartTotal = document.querySelector('.cart-total, .total-price, [class*="total"]')?.textContent?.replace(/[^\d.,]/g, '');
+        const itemsCount = document.querySelectorAll('.cart-item, [class*="product"]').length;
+        
         if (cartTotal) {
           log('Generic begin_checkout detected');
           sendEvent('begin_checkout', {
-            cart_value: parseFloat(cartTotal) || null
+            cart_value: parseFloat(cartTotal) || null,
+            items_count: itemsCount || null,
+            is_ecommerce_event: true
           });
         }
       }, 1000);
@@ -572,7 +712,8 @@
           sendEvent('purchase', {
             order_id: String(purchaseData.transaction_id || purchaseData.actionField?.id || purchaseData.id || Date.now()),
             revenue: parseFloat(purchaseData.value || purchaseData.actionField?.revenue || purchaseData.revenue || 0),
-            currency: purchaseData.currency || 'BRL'
+            currency: purchaseData.currency || 'BRL',
+            is_ecommerce_event: true
           });
         }
         
@@ -582,7 +723,20 @@
           log('GTM add_to_cart detected:', productData);
           sendEvent('add_to_cart', {
             product_id: String(productData.id || productData.item_id || 'gtm'),
-            product_name: productData.name || productData.item_name
+            product_name: productData.name || productData.item_name,
+            price: productData.price || null,
+            is_ecommerce_event: true
+          });
+        }
+
+        // Detect remove_from_cart via GTM
+        if (item.event === 'remove_from_cart' || item.ecommerce?.remove) {
+          const productData = item.ecommerce?.remove?.products?.[0] || item.ecommerce?.items?.[0] || {};
+          log('GTM remove_from_cart detected:', productData);
+          sendEvent('remove_from_cart', {
+            product_id: String(productData.id || productData.item_id || 'gtm'),
+            product_name: productData.name || productData.item_name,
+            is_ecommerce_event: true
           });
         }
 
@@ -590,7 +744,8 @@
         if (item.event === 'begin_checkout' || item.ecommerce?.checkout) {
           log('GTM begin_checkout detected');
           sendEvent('begin_checkout', {
-            cart_value: parseFloat(item.ecommerce?.value || 0)
+            cart_value: parseFloat(item.ecommerce?.value || 0),
+            is_ecommerce_event: true
           });
         }
       });
@@ -598,7 +753,10 @@
     };
   }
 
-  // Public API for manual tracking
+  // ============================================
+  // PHASE 6: PUBLIC API WITH AUTOMATIC SESSION TRACKING
+  // ============================================
+  
   window.RankitoPixel.trackPurchase = function(orderData) {
     log('Manual purchase tracking:', orderData);
     sendEvent('purchase', {
@@ -606,7 +764,10 @@
       revenue: parseFloat(orderData.revenue || orderData.total || 0),
       currency: orderData.currency || 'BRL',
       order_name: orderData.order_name || null,
-      payment_method: orderData.payment_method || null
+      payment_method: orderData.payment_method || null,
+      items_count: orderData.items_count || null,
+      is_ecommerce_event: true,
+      is_manual_tracking: true  // ✅ Flag for manual tracking
     });
   };
 
@@ -616,7 +777,9 @@
       product_id: String(productData.product_id || 'manual'),
       product_name: productData.product_name || productData.name,
       price: parseFloat(productData.price || 0),
-      quantity: parseInt(productData.quantity || 1)
+      quantity: parseInt(productData.quantity || 1),
+      is_ecommerce_event: true,
+      is_manual_tracking: true
     });
   };
 
@@ -624,7 +787,9 @@
     log('Manual remove_from_cart tracking:', productData);
     sendEvent('remove_from_cart', {
       product_id: String(productData.product_id || 'manual'),
-      product_name: productData.product_name || productData.name
+      product_name: productData.product_name || productData.name,
+      is_ecommerce_event: true,
+      is_manual_tracking: true
     });
   };
 
@@ -632,7 +797,10 @@
     log('Manual begin_checkout tracking:', cartData);
     sendEvent('begin_checkout', {
       cart_value: parseFloat(cartData.cart_value || cartData.total || 0),
-      items_count: parseInt(cartData.items_count || 0)
+      items_count: parseInt(cartData.items_count || 0),
+      currency: cartData.currency || 'BRL',
+      is_ecommerce_event: true,
+      is_manual_tracking: true
     });
   };
 
@@ -640,7 +808,22 @@
     log('Manual search tracking:', searchData);
     sendEvent('search', {
       search_term: searchData.search_term || searchData.query,
-      results_count: parseInt(searchData.results_count || 0)
+      results_count: parseInt(searchData.results_count || 0),
+      is_ecommerce_event: true,
+      is_manual_tracking: true
+    });
+  };
+
+  window.RankitoPixel.trackProductView = function(productData) {
+    log('Manual product_view tracking:', productData);
+    sendEvent('product_view', {
+      product_id: String(productData.product_id || 'manual'),
+      product_name: productData.product_name || productData.name,
+      price: parseFloat(productData.price || 0),
+      currency: productData.currency || 'BRL',
+      category: productData.category || null,
+      is_ecommerce_event: true,
+      is_manual_tracking: true
     });
   };
 
@@ -677,15 +860,15 @@
     if (config.ready) return;
     config.ready = true;
 
-    log('Initializing Rankito Pixel', config);
+    log('Initializing Rankito Pixel v2.0 with Complete Session Tracking', config);
 
     // Track page view
     trackPageView();
 
     // Setup event listeners
     document.addEventListener('click', trackClicks, true);
+    document.addEventListener('submit', trackFormSubmission, true);  // ✅ PHASE 5
     window.addEventListener('scroll', trackScrollDepth, { passive: true });
-    window.addEventListener('beforeunload', trackTimeOnPage);
     
     // Session tracking - page exit listeners
     document.addEventListener('visibilitychange', function() {
@@ -700,7 +883,7 @@
     // Initialize e-commerce tracking
     initEcommerce();
 
-    log('Rankito Pixel initialized successfully');
+    log('✅ Rankito Pixel v2.0 initialized successfully - All events now include session_id and sequence_number');
   }
 
   // Wait for DOM ready
