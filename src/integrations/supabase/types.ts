@@ -1128,6 +1128,7 @@ export type Database = {
       }
       google_business_profiles: {
         Row: {
+          access_token: string | null
           business_address: string | null
           business_categories: string[] | null
           business_name: string | null
@@ -1142,12 +1143,14 @@ export type Database = {
           last_error: string | null
           last_sync_at: string | null
           location_name: string | null
-          service_account_json: Json | null
+          refresh_token: string | null
           site_id: string
+          token_expires_at: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          access_token?: string | null
           business_address?: string | null
           business_categories?: string[] | null
           business_name?: string | null
@@ -1162,12 +1165,14 @@ export type Database = {
           last_error?: string | null
           last_sync_at?: string | null
           location_name?: string | null
-          service_account_json?: Json | null
+          refresh_token?: string | null
           site_id: string
+          token_expires_at?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          access_token?: string | null
           business_address?: string | null
           business_categories?: string[] | null
           business_name?: string | null
@@ -1182,8 +1187,9 @@ export type Database = {
           last_error?: string | null
           last_sync_at?: string | null
           location_name?: string | null
-          service_account_json?: Json | null
+          refresh_token?: string | null
           site_id?: string
+          token_expires_at?: string | null
           updated_at?: string | null
           user_id?: string
         }

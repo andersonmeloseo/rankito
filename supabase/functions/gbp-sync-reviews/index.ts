@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
-import { getIntegrationWithValidToken } from '../_shared/gbp-jwt-auth.ts';
+import { getIntegrationWithValidToken, markIntegrationHealthy, markIntegrationUnhealthy, isAuthError } from '../_shared/gbp-oauth-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,17 +67,6 @@ Deno.serve(async (req) => {
         );
 
         if (!reviewsResponse.ok) {
-          if (reviewsResponse.status === 401 || reviewsResponse.status === 403) {
-            // Mark as unhealthy
-            await supabase
-              .from('google_business_profiles')
-              .update({
-                health_status: 'error',
-                last_error: 'Authentication failed',
-                consecutive_failures: profile.consecutive_failures + 1,
-              })
-              .eq('id', profile.id);
-          }
           throw new Error(`Failed to fetch reviews: ${reviewsResponse.status}`);
         }
 
@@ -128,18 +117,13 @@ Deno.serve(async (req) => {
         totalReviewsSynced += reviews.length;
         profilesProcessed++;
 
-        // Update profile sync timestamp
-        await supabase
-          .from('google_business_profiles')
-          .update({
-            last_sync_at: new Date().toISOString(),
-            health_status: 'healthy',
-            consecutive_failures: 0,
-          })
-          .eq('id', profile.id);
+        // Mark profile as healthy
+        await markIntegrationHealthy(profile.id);
 
       } catch (error) {
         console.error(`❌ Error processing profile ${profile.id}:`, error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        await markIntegrationUnhealthy(profile.id, errorMessage);
         continue;
       }
     }
