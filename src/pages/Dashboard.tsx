@@ -266,15 +266,12 @@ const Dashboard = () => {
         }
         break;
       case "view-tracking":
-        // Navigate to first site's tracking tab
-        if (allSites && allSites.length > 0) {
-          navigate(`/dashboard/site/${allSites[0].id}?tab=tracking`);
-        } else {
-          setShowAddSite(true);
-        }
+        // Navigate to Academia tab where tracking instructions are available
+        handleTabChange("academia");
         break;
       case "explore":
-        handleTabChange("overview");
+        // Navigate to geolocation analytics to see real data
+        handleTabChange("geolocation");
         break;
     }
   };
