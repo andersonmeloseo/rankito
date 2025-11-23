@@ -23,7 +23,7 @@ async function createJWT(credentials: ServiceAccountCredentials): Promise<string
 
   const payload = {
     iss: credentials.client_email,
-    scope: 'https://www.googleapis.com/auth/business.manage',
+    scope: 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/businessprofileperformance',
     aud: credentials.token_uri,
     exp: expiry,
     iat: now,
@@ -137,17 +137,14 @@ Deno.serve(async (req) => {
         const startDateStr = startDate.toISOString().split('T')[0];
         const endDateStr = endDate.toISOString().split('T')[0];
 
-        // Chamar API do Google My Business para métricas
+        // Chamar Business Profile Performance API (moderna)
         const metricsResponse = await fetch(
-          `https://mybusiness.googleapis.com/v4/${profile.location_name}/insights:getDailyMetricsTimeSeries?` +
+          `https://businessprofileperformance.googleapis.com/v1/${profile.location_name}/searchkeywords/impressions/monthly?` +
           new URLSearchParams({
-            'dailyRange.startDate.year': startDate.getFullYear().toString(),
-            'dailyRange.startDate.month': (startDate.getMonth() + 1).toString(),
-            'dailyRange.startDate.day': startDate.getDate().toString(),
-            'dailyRange.endDate.year': endDate.getFullYear().toString(),
-            'dailyRange.endDate.month': (endDate.getMonth() + 1).toString(),
-            'dailyRange.endDate.day': endDate.getDate().toString(),
-            'dailyMetric': 'QUERIES_DIRECT',
+            'monthlyRange.startMonth.year': startDate.getFullYear().toString(),
+            'monthlyRange.startMonth.month': (startDate.getMonth() + 1).toString(),
+            'monthlyRange.endMonth.year': endDate.getFullYear().toString(),
+            'monthlyRange.endMonth.month': (endDate.getMonth() + 1).toString(),
           }),
           {
             headers: {
@@ -177,32 +174,49 @@ Deno.serve(async (req) => {
         const metricsData = await metricsResponse.json();
         console.log(`✅ Fetched metrics for ${profile.connection_name}`);
 
-        // Processar e inserir métricas no banco
-        const timeSeries = metricsData.timeSeries || {};
-        const dailyMetrics = timeSeries.datedValues || [];
+        // Processar e inserir métricas no banco (API moderna retorna estrutura diferente)
+        const searchKeywords = metricsData.searchKeywordsCounts || [];
 
-        for (const metric of dailyMetrics) {
-          const metricDate = `${metric.date.year}-${String(metric.date.month).padStart(2, '0')}-${String(metric.date.day).padStart(2, '0')}`;
+        // Agrupar métricas por data para inserção
+        const metricsMap = new Map();
+        
+        for (const keyword of searchKeywords) {
+          if (!keyword.insightsByMonth) continue;
           
-          const analyticsData = {
-            profile_id: profile.id,
-            site_id: profile.site_id,
-            metric_date: metricDate,
-            searches_direct: metric.value || 0,
-            searches_discovery: 0, // Seria necessário fazer chamadas separadas para cada métrica
-            searches_branded: 0,
-            profile_views: 0,
-            profile_clicks: 0,
-            actions_website: 0,
-            actions_phone: 0,
-            actions_directions: 0,
-            photos_count_merchant: 0,
-            photos_count_customers: 0,
-            photos_views_merchant: 0,
-            photos_views_customers: 0,
-          };
+          for (const monthData of keyword.insightsByMonth) {
+            const date = monthData.date;
+            if (!date) continue;
+            
+            const metricDate = `${date.year}-${String(date.month).padStart(2, '0')}-01`;
+            
+            if (!metricsMap.has(metricDate)) {
+              metricsMap.set(metricDate, {
+                profile_id: profile.id,
+                site_id: profile.site_id,
+                metric_date: metricDate,
+                searches_direct: 0,
+                searches_discovery: 0,
+                searches_branded: 0,
+                profile_views: 0,
+                profile_clicks: 0,
+                actions_website: 0,
+                actions_phone: 0,
+                actions_directions: 0,
+                photos_count_merchant: 0,
+                photos_count_customers: 0,
+                photos_views_merchant: 0,
+                photos_views_customers: 0,
+              });
+            }
+            
+            // Agregar impressões (buscas diretas)
+            const current = metricsMap.get(metricDate);
+            current.searches_direct += monthData.impressions || 0;
+          }
+        }
 
-          // Inserir ou atualizar
+        // Inserir métricas agregadas
+        for (const analyticsData of metricsMap.values()) {
           const { error: insertError } = await supabase
             .from('gbp_analytics')
             .upsert(analyticsData, {
@@ -210,7 +224,7 @@ Deno.serve(async (req) => {
             });
 
           if (insertError) {
-            console.error(`❌ Error inserting metric for ${metricDate}:`, insertError);
+            console.error(`❌ Error inserting metric for ${analyticsData.metric_date}:`, insertError);
           }
         }
 

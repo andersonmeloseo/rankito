@@ -45,12 +45,12 @@ export function AddGBPIntegrationDialog({
           link: "https://console.cloud.google.com/apis/library/mybusinessaccountmanagement.googleapis.com"
         },
         { 
-          text: "My Business Business Information API", 
+          text: "My Business Business Information API (obrigatória)", 
           link: "https://console.cloud.google.com/apis/library/mybusinessbusinessinformation.googleapis.com"
         },
         { 
-          text: "Google My Business API", 
-          link: "https://console.cloud.google.com/apis/library/mybusiness.googleapis.com"
+          text: "Business Profile Performance API (obrigatória para analytics)", 
+          link: "https://console.cloud.google.com/apis/library/businessprofileperformance.googleapis.com"
         }
       ]
     },
