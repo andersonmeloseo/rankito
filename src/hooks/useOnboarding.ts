@@ -103,11 +103,11 @@ export const useOnboarding = () => {
       completed: false, // Sempre false pois não podemos verificar isso
     },
     {
-      id: "explore-analytics",
-      title: "Explore os Relatórios",
-      description: "Acesse analytics detalhados, métricas financeiras, geolocalização de visitantes e relatórios de e-commerce.",
-      action: "explore",
-      actionLabel: "Explorar Dashboard",
+      id: "add-clients",
+      title: "Cadastre seus Clientes",
+      description: "Adicione clientes finais para alugar seus projetos. Gere links de portal personalizados com analytics exclusivos para cada cliente.",
+      action: "add-client",
+      actionLabel: "Cadastrar Cliente",
       completed: false,
     },
   ];
