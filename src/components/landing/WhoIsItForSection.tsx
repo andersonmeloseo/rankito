@@ -63,33 +63,14 @@ export const WhoIsItForSection = () => {
                   <Icon className="h-8 w-8 text-white" />
                 </div>
                 
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-bold text-foreground flex-1">
-                    {profile.title}
-                  </h3>
-                  <Badge variant="outline" className="text-xs ml-2">
-                    {profile.marketShare}
-                  </Badge>
-                </div>
+                <h3 className="text-lg font-bold text-foreground mb-3">
+                  {profile.title}
+                </h3>
                 
                 <div className="space-y-3 mb-4 flex-1">
-                  <div>
-                    <p className="text-xs font-semibold text-red-600 mb-1">
-                      {t.whoIsItFor.painLabel}:
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {profile.pain}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-xs font-semibold text-green-600 mb-1">
-                      {t.whoIsItFor.solutionLabel}:
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {profile.solution}
-                    </p>
-                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {profile.description}
+                  </p>
                 </div>
                 
                 <p className="text-xs text-muted-foreground italic border-t pt-3">
