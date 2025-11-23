@@ -181,3 +181,38 @@ verify_jwt = false
 
 [functions.gsc-sync-inspection-status.schedule]
 every = "1 day"
+
+# ===== GOOGLE BUSINESS PROFILE (GBP) FUNCTIONS =====
+
+# GBP: Sincronizar Reviews
+[functions.gbp-sync-reviews]
+verify_jwt = false
+
+[functions.gbp-sync-reviews.schedule]
+every = "0 */6 * * *"
+
+# GBP: Sincronizar Analytics
+[functions.gbp-sync-analytics]
+verify_jwt = false
+
+[functions.gbp-sync-analytics.schedule]
+every = "0 2 * * *"
+
+# GBP: Publicar Posts Agendados
+[functions.gbp-publish-post]
+verify_jwt = false
+
+[functions.gbp-publish-post.schedule]
+every = "0 * * * *"
+
+# GBP: Testar Conexão
+[functions.gbp-test-connection]
+verify_jwt = true
+
+# GBP: Responder Review
+[functions.gbp-respond-review]
+verify_jwt = true
+
+# GBP: Deletar Perfil
+[functions.gbp-delete-profile]
+verify_jwt = true
