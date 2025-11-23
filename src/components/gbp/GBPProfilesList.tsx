@@ -1,7 +1,7 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Star, MapPin, Phone, Eye } from "lucide-react";
+import { Sparkles, Star, MapPin, Phone, Eye, CheckCircle, Link as LinkIcon } from "lucide-react";
 import { useGBPSiteProfiles } from "@/hooks/useGBPProfiles";
 import { useGBPMockData } from "@/hooks/useGBPMockData";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GBPProfileOverview } from "./GBPProfileOverview";
 import { GBPPhotosManager } from "./GBPPhotosManager";
 import { GBPQuestionsManager } from "./GBPQuestionsManager";
+import { AddGBPIntegrationDialog } from "./AddGBPIntegrationDialog";
 
 interface GBPProfilesListProps {
   userId: string;
@@ -28,6 +29,7 @@ export const GBPProfilesList = ({ userId, siteId, siteName }: GBPProfilesListPro
   const { profiles, isLoading } = useGBPSiteProfiles(siteId, userId);
   const { generateMockData, isGenerating } = useGBPMockData(siteId);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
+  const [showConnectDialog, setShowConnectDialog] = useState(false);
 
   const mockProfiles = profiles?.filter(p => p.is_mock) || [];
   const realProfiles = profiles?.filter(p => !p.is_mock) || [];
@@ -56,21 +58,94 @@ export const GBPProfilesList = ({ userId, siteId, siteName }: GBPProfilesListPro
 
       {/* Empty State */}
       {!profiles || profiles.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Sparkles className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">Nenhum Perfil Conectado</h3>
-          <p className="text-muted-foreground mb-6">
-            Comece gerando dados de demonstração ou conecte seu perfil real do Google Business.
-          </p>
-          <Button
-            size="lg"
-            onClick={() => generateMockData({ clearExisting: false })}
-            disabled={isGenerating}
-          >
-            <Sparkles className="mr-2 h-5 w-5" />
-            Gerar Perfis de Demonstração
-          </Button>
-        </Card>
+        <>
+          <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+            {/* Card 1: Demo Data */}
+            <Card className="relative overflow-hidden border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100 rounded-full -mr-16 -mt-16 opacity-50" />
+              <CardContent className="pt-8 pb-6 px-6 relative">
+                <Sparkles className="h-12 w-12 text-purple-600 mb-4" />
+                <h3 className="text-2xl font-bold mb-2">Dados de Demonstração</h3>
+                <p className="text-muted-foreground mb-4">
+                  Explore todas as funcionalidades com dados realistas
+                </p>
+                <ul className="space-y-2 mb-6">
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span>5 perfis completos prontos</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span>Reviews, fotos e analytics mockados</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span>Teste todas as funcionalidades</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span>Perfeito para aprender o sistema</span>
+                  </li>
+                </ul>
+                <Button 
+                  onClick={() => generateMockData({ clearExisting: false })}
+                  disabled={isGenerating}
+                  size="lg"
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  {isGenerating ? "Gerando..." : "Gerar Perfis Demo"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Card 2: Real Profile */}
+            <Card className="relative overflow-hidden border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full -mr-16 -mt-16 opacity-50" />
+              <CardContent className="pt-8 pb-6 px-6 relative">
+                <LinkIcon className="h-12 w-12 text-blue-600 mb-4" />
+                <h3 className="text-2xl font-bold mb-2">Conectar Perfil Real</h3>
+                <p className="text-muted-foreground mb-4">
+                  Sincronize seu Google Business Profile real
+                </p>
+                <ul className="space-y-2 mb-6">
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span>Sincronização automática</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span>Reviews e posts reais</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span>Analytics em tempo real</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span>Dados do Google My Business</span>
+                  </li>
+                </ul>
+                <Button 
+                  onClick={() => setShowConnectDialog(true)}
+                  size="lg"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  <LinkIcon className="mr-2 h-5 w-5" />
+                  Conectar Primeiro Perfil
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <AddGBPIntegrationDialog
+            open={showConnectDialog}
+            onOpenChange={setShowConnectDialog}
+            onSuccess={() => {
+              setShowConnectDialog(false);
+            }}
+          />
+        </>
       ) : (
         <div className="space-y-8">
           {/* Mock Profiles */}
