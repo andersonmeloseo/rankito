@@ -44,7 +44,9 @@ Deno.serve(async (req) => {
     // Exchange authorization code for tokens
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
     const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
-    const redirectUri = `${Deno.env.get('VITE_SUPABASE_URL')}/functions/v1/gbp-oauth-callback`;
+    const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/gbp-oauth-callback`;
+    
+    console.log('🔗 Redirect URI:', redirectUri);
 
     if (!clientId || !clientSecret) {
       throw new Error('Google OAuth2 not configured. Contact support.');
