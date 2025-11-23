@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send } from "lucide-react";
-import { useTicketById, useTicketMessages, useSendMessage, useMarkMessagesAsRead } from "@/hooks/useSupportTickets";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Send, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useTicketById, useTicketMessages, useSendMessage, useMarkMessagesAsRead, useDeleteMessage } from "@/hooks/useSupportTickets";
 import { StatusBadge } from "./StatusBadge";
 import { PriorityBadge } from "./PriorityBadge";
 import { format } from "date-fns";
@@ -19,12 +21,14 @@ interface TicketChatViewProps {
 export function TicketChatView({ ticketId, onBack }: TicketChatViewProps) {
   const [newMessage, setNewMessage] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: ticket } = useTicketById(ticketId);
   const { data: messages } = useTicketMessages(ticketId);
   const sendMessage = useSendMessage();
   const markAsRead = useMarkMessagesAsRead();
+  const deleteMessage = useDeleteMessage();
 
   // Get current user
   useEffect(() => {
@@ -107,7 +111,7 @@ export function TicketChatView({ ticketId, onBack }: TicketChatViewProps) {
             return (
               <div
                 key={message.id}
-                className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}
+                className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} group`}
               >
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className={isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-muted'}>
@@ -117,9 +121,22 @@ export function TicketChatView({ ticketId, onBack }: TicketChatViewProps) {
                 <div className={`flex-1 max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                   <div className="flex items-baseline gap-2 mb-1">
                     <span className="text-sm font-medium">{senderName}</span>
+                    {message.is_admin_reply && (
+                      <Badge variant="secondary" className="text-xs">Admin</Badge>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       {format(new Date(message.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                     </span>
+                    {isOwnMessage && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setDeleteMessageId(message.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                   <div
                     className={`rounded-lg p-3 ${
@@ -172,6 +189,33 @@ export function TicketChatView({ ticketId, onBack }: TicketChatViewProps) {
           </p>
         </div>
       )}
+
+      <AlertDialog open={!!deleteMessageId} onOpenChange={() => setDeleteMessageId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir mensagem?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. A mensagem será permanentemente excluída.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteMessageId) {
+                  deleteMessage.mutate(
+                    { message_id: deleteMessageId, ticket_id: ticketId },
+                    { onSuccess: () => setDeleteMessageId(null) }
+                  );
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

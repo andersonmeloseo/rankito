@@ -454,3 +454,26 @@ export function useUploadAttachment() {
     },
   });
 }
+
+export function useDeleteMessage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { message_id: string; ticket_id: string }) => {
+      const { error } = await supabase
+        .from('support_messages')
+        .delete()
+        .eq('id', data.message_id);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['support-messages', variables.ticket_id] });
+      queryClient.invalidateQueries({ queryKey: ['support-tickets'] });
+      toast.success('Mensagem excluída!');
+    },
+    onError: (error: Error) => {
+      toast.error('Erro ao excluir mensagem: ' + error.message);
+    },
+  });
+}
