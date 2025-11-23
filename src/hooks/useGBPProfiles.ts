@@ -46,7 +46,7 @@ export function useGBPProfiles(siteId: string, userId: string) {
         .select('*', { count: 'exact', head: true })
         .eq('site_id', siteId);
 
-      const maxIntegrations = (subscription as any)?.subscription_plans?.max_gbp_integrations ?? 0;
+      const maxIntegrations = (subscription as any)?.subscription_plans?.max_gbp_integrations;
       const canAddMore = maxIntegrations === null || (currentCount || 0) < maxIntegrations;
 
       return {
