@@ -868,65 +868,6 @@ export type Database = {
           },
         ]
       }
-      gbp_oauth_states: {
-        Row: {
-          connection_name: string
-          created_at: string | null
-          expires_at: string
-          id: string
-          site_id: string
-          state_token: string
-          user_id: string
-        }
-        Insert: {
-          connection_name: string
-          created_at?: string | null
-          expires_at?: string
-          id?: string
-          site_id: string
-          state_token: string
-          user_id: string
-        }
-        Update: {
-          connection_name?: string
-          created_at?: string | null
-          expires_at?: string
-          id?: string
-          site_id?: string
-          state_token?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gbp_oauth_states_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_contract_status"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gbp_oauth_states_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_metrics"
-            referencedColumns: ["site_id"]
-          },
-          {
-            foreignKeyName: "gbp_oauth_states_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_site_metrics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gbp_oauth_states_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "rank_rent_sites"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       gbp_posts: {
         Row: {
           clicks_count: number | null
@@ -1187,7 +1128,6 @@ export type Database = {
       }
       google_business_profiles: {
         Row: {
-          access_token: string
           business_address: string | null
           business_categories: string[] | null
           business_name: string | null
@@ -1195,21 +1135,19 @@ export type Database = {
           connection_name: string
           consecutive_failures: number | null
           created_at: string | null
-          google_email: string
+          google_email: string | null
           health_status: string | null
           id: string
           is_active: boolean | null
           last_error: string | null
           last_sync_at: string | null
           location_name: string | null
-          refresh_token: string
+          service_account_json: Json | null
           site_id: string
-          token_expires_at: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          access_token: string
           business_address?: string | null
           business_categories?: string[] | null
           business_name?: string | null
@@ -1217,21 +1155,19 @@ export type Database = {
           connection_name: string
           consecutive_failures?: number | null
           created_at?: string | null
-          google_email: string
+          google_email?: string | null
           health_status?: string | null
           id?: string
           is_active?: boolean | null
           last_error?: string | null
           last_sync_at?: string | null
           location_name?: string | null
-          refresh_token: string
+          service_account_json?: Json | null
           site_id: string
-          token_expires_at: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          access_token?: string
           business_address?: string | null
           business_categories?: string[] | null
           business_name?: string | null
@@ -1239,16 +1175,15 @@ export type Database = {
           connection_name?: string
           consecutive_failures?: number | null
           created_at?: string | null
-          google_email?: string
+          google_email?: string | null
           health_status?: string | null
           id?: string
           is_active?: boolean | null
           last_error?: string | null
           last_sync_at?: string | null
           location_name?: string | null
-          refresh_token?: string
+          service_account_json?: Json | null
           site_id?: string
-          token_expires_at?: string
           updated_at?: string | null
           user_id?: string
         }

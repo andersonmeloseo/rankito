@@ -2,11 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const useGBPProfiles = (siteId: string, userId: string) => {
+export function useGBPProfiles(siteId: string, userId: string) {
   const queryClient = useQueryClient();
 
-  // Fetch GBP profiles for site
-  const { data: profiles, isLoading } = useQuery({
+  // Fetch GBP profiles
+  const profiles = useQuery({
     queryKey: ['gbp-profiles', siteId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -22,7 +22,7 @@ export const useGBPProfiles = (siteId: string, userId: string) => {
   });
 
   // Fetch plan limits
-  const { data: planLimits } = useQuery({
+  const planLimits = useQuery({
     queryKey: ['gbp-plan-limits', userId, siteId],
     queryFn: async () => {
       const { data: subscription } = await supabase
@@ -46,33 +46,17 @@ export const useGBPProfiles = (siteId: string, userId: string) => {
         .select('*', { count: 'exact', head: true })
         .eq('site_id', siteId);
 
+      const maxIntegrations = (subscription as any)?.subscription_plans?.max_gbp_integrations ?? 0;
+      const canAddMore = maxIntegrations === null || (currentCount || 0) < maxIntegrations;
+
       return {
         subscription,
-        maxIntegrations: (subscription as any)?.subscription_plans?.max_gbp_integrations ?? 0,
+        maxIntegrations,
         currentCount: currentCount || 0,
+        canAddMore,
       };
     },
     enabled: !!userId && !!siteId,
-  });
-
-  // Start OAuth flow
-  const startOAuth = useMutation({
-    mutationFn: async (connectionName: string) => {
-      const { data, error } = await supabase.functions.invoke('gbp-oauth-start', {
-        body: { site_id: siteId, connection_name: connectionName },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      if (data.authUrl) {
-        window.location.href = data.authUrl;
-      }
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao iniciar OAuth: ${error.message}`);
-    },
   });
 
   // Test connection
@@ -83,6 +67,7 @@ export const useGBPProfiles = (siteId: string, userId: string) => {
       });
 
       if (error) throw error;
+      if (data.error) throw new Error(data.error);
       return data;
     },
     onSuccess: () => {
@@ -90,7 +75,7 @@ export const useGBPProfiles = (siteId: string, userId: string) => {
       queryClient.invalidateQueries({ queryKey: ['gbp-profiles'] });
     },
     onError: (error: any) => {
-      toast.error(`Erro no teste: ${error.message}`);
+      toast.error(error.message || 'Erro no teste de conexão');
     },
   });
 
@@ -102,6 +87,7 @@ export const useGBPProfiles = (siteId: string, userId: string) => {
       });
 
       if (error) throw error;
+      if (data.error) throw new Error(data.error);
       return data;
     },
     onSuccess: () => {
@@ -110,18 +96,17 @@ export const useGBPProfiles = (siteId: string, userId: string) => {
       queryClient.invalidateQueries({ queryKey: ['gbp-plan-limits'] });
     },
     onError: (error: any) => {
-      toast.error(`Erro ao remover perfil: ${error.message}`);
+      toast.error(error.message || 'Erro ao remover perfil');
     },
   });
 
   // Sync reviews manually
   const syncReviews = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('gbp-sync-reviews', {
-        body: {},
-      });
+      const { data, error } = await supabase.functions.invoke('gbp-sync-reviews');
 
       if (error) throw error;
+      if (data.error) throw new Error(data.error);
       return data;
     },
     onSuccess: () => {
@@ -129,21 +114,20 @@ export const useGBPProfiles = (siteId: string, userId: string) => {
       queryClient.invalidateQueries({ queryKey: ['gbp-reviews'] });
     },
     onError: (error: any) => {
-      toast.error(`Erro ao sincronizar: ${error.message}`);
+      toast.error(error.message || 'Erro ao sincronizar avaliações');
     },
   });
 
   return {
-    profiles,
-    planLimits,
-    isLoading,
-    isStartingOAuth: startOAuth.isPending,
-    isTestingConnection: testConnection.isPending,
-    isDeletingProfile: deleteProfile.isPending,
-    isSyncingReviews: syncReviews.isPending,
-    startOAuth: startOAuth.mutate,
-    testConnection: testConnection.mutate,
-    deleteProfile: deleteProfile.mutate,
-    syncReviews: syncReviews.mutate,
+    profiles: profiles.data,
+    isLoading: profiles.isLoading,
+    planLimits: planLimits.data,
+    testConnection,
+    isTesting: testConnection.isPending,
+    deleteProfile,
+    isDeleting: deleteProfile.isPending,
+    syncReviews,
+    isSyncing: syncReviews.isPending,
+    refetch: profiles.refetch,
   };
-};
+}
