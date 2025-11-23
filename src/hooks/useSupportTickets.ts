@@ -477,3 +477,47 @@ export function useDeleteMessage() {
     },
   });
 }
+
+export const useDeleteTicket = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (ticketId: string) => {
+      const { error } = await supabase
+        .from('support_tickets')
+        .delete()
+        .eq('id', ticketId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['support-tickets'] });
+      toast.success('Ticket deletado com sucesso');
+    },
+    onError: (error: Error) => {
+      toast.error('Erro ao deletar ticket: ' + error.message);
+    },
+  });
+};
+
+export const useArchiveTicket = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (data: { ticketId: string; archived: boolean }) => {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ archived: data.archived })
+        .eq('id', data.ticketId);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['support-tickets'] });
+      toast.success(variables.archived ? 'Ticket arquivado com sucesso' : 'Ticket desarquivado com sucesso');
+    },
+    onError: (error: Error) => {
+      toast.error('Erro ao arquivar/desarquivar ticket: ' + error.message);
+    },
+  });
+};

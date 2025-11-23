@@ -3147,6 +3147,7 @@ export type Database = {
       }
       support_tickets: {
         Row: {
+          archived: boolean | null
           assigned_to: string | null
           category: Database["public"]["Enums"]["support_category"]
           closed_at: string | null
@@ -3167,6 +3168,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived?: boolean | null
           assigned_to?: string | null
           category?: Database["public"]["Enums"]["support_category"]
           closed_at?: string | null
@@ -3187,6 +3189,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived?: boolean | null
           assigned_to?: string | null
           category?: Database["public"]["Enums"]["support_category"]
           closed_at?: string | null
