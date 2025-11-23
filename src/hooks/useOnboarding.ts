@@ -75,7 +75,7 @@ export const useOnboarding = () => {
     {
       id: "welcome",
       title: "Bem-vindo ao Rankito CRM! 🎉",
-      description: "Vamos configurar seu sistema em 5 passos rápidos para você começar a gerenciar seus projetos Rank & Rent com máxima eficiência.",
+      description: "Vamos configurar seu sistema em 6 passos rápidos para você começar a gerenciar seus projetos Rank & Rent com máxima eficiência.",
       completed: true,
     },
     {
@@ -93,6 +93,14 @@ export const useOnboarding = () => {
       action: "setup-gsc",
       actionLabel: "Configurar GSC",
       completed: (gscCount || 0) > 0,
+    },
+    {
+      id: "download-plugin",
+      title: "Baixe o Plugin WordPress",
+      description: "Se seu site usa WordPress, baixe e instale o plugin Rank & Rent Tracker para rastreamento automático de conversões, cliques e jornada do usuário. Caso não use WordPress, pule este passo.",
+      action: "download-plugin",
+      actionLabel: "Baixar Plugin",
+      completed: false,
     },
     {
       id: "install-tracking",
