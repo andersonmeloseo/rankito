@@ -289,7 +289,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
             firstAccessTime: data.firstAccessTime
           };
         })
-        .sort((a, b) => new Date(b.firstAccessTime).getTime() - new Date(a.firstAccessTime).getTime());
+        .sort((a, b) => b.count - a.count); // Ordenar por frequência (mais sessões primeiro)
 
       // Calculate step volumes for the most common sequence
       const stepVolumes = new Map<string, number>();
