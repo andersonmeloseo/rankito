@@ -36,13 +36,21 @@ export const GBPProfileCard = ({ profile, onClick }: GBPProfileCardProps) => {
         </div>
 
         {!statsLoading && stats ? (
-          <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            <span className="font-semibold">{stats.averageRating.toFixed(1)}</span>
-            <span className="text-sm text-muted-foreground">
-              ({stats.totalReviews} {stats.totalReviews === 1 ? 'review' : 'reviews'})
-            </span>
-          </div>
+          <>
+            {stats.totalReviews > 0 ? (
+              <div className="flex items-center gap-1">
+                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <span className="font-semibold">{stats.averageRating.toFixed(1)}</span>
+                <span className="text-sm text-muted-foreground">
+                  ({stats.totalReviews} {stats.totalReviews === 1 ? 'review' : 'reviews'})
+                </span>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                Sem reviews ainda
+              </div>
+            )}
+          </>
         ) : (
           <Skeleton className="h-5 w-32" />
         )}
