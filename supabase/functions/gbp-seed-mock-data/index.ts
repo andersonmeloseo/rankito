@@ -134,23 +134,57 @@ const BUSINESS_HOURS = {
 
 function generateReviewText(rating: number, niche: string): string {
   const positiveReviews = [
-    'Excelente atendimento! Superou minhas expectativas.',
-    'Adorei o serviço, muito profissional e atencioso.',
-    'Ambiente incrível e equipe muito competente.',
-    'Recomendo de olhos fechados! Experiência perfeita.',
-    'Melhor da região, sem dúvidas. Voltarei sempre!',
+    'Excelente atendimento! Superou todas as minhas expectativas.',
+    'Adorei o serviço, muito profissional e atencioso. Recomendo!',
+    'Ambiente incrível e equipe muito competente. Nota 10!',
+    'Recomendo de olhos fechados! Experiência perfeita do início ao fim.',
+    'Melhor da região, sem dúvidas. Voltarei sempre que precisar!',
+    'Serviço impecável! Equipe super atenciosa e dedicada.',
+    'Fiquei impressionado com a qualidade! Superou o que esperava.',
+    'Atendimento de primeira, ambiente agradável. Perfeito!',
+    'Profissionais excelentes! Me senti muito bem cuidado.',
+    'Simplesmente maravilhoso! Vale muito a pena conhecer.',
+    'Qualidade excepcional e preço justo. Muito satisfeito!',
+    'Melhor experiência que já tive! Voltarei com certeza.',
+    'Equipe fantástica, atendimento rápido e eficiente.',
+    'Adorei cada detalhe! Ambiente acolhedor e profissional.',
+    'Serviço de altíssima qualidade! Recomendo muito.',
+    'Fantástico! Atendimento personalizado e cuidadoso.',
+    'Superou minhas expectativas! Voltarei sempre.',
+    'Profissionalismo e qualidade em cada detalhe. Nota mil!',
+    'Melhor escolha que fiz! Serviço impecável.',
+    'Experiência incrível! Equipe muito preparada e atenciosa.',
+    'Simplesmente perfeito! Não tenho palavras para descrever.',
+    'Atendimento excepcional! Me senti muito bem recebido.',
   ];
   
   const neutralReviews = [
-    'Bom atendimento, mas pode melhorar.',
-    'Serviço ok, esperava um pouco mais.',
-    'Nada de excepcional, mas cumpre o prometido.',
+    'Bom atendimento, mas acho que pode melhorar em alguns aspectos.',
+    'Serviço ok, cumpre o que promete mas esperava um pouco mais.',
+    'Nada de excepcional, mas atende bem. É uma opção razoável.',
+    'Atendimento bom, mas o tempo de espera foi um pouco longo.',
+    'Serviço correto, sem grandes surpresas. Preço justo.',
+    'Boa experiência no geral, alguns detalhes poderiam ser melhores.',
+    'Atenderam bem, mas senti falta de mais atenção aos detalhes.',
+    'Serviço adequado, nada que me impressionou muito.',
+    'Razoável. Tem pontos positivos e negativos.',
+    'Bom custo-benefício, mas não foi uma experiência marcante.',
+    'Serviço dentro do esperado. Não decepcionou, mas não surpreendeu.',
   ];
   
   const negativeReviews = [
-    'Atendimento demorado e pouco atencioso.',
-    'Não gostei da experiência, esperava mais.',
-    'Deixou a desejar, não voltarei.',
+    'Atendimento demorado e pouco atencioso. Decepcionante.',
+    'Não gostei da experiência. Esperava muito mais qualidade.',
+    'Deixou muito a desejar. Não voltarei e não recomendo.',
+    'Péssimo atendimento! Fui mal recebido e mal atendido.',
+    'Muito desorganizado. Esperei demais e o serviço foi fraco.',
+    'Qualidade ruim e preço alto. Não vale a pena.',
+    'Experiência frustrante. Falta de profissionalismo evidente.',
+    'Decepcionante do início ao fim. Não recomendo.',
+    'Atendimento grosseiro e serviço de baixa qualidade.',
+    'Pior experiência que já tive. Totalmente insatisfeito.',
+    'Não voltaria nem se me pagassem. Péssimo em todos os aspectos.',
+    'Falta de respeito com o cliente. Muito desapontado.',
   ];
   
   if (rating >= 4) return positiveReviews[Math.floor(Math.random() * positiveReviews.length)];
@@ -295,6 +329,23 @@ Deno.serve(async (req) => {
         const createdAt = new Date();
         createdAt.setDate(createdAt.getDate() - daysAgo);
         
+        const shouldReply = Math.random() > 0.5; // 50% chance de ter resposta
+        const replyDate = new Date(createdAt);
+        replyDate.setDate(replyDate.getDate() + Math.floor(Math.random() * 3) + 1);
+        
+        let replyText = null;
+        if (shouldReply) {
+          if (rating === 5) {
+            replyText = 'Muito obrigado pelo feedback positivo! Ficamos felizes em tê-lo(a) como cliente. Conte sempre conosco!';
+          } else if (rating === 4) {
+            replyText = 'Agradecemos muito pelo seu feedback! Estamos sempre trabalhando para melhorar. Volte sempre!';
+          } else if (rating === 3) {
+            replyText = 'Obrigado pelo seu comentário. Vamos analisar seus pontos e trabalhar para melhorar nosso atendimento.';
+          } else {
+            replyText = 'Lamentamos que sua experiência não tenha sido satisfatória. Gostaríamos de conversar para entender melhor o ocorrido e resolver a situação. Entre em contato conosco.';
+          }
+        }
+        
         reviewsToInsert.push({
           profile_id: profile.id,
           site_id: site_id || null,
@@ -304,9 +355,9 @@ Deno.serve(async (req) => {
           star_rating: rating,
           review_text: generateReviewText(rating, mockProfile.niche),
           sentiment: generateSentiment(rating),
-          is_replied: rating <= 2 ? true : Math.random() > 0.5,
-          review_reply: rating <= 2 ? 'Agradecemos seu feedback e estamos trabalhando para melhorar!' : null,
-          review_reply_at: rating <= 2 ? createdAt.toISOString() : null,
+          is_replied: shouldReply,
+          review_reply: replyText,
+          review_reply_at: shouldReply ? replyDate.toISOString() : null,
           created_at: createdAt.toISOString(),
           synced_at: new Date().toISOString(),
         });
