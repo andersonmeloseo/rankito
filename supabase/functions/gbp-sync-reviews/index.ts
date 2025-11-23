@@ -58,9 +58,9 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Fetch reviews from Google
+        // Fetch reviews from Google (Business Information API - moderna)
         const reviewsResponse = await fetch(
-          `https://mybusiness.googleapis.com/v4/${profile.location_name}/reviews`,
+          `https://mybusinessbusinessinformation.googleapis.com/v1/${profile.location_name}/reviews`,
           {
             headers: { 'Authorization': `Bearer ${accessToken}` },
           }
