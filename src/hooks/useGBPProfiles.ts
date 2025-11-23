@@ -2,28 +2,29 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export function useGBPProfiles(siteId: string, userId: string) {
+// Hook para gerenciar perfis GBP do usuário (global, não por site)
+export function useGBPProfiles(userId: string) {
   const queryClient = useQueryClient();
 
-  // Fetch GBP profiles
+  // Fetch GBP profiles do usuário
   const profiles = useQuery({
-    queryKey: ['gbp-profiles', siteId],
+    queryKey: ['gbp-profiles', userId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('google_business_profiles')
         .select('*')
-        .eq('site_id', siteId)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data;
     },
-    enabled: !!siteId,
+    enabled: !!userId,
   });
 
   // Fetch plan limits
   const planLimits = useQuery({
-    queryKey: ['gbp-plan-limits', userId, siteId],
+    queryKey: ['gbp-plan-limits', userId],
     queryFn: async () => {
       const { data: subscription } = await supabase
         .from('user_subscriptions')
@@ -44,7 +45,7 @@ export function useGBPProfiles(siteId: string, userId: string) {
       const { count: currentCount } = await supabase
         .from('google_business_profiles')
         .select('*', { count: 'exact', head: true })
-        .eq('site_id', siteId);
+        .eq('user_id', userId);
 
       const maxIntegrations = (subscription as any)?.subscription_plans?.max_gbp_integrations;
       const canAddMore = maxIntegrations === null || (currentCount || 0) < maxIntegrations;
@@ -56,7 +57,7 @@ export function useGBPProfiles(siteId: string, userId: string) {
         canAddMore,
       };
     },
-    enabled: !!userId && !!siteId,
+    enabled: !!userId,
   });
 
   // Test connection
@@ -129,5 +130,79 @@ export function useGBPProfiles(siteId: string, userId: string) {
     syncReviews,
     isSyncing: syncReviews.isPending,
     refetch: profiles.refetch,
+  };
+}
+
+// Novo hook para gerenciar perfis GBP de um site específico
+export function useGBPSiteProfiles(siteId: string, userId: string) {
+  const queryClient = useQueryClient();
+
+  const siteProfiles = useQuery({
+    queryKey: ['gbp-site-profiles', siteId],
+    queryFn: async () => {
+      // Buscar associações do site
+      const { data: associations, error: assocError } = await supabase
+        .from('gbp_site_associations')
+        .select(`
+          *,
+          google_business_profiles(*)
+        `)
+        .eq('site_id', siteId);
+
+      if (assocError) throw assocError;
+
+      return associations?.map(a => a.google_business_profiles).filter(Boolean) || [];
+    },
+    enabled: !!siteId,
+  });
+
+  // Associar perfil ao site
+  const associateProfile = useMutation({
+    mutationFn: async (profileId: string) => {
+      const { error } = await supabase
+        .from('gbp_site_associations')
+        .insert({
+          gbp_profile_id: profileId,
+          site_id: siteId,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Perfil GBP associado ao projeto');
+      queryClient.invalidateQueries({ queryKey: ['gbp-site-profiles', siteId] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erro ao associar perfil');
+    },
+  });
+
+  // Desassociar perfil do site
+  const dissociateProfile = useMutation({
+    mutationFn: async (profileId: string) => {
+      const { error } = await supabase
+        .from('gbp_site_associations')
+        .delete()
+        .eq('gbp_profile_id', profileId)
+        .eq('site_id', siteId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Perfil GBP desassociado do projeto');
+      queryClient.invalidateQueries({ queryKey: ['gbp-site-profiles', siteId] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erro ao desassociar perfil');
+    },
+  });
+
+  return {
+    profiles: siteProfiles.data,
+    isLoading: siteProfiles.isLoading,
+    associateProfile,
+    isAssociating: associateProfile.isPending,
+    dissociateProfile,
+    isDissociating: dissociateProfile.isPending,
   };
 }

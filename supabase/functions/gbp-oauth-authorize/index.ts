@@ -32,22 +32,9 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { site_id } = await req.json();
+    const { } = await req.json();
     
-    if (!site_id) {
-      throw new Error('Missing site_id');
-    }
-
-    // Verify site ownership
-    const { data: site, error: siteError } = await supabase
-      .from('rank_rent_sites')
-      .select('owner_user_id')
-      .eq('id', site_id)
-      .single();
-
-    if (siteError || !site || site.owner_user_id !== user.id) {
-      throw new Error('Unauthorized');
-    }
+    // No longer need site_id - GBP profiles are global now
 
     // Get OAuth2 credentials
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
@@ -65,9 +52,8 @@ Deno.serve(async (req) => {
       'https://www.googleapis.com/auth/businessprofileperformance',
     ];
 
-    // Generate state parameter (includes site_id for callback)
+    // Generate state parameter (includes user_id for callback)
     const state = JSON.stringify({
-      site_id,
       user_id: user.id,
       timestamp: Date.now(),
     });

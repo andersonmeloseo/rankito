@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import ExternalLeadsAPI from "./pages/ExternalLeadsAPI";
 import ExternalLeadsTestAPI from "./pages/ExternalLeadsTestAPI";
 import PendingApproval from "./pages/PendingApproval";
+import GBPOAuthCallback from "./pages/GBPOAuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,7 @@ const App = () => (
             />
             <Route path="/api/external-leads" element={<ExternalLeadsAPI />} />
             <Route path="/api/external-leads/test" element={<ExternalLeadsTestAPI />} />
+            <Route path="/oauth/gbp/callback" element={<GBPOAuthCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
