@@ -97,7 +97,7 @@ export const useOnboarding = () => {
     {
       id: "install-tracking",
       title: "Instale o Pixel de Tracking",
-      description: "Adicione o pixel ao seu site para rastrear conversões, cliques em WhatsApp, telefone e formulários. Veja a jornada completa dos visitantes.",
+      description: "Adicione o pixel JavaScript ao seu site ou use o plugin WordPress Rank & Rent Tracker para rastrear conversões, cliques em WhatsApp, telefone e formulários. Veja a jornada completa dos visitantes.",
       action: "view-tracking",
       actionLabel: "Ver Instruções",
       completed: false, // Sempre false pois não podemos verificar isso
