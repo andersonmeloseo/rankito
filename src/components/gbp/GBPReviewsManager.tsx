@@ -5,16 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star, MessageSquare, ThumbsUp, ThumbsDown, Minus } from "lucide-react";
 import { useGBPReviews } from "@/hooks/useGBPReviews";
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RespondReviewDialog } from "./RespondReviewDialog";
 
 interface GBPReviewsManagerProps {
   siteId: string;
@@ -23,24 +15,29 @@ interface GBPReviewsManagerProps {
 export const GBPReviewsManager = ({ siteId }: GBPReviewsManagerProps) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [ratingFilter, setRatingFilter] = useState<number | undefined>();
-  const [replyDialogReview, setReplyDialogReview] = useState<any>(null);
-  const [replyText, setReplyText] = useState("");
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<any | null>(null);
 
   const { reviews, metrics, isLoading, isResponding, respondReview, markAsRead } = useGBPReviews(siteId, {
     status: statusFilter,
     rating: ratingFilter,
   });
 
-  const handleRespond = () => {
-    if (!replyDialogReview || !replyText.trim()) return;
-    
-    respondReview({
-      reviewId: replyDialogReview.id,
-      replyText: replyText.trim(),
-    });
-    
-    setReplyDialogReview(null);
-    setReplyText("");
+  const handleOpenReplyDialog = (review: any) => {
+    setSelectedReview(review);
+    setReplyDialogOpen(true);
+  };
+
+  const handleSubmitReply = (reviewId: string, replyText: string) => {
+    respondReview(
+      { reviewId, replyText },
+      {
+        onSuccess: () => {
+          setReplyDialogOpen(false);
+          setSelectedReview(null);
+        },
+      }
+    );
   };
 
   const renderStars = (rating: number) => {
@@ -221,7 +218,7 @@ export const GBPReviewsManager = ({ siteId }: GBPReviewsManagerProps) => {
                     <Button
                       size="sm"
                       onClick={() => {
-                        setReplyDialogReview(review);
+                        handleOpenReplyDialog(review);
                         if (!review.is_read) {
                           markAsRead(review.id);
                         }
@@ -239,43 +236,13 @@ export const GBPReviewsManager = ({ siteId }: GBPReviewsManagerProps) => {
       )}
 
       {/* Reply dialog */}
-      <Dialog open={!!replyDialogReview} onOpenChange={() => setReplyDialogReview(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Responder Avaliação</DialogTitle>
-            <DialogDescription>
-              Envie uma resposta pública que aparecerá no Google Business Profile
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {replyDialogReview && (
-              <div className="bg-muted p-4 rounded-lg space-y-2">
-                <div className="flex gap-1">
-                  {renderStars(replyDialogReview.star_rating)}
-                </div>
-                <p className="text-sm">{replyDialogReview.review_text}</p>
-              </div>
-            )}
-            <Textarea
-              placeholder="Escreva sua resposta..."
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              rows={4}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReplyDialogReview(null)}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleRespond}
-              disabled={!replyText.trim() || isResponding}
-            >
-              {isResponding ? 'Enviando...' : 'Enviar Resposta'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RespondReviewDialog
+        open={replyDialogOpen}
+        onOpenChange={setReplyDialogOpen}
+        review={selectedReview}
+        onSubmit={handleSubmitReply}
+        isSubmitting={isResponding}
+      />
     </div>
   );
 };
