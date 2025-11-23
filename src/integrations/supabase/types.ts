@@ -720,7 +720,15 @@ export type Database = {
           utm_params?: Json | null
           whatsapp?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_early_access_campaign"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       external_lead_sources: {
         Row: {
@@ -1843,6 +1851,47 @@ export type Database = {
           utm_source?: string | null
         }
         Relationships: []
+      }
+      marketing_metrics: {
+        Row: {
+          campaign_id: string | null
+          created_at: string | null
+          date: string
+          id: string
+          metadata: Json | null
+          metric_type: string
+          source: string | null
+          value: number
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          source?: string | null
+          value?: number
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          source?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_metrics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

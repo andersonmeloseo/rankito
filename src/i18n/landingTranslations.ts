@@ -146,6 +146,81 @@ export interface LandingTranslations {
     };
     copyright: string;
   };
+  whoIsItFor: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    painLabel: string;
+    solutionLabel: string;
+    cta: string;
+    profiles: Array<{
+      title: string;
+      pain: string;
+      solution: string;
+      example: string;
+      marketShare: string;
+    }>;
+  };
+  comparison: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    cta: string;
+    footer: string;
+    headers: {
+      feature: string;
+      googleAnalytics: string;
+      semrushAhrefs: string;
+      agencyAnalytics: string;
+      rankito: string;
+    };
+    rows: Array<{
+      feature: string;
+      googleAnalytics: { status: 'yes' | 'no' | 'partial'; text: string };
+      semrushAhrefs: { status: 'yes' | 'no' | 'partial'; text: string };
+      agencyAnalytics: { status: 'yes' | 'no' | 'partial'; text: string };
+      rankito: { status: 'yes' | 'no' | 'partial'; text: string };
+    }>;
+  };
+  pillars: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    items: Array<{
+      title: string;
+      description: string;
+    }>;
+  };
+  roiCalculator: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    cta: string;
+    ctaSubtext: string;
+    inputs: {
+      sites: {
+        label: string;
+        description: string;
+      };
+      hours: {
+        label: string;
+        description: string;
+      };
+      rate: {
+        label: string;
+        description: string;
+      };
+    };
+    results: {
+      title: string;
+      monthlySavings: string;
+      timeSaved: string;
+      yearlyROI: string;
+      roiPercentage: string;
+      netProfit: string;
+      month: string;
+    };
+  };
 }
 
 export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
@@ -490,6 +565,176 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
       },
       copyright: '© 2024 Rankito CRM. Todos os direitos reservados.',
     },
+    whoIsItFor: {
+      badge: 'Feito para Profissionais',
+      title: 'Para Quem é o Rankito CRM?',
+      subtitle: 'Profissionais que gerenciam sites e precisam de clareza, não complexidade',
+      painLabel: 'Dor',
+      solutionLabel: 'Solução',
+      cta: 'Comece Seu Trial Grátis',
+      profiles: [
+        {
+          title: 'Agências de Marketing Digital',
+          pain: 'Google Analytics é complexo, clientes não entendem relatórios',
+          solution: 'Relatórios visuais que contam história clara',
+          example: 'Gerencio 10-50 sites de clientes locais',
+          marketShare: '30%',
+        },
+        {
+          title: 'Consultores SEO Freelancers',
+          pain: 'Perder tempo criando relatórios manualmente',
+          solution: 'Dashboard automático + portal do cliente',
+          example: 'Gerencio 5-15 sites sozinho',
+          marketShare: '25%',
+        },
+        {
+          title: 'Profissionais Lead Generation',
+          pain: 'Sites gerando leads mas sem visibilidade de performance',
+          solution: 'CRM simples + tracking + indexação',
+          example: 'Rank & Rent, afiliados, arbitragem',
+          marketShare: '20%',
+        },
+        {
+          title: 'Pequenos E-commerces',
+          pain: 'Não sabe quais produtos convertem',
+          solution: 'Analytics de produto + funil visual',
+          example: 'Loja com 50-500 produtos',
+          marketShare: '15%',
+        },
+        {
+          title: 'Gestores de Portfólio',
+          pain: 'Gerenciar múltiplos sites é caótico',
+          solution: 'Dashboard consolidado + ROI por projeto',
+          example: '20+ sites, investidor de sites',
+          marketShare: '10%',
+        },
+      ],
+    },
+    comparison: {
+      badge: 'Por Que Rankito?',
+      title: 'A Plataforma Que Faz o Que Outras Só Prometem',
+      subtitle: 'Compare funcionalidades lado a lado',
+      cta: 'Experimente Grátis por 14 Dias',
+      footer: '*Google Analytics é grátis, mas você perde 10h/semana tentando entender',
+      headers: {
+        feature: 'Recurso',
+        googleAnalytics: 'Google Analytics',
+        semrushAhrefs: 'SEMrush/Ahrefs',
+        agencyAnalytics: 'AgencyAnalytics',
+        rankito: 'Rankito CRM',
+      },
+      rows: [
+        {
+          feature: 'Complexidade',
+          googleAnalytics: { status: 'no', text: 'Alta curva aprendizado' },
+          semrushAhrefs: { status: 'no', text: 'Interface técnica' },
+          agencyAnalytics: { status: 'partial', text: 'Focado SEO' },
+          rankito: { status: 'yes', text: 'Simples e visual' },
+        },
+        {
+          feature: 'Jornada Usuário',
+          googleAnalytics: { status: 'no', text: 'Fluxos confusos' },
+          semrushAhrefs: { status: 'no', text: 'Não tem' },
+          agencyAnalytics: { status: 'no', text: 'Não tem' },
+          rankito: { status: 'yes', text: 'Página por página' },
+        },
+        {
+          feature: 'E-commerce',
+          googleAnalytics: { status: 'partial', text: 'Setup complexo' },
+          semrushAhrefs: { status: 'no', text: 'Só keywords' },
+          agencyAnalytics: { status: 'no', text: 'Não tem' },
+          rankito: { status: 'yes', text: 'Automático' },
+        },
+        {
+          feature: 'Indexação GSC',
+          googleAnalytics: { status: 'no', text: 'Não tem' },
+          semrushAhrefs: { status: 'partial', text: 'Só monitora' },
+          agencyAnalytics: { status: 'no', text: 'Não tem' },
+          rankito: { status: 'yes', text: 'Automação completa' },
+        },
+        {
+          feature: 'Portal Cliente',
+          googleAnalytics: { status: 'no', text: 'Não tem' },
+          semrushAhrefs: { status: 'no', text: 'Não tem' },
+          agencyAnalytics: { status: 'yes', text: 'Tem' },
+          rankito: { status: 'yes', text: 'Whitelabel' },
+        },
+        {
+          feature: 'CRM Integrado',
+          googleAnalytics: { status: 'no', text: 'Não tem' },
+          semrushAhrefs: { status: 'no', text: 'Não tem' },
+          agencyAnalytics: { status: 'no', text: 'Não tem' },
+          rankito: { status: 'yes', text: 'Pipeline + leads' },
+        },
+        {
+          feature: 'Relatórios',
+          googleAnalytics: { status: 'no', text: 'Você cria' },
+          semrushAhrefs: { status: 'partial', text: 'Exporta dados' },
+          agencyAnalytics: { status: 'yes', text: 'Tem' },
+          rankito: { status: 'yes', text: 'Automáticos' },
+        },
+        {
+          feature: 'Preço/mês',
+          googleAnalytics: { status: 'partial', text: 'Grátis*' },
+          semrushAhrefs: { status: 'no', text: 'R$ 500-2000' },
+          agencyAnalytics: { status: 'no', text: 'R$ 400-800' },
+          rankito: { status: 'yes', text: 'R$ 97-797' },
+        },
+      ],
+    },
+    pillars: {
+      badge: 'Nossa Filosofia',
+      title: 'O Que Nos Torna Diferentes',
+      subtitle: 'Princípios que guiam cada funcionalidade que criamos',
+      items: [
+        {
+          title: 'Clareza, Não Complexidade',
+          description: 'Google Analytics mostra 47 métricas. Você precisa de 5 que importam. Relatórios que seu cliente ENTENDE, não tabelas que ninguém lê.',
+        },
+        {
+          title: 'Ação, Não Apenas Dados',
+          description: 'Outras ferramentas mostram dados. Rankito mostra O QUE FAZER. Não é só ver números, é indexar, acompanhar jornada, fechar leads.',
+        },
+        {
+          title: 'Automação Total',
+          description: 'Pare de gastar 6 horas criando relatórios. Gere em 2 cliques. Indexação que roda sozinha. CRM que captura leads automaticamente.',
+        },
+        {
+          title: 'Tudo em Um Só Lugar',
+          description: 'Analytics + CRM + Financeiro + Portal Cliente + Indexação GSC. Uma mensalidade, zero integrações quebradas.',
+        },
+      ],
+    },
+    roiCalculator: {
+      badge: 'Calculadora de Economia',
+      title: 'Quanto Você Está Perdendo Sem Rankito?',
+      subtitle: 'Calcule sua economia mensal em tempo e dinheiro',
+      cta: 'Comece a Economizar Agora - 14 Dias Grátis',
+      ctaSubtext: 'Sem cartão de crédito. Cancele quando quiser.',
+      inputs: {
+        sites: {
+          label: 'Quantos sites você gerencia?',
+          description: 'Número total de sites/projetos sob sua gestão',
+        },
+        hours: {
+          label: 'Quantas horas/semana gasta em tarefas manuais?',
+          description: 'Relatórios, indexação, análise de dados, etc.',
+        },
+        rate: {
+          label: 'Quanto vale sua hora? (R$)',
+          description: 'Valor médio por hora do seu trabalho',
+        },
+      },
+      results: {
+        title: 'Sua Economia com Rankito:',
+        monthlySavings: 'Economia Mensal Bruta',
+        timeSaved: 'Tempo Economizado',
+        yearlyROI: 'ROI em 12 Meses',
+        roiPercentage: 'Retorno sobre Investimento',
+        netProfit: 'Lucro Líquido Mensal',
+        month: 'mês',
+      },
+    },
   },
   'es-ES': {
     nav: {
@@ -832,6 +1077,10 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
       },
       copyright: '© 2024 Rankito CRM. Todos los derechos reservados.',
     },
+    whoIsItFor: { badge: 'Hecho para Profesionales', title: '¿Para Quién es Rankito CRM?', subtitle: 'Profesionales que gestionan sitios y necesitan claridad, no complejidad', painLabel: 'Dolor', solutionLabel: 'Solución', cta: 'Comienza Tu Prueba Gratis', profiles: [{ title: 'Agencias Marketing Digital', pain: 'Google Analytics es complejo, clientes no entienden informes', solution: 'Informes visuales que cuentan historia clara', example: 'Gestiono 10-50 sitios de clientes locales', marketShare: '30%' }, { title: 'Consultores SEO Freelancers', pain: 'Perder tiempo creando informes manualmente', solution: 'Dashboard automático + portal del cliente', example: 'Gestiono 5-15 sitios solo', marketShare: '25%' }, { title: 'Profesionales Lead Generation', pain: 'Sitios generando leads sin visibilidad de rendimiento', solution: 'CRM simple + tracking + indexación', example: 'Rank & Rent, afiliados, arbitraje', marketShare: '20%' }, { title: 'Pequeños E-commerces', pain: 'No sabe qué productos convierten', solution: 'Analytics de producto + embudo visual', example: 'Tienda con 50-500 productos', marketShare: '15%' }, { title: 'Gestores de Portafolio', pain: 'Gestionar múltiples sitios es caótico', solution: 'Dashboard consolidado + ROI por proyecto', example: '20+ sitios, inversor de sitios', marketShare: '10%' }] },
+    comparison: { badge: '¿Por Qué Rankito?', title: 'La Plataforma Que Hace Lo Que Otras Solo Prometen', subtitle: 'Compara funcionalidades lado a lado', cta: 'Prueba Gratis por 14 Días', footer: '*Google Analytics es gratis, pero pierdes 10h/semana intentando entender', headers: { feature: 'Recurso', googleAnalytics: 'Google Analytics', semrushAhrefs: 'SEMrush/Ahrefs', agencyAnalytics: 'AgencyAnalytics', rankito: 'Rankito CRM' }, rows: [{ feature: 'Complejidad', googleAnalytics: { status: 'no', text: 'Alta curva aprendizaje' }, semrushAhrefs: { status: 'no', text: 'Interfaz técnica' }, agencyAnalytics: { status: 'partial', text: 'Enfocado SEO' }, rankito: { status: 'yes', text: 'Simple y visual' } }, { feature: 'Recorrido Usuario', googleAnalytics: { status: 'no', text: 'Flujos confusos' }, semrushAhrefs: { status: 'no', text: 'No tiene' }, agencyAnalytics: { status: 'no', text: 'No tiene' }, rankito: { status: 'yes', text: 'Página por página' } }, { feature: 'E-commerce', googleAnalytics: { status: 'partial', text: 'Setup complejo' }, semrushAhrefs: { status: 'no', text: 'Solo keywords' }, agencyAnalytics: { status: 'no', text: 'No tiene' }, rankito: { status: 'yes', text: 'Automático' } }, { feature: 'Indexación GSC', googleAnalytics: { status: 'no', text: 'No tiene' }, semrushAhrefs: { status: 'partial', text: 'Solo monitorea' }, agencyAnalytics: { status: 'no', text: 'No tiene' }, rankito: { status: 'yes', text: 'Automación completa' } }, { feature: 'Portal Cliente', googleAnalytics: { status: 'no', text: 'No tiene' }, semrushAhrefs: { status: 'no', text: 'No tiene' }, agencyAnalytics: { status: 'yes', text: 'Tiene' }, rankito: { status: 'yes', text: 'Whitelabel' } }, { feature: 'CRM Integrado', googleAnalytics: { status: 'no', text: 'No tiene' }, semrushAhrefs: { status: 'no', text: 'No tiene' }, agencyAnalytics: { status: 'no', text: 'No tiene' }, rankito: { status: 'yes', text: 'Pipeline + leads' } }, { feature: 'Informes', googleAnalytics: { status: 'no', text: 'Tú creas' }, semrushAhrefs: { status: 'partial', text: 'Exporta datos' }, agencyAnalytics: { status: 'yes', text: 'Tiene' }, rankito: { status: 'yes', text: 'Automáticos' } }, { feature: 'Precio/mes', googleAnalytics: { status: 'partial', text: 'Gratis*' }, semrushAhrefs: { status: 'no', text: '€500-2000' }, agencyAnalytics: { status: 'no', text: '€400-800' }, rankito: { status: 'yes', text: '€97-797' } }] },
+    pillars: { badge: 'Nuestra Filosofía', title: 'Lo Que Nos Hace Diferentes', subtitle: 'Principios que guían cada funcionalidad que creamos', items: [{ title: 'Claridad, No Complejidad', description: 'Google Analytics muestra 47 métricas. Necesitas 5 que importan. Informes que tu cliente ENTIENDE, no tablas que nadie lee.' }, { title: 'Acción, No Solo Datos', description: 'Otras herramientas muestran datos. Rankito muestra QUÉ HACER. No es solo ver números, es indexar, seguir el recorrido, cerrar leads.' }, { title: 'Automatización Total', description: 'Deja de gastar 6 horas creando informes. Genera en 2 clics. Indexación que funciona sola. CRM que captura leads automáticamente.' }, { title: 'Todo en Un Solo Lugar', description: 'Analytics + CRM + Financiero + Portal Cliente + Indexación GSC. Una mensualidad, cero integraciones rotas.' }] },
+    roiCalculator: { badge: 'Calculadora de Ahorro', title: '¿Cuánto Estás Perdiendo Sin Rankito?', subtitle: 'Calcula tu ahorro mensual en tiempo y dinero', cta: 'Empieza a Ahorrar Ahora - 14 Días Gratis', ctaSubtext: 'Sin tarjeta de crédito. Cancela cuando quieras.', inputs: { sites: { label: '¿Cuántos sitios gestionas?', description: 'Número total de sitios/proyectos bajo tu gestión' }, hours: { label: '¿Cuántas horas/semana gastas en tareas manuales?', description: 'Informes, indexación, análisis de datos, etc.' }, rate: { label: '¿Cuánto vale tu hora? (€)', description: 'Valor promedio por hora de tu trabajo' } }, results: { title: 'Tu Ahorro con Rankito:', monthlySavings: 'Ahorro Mensual Bruto', timeSaved: 'Tiempo Ahorrado', yearlyROI: 'ROI en 12 Meses', roiPercentage: 'Retorno sobre Inversión', netProfit: 'Beneficio Neto Mensual', month: 'mes' } },
   },
   'en-US': {
     nav: {
@@ -1174,6 +1423,10 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
       },
       copyright: '© 2024 Rankito CRM. All rights reserved.',
     },
+    whoIsItFor: { badge: 'Made for Professionals', title: 'Who is Rankito CRM For?', subtitle: 'Professionals managing sites who need clarity, not complexity', painLabel: 'Pain', solutionLabel: 'Solution', cta: 'Start Your Free Trial', profiles: [{ title: 'Digital Marketing Agencies', pain: 'Google Analytics is complex, clients don\'t understand reports', solution: 'Visual reports that tell clear story', example: 'I manage 10-50 local client sites', marketShare: '30%' }, { title: 'SEO Freelance Consultants', pain: 'Waste time creating reports manually', solution: 'Automatic dashboard + client portal', example: 'I manage 5-15 sites alone', marketShare: '25%' }, { title: 'Lead Generation Professionals', pain: 'Sites generating leads without performance visibility', solution: 'Simple CRM + tracking + indexing', example: 'Rank & Rent, affiliates, arbitrage', marketShare: '20%' }, { title: 'Small E-commerces', pain: 'Don\'t know which products convert', solution: 'Product analytics + visual funnel', example: 'Store with 50-500 products', marketShare: '15%' }, { title: 'Portfolio Managers', pain: 'Managing multiple sites is chaotic', solution: 'Consolidated dashboard + ROI per project', example: '20+ sites, site investor', marketShare: '10%' }] },
+    comparison: { badge: 'Why Rankito?', title: 'The Platform That Delivers What Others Only Promise', subtitle: 'Compare features side by side', cta: 'Try Free for 14 Days', footer: '*Google Analytics is free, but you lose 10h/week trying to understand', headers: { feature: 'Feature', googleAnalytics: 'Google Analytics', semrushAhrefs: 'SEMrush/Ahrefs', agencyAnalytics: 'AgencyAnalytics', rankito: 'Rankito CRM' }, rows: [{ feature: 'Complexity', googleAnalytics: { status: 'no', text: 'High learning curve' }, semrushAhrefs: { status: 'no', text: 'Technical interface' }, agencyAnalytics: { status: 'partial', text: 'SEO focused' }, rankito: { status: 'yes', text: 'Simple and visual' } }, { feature: 'User Journey', googleAnalytics: { status: 'no', text: 'Confusing flows' }, semrushAhrefs: { status: 'no', text: 'No' }, agencyAnalytics: { status: 'no', text: 'No' }, rankito: { status: 'yes', text: 'Page by page' } }, { feature: 'E-commerce', googleAnalytics: { status: 'partial', text: 'Complex setup' }, semrushAhrefs: { status: 'no', text: 'Only keywords' }, agencyAnalytics: { status: 'no', text: 'No' }, rankito: { status: 'yes', text: 'Automatic' } }, { feature: 'GSC Indexing', googleAnalytics: { status: 'no', text: 'No' }, semrushAhrefs: { status: 'partial', text: 'Only monitors' }, agencyAnalytics: { status: 'no', text: 'No' }, rankito: { status: 'yes', text: 'Full automation' } }, { feature: 'Client Portal', googleAnalytics: { status: 'no', text: 'No' }, semrushAhrefs: { status: 'no', text: 'No' }, agencyAnalytics: { status: 'yes', text: 'Yes' }, rankito: { status: 'yes', text: 'Whitelabel' } }, { feature: 'Integrated CRM', googleAnalytics: { status: 'no', text: 'No' }, semrushAhrefs: { status: 'no', text: 'No' }, agencyAnalytics: { status: 'no', text: 'No' }, rankito: { status: 'yes', text: 'Pipeline + leads' } }, { feature: 'Reports', googleAnalytics: { status: 'no', text: 'You create' }, semrushAhrefs: { status: 'partial', text: 'Exports data' }, agencyAnalytics: { status: 'yes', text: 'Yes' }, rankito: { status: 'yes', text: 'Automatic' } }, { feature: 'Price/month', googleAnalytics: { status: 'partial', text: 'Free*' }, semrushAhrefs: { status: 'no', text: '$500-2000' }, agencyAnalytics: { status: 'no', text: '$400-800' }, rankito: { status: 'yes', text: '$97-797' } }] },
+    pillars: { badge: 'Our Philosophy', title: 'What Makes Us Different', subtitle: 'Principles guiding every feature we create', items: [{ title: 'Clarity, Not Complexity', description: 'Google Analytics shows 47 metrics. You need 5 that matter. Reports your client UNDERSTANDS, not tables nobody reads.' }, { title: 'Action, Not Just Data', description: 'Other tools show data. Rankito shows WHAT TO DO. It\'s not just seeing numbers, it\'s indexing, tracking journey, closing leads.' }, { title: 'Total Automation', description: 'Stop spending 6 hours creating reports. Generate in 2 clicks. Indexing that runs itself. CRM that captures leads automatically.' }, { title: 'All in One Place', description: 'Analytics + CRM + Financial + Client Portal + GSC Indexing. One subscription, zero broken integrations.' }] },
+    roiCalculator: { badge: 'Savings Calculator', title: 'How Much Are You Losing Without Rankito?', subtitle: 'Calculate your monthly savings in time and money', cta: 'Start Saving Now - 14 Days Free', ctaSubtext: 'No credit card. Cancel anytime.', inputs: { sites: { label: 'How many sites do you manage?', description: 'Total number of sites/projects under management' }, hours: { label: 'How many hours/week on manual tasks?', description: 'Reports, indexing, data analysis, etc.' }, rate: { label: 'What\'s your hourly rate? ($)', description: 'Average value per hour of your work' } }, results: { title: 'Your Savings with Rankito:', monthlySavings: 'Gross Monthly Savings', timeSaved: 'Time Saved', yearlyROI: '12-Month ROI', roiPercentage: 'Return on Investment', netProfit: 'Net Monthly Profit', month: 'month' } },
   },
   'fr-FR': {
     nav: {
@@ -1516,6 +1769,10 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
       },
       copyright: '© 2024 Rankito CRM. Tous droits réservés.',
     },
+    whoIsItFor: { badge: 'Fait pour les Professionnels', title: 'Pour Qui est Rankito CRM?', subtitle: 'Professionnels gérant des sites nécessitant clarté, pas complexité', painLabel: 'Problème', solutionLabel: 'Solution', cta: 'Commencez Votre Essai Gratuit', profiles: [{ title: 'Agences Marketing Digital', pain: 'Google Analytics est complexe, clients ne comprennent pas rapports', solution: 'Rapports visuels racontant histoire claire', example: 'Je gère 10-50 sites clients locaux', marketShare: '30%' }, { title: 'Consultants SEO Freelance', pain: 'Perdre temps créant rapports manuellement', solution: 'Tableau de bord automatique + portail client', example: 'Je gère 5-15 sites seul', marketShare: '25%' }, { title: 'Professionnels Lead Generation', pain: 'Sites générant leads sans visibilité performance', solution: 'CRM simple + tracking + indexation', example: 'Rank & Rent, affiliés, arbitrage', marketShare: '20%' }, { title: 'Petits E-commerces', pain: 'Ne sait pas quels produits convertissent', solution: 'Analytics produit + entonnoir visuel', example: 'Boutique avec 50-500 produits', marketShare: '15%' }, { title: 'Gestionnaires Portefeuille', pain: 'Gérer plusieurs sites est chaotique', solution: 'Tableau de bord consolidé + ROI par projet', example: '20+ sites, investisseur sites', marketShare: '10%' }] },
+    comparison: { badge: 'Pourquoi Rankito?', title: 'La Plateforme Qui Livre Ce Que D\'Autres Promettent', subtitle: 'Comparez fonctionnalités côte à côte', cta: 'Essayer Gratuitement 14 Jours', footer: '*Google Analytics est gratuit, mais vous perdez 10h/semaine à comprendre', headers: { feature: 'Fonctionnalité', googleAnalytics: 'Google Analytics', semrushAhrefs: 'SEMrush/Ahrefs', agencyAnalytics: 'AgencyAnalytics', rankito: 'Rankito CRM' }, rows: [{ feature: 'Complexité', googleAnalytics: { status: 'no', text: 'Courbe apprentissage élevée' }, semrushAhrefs: { status: 'no', text: 'Interface technique' }, agencyAnalytics: { status: 'partial', text: 'Axé SEO' }, rankito: { status: 'yes', text: 'Simple et visuel' } }, { feature: 'Parcours Utilisateur', googleAnalytics: { status: 'no', text: 'Flux confus' }, semrushAhrefs: { status: 'no', text: 'Non' }, agencyAnalytics: { status: 'no', text: 'Non' }, rankito: { status: 'yes', text: 'Page par page' } }, { feature: 'E-commerce', googleAnalytics: { status: 'partial', text: 'Configuration complexe' }, semrushAhrefs: { status: 'no', text: 'Seulement mots-clés' }, agencyAnalytics: { status: 'no', text: 'Non' }, rankito: { status: 'yes', text: 'Automatique' } }, { feature: 'Indexation GSC', googleAnalytics: { status: 'no', text: 'Non' }, semrushAhrefs: { status: 'partial', text: 'Surveille seulement' }, agencyAnalytics: { status: 'no', text: 'Non' }, rankito: { status: 'yes', text: 'Automatisation complète' } }, { feature: 'Portail Client', googleAnalytics: { status: 'no', text: 'Non' }, semrushAhrefs: { status: 'no', text: 'Non' }, agencyAnalytics: { status: 'yes', text: 'Oui' }, rankito: { status: 'yes', text: 'Whitelabel' } }, { feature: 'CRM Intégré', googleAnalytics: { status: 'no', text: 'Non' }, semrushAhrefs: { status: 'no', text: 'Non' }, agencyAnalytics: { status: 'no', text: 'Non' }, rankito: { status: 'yes', text: 'Pipeline + leads' } }, { feature: 'Rapports', googleAnalytics: { status: 'no', text: 'Vous créez' }, semrushAhrefs: { status: 'partial', text: 'Exporte données' }, agencyAnalytics: { status: 'yes', text: 'Oui' }, rankito: { status: 'yes', text: 'Automatiques' } }, { feature: 'Prix/mois', googleAnalytics: { status: 'partial', text: 'Gratuit*' }, semrushAhrefs: { status: 'no', text: '€500-2000' }, agencyAnalytics: { status: 'no', text: '€400-800' }, rankito: { status: 'yes', text: '€97-797' } }] },
+    pillars: { badge: 'Notre Philosophie', title: 'Ce Qui Nous Rend Différents', subtitle: 'Principes guidant chaque fonctionnalité créée', items: [{ title: 'Clarté, Pas Complexité', description: 'Google Analytics montre 47 métriques. Vous avez besoin de 5 importantes. Rapports que votre client COMPREND, pas tableaux que personne ne lit.' }, { title: 'Action, Pas Seulement Données', description: 'Autres outils montrent données. Rankito montre QUOI FAIRE. Ce n\'est pas juste voir chiffres, c\'est indexer, suivre parcours, clôturer leads.' }, { title: 'Automatisation Totale', description: 'Arrêtez de passer 6 heures créant rapports. Générez en 2 clics. Indexation qui fonctionne seule. CRM qui capture leads automatiquement.' }, { title: 'Tout en Un Seul Endroit', description: 'Analytics + CRM + Financier + Portail Client + Indexation GSC. Un abonnement, zéro intégration cassée.' }] },
+    roiCalculator: { badge: 'Calculateur d\'Économies', title: 'Combien Perdez-Vous Sans Rankito?', subtitle: 'Calculez vos économies mensuelles en temps et argent', cta: 'Commencez à Économiser - 14 Jours Gratuits', ctaSubtext: 'Sans carte bancaire. Annulez quand vous voulez.', inputs: { sites: { label: 'Combien de sites gérez-vous?', description: 'Nombre total de sites/projets sous gestion' }, hours: { label: 'Combien d\'heures/semaine en tâches manuelles?', description: 'Rapports, indexation, analyse données, etc.' }, rate: { label: 'Combien vaut votre heure? (€)', description: 'Valeur moyenne par heure de votre travail' } }, results: { title: 'Vos Économies avec Rankito:', monthlySavings: 'Économies Mensuelles Brutes', timeSaved: 'Temps Économisé', yearlyROI: 'ROI sur 12 Mois', roiPercentage: 'Retour sur Investissement', netProfit: 'Profit Net Mensuel', month: 'mois' } },
   },
   'pt-PT': {
     nav: {
@@ -1858,5 +2115,9 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
       },
       copyright: '© 2024 Rankito CRM. Todos os direitos reservados.',
     },
+    whoIsItFor: { badge: 'Feito para Profissionais', title: 'Para Quem é o Rankito CRM?', subtitle: 'Profissionais que gerem sites e precisam de clareza, não complexidade', painLabel: 'Dor', solutionLabel: 'Solução', cta: 'Comece o Seu Trial Grátis', profiles: [{ title: 'Agências Marketing Digital', pain: 'Google Analytics é complexo, clientes não entendem relatórios', solution: 'Relatórios visuais que contam história clara', example: 'Giro 10-50 sites de clientes locais', marketShare: '30%' }, { title: 'Consultores SEO Freelancers', pain: 'Perder tempo criando relatórios manualmente', solution: 'Dashboard automático + portal do cliente', example: 'Giro 5-15 sites sozinho', marketShare: '25%' }, { title: 'Profissionais Lead Generation', pain: 'Sites gerando leads sem visibilidade de desempenho', solution: 'CRM simples + tracking + indexação', example: 'Rank & Rent, afiliados, arbitragem', marketShare: '20%' }, { title: 'Pequenos E-commerces', pain: 'Não sabe quais produtos convertem', solution: 'Analytics de produto + funil visual', example: 'Loja com 50-500 produtos', marketShare: '15%' }, { title: 'Gestores de Portfólio', pain: 'Gerir múltiplos sites é caótico', solution: 'Dashboard consolidado + ROI por projeto', example: '20+ sites, investidor de sites', marketShare: '10%' }] },
+    comparison: { badge: 'Porquê Rankito?', title: 'A Plataforma Que Faz o Que Outras Só Prometem', subtitle: 'Compare funcionalidades lado a lado', cta: 'Experimente Grátis por 14 Dias', footer: '*Google Analytics é grátis, mas perde 10h/semana a tentar entender', headers: { feature: 'Recurso', googleAnalytics: 'Google Analytics', semrushAhrefs: 'SEMrush/Ahrefs', agencyAnalytics: 'AgencyAnalytics', rankito: 'Rankito CRM' }, rows: [{ feature: 'Complexidade', googleAnalytics: { status: 'no', text: 'Alta curva aprendizagem' }, semrushAhrefs: { status: 'no', text: 'Interface técnica' }, agencyAnalytics: { status: 'partial', text: 'Focado SEO' }, rankito: { status: 'yes', text: 'Simples e visual' } }, { feature: 'Jornada Utilizador', googleAnalytics: { status: 'no', text: 'Fluxos confusos' }, semrushAhrefs: { status: 'no', text: 'Não tem' }, agencyAnalytics: { status: 'no', text: 'Não tem' }, rankito: { status: 'yes', text: 'Página por página' } }, { feature: 'E-commerce', googleAnalytics: { status: 'partial', text: 'Setup complexo' }, semrushAhrefs: { status: 'no', text: 'Só keywords' }, agencyAnalytics: { status: 'no', text: 'Não tem' }, rankito: { status: 'yes', text: 'Automático' } }, { feature: 'Indexação GSC', googleAnalytics: { status: 'no', text: 'Não tem' }, semrushAhrefs: { status: 'partial', text: 'Só monitoriza' }, agencyAnalytics: { status: 'no', text: 'Não tem' }, rankito: { status: 'yes', text: 'Automação completa' } }, { feature: 'Portal Cliente', googleAnalytics: { status: 'no', text: 'Não tem' }, semrushAhrefs: { status: 'no', text: 'Não tem' }, agencyAnalytics: { status: 'yes', text: 'Tem' }, rankito: { status: 'yes', text: 'Whitelabel' } }, { feature: 'CRM Integrado', googleAnalytics: { status: 'no', text: 'Não tem' }, semrushAhrefs: { status: 'no', text: 'Não tem' }, agencyAnalytics: { status: 'no', text: 'Não tem' }, rankito: { status: 'yes', text: 'Pipeline + leads' } }, { feature: 'Relatórios', googleAnalytics: { status: 'no', text: 'Cria você' }, semrushAhrefs: { status: 'partial', text: 'Exporta dados' }, agencyAnalytics: { status: 'yes', text: 'Tem' }, rankito: { status: 'yes', text: 'Automáticos' } }, { feature: 'Preço/mês', googleAnalytics: { status: 'partial', text: 'Grátis*' }, semrushAhrefs: { status: 'no', text: '€500-2000' }, agencyAnalytics: { status: 'no', text: '€400-800' }, rankito: { status: 'yes', text: '€97-797' } }] },
+    pillars: { badge: 'Nossa Filosofia', title: 'O Que Nos Torna Diferentes', subtitle: 'Princípios que guiam cada funcionalidade criada', items: [{ title: 'Clareza, Não Complexidade', description: 'Google Analytics mostra 47 métricas. Precisa de 5 que importam. Relatórios que seu cliente ENTENDE, não tabelas que ninguém lê.' }, { title: 'Ação, Não Apenas Dados', description: 'Outras ferramentas mostram dados. Rankito mostra O QUE FAZER. Não é só ver números, é indexar, acompanhar jornada, fechar leads.' }, { title: 'Automação Total', description: 'Pare de gastar 6 horas criando relatórios. Gere em 2 cliques. Indexação que funciona sozinha. CRM que captura leads automaticamente.' }, { title: 'Tudo em Um Só Lugar', description: 'Analytics + CRM + Financeiro + Portal Cliente + Indexação GSC. Uma mensalidade, zero integrações quebradas.' }] },
+    roiCalculator: { badge: 'Calculadora de Poupança', title: 'Quanto Está a Perder Sem Rankito?', subtitle: 'Calcule sua poupança mensal em tempo e dinheiro', cta: 'Comece a Poupar Agora - 14 Dias Grátis', ctaSubtext: 'Sem cartão. Cancele quando quiser.', inputs: { sites: { label: 'Quantos sites gere?', description: 'Número total de sites/projetos sob gestão' }, hours: { label: 'Quantas horas/semana em tarefas manuais?', description: 'Relatórios, indexação, análise dados, etc.' }, rate: { label: 'Quanto vale sua hora? (€)', description: 'Valor médio por hora do seu trabalho' } }, results: { title: 'Sua Poupança com Rankito:', monthlySavings: 'Poupança Mensal Bruta', timeSaved: 'Tempo Poupado', yearlyROI: 'ROI em 12 Meses', roiPercentage: 'Retorno sobre Investimento', netProfit: 'Lucro Líquido Mensal', month: 'mês' } },
   },
 };
