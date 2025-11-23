@@ -95,7 +95,7 @@ export function AddGBPIntegrationDialog({
   const testConnection = async (json: any) => {
     setIsTesting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('gbp-test-connection', {
+      const { data, error } = await supabase.functions.invoke('gbp-validate-service-account', {
         body: { service_account_json: json },
       });
 
