@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Star, FileText, BarChart } from "lucide-react";
+import { Settings, Star, FileText, BarChart, Grid3x3 } from "lucide-react";
 import { GBPIntegrationsManager } from "./GBPIntegrationsManager";
 import { GBPReviewsManager } from "./GBPReviewsManager";
 import { GBPPostsManager } from "./GBPPostsManager";
 import { GBPAnalyticsDashboard } from "./GBPAnalyticsDashboard";
+import { GBPProfilesList } from "./GBPProfilesList";
 
 interface GBPTabContentProps {
   siteId: string;
@@ -21,11 +22,11 @@ export const GBPTabContent = ({ siteId, userId, siteName }: GBPTabContentProps) 
         </p>
       </div>
 
-      <Tabs defaultValue="config" className="space-y-6">
+      <Tabs defaultValue="profiles" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="config" className="gap-2">
-            <Settings className="w-4 h-4" />
-            Configuração
+          <TabsTrigger value="profiles" className="gap-2">
+            <Grid3x3 className="w-4 h-4" />
+            Perfis
           </TabsTrigger>
           <TabsTrigger value="reviews" className="gap-2">
             <Star className="w-4 h-4" />
@@ -39,10 +40,14 @@ export const GBPTabContent = ({ siteId, userId, siteName }: GBPTabContentProps) 
             <BarChart className="w-4 h-4" />
             Analytics
           </TabsTrigger>
+          <TabsTrigger value="config" className="gap-2">
+            <Settings className="w-4 h-4" />
+            Configuração
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="config">
-          <GBPIntegrationsManager siteId={siteId} userId={userId} />
+        <TabsContent value="profiles">
+          <GBPProfilesList userId={userId} siteId={siteId} siteName={siteName} />
         </TabsContent>
 
         <TabsContent value="reviews">
@@ -55,6 +60,10 @@ export const GBPTabContent = ({ siteId, userId, siteName }: GBPTabContentProps) 
 
         <TabsContent value="analytics">
           <GBPAnalyticsDashboard siteId={siteId} />
+        </TabsContent>
+
+        <TabsContent value="config">
+          <GBPIntegrationsManager siteId={siteId} userId={userId} />
         </TabsContent>
       </Tabs>
     </div>
