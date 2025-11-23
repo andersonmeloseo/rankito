@@ -4,7 +4,6 @@ import { SessionMetrics } from "./SessionMetrics";
 import { SessionsTable } from "./SessionsTable";
 import { TopPagesAnalysis } from "./TopPagesAnalysis";
 import { SessionCards } from "./SessionCards";
-import { JourneyFunnelChart } from "./visualizations/JourneyFunnelChart";
 import { DeviceDistributionChart } from "./visualizations/DeviceDistributionChart";
 import { JourneyHeatmapGrid } from "./visualizations/JourneyHeatmapGrid";
 import { JourneyFlowDiagram } from "./visualizations/JourneyFlowDiagram";
@@ -63,14 +62,6 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
       </Alert>
     );
   }
-
-  // Preparar dados para visualizações
-  const funnelData = {
-    totalSessions: analytics.metrics.totalSessions,
-    multiPageSessions: analytics.commonSequences.filter(s => s.pageCount > 1).reduce((acc, s) => acc + s.count, 0),
-    clickedSessions: analytics.commonSequences.reduce((acc, s) => acc + s.sessionsWithClicks, 0),
-    convertedSessions: analytics.commonSequences.filter(s => s.sessionsWithClicks > 0).reduce((acc, s) => acc + s.count, 0),
-  };
 
   // Device distribution
   const deviceMap = new Map<string, { sessions: number; totalDuration: number; conversions: number }>();
@@ -164,9 +155,6 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
 
           {/* Temporal Comparison */}
           <TemporalComparison current={currentMetrics} previous={previousMetrics} />
-
-          {/* Funnel Chart */}
-          <JourneyFunnelChart data={funnelData} />
 
           {/* Device & Heatmap Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
