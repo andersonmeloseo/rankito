@@ -777,8 +777,13 @@ export type Database = {
           actions_directions: number | null
           actions_phone: number | null
           actions_website: number | null
+          booking_clicks: number | null
           created_at: string | null
+          food_menu_clicks: number | null
+          food_orders: number | null
           id: string
+          local_post_actions: number | null
+          local_post_views: number | null
           metric_date: string
           photos_count_customers: number | null
           photos_count_merchant: number | null
@@ -787,6 +792,8 @@ export type Database = {
           profile_clicks: number | null
           profile_id: string
           profile_views: number | null
+          queries_chain: number | null
+          queries_direct: number | null
           searches_branded: number | null
           searches_direct: number | null
           searches_discovery: number | null
@@ -796,8 +803,13 @@ export type Database = {
           actions_directions?: number | null
           actions_phone?: number | null
           actions_website?: number | null
+          booking_clicks?: number | null
           created_at?: string | null
+          food_menu_clicks?: number | null
+          food_orders?: number | null
           id?: string
+          local_post_actions?: number | null
+          local_post_views?: number | null
           metric_date: string
           photos_count_customers?: number | null
           photos_count_merchant?: number | null
@@ -806,6 +818,8 @@ export type Database = {
           profile_clicks?: number | null
           profile_id: string
           profile_views?: number | null
+          queries_chain?: number | null
+          queries_direct?: number | null
           searches_branded?: number | null
           searches_direct?: number | null
           searches_discovery?: number | null
@@ -815,8 +829,13 @@ export type Database = {
           actions_directions?: number | null
           actions_phone?: number | null
           actions_website?: number | null
+          booking_clicks?: number | null
           created_at?: string | null
+          food_menu_clicks?: number | null
+          food_orders?: number | null
           id?: string
+          local_post_actions?: number | null
+          local_post_views?: number | null
           metric_date?: string
           photos_count_customers?: number | null
           photos_count_merchant?: number | null
@@ -825,6 +844,8 @@ export type Database = {
           profile_clicks?: number | null
           profile_id?: string
           profile_views?: number | null
+          queries_chain?: number | null
+          queries_direct?: number | null
           searches_branded?: number | null
           searches_direct?: number | null
           searches_discovery?: number | null
@@ -861,6 +882,119 @@ export type Database = {
           },
           {
             foreignKeyName: "gbp_analytics_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gbp_notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          notification_type: string
+          profile_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          profile_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          profile_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbp_notifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "google_business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gbp_photos: {
+        Row: {
+          caption: string | null
+          created_at: string | null
+          id: string
+          photo_type: string
+          photo_url: string
+          profile_id: string
+          site_id: string
+          uploaded_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          photo_type?: string
+          photo_url: string
+          profile_id: string
+          site_id: string
+          uploaded_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          photo_type?: string
+          photo_url?: string
+          profile_id?: string
+          site_id?: string
+          uploaded_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbp_photos_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "google_business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_photos_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_photos_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gbp_photos_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_photos_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_sites"
@@ -972,6 +1106,84 @@ export type Database = {
           },
           {
             foreignKeyName: "gbp_posts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gbp_questions: {
+        Row: {
+          answer_text: string | null
+          answered_at: string | null
+          asked_by: string | null
+          created_at: string | null
+          id: string
+          is_answered: boolean | null
+          profile_id: string
+          question_text: string
+          site_id: string
+          updated_at: string | null
+          upvotes: number | null
+        }
+        Insert: {
+          answer_text?: string | null
+          answered_at?: string | null
+          asked_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_answered?: boolean | null
+          profile_id: string
+          question_text: string
+          site_id: string
+          updated_at?: string | null
+          upvotes?: number | null
+        }
+        Update: {
+          answer_text?: string | null
+          answered_at?: string | null
+          asked_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_answered?: boolean | null
+          profile_id?: string
+          question_text?: string
+          site_id?: string
+          updated_at?: string | null
+          upvotes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbp_questions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "google_business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_questions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_questions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "gbp_questions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbp_questions_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "rank_rent_sites"
@@ -1189,69 +1401,117 @@ export type Database = {
       google_business_profiles: {
         Row: {
           access_token: string | null
+          attributes: Json | null
+          average_rating: number | null
           business_address: string | null
           business_categories: string[] | null
+          business_description: string | null
+          business_email: string | null
+          business_hours: Json | null
           business_name: string | null
           business_phone: string | null
+          business_website: string | null
           connection_name: string
           consecutive_failures: number | null
+          cover_photo_url: string | null
           created_at: string | null
           google_email: string | null
           health_status: string | null
           id: string
           is_active: boolean | null
+          is_mock: boolean | null
           last_error: string | null
           last_sync_at: string | null
+          latitude: number | null
           location_name: string | null
+          longitude: number | null
+          opening_date: string | null
+          profile_photo_url: string | null
           refresh_token: string | null
+          service_area: Json | null
           site_id: string | null
           token_expires_at: string | null
+          total_photos: number | null
+          total_reviews: number | null
           updated_at: string | null
           user_id: string
+          verification_status: string | null
         }
         Insert: {
           access_token?: string | null
+          attributes?: Json | null
+          average_rating?: number | null
           business_address?: string | null
           business_categories?: string[] | null
+          business_description?: string | null
+          business_email?: string | null
+          business_hours?: Json | null
           business_name?: string | null
           business_phone?: string | null
+          business_website?: string | null
           connection_name: string
           consecutive_failures?: number | null
+          cover_photo_url?: string | null
           created_at?: string | null
           google_email?: string | null
           health_status?: string | null
           id?: string
           is_active?: boolean | null
+          is_mock?: boolean | null
           last_error?: string | null
           last_sync_at?: string | null
+          latitude?: number | null
           location_name?: string | null
+          longitude?: number | null
+          opening_date?: string | null
+          profile_photo_url?: string | null
           refresh_token?: string | null
+          service_area?: Json | null
           site_id?: string | null
           token_expires_at?: string | null
+          total_photos?: number | null
+          total_reviews?: number | null
           updated_at?: string | null
           user_id: string
+          verification_status?: string | null
         }
         Update: {
           access_token?: string | null
+          attributes?: Json | null
+          average_rating?: number | null
           business_address?: string | null
           business_categories?: string[] | null
+          business_description?: string | null
+          business_email?: string | null
+          business_hours?: Json | null
           business_name?: string | null
           business_phone?: string | null
+          business_website?: string | null
           connection_name?: string
           consecutive_failures?: number | null
+          cover_photo_url?: string | null
           created_at?: string | null
           google_email?: string | null
           health_status?: string | null
           id?: string
           is_active?: boolean | null
+          is_mock?: boolean | null
           last_error?: string | null
           last_sync_at?: string | null
+          latitude?: number | null
           location_name?: string | null
+          longitude?: number | null
+          opening_date?: string | null
+          profile_photo_url?: string | null
           refresh_token?: string | null
+          service_area?: Json | null
           site_id?: string | null
           token_expires_at?: string | null
+          total_photos?: number | null
+          total_reviews?: number | null
           updated_at?: string | null
           user_id?: string
+          verification_status?: string | null
         }
         Relationships: [
           {

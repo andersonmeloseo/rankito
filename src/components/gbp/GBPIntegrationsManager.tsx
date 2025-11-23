@@ -1,8 +1,9 @@
 import { useGBPProfiles } from "@/hooks/useGBPProfiles";
+import { useGBPMockData } from "@/hooks/useGBPMockData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Loader2, Plus, RefreshCcw, TestTube, Trash2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Plus, RefreshCcw, TestTube, Trash2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import {
   AlertDialog,
@@ -34,6 +35,8 @@ export function GBPIntegrationsManager({ siteId, userId }: GBPIntegrationsManage
     isSyncing,
     refetch,
   } = useGBPProfiles(userId);
+
+  const { generateMockData, isGenerating } = useGBPMockData(siteId);
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteDialogProfile, setDeleteDialogProfile] = useState<any>(null);
@@ -72,14 +75,25 @@ export function GBPIntegrationsManager({ siteId, userId }: GBPIntegrationsManage
                 </div>
               )}
             </div>
-            <Button
-              onClick={() => setShowAddDialog(true)}
-              disabled={!planLimits?.canAddMore}
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Adicionar Perfil GBP
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => generateMockData({ clearExisting: false })}
+                disabled={isGenerating}
+                className="gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Gerar Dados Demo
+              </Button>
+              <Button
+                onClick={() => setShowAddDialog(true)}
+                disabled={!planLimits?.canAddMore}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar Perfil GBP
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
