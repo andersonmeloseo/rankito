@@ -2,29 +2,25 @@ import { useState } from "react";
 import { useGBPProfileReviews } from "@/hooks/useGBPProfileReviews";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Star, MessageSquare, CheckCircle, Loader2 } from "lucide-react";
+import { Star, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { RespondReviewDialog } from "./RespondReviewDialog";
 
 interface GBPProfileReviewsManagerProps {
   profileId: string;
 }
 
+type FilterType = "all" | "unreplied" | "positive" | "negative";
+
 export const GBPProfileReviewsManager = ({ profileId }: GBPProfileReviewsManagerProps) => {
   const { reviews, isLoading, replyToReview, isReplying, markAsRead, metrics } = useGBPProfileReviews(profileId);
   const [selectedReview, setSelectedReview] = useState<any>(null);
-  const [replyText, setReplyText] = useState("");
+  const [filter, setFilter] = useState<FilterType>("all");
 
   if (isLoading) {
     return (
@@ -40,13 +36,23 @@ export const GBPProfileReviewsManager = ({ profileId }: GBPProfileReviewsManager
     );
   }
 
-  const handleReply = () => {
-    if (selectedReview && replyText.trim()) {
-      replyToReview({ reviewId: selectedReview.id, reply: replyText });
-      setReplyText("");
-      setSelectedReview(null);
-    }
+  const handleSubmitReply = (reviewId: string, replyText: string) => {
+    replyToReview({ reviewId, reply: replyText });
+    setSelectedReview(null);
   };
+
+  const isUrgent = (review: any) => {
+    if (review.is_replied) return false;
+    const daysSinceReview = differenceInDays(new Date(), new Date(review.created_at));
+    return daysSinceReview > 7;
+  };
+
+  const filteredReviews = reviews?.filter((review) => {
+    if (filter === "unreplied") return !review.is_replied;
+    if (filter === "positive") return review.star_rating === 5;
+    if (filter === "negative") return review.star_rating <= 2;
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -78,9 +84,21 @@ export const GBPProfileReviewsManager = ({ profileId }: GBPProfileReviewsManager
         </Card>
       </div>
 
+      {/* Filtros */}
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all">Todas ({reviews?.length || 0})</TabsTrigger>
+          <TabsTrigger value="unreplied">
+            Não Respondidas ({reviews?.filter(r => !r.is_replied).length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="positive">5 Estrelas ({reviews?.filter(r => r.star_rating === 5).length || 0})</TabsTrigger>
+          <TabsTrigger value="negative">1-2 Estrelas ({reviews?.filter(r => r.star_rating <= 2).length || 0})</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Lista de Reviews */}
       <div className="space-y-4">
-        {reviews?.map((review) => (
+        {filteredReviews?.map((review) => (
           <Card key={review.id} className={!review.is_read ? "border-primary" : ""}>
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
@@ -113,6 +131,12 @@ export const GBPProfileReviewsManager = ({ profileId }: GBPProfileReviewsManager
                     </div>
                     <div className="flex items-center gap-2">
                       {!review.is_read && <Badge variant="destructive">Nova</Badge>}
+                      {isUrgent(review) && (
+                        <Badge variant="destructive" className="gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          Urgente
+                        </Badge>
+                      )}
                       {review.is_replied && (
                         <Badge variant="secondary">
                           <CheckCircle className="mr-1 h-3 w-3" />
@@ -157,7 +181,7 @@ export const GBPProfileReviewsManager = ({ profileId }: GBPProfileReviewsManager
           </Card>
         ))}
 
-        {reviews?.length === 0 && (
+        {filteredReviews?.length === 0 && (
           <Card>
             <CardContent className="p-12 text-center">
               <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -167,58 +191,26 @@ export const GBPProfileReviewsManager = ({ profileId }: GBPProfileReviewsManager
         )}
       </div>
 
-      {/* Dialog de Resposta */}
-      <Dialog open={!!selectedReview} onOpenChange={(open) => !open && setSelectedReview(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Responder Review</DialogTitle>
-          </DialogHeader>
-
-          {selectedReview && (
-            <div className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <div className="font-semibold">{selectedReview.reviewer_name}</div>
-                <div className="flex mb-2">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-4 w-4 ${
-                        i < selectedReview.star_rating
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-sm">{selectedReview.review_text}</p>
-              </div>
-
-              <Textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Digite sua resposta..."
-                rows={4}
-              />
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedReview(null)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleReply} disabled={isReplying || !replyText.trim()}>
-              {isReplying ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                "Enviar Resposta"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Dialog de Resposta Avançado */}
+      {selectedReview && (
+        <RespondReviewDialog
+          open={!!selectedReview}
+          onOpenChange={(open) => {
+            if (!open) setSelectedReview(null);
+          }}
+          review={{
+            id: selectedReview.id,
+            reviewer_name: selectedReview.reviewer_name || "Cliente",
+            reviewer_photo_url: selectedReview.reviewer_photo_url,
+            star_rating: selectedReview.star_rating,
+            review_text: selectedReview.review_text || "",
+            sentiment: selectedReview.sentiment || "neutral",
+            created_at: selectedReview.created_at,
+          }}
+          onSubmit={handleSubmitReply}
+          isSubmitting={isReplying}
+        />
+      )}
     </div>
   );
 };
