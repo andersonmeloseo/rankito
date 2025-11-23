@@ -4,7 +4,6 @@ import { SessionMetrics } from "./SessionMetrics";
 import { SessionsTable } from "./SessionsTable";
 import { TopPagesAnalysis } from "./TopPagesAnalysis";
 import { SessionCards } from "./SessionCards";
-import { DeviceDistributionChart } from "./visualizations/DeviceDistributionChart";
 import { JourneyHeatmapGrid } from "./visualizations/JourneyHeatmapGrid";
 import { JourneyFlowDiagram } from "./visualizations/JourneyFlowDiagram";
 import { TemporalComparison } from "./insights/TemporalComparison";
@@ -62,27 +61,6 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
       </Alert>
     );
   }
-
-  // Device distribution
-  const deviceMap = new Map<string, { sessions: number; totalDuration: number; conversions: number }>();
-  analytics.commonSequences.forEach(seq => {
-    seq.locations.forEach(loc => {
-      const device = (loc as any).device || 'Desktop';
-      const existing = deviceMap.get(device) || { sessions: 0, totalDuration: 0, conversions: 0 };
-      deviceMap.set(device, {
-        sessions: existing.sessions + loc.count,
-        totalDuration: existing.totalDuration + (seq.avgDuration * loc.count),
-        conversions: existing.conversions + (seq.sessionsWithClicks > 0 ? loc.count : 0),
-      });
-    });
-  });
-
-  const deviceData = Array.from(deviceMap.entries()).map(([device, data]) => ({
-    device,
-    sessions: data.sessions,
-    avgDuration: data.sessions > 0 ? data.totalDuration / data.sessions : 0,
-    conversionRate: data.sessions > 0 ? (data.conversions / data.sessions) * 100 : 0,
-  }));
 
   // Heatmap data (hour x day)
   const heatmapData: Array<{ day: number; hour: number; count: number }> = [];
@@ -156,11 +134,8 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
           {/* Temporal Comparison */}
           <TemporalComparison current={currentMetrics} previous={previousMetrics} />
 
-          {/* Device & Heatmap Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <DeviceDistributionChart data={deviceData} />
-            <JourneyHeatmapGrid data={heatmapData} />
-          </div>
+          {/* Heatmap de Atividade */}
+          <JourneyHeatmapGrid data={heatmapData} />
 
           {/* Flow Diagram */}
           <JourneyFlowDiagram connections={flowConnections} topPages={topPages} />
