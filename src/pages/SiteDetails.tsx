@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe, FileText, Search, Plug, ShoppingCart, Route } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe, FileText, Search, Plug, ShoppingCart, Route, Store } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -55,6 +55,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ReportsTab } from "@/components/reports/ReportsTab";
 import { GSCTabContent } from "@/components/gsc/GSCTabContent";
+import { GBPTabContent } from "@/components/gbp/GBPTabContent";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
 import { EcommerceAnalytics } from "@/components/integrations/ecommerce/EcommerceAnalytics";
@@ -848,6 +849,10 @@ const SiteDetails = () => {
                   Jornada do Usuário
                 </ClickUpTabTrigger>
                 
+                <ClickUpTabTrigger value="gbp" icon={Store}>
+                  Google Business
+                </ClickUpTabTrigger>
+                
                 {site?.is_ecommerce && (
                   <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
                     E-commerce
@@ -1528,6 +1533,25 @@ const SiteDetails = () => {
           {/* Jornada do Usuário Tab */}
           <TabsContent value="journey">
             <UserJourneyTab siteId={siteId || ""} />
+          </TabsContent>
+
+          {/* Google Business Profile Tab */}
+          <TabsContent value="gbp">
+            {userData?.id && siteId ? (
+              <GBPTabContent
+                siteId={siteId}
+                userId={userData.id}
+                siteName={site.site_name}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">
+                    Carregando informações de autenticação...
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
         </Tabs>
