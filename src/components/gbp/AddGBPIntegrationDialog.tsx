@@ -31,7 +31,7 @@ export function AddGBPIntegrationDialog({
     try {
       // Não precisa mais de site_id - perfis GBP são globais agora
       const { data, error } = await supabase.functions.invoke('gbp-oauth-authorize', {
-        body: {},
+        body: { connection_name: connectionName },
       });
 
       if (error) throw error;
