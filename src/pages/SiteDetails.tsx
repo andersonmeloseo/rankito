@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { filterConversions } from "@/lib/conversionUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
@@ -1403,7 +1404,7 @@ const SiteDetails = () => {
                 />
                 
                 <ConversionsTable 
-                  conversions={analyticsData.conversions || []} 
+                  conversions={filterConversions(analyticsData.conversions || [])} 
                   isLoading={analyticsData.isLoading}
                   siteId={siteId || ""}
                 />

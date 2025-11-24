@@ -302,11 +302,6 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                 <SelectItem value="begin_checkout">Iniciar Checkout</SelectItem>
                 <SelectItem value="purchase">Compra Realizada</SelectItem>
                 <SelectItem value="search">Busca no Site</SelectItem>
-                
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">
-                  📄 Outros
-                </div>
-                <SelectItem value="page_view">Visualização de Página</SelectItem>
               </SelectContent>
             </Select>
             <Select value={deviceFilter} onValueChange={(value) => {
