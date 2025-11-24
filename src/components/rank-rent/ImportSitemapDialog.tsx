@@ -101,9 +101,23 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
       
       setDiscoverMode(false);
 
+      // Calcular sobreposição entre sitemaps
+      const totalIndividual = data.totalIndividual || data.sitemaps.reduce((sum: number, s: any) => sum + s.urlCount, 0);
+      const totalUnique = data.totalUrls;
+      const overlapPercentage = totalIndividual > 0 ? ((totalIndividual - totalUnique) / totalIndividual) * 100 : 0;
+
+      // Warning se houver sobreposição significativa
+      if (overlapPercentage > 10 && data.duplicateCount > 0) {
+        toast({
+          title: "⚠️ Sitemaps com URLs duplicadas",
+          description: `${data.duplicateCount.toLocaleString()} URLs aparecem em múltiplos sitemaps (${overlapPercentage.toFixed(0)}% de sobreposição). Não se preocupe - duplicatas serão automaticamente removidas durante a importação.`,
+          variant: "default",
+        });
+      }
+
       toast({
         title: "✅ Sitemaps Descobertos!",
-        description: `${data.totalSitemaps} sitemaps encontrados com ${data.totalUrls.toLocaleString()} URLs no total`,
+        description: `${data.totalSitemaps} sitemaps encontrados com ${totalUnique.toLocaleString()} URLs únicas`,
       });
     } catch (error: any) {
       console.error("Erro ao descobrir sitemaps:", error);

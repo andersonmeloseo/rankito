@@ -262,21 +262,37 @@ Deno.serve(async (req) => {
     console.log(`🔍 Found ${sitemaps.length} sitemaps to process`);
 
     let totalSitemapsProcessed = 0;
-    let totalUrlsInserted = 0;
+    const allUniqueUrls = new Set<string>();
     const failedSitemaps: Array<{ url: string; error: string }> = [];
 
-    // Processar cada sitemap
+    // FASE 1: Coletar todas as URLs de todos os sitemaps (com deduplicação)
+    console.log('🔄 FASE 1: Coletando URLs de todos os sitemaps...');
+    
     for (const sitemap of sitemaps) {
       try {
-        const result = await processSitemap(
-          supabase,
-          site_id,
-          sitemap.sitemap_url,
-          sitemap.id
-        );
+        const xml = await fetchSitemapXML(sitemap.sitemap_url);
+        const type = detectSitemapType(xml);
 
-        totalSitemapsProcessed += result.sitemaps_processed;
-        totalUrlsInserted += result.urls_inserted;
+        if (type === 'urlset') {
+          const urls = parseUrlset(xml);
+          urls.forEach(u => allUniqueUrls.add(u.loc));
+          console.log(`✅ ${sitemap.sitemap_url}: ${urls.length} URLs coletadas`);
+        } else {
+          // Se for index, processar recursivamente os filhos
+          const childSitemaps = parseSitemapIndex(xml);
+          for (const childUrl of childSitemaps) {
+            try {
+              const childXml = await fetchSitemapXML(childUrl);
+              const childUrls = parseUrlset(childXml);
+              childUrls.forEach(u => allUniqueUrls.add(u.loc));
+              console.log(`✅ ${childUrl}: ${childUrls.length} URLs coletadas`);
+            } catch (childError) {
+              console.warn(`⚠️  Erro ao processar child sitemap ${childUrl}:`, childError);
+            }
+          }
+        }
+        
+        totalSitemapsProcessed++;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error(`❌ Error processing sitemap ${sitemap.sitemap_url}:`, errorMessage);
@@ -286,6 +302,24 @@ Deno.serve(async (req) => {
         });
       }
     }
+
+    console.log(`🎯 Total de URLs únicas coletadas: ${allUniqueUrls.size}`);
+
+    // FASE 2: Inserir URLs únicas no banco
+    console.log('💾 FASE 2: Inserindo URLs únicas no banco...');
+    
+    const urlsToInsert = Array.from(allUniqueUrls).map(url => ({
+      site_id: site_id,
+      integration_id: null,
+      url: url,
+      discovered_at: new Date().toISOString(),
+      last_seen_at: new Date().toISOString(),
+      current_status: 'discovered',
+      gsc_data: false,
+      indexnow_data: false,
+    }));
+
+    await insertUrlsBatch(supabase, urlsToInsert);
 
     const duration = Date.now() - startTime;
     console.log(`✅ Processing completed in ${duration}ms`);
@@ -298,7 +332,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         sitemaps_processed: totalSitemapsProcessed,
-        urls_inserted: totalUrlsInserted,
+        urls_inserted: allUniqueUrls.size,
         duration_ms: duration,
         failed_sitemaps: failedSitemaps.length > 0 ? failedSitemaps : undefined,
       }),
