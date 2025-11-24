@@ -240,11 +240,11 @@ export const IndexingWorkflowGuide = ({
 
         {/* Instruções detalhadas para IndexNow */}
         {currentStepIndex === 5 && indexNowKey && indexNowFileName && (
-          <Alert className="mt-6 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-300 dark:border-yellow-700">
-            <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-            <AlertTitle className="text-yellow-800 dark:text-yellow-300">Instruções IndexNow</AlertTitle>
-            <AlertDescription className="space-y-2 text-yellow-700 dark:text-yellow-400">
-              <p>1. Crie um arquivo <code className="bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded font-mono text-xs">.txt</code> na raiz do seu site</p>
+          <Alert className="mt-6 border">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Instruções IndexNow</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>1. Crie um arquivo <code className="bg-muted px-1 rounded font-mono text-xs">.txt</code> na raiz do seu site</p>
               <p>2. Nome do arquivo: copie exatamente como mostrado no campo "Nome do Arquivo" abaixo</p>
               <p>3. Conteúdo do arquivo: copie exatamente como mostrado no campo "Chave IndexNow" abaixo</p>
               <p>4. Clique em "Validar Chave" na aba IndexNow abaixo</p>
