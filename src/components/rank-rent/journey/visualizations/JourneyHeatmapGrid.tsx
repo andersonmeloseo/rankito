@@ -34,8 +34,8 @@ export const JourneyHeatmapGrid = ({ data }: JourneyHeatmapGridProps) => {
     return 'bg-blue-800 dark:bg-blue-400';
   };
 
-  // Mostrar apenas horas com mais atividade (6h-23h)
-  const activeHours = HOURS.filter(h => h >= 6 && h <= 23);
+  // Mostrar todas as 24 horas
+  const activeHours = HOURS;
 
   return (
     <Card>
@@ -69,16 +69,30 @@ export const JourneyHeatmapGrid = ({ data }: JourneyHeatmapGridProps) => {
                     const count = dataMap.get(`${dayIdx}-${hour}`) || 0;
                     const intensity = getIntensity(count);
                     
+                    // Determinar cor do texto baseada na intensidade
+                    const isDarkBg = intensity.includes('blue-800') || intensity.includes('blue-600');
+                    const textColorClass = count === 0 
+                      ? 'text-muted-foreground' 
+                      : isDarkBg
+                        ? 'text-white dark:text-white'
+                        : 'text-foreground';
+                    
                     return (
                       <Tooltip key={`${dayIdx}-${hour}`}>
                         <TooltipTrigger asChild>
                           <div 
-                            className={`h-8 rounded ${intensity} cursor-pointer hover:ring-2 hover:ring-primary transition-all`}
-                          />
+                            className={`h-8 rounded ${intensity} cursor-pointer hover:ring-2 hover:ring-primary transition-all relative flex items-center justify-center group`}
+                          >
+                            {count > 0 && (
+                              <span className={`text-[10px] font-bold opacity-70 group-hover:opacity-100 transition-opacity ${textColorClass}`}>
+                                {count}
+                              </span>
+                            )}
+                          </div>
                         </TooltipTrigger>
                         <TooltipContent>
                           <div className="text-xs">
-                            <div className="font-semibold">{DAYS[dayIdx]}, {hour}h</div>
+                            <div className="font-semibold">{DAYS[dayIdx]}, {hour.toString().padStart(2, '0')}h</div>
                             <div className="text-muted-foreground">
                               {count} {count === 1 ? 'sessão' : 'sessões'}
                             </div>
