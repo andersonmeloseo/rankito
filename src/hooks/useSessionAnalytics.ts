@@ -358,7 +358,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       };
     },
     enabled: !!siteId,
-    staleTime: 5 * 60 * 1000, // 5 minutos de cache inteligente
-    refetchInterval: 30000 // Atualiza a cada 30 segundos
+    staleTime: 30000, // 30 segundos - atualização mais rápida para tracking em tempo real
+    refetchInterval: 15000 // Atualiza a cada 15 segundos
   });
 };
