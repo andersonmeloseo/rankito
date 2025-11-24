@@ -6,6 +6,45 @@ const corsHeaders = {
 };
 
 /**
+ * Normaliza URLs removendo variações que causam duplicatas visuais
+ */
+function normalizeUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    
+    // 1. Remover query params de preview/admin do WordPress/Elementor
+    const paramsToRemove = [
+      'elementor-preview', 'elementor_library', 'page_id', 
+      'preview', 'preview_id', 'preview_nonce', 'ver',
+      'elementor-action', 'elementor-preview-id'
+    ];
+    paramsToRemove.forEach(param => urlObj.searchParams.delete(param));
+    
+    // 2. Remover fragmentos (#)
+    urlObj.hash = '';
+    
+    // 3. Normalizar trailing slash (exceto raiz)
+    if (urlObj.pathname !== '/' && urlObj.pathname.endsWith('/')) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+    
+    // 4. Forçar HTTPS e lowercase hostname
+    urlObj.protocol = 'https:';
+    urlObj.hostname = urlObj.hostname.toLowerCase();
+    
+    // 5. Se não restaram query params, limpar search
+    if (urlObj.searchParams.toString() === '') {
+      urlObj.search = '';
+    }
+    
+    return urlObj.toString();
+  } catch (error) {
+    console.warn(`⚠️ Failed to normalize URL: ${url}`, error);
+    return url; // Retorna original se falhar
+  }
+}
+
+/**
  * Extrai conteúdo de uma tag XML
  */
 function extractTag(xml: string, tagName: string): string | null {
@@ -275,7 +314,8 @@ Deno.serve(async (req) => {
 
         if (type === 'urlset') {
           const urls = parseUrlset(xml);
-          urls.forEach(u => allUniqueUrls.add(u.loc));
+          // ✅ Normalizar URLs antes de adicionar ao Set
+          urls.forEach(u => allUniqueUrls.add(normalizeUrl(u.loc)));
           console.log(`✅ ${sitemap.sitemap_url}: ${urls.length} URLs coletadas`);
         } else {
           // Se for index, processar recursivamente os filhos
@@ -284,7 +324,8 @@ Deno.serve(async (req) => {
             try {
               const childXml = await fetchSitemapXML(childUrl);
               const childUrls = parseUrlset(childXml);
-              childUrls.forEach(u => allUniqueUrls.add(u.loc));
+              // ✅ Normalizar URLs antes de adicionar ao Set
+              childUrls.forEach(u => allUniqueUrls.add(normalizeUrl(u.loc)));
               console.log(`✅ ${childUrl}: ${childUrls.length} URLs coletadas`);
             } catch (childError) {
               console.warn(`⚠️  Erro ao processar child sitemap ${childUrl}:`, childError);
