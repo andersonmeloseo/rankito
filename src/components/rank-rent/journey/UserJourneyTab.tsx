@@ -12,14 +12,29 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, BarChart3, Route, Calendar, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface UserJourneyTabProps {
   siteId: string;
 }
 
 export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
-  const { data: analytics, isLoading, error, refetch } = useSessionAnalytics(siteId, 30);
+  const queryClient = useQueryClient();
+  const { data: analytics, isLoading, error } = useSessionAnalytics(siteId, 30);
   const { data: previousAnalytics } = useSessionAnalytics(siteId, 60); // Para comparação
+
+  const handleRefresh = async () => {
+    // Invalida TODAS as queries de session-analytics para este siteId
+    await queryClient.invalidateQueries({
+      queryKey: ['session-analytics', siteId]
+    });
+    
+    // Força refetch imediato
+    await queryClient.refetchQueries({
+      queryKey: ['session-analytics', siteId],
+      type: 'active'
+    });
+  };
 
   if (isLoading) {
     return (
@@ -118,7 +133,7 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
           <p className="text-muted-foreground text-sm">Atualização automática a cada 15 segundos</p>
         </div>
         <Button 
-          onClick={() => refetch()} 
+          onClick={handleRefresh} 
           variant="outline" 
           size="sm"
           disabled={isLoading}
