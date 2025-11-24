@@ -797,7 +797,7 @@ export type Database = {
           searches_branded: number | null
           searches_direct: number | null
           searches_discovery: number | null
-          site_id: string
+          site_id: string | null
         }
         Insert: {
           actions_directions?: number | null
@@ -823,7 +823,7 @@ export type Database = {
           searches_branded?: number | null
           searches_direct?: number | null
           searches_discovery?: number | null
-          site_id: string
+          site_id?: string | null
         }
         Update: {
           actions_directions?: number | null
@@ -849,7 +849,7 @@ export type Database = {
           searches_branded?: number | null
           searches_direct?: number | null
           searches_discovery?: number | null
-          site_id?: string
+          site_id?: string | null
         }
         Relationships: [
           {
@@ -938,7 +938,7 @@ export type Database = {
           photo_type: string
           photo_url: string
           profile_id: string
-          site_id: string
+          site_id: string | null
           uploaded_at: string | null
           view_count: number | null
         }
@@ -949,7 +949,7 @@ export type Database = {
           photo_type?: string
           photo_url: string
           profile_id: string
-          site_id: string
+          site_id?: string | null
           uploaded_at?: string | null
           view_count?: number | null
         }
@@ -960,7 +960,7 @@ export type Database = {
           photo_type?: string
           photo_url?: string
           profile_id?: string
-          site_id?: string
+          site_id?: string | null
           uploaded_at?: string | null
           view_count?: number | null
         }
@@ -1021,7 +1021,7 @@ export type Database = {
           profile_id: string
           published_at: string | null
           scheduled_for: string | null
-          site_id: string
+          site_id: string | null
           status: string | null
           title: string | null
           updated_at: string | null
@@ -1045,7 +1045,7 @@ export type Database = {
           profile_id: string
           published_at?: string | null
           scheduled_for?: string | null
-          site_id: string
+          site_id?: string | null
           status?: string | null
           title?: string | null
           updated_at?: string | null
@@ -1069,7 +1069,7 @@ export type Database = {
           profile_id?: string
           published_at?: string | null
           scheduled_for?: string | null
-          site_id?: string
+          site_id?: string | null
           status?: string | null
           title?: string | null
           updated_at?: string | null
@@ -1123,7 +1123,7 @@ export type Database = {
           is_answered: boolean | null
           profile_id: string
           question_text: string
-          site_id: string
+          site_id: string | null
           updated_at: string | null
           upvotes: number | null
         }
@@ -1136,7 +1136,7 @@ export type Database = {
           is_answered?: boolean | null
           profile_id: string
           question_text: string
-          site_id: string
+          site_id?: string | null
           updated_at?: string | null
           upvotes?: number | null
         }
@@ -1149,7 +1149,7 @@ export type Database = {
           is_answered?: boolean | null
           profile_id?: string
           question_text?: string
-          site_id?: string
+          site_id?: string | null
           updated_at?: string | null
           upvotes?: number | null
         }
@@ -1205,7 +1205,7 @@ export type Database = {
           reviewer_name: string | null
           reviewer_photo_url: string | null
           sentiment: string | null
-          site_id: string
+          site_id: string | null
           star_rating: number
           synced_at: string | null
           updated_at: string | null
@@ -1223,7 +1223,7 @@ export type Database = {
           reviewer_name?: string | null
           reviewer_photo_url?: string | null
           sentiment?: string | null
-          site_id: string
+          site_id?: string | null
           star_rating: number
           synced_at?: string | null
           updated_at?: string | null
@@ -1241,7 +1241,7 @@ export type Database = {
           reviewer_name?: string | null
           reviewer_photo_url?: string | null
           sentiment?: string | null
-          site_id?: string
+          site_id?: string | null
           star_rating?: number
           synced_at?: string | null
           updated_at?: string | null
