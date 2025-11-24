@@ -219,24 +219,24 @@ Deno.serve(async (req) => {
 
     let { site_id, clear_existing = false } = await req.json();
 
-    // Se site_id não for fornecido, criar um site mockado padrão
+    // Se site_id não for fornecido, criar ou reutilizar site mockado padrão
     if (!site_id) {
-      console.log('📦 Criando site mockado padrão...');
+      console.log('📦 Verificando site mockado padrão...');
       
-      // Verificar se já existe um site mockado para este usuário
+      // Verificar se já existe um site mockado compartilhado (não filtra por usuário)
       const { data: existingSite } = await supabase
         .from('rank_rent_sites')
         .select('id')
-        .eq('owner_user_id', user.id)
-        .ilike('site_name', '%GBP Demo%')
+        .eq('site_name', 'GBP Demo Site')
         .limit(1)
         .single();
       
       if (existingSite) {
         site_id = existingSite.id;
-        console.log('✅ Site mockado existente encontrado:', site_id);
+        console.log('✅ Reutilizando site mockado compartilhado:', site_id);
       } else {
-        // Criar novo site mockado
+        // Criar novo site mockado compartilhado
+        console.log('📦 Criando novo site mockado compartilhado...');
         const { data: newSite, error: siteError } = await supabase
           .from('rank_rent_sites')
           .insert({
@@ -257,14 +257,15 @@ Deno.serve(async (req) => {
         }
         
         site_id = newSite.id;
-        console.log('✅ Novo site mockado criado:', site_id);
+        console.log('✅ Novo site mockado compartilhado criado:', site_id);
       }
     }
 
-    // Se clear_existing for true, limpar dados mockados existentes
+    // Se clear_existing for true, limpar apenas dados mockados do usuário atual
     if (clear_existing) {
-      console.log('🗑️ Limpando dados mockados existentes...');
+      console.log('🗑️ Limpando dados mockados do usuário atual...');
       
+      // Buscar perfis mockados apenas do usuário atual no site especificado
       const { data: profilesToDelete } = await supabase
         .from('google_business_profiles')
         .select('id')
@@ -275,6 +276,7 @@ Deno.serve(async (req) => {
       const profileIds = profilesToDelete?.map(p => p.id) || [];
       
       if (profileIds.length > 0) {
+        console.log(`🗑️ Deletando ${profileIds.length} perfis mockados do usuário...`);
         // Delete associated data first (due to foreign keys)
         await supabase.from('gbp_questions').delete().in('profile_id', profileIds);
         await supabase.from('gbp_photos').delete().in('profile_id', profileIds);
@@ -283,13 +285,15 @@ Deno.serve(async (req) => {
         await supabase.from('gbp_reviews').delete().in('profile_id', profileIds);
       }
       
-      // Finally delete the profiles
+      // Finally delete the profiles (apenas do usuário atual)
       await supabase
         .from('google_business_profiles')
         .delete()
         .eq('user_id', user.id)
         .eq('is_mock', true)
         .eq('site_id', site_id);
+      
+      console.log('✅ Dados mockados do usuário limpos com sucesso!');
     }
 
     console.log('🚀 Gerando perfis mockados com site_id:', site_id);
