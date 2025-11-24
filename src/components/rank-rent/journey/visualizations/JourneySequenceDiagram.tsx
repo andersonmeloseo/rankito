@@ -17,6 +17,7 @@ interface StepNode {
 
 export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProps) => {
   const [hoveredSequence, setHoveredSequence] = useState<number | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<{ step: number; nodeIdx: number } | null>(null);
 
   // Configurações do diagrama
   const nodeWidth = 160;
@@ -227,7 +228,9 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
                         stroke={isHighlighted ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
                         strokeWidth={isHighlighted ? 3 : 2}
                         rx={8}
-                        className="transition-all duration-300"
+                        className="transition-all duration-300 cursor-pointer"
+                        onMouseEnter={() => setHoveredNode({ step: stepIdx, nodeIdx })}
+                        onMouseLeave={() => setHoveredNode(null)}
                       />
                       <text
                         x={x + nodeWidth / 2}
@@ -259,6 +262,71 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
                             node.sequences.includes(idx) && seq.originalLength
                           )?.originalLength! - 4} páginas
                         </text>
+                      )}
+                      
+                      {/* Tooltip ao passar mouse */}
+                      {hoveredNode?.step === stepIdx && hoveredNode?.nodeIdx === nodeIdx && (
+                        <g className="pointer-events-none">
+                          {/* Background do tooltip */}
+                          <rect
+                            x={x + nodeWidth / 2 - 120}
+                            y={y > 100 ? y - 85 : y + nodeHeight + 15}
+                            width={240}
+                            height={75}
+                            fill="hsl(var(--popover))"
+                            stroke="hsl(var(--border))"
+                            strokeWidth={2}
+                            rx={8}
+                            filter="drop-shadow(0 4px 6px rgba(0,0,0,0.1))"
+                          />
+                          
+                          {/* Seta apontando para o nó */}
+                          {y > 100 ? (
+                            <path
+                              d={`M ${x + nodeWidth / 2 - 8} ${y - 10} 
+                                  L ${x + nodeWidth / 2} ${y} 
+                                  L ${x + nodeWidth / 2 + 8} ${y - 10} Z`}
+                              fill="hsl(var(--popover))"
+                            />
+                          ) : (
+                            <path
+                              d={`M ${x + nodeWidth / 2 - 8} ${y + nodeHeight + 15} 
+                                  L ${x + nodeWidth / 2} ${y + nodeHeight + 5} 
+                                  L ${x + nodeWidth / 2 + 8} ${y + nodeHeight + 15} Z`}
+                              fill="hsl(var(--popover))"
+                            />
+                          )}
+                          
+                          {/* Título completo da página */}
+                          <text
+                            x={x + nodeWidth / 2}
+                            y={y > 100 ? y - 60 : y + nodeHeight + 40}
+                            textAnchor="middle"
+                            className="fill-popover-foreground text-sm font-semibold"
+                          >
+                            {node.label}
+                          </text>
+                          
+                          {/* URL original */}
+                          <text
+                            x={x + nodeWidth / 2}
+                            y={y > 100 ? y - 40 : y + nodeHeight + 60}
+                            textAnchor="middle"
+                            className="fill-muted-foreground text-xs"
+                          >
+                            {node.page.length > 35 ? node.page.substring(0, 35) + '...' : node.page}
+                          </text>
+                          
+                          {/* Número de sessões */}
+                          <text
+                            x={x + nodeWidth / 2}
+                            y={y > 100 ? y - 23 : y + nodeHeight + 77}
+                            textAnchor="middle"
+                            className="fill-muted-foreground text-xs font-medium"
+                          >
+                            {totalSessions} {totalSessions === 1 ? 'sessão passou aqui' : 'sessões passaram aqui'}
+                          </text>
+                        </g>
                       )}
                     </g>
                   );
