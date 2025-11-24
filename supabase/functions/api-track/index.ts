@@ -217,6 +217,68 @@ serve(async (req) => {
     const user_agent = req.headers.get('user-agent') || 'unknown';
     const referrer = metadata?.referrer || null;
 
+    // Detect bot and identify it
+    const detectBot = (userAgent: string, city: string | null): { isBot: boolean; botName: string | null } => {
+      const ua = userAgent.toLowerCase();
+      
+      // Map de padrões de bots com nomes descritivos
+      const botPatterns = [
+        { pattern: 'googlebot', name: 'Bot do Google' },
+        { pattern: 'bingbot', name: 'Bot do Bing' },
+        { pattern: 'slurp', name: 'Bot do Yahoo' },
+        { pattern: 'duckduckbot', name: 'Bot do DuckDuckGo' },
+        { pattern: 'baiduspider', name: 'Bot do Baidu' },
+        { pattern: 'yandexbot', name: 'Bot do Yandex' },
+        { pattern: 'facebookexternalhit', name: 'Bot do Facebook' },
+        { pattern: 'twitterbot', name: 'Bot do Twitter' },
+        { pattern: 'linkedinbot', name: 'Bot do LinkedIn' },
+        { pattern: 'applebot', name: 'Bot da Apple' },
+        { pattern: 'uptimerobot', name: 'UptimeRobot Monitor' },
+        { pattern: 'pingdom', name: 'Pingdom Monitor' },
+        { pattern: 'statuscake', name: 'StatusCake Monitor' },
+        { pattern: 'headless', name: 'Browser Headless' },
+        { pattern: 'phantom', name: 'PhantomJS Bot' },
+        { pattern: 'selenium', name: 'Selenium Bot' },
+        { pattern: 'bot', name: 'Bot Genérico' },
+        { pattern: 'crawler', name: 'Web Crawler' },
+        { pattern: 'spider', name: 'Web Spider' },
+        { pattern: 'scraper', name: 'Web Scraper' }
+      ];
+      
+      // Identificar bot pelo User-Agent
+      for (const bot of botPatterns) {
+        if (ua.includes(bot.pattern)) {
+          return { isBot: true, botName: bot.name };
+        }
+      }
+      
+      // Cidades conhecidas de datacenters
+      const datacenterInfo: Record<string, string> = {
+        'Quincy': 'Datacenter Microsoft',
+        'The Dalles': 'Datacenter Google',
+        'Council Bluffs': 'Datacenter Google',
+        'Mountain View': 'Bot do Google',
+        'Ashburn': 'Datacenter AWS',
+        'Santa Clara': 'Datacenter Digital Ocean',
+        'Hillsboro': 'Datacenter Intel',
+        'Frankfurt': 'Bot do Bing/Datacenter',
+        'Amsterdam': 'Datacenter',
+        'Dublin': 'Datacenter AWS',
+        'London': 'Datacenter',
+        'Singapore': 'Datacenter',
+        'Tokyo': 'Datacenter',
+        'Mumbai': 'Datacenter',
+        'Seoul': 'Datacenter'
+      };
+      
+      // Identificar por cidade suspeita
+      if (city && datacenterInfo[city]) {
+        return { isBot: true, botName: datacenterInfo[city] };
+      }
+      
+      return { isBot: false, botName: null };
+    };
+
     // Detect device type from user agent
     const detectDevice = (userAgent: string): string => {
       const ua = userAgent.toLowerCase();
@@ -441,7 +503,14 @@ serve(async (req) => {
       if (existingSession) {
         dbSessionId = existingSession.id;
       } else {
-        // Create new session
+        // Detect if this is a bot
+        const { isBot, botName } = detectBot(user_agent, geoData.city);
+        
+        if (isBot && botName) {
+          console.log('🤖 Bot detected:', botName, '| City:', geoData.city);
+        }
+        
+        // Create new session (including bots for monitoring)
         const { data: newSession, error: sessionError } = await supabase
           .from('rank_rent_sessions')
           .insert({
@@ -452,7 +521,8 @@ serve(async (req) => {
             referrer,
             ip_address,
             city: geoData.city,
-            country: geoData.country
+            country: geoData.country,
+            bot_name: botName
           })
           .select('id')
           .single();

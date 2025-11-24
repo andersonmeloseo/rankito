@@ -33,6 +33,7 @@ export interface EnrichedSession {
   referrer: string | null;
   city: string | null;
   country: string | null;
+  bot_name: string | null;
   visits: PageVisit[];
   clicks: ClickEvent[];
   percentOfTotal: number;

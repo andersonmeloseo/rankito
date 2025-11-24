@@ -83,9 +83,18 @@ export const SessionsTable = ({ siteId }: SessionsTableProps) => {
                       </Badge>
                     </td>
                     <td className="p-2 text-sm">
-                      {session.city && session.country 
-                        ? `${session.city}, ${session.country}`
-                        : session.country || '-'}
+                    {session.city && session.country 
+                      ? (
+                        <>
+                          {session.city}, {session.country}
+                          {session.bot_name && (
+                            <span className="ml-1 text-orange-600 dark:text-orange-400 font-medium">
+                              ({session.bot_name})
+                            </span>
+                          )}
+                        </>
+                      )
+                      : session.country || '-'}
                     </td>
                     <td className="p-2 text-center">
                       <Button

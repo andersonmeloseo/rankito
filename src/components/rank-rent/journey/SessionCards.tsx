@@ -117,7 +117,14 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
                     {session.city && (
                       <div className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
-                        <span>{session.city}</span>
+                        <span>
+                          {session.city}
+                          {session.bot_name && (
+                            <span className="ml-1 text-orange-600 dark:text-orange-400 font-medium">
+                              ({session.bot_name})
+                            </span>
+                          )}
+                        </span>
                       </div>
                     )}
                   </div>
