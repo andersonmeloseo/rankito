@@ -134,6 +134,7 @@ export const useRecentSessionsEnriched = (siteId: string, limit: number = 50) =>
       }));
     },
     enabled: !!siteId,
-    refetchInterval: 30000,
+    staleTime: 30000,
+    refetchInterval: 15000,
   });
 };

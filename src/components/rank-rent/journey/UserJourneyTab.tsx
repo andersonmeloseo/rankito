@@ -24,14 +24,28 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
   const { data: previousAnalytics } = useSessionAnalytics(siteId, 60); // Para comparação
 
   const handleRefresh = async () => {
-    // Invalida TODAS as queries de session-analytics para este siteId
+    // Invalidar TODAS as queries relacionadas a jornada do usuário
     await queryClient.invalidateQueries({
-      queryKey: ['session-analytics', siteId]
+      predicate: (query) => {
+        const key = query.queryKey[0] as string;
+        return (
+          key === 'session-analytics' || 
+          key === 'recent-sessions-enriched' || 
+          key === 'recent-sessions'
+        );
+      }
     });
     
-    // Força refetch imediato
+    // Forçar refetch imediato de todas as queries ativas
     await queryClient.refetchQueries({
-      queryKey: ['session-analytics', siteId],
+      predicate: (query) => {
+        const key = query.queryKey[0] as string;
+        return (
+          key === 'session-analytics' || 
+          key === 'recent-sessions-enriched' || 
+          key === 'recent-sessions'
+        );
+      },
       type: 'active'
     });
   };
