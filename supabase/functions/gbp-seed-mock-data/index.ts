@@ -301,13 +301,16 @@ Deno.serve(async (req) => {
 
     // Create mock profiles
     for (const mockProfile of MOCK_PROFILES) {
+      // Adicionar sufixo único ao connection_name para evitar conflitos entre usuários
+      const uniqueConnectionName = `${mockProfile.name} (${user.id.substring(0, 8)})`;
+      
       // Create profile
       const { data: profile, error: profileError } = await supabase
         .from('google_business_profiles')
         .insert({
           user_id: user.id,
           site_id: site_id,
-          connection_name: mockProfile.name,
+          connection_name: uniqueConnectionName,
           business_name: mockProfile.name,
           business_address: mockProfile.address,
           business_phone: mockProfile.phone,
