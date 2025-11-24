@@ -23,8 +23,8 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
   const nodeWidth = 160;
   const nodeHeight = 40;
   const columnGap = 120;
-  const margin = { top: 60, right: 40, bottom: 40, left: 40 };
-  const verticalGap = 20;
+  const margin = { top: 60, right: 40, bottom: 160, left: 40 };
+  const verticalGap = 35;
 
   // Determinar número máximo de etapas
   const maxSteps = Math.max(...sequences.map(s => s.sequence.length));
@@ -81,7 +81,7 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
   // Calcular dimensões do SVG
   const width = margin.left + margin.right + (maxSteps * nodeWidth) + ((maxSteps - 1) * columnGap);
   const maxNodesInColumn = Math.max(...stepColumns.map(col => col.length));
-  const height = margin.top + margin.bottom + (maxNodesInColumn * (nodeHeight + verticalGap));
+  const height = margin.top + margin.bottom + 140 + (maxNodesInColumn * (nodeHeight + verticalGap));
 
   // Cores para as sequências
   const colors = [
@@ -269,27 +269,50 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
             })}
 
             {/* Tooltip de sequência completa na parte inferior */}
-            {hoveredSequence !== null && (
-              <g>
-                <rect
-                  x={margin.left}
-                  y={height - margin.bottom + 10}
-                  width={width - margin.left - margin.right}
-                  height={30}
-                  fill="hsl(var(--popover))"
-                  stroke="hsl(var(--border))"
-                  rx={4}
-                />
-                <text
-                  x={width / 2}
-                  y={height - margin.bottom + 28}
-                  textAnchor="middle"
-                  className="fill-popover-foreground text-sm font-medium"
-                >
-                  {sequences[hoveredSequence].count} sessões: {sequences[hoveredSequence].sequence.map(formatPageName).join(' → ')}
-                </text>
-              </g>
-            )}
+            {hoveredSequence !== null && (() => {
+              const sequence = sequences[hoveredSequence];
+              const sequenceText = sequence.sequence.map(formatPageName).join(' → ');
+              const textLength = sequenceText.length;
+              
+              // Calcular altura baseada no comprimento do texto
+              const minHeight = 50;
+              const maxHeight = 120;
+              const calculatedHeight = Math.min(maxHeight, Math.max(minHeight, textLength / 2));
+              
+              return (
+                <g>
+                  <rect
+                    x={margin.left}
+                    y={height - margin.bottom + 10}
+                    width={width - margin.left - margin.right}
+                    height={calculatedHeight}
+                    fill="hsl(var(--popover))"
+                    stroke="hsl(var(--border))"
+                    strokeWidth={2}
+                    rx={6}
+                    filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                  />
+                  <text
+                    x={width / 2}
+                    y={height - margin.bottom + 25}
+                    textAnchor="middle"
+                    className="fill-muted-foreground text-xs font-semibold"
+                  >
+                    {sequence.count} {sequence.count === 1 ? 'sessão' : 'sessões'}
+                  </text>
+                  <foreignObject
+                    x={margin.left + 20}
+                    y={height - margin.bottom + 35}
+                    width={width - margin.left - margin.right - 40}
+                    height={calculatedHeight - 30}
+                  >
+                    <div className="text-xs text-popover-foreground text-center px-4 py-2 overflow-auto">
+                      {sequenceText}
+                    </div>
+                  </foreignObject>
+                </g>
+              );
+            })()}
 
             {/* Renderizar nós por etapa */}
             {stepColumns.map((nodes, stepIdx) => (
@@ -349,80 +372,96 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
                           )?.originalLength! - 5} páginas
                         </text>
                       )}
-                      
-                      {/* Tooltip ao passar mouse */}
-                      {hoveredNode?.step === stepIdx && hoveredNode?.nodeIdx === nodeIdx && (
-                        <g className="pointer-events-none">
-                          {/* Background do tooltip */}
-                          <rect
-                            x={x + nodeWidth / 2 - 120}
-                            y={y > 100 ? y - 85 : y + nodeHeight + 15}
-                            width={240}
-                            height={75}
-                            fill="hsl(var(--popover))"
-                            stroke="hsl(var(--border))"
-                            strokeWidth={2}
-                            rx={8}
-                            filter="drop-shadow(0 4px 6px rgba(0,0,0,0.1))"
-                          />
-                          
-                          {/* Seta apontando para o nó */}
-                          {y > 100 ? (
-                            <path
-                              d={`M ${x + nodeWidth / 2 - 8} ${y - 10} 
-                                  L ${x + nodeWidth / 2} ${y} 
-                                  L ${x + nodeWidth / 2 + 8} ${y - 10} Z`}
-                              fill="hsl(var(--popover))"
-                            />
-                          ) : (
-                            <path
-                              d={`M ${x + nodeWidth / 2 - 8} ${y + nodeHeight + 15} 
-                                  L ${x + nodeWidth / 2} ${y + nodeHeight + 5} 
-                                  L ${x + nodeWidth / 2 + 8} ${y + nodeHeight + 15} Z`}
-                              fill="hsl(var(--popover))"
-                            />
-                          )}
-                          
-                          {/* Título completo da página */}
-                          <text
-                            x={x + nodeWidth / 2}
-                            y={y > 100 ? y - 60 : y + nodeHeight + 40}
-                            textAnchor="middle"
-                            className="fill-popover-foreground text-sm font-semibold"
-                          >
-                            {node.label}
-                          </text>
-                          
-                          {/* URL original */}
-                          <text
-                            x={x + nodeWidth / 2}
-                            y={y > 100 ? y - 40 : y + nodeHeight + 60}
-                            textAnchor="middle"
-                            className="fill-muted-foreground text-xs"
-                          >
-                            {node.page.length > 35 ? node.page.substring(0, 35) + '...' : node.page}
-                          </text>
-                          
-                          {/* Número de sessões */}
-                          <text
-                            x={x + nodeWidth / 2}
-                            y={y > 100 ? y - 23 : y + nodeHeight + 77}
-                            textAnchor="middle"
-                            className="fill-muted-foreground text-xs font-medium"
-                          >
-                            {totalSessions} {totalSessions === 1 ? 'sessão passou aqui' : 'sessões passaram aqui'}
-                          </text>
-                        </g>
-                      )}
                     </g>
                   );
                 })}
               </g>
             ))}
+
+            {/* Camada de tooltips dos nós (renderizada por último para ficar na frente) */}
+            {hoveredNode !== null && stepColumns[hoveredNode.step]?.[hoveredNode.nodeIdx] && (() => {
+              const node = stepColumns[hoveredNode.step][hoveredNode.nodeIdx];
+              const stepIdx = hoveredNode.step;
+              const nodeIdx = hoveredNode.nodeIdx;
+              const x = margin.left + (stepIdx * (nodeWidth + columnGap));
+              const y = node.y;
+              const totalSessions = node.sequences.reduce(
+                (sum, seqIdx) => sum + sequences[seqIdx].count,
+                0
+              );
+              const connectionsCount = aggregatedPaths.filter(p => 
+                (p.from === node.page && p.stepIdx === stepIdx) ||
+                (p.to === node.page && p.stepIdx === stepIdx - 1)
+              ).length;
+
+              return (
+                <g className="pointer-events-none">
+                  {/* Background do tooltip */}
+                  <rect
+                    x={x + nodeWidth / 2 - 120}
+                    y={y > 100 ? y - 85 : y + nodeHeight + 15}
+                    width={240}
+                    height={75}
+                    fill="hsl(var(--popover))"
+                    stroke="hsl(var(--border))"
+                    strokeWidth={2}
+                    rx={8}
+                    filter="drop-shadow(0 4px 6px rgba(0,0,0,0.1))"
+                  />
+                  
+                  {/* Seta apontando para o nó */}
+                  {y > 100 ? (
+                    <path
+                      d={`M ${x + nodeWidth / 2 - 8} ${y - 10} 
+                          L ${x + nodeWidth / 2} ${y} 
+                          L ${x + nodeWidth / 2 + 8} ${y - 10} Z`}
+                      fill="hsl(var(--popover))"
+                    />
+                  ) : (
+                    <path
+                      d={`M ${x + nodeWidth / 2 - 8} ${y + nodeHeight + 15} 
+                          L ${x + nodeWidth / 2} ${y + nodeHeight + 5} 
+                          L ${x + nodeWidth / 2 + 8} ${y + nodeHeight + 15} Z`}
+                      fill="hsl(var(--popover))"
+                    />
+                  )}
+                  
+                  {/* Título completo da página */}
+                  <text
+                    x={x + nodeWidth / 2}
+                    y={y > 100 ? y - 60 : y + nodeHeight + 40}
+                    textAnchor="middle"
+                    className="fill-popover-foreground text-sm font-semibold"
+                  >
+                    {node.label}
+                  </text>
+                  
+                  {/* URL original */}
+                  <text
+                    x={x + nodeWidth / 2}
+                    y={y > 100 ? y - 40 : y + nodeHeight + 60}
+                    textAnchor="middle"
+                    className="fill-muted-foreground text-xs"
+                  >
+                    {node.page.length > 35 ? node.page.substring(0, 35) + '...' : node.page}
+                  </text>
+                  
+                  {/* Número de sessões e conexões */}
+                  <text
+                    x={x + nodeWidth / 2}
+                    y={y > 100 ? y - 23 : y + nodeHeight + 77}
+                    textAnchor="middle"
+                    className="fill-primary text-xs font-medium"
+                  >
+                    {totalSessions} {totalSessions === 1 ? 'sessão' : 'sessões'} • {connectionsCount} {connectionsCount === 1 ? 'conexão' : 'conexões'}
+                  </text>
+                </g>
+              );
+            })()}
           </svg>
         </div>
         <p className="text-xs text-muted-foreground text-center mt-4">
-          Passe o mouse sobre as conexões para ver detalhes da sequência
+          Passe o mouse sobre as conexões ou nós para ver detalhes
         </p>
       </CardContent>
     </Card>
