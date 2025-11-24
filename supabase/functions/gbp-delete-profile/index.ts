@@ -38,38 +38,61 @@ Deno.serve(async (req) => {
       throw new Error('Missing profile_id');
     }
 
-    // Get profile to verify ownership
+    // Get profile to verify ownership (LEFT JOIN porque site_id pode ser NULL)
     const { data: profile, error: profileError } = await supabase
       .from('google_business_profiles')
       .select(`
         id,
+        user_id,
+        site_id,
         refresh_token,
-        rank_rent_sites!inner(owner_user_id)
+        rank_rent_sites!left(owner_user_id)
       `)
       .eq('id', profile_id)
       .single();
 
     if (profileError || !profile) {
+      console.error('Profile query error:', profileError);
       throw new Error('Profile not found');
     }
 
+    console.log('Profile found:', { 
+      profile_id: profile.id, 
+      user_id: profile.user_id,
+      site_id: profile.site_id,
+      has_site: !!profile.site_id 
+    });
+
     // Check ownership
-    if ((profile as any).rank_rent_sites?.owner_user_id !== user.id) {
+    // Se tem site associado, verifica owner_user_id do site
+    // Se não tem site, verifica user_id do perfil diretamente
+    const isOwner = profile.site_id
+      ? (profile as any).rank_rent_sites?.owner_user_id === user.id
+      : profile.user_id === user.id;
+
+    if (!isOwner) {
+      console.error('Ownership check failed:', {
+        authenticated_user: user.id,
+        profile_user_id: profile.user_id,
+        site_owner: (profile as any).rank_rent_sites?.owner_user_id
+      });
       throw new Error('Unauthorized');
     }
 
     // Optional: Revoke token at Google (best effort, don't fail if it doesn't work)
-    try {
-      await fetch('https://oauth2.googleapis.com/revoke', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          token: profile.refresh_token,
-        }),
-      });
-      console.log('✅ Token revoked at Google');
-    } catch (e) {
-      console.log('⚠️ Failed to revoke token at Google (continuing anyway)');
+    if (profile.refresh_token) {
+      try {
+        await fetch('https://oauth2.googleapis.com/revoke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            token: profile.refresh_token,
+          }),
+        });
+        console.log('✅ Token revoked at Google');
+      } catch (e) {
+        console.log('⚠️ Failed to revoke token at Google (continuing anyway)');
+      }
     }
 
     // Delete profile (CASCADE will delete reviews, posts, analytics)
