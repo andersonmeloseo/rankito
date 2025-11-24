@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin, MessageCircle, GraduationCap, Rocket, Store } from "lucide-react";
+import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin, MessageCircle, GraduationCap, Rocket } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Breadcrumb,
@@ -43,7 +43,6 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PlanUsageCard } from "@/components/subscription/PlanUsageCard";
 import { LimitWarningBanner } from "@/components/subscription/LimitWarningBanner";
-import { GBPDashboardTab } from "@/components/gbp/GBPDashboardTab";
 import { SubscriptionStatusBar } from "@/components/subscription/SubscriptionStatusBar";
 import { TrialExpiredBanner } from "@/components/subscription/TrialExpiredBanner";
 import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
@@ -395,10 +394,6 @@ const Dashboard = () => {
                     Projetos
                   </ClickUpTabTrigger>
                   
-                  <ClickUpTabTrigger value="gbp" icon={Store}>
-                    Google Business Profile
-                  </ClickUpTabTrigger>
-                  
                   <ClickUpTabTrigger value="crm" icon={Briefcase}>
                     CRM
                   </ClickUpTabTrigger>
@@ -513,10 +508,6 @@ const Dashboard = () => {
                 selectedSites={selectedSites}
                 onSelectSite={handleSelectSite}
               />
-            </TabsContent>
-
-            <TabsContent value="gbp" className="space-y-8">
-              <GBPDashboardTab userId={user.id} />
             </TabsContent>
 
             <TabsContent value="crm" className="space-y-8">
