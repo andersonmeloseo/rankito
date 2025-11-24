@@ -200,7 +200,19 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
             {/* Renderizar fluxos agregados (conexões entre nós) */}
             {aggregatedPaths.map((path, pathIdx) => {
               const strokeWidth = Math.max(2, (path.totalCount / maxAggregatedCount) * 20);
-              const isHovered = hoveredSequence !== null && path.sequences.includes(hoveredSequence);
+              
+              // Destacar se hover na sequência OU se hover no nó relacionado
+              const isHoveredBySequence = hoveredSequence !== null && path.sequences.includes(hoveredSequence);
+              
+              const isHoveredByNode = hoveredNode !== null && (
+                (stepColumns[hoveredNode.step]?.[hoveredNode.nodeIdx]?.page === path.from && 
+                 path.stepIdx === hoveredNode.step) ||
+                (stepColumns[hoveredNode.step]?.[hoveredNode.nodeIdx]?.page === path.to && 
+                 path.stepIdx === hoveredNode.step - 1)
+              );
+              
+              const isHighlighted = isHoveredBySequence || isHoveredByNode;
+              
               const dominantSeqIdx = path.sequences[0];
               const color = colors[dominantSeqIdx % colors.length];
 
@@ -211,13 +223,17 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
                     stroke={color}
                     strokeWidth={strokeWidth}
                     fill="none"
-                    opacity={hoveredSequence !== null && !isHovered ? 0.15 : 0.7}
+                    opacity={
+                      (hoveredSequence !== null || hoveredNode !== null) && !isHighlighted 
+                        ? 0.15 
+                        : 0.7
+                    }
                     className="transition-all duration-300 cursor-pointer"
                     onMouseEnter={() => setHoveredSequence(path.sequences[0])}
                     onMouseLeave={() => setHoveredSequence(null)}
                   />
                   
-                  {isHovered && (
+                  {isHighlighted && (
                     <g className="pointer-events-none">
                       <rect
                         x={path.x1 + (path.x2 - path.x1) / 2 - 110}
@@ -320,7 +336,7 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
                         {totalSessions} {totalSessions === 1 ? 'sessão' : 'sessões'}
                       </text>
                       {stepIdx === stepColumns.length - 1 && sequences.some((seq, idx) => 
-                        node.sequences.includes(idx) && seq.originalLength && seq.originalLength > 4
+                        node.sequences.includes(idx) && seq.originalLength && seq.originalLength > 5
                       ) && (
                         <text
                           x={x + nodeWidth / 2}
@@ -330,7 +346,7 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
                         >
                           +{sequences.find((seq, idx) => 
                             node.sequences.includes(idx) && seq.originalLength
-                          )?.originalLength! - 4} páginas
+                          )?.originalLength! - 5} páginas
                         </text>
                       )}
                       
