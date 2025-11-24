@@ -88,10 +88,10 @@ export const IndexingWorkflowGuide = ({
   const effectiveMaxStep = Math.max(currentStepIndex, maxStepReached);
 
   return (
-    <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-blue-200 dark:border-blue-800 mb-6">
+    <Card className="mb-6">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Map className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <Map className="w-5 h-5" />
           Guia de Indexação: Passo a Passo
         </CardTitle>
       </CardHeader>
