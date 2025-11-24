@@ -66,8 +66,7 @@ export const GBPProfileCard = ({ profile, onClick }: GBPProfileCardProps) => {
 
         {/* Premium Review Hero Section */}
         {statsLoading ? (
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950/20 dark:via-yellow-950/20 dark:to-orange-950/20 border-2 border-amber-200/60 dark:border-amber-800/30 p-5 shadow-inner">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+          <div className="relative overflow-hidden rounded-xl bg-muted/30 dark:bg-muted/20 border border-border p-5 shadow-sm">
             <div className="relative space-y-3">
               <div className="flex justify-center">
                 <Skeleton className="h-6 w-40" />
@@ -81,9 +80,7 @@ export const GBPProfileCard = ({ profile, onClick }: GBPProfileCardProps) => {
             </div>
           </div>
         ) : stats && stats.totalReviews > 0 ? (
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950/20 dark:via-yellow-950/20 dark:to-orange-950/20 border-2 border-amber-200/60 dark:border-amber-800/30 p-5 shadow-inner transition-all duration-300 hover:scale-[1.02]">
-            {/* Decorative glow overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+          <div className="relative overflow-hidden rounded-xl bg-muted/30 dark:bg-muted/20 border border-border p-5 shadow-sm transition-all duration-300 hover:scale-[1.02]">
             
             <div className="relative space-y-3">
               {/* Large Stars */}
