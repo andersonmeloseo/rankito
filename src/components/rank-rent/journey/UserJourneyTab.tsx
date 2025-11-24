@@ -14,6 +14,7 @@ import { AlertCircle, BarChart3, Route, Calendar, RefreshCw } from "lucide-react
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
+import { calculateSequenceScore } from "@/lib/journey-utils";
 
 interface UserJourneyTabProps {
   siteId: string;
@@ -111,9 +112,23 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
 
   // Determinar se usar diagrama multi-etapas ou simples
   const maxSequenceLength = Math.max(...analytics.commonSequences.map(s => s.sequence.length));
-  const topSequences = analytics.commonSequences
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 8);
+  
+  // Filtrar e priorizar sequências longas (3+ páginas) limitando a 4 etapas
+  const longSequences = analytics.commonSequences.filter(s => s.sequence.length >= 3);
+  
+  const topSequences = longSequences.length > 0
+    ? longSequences
+        .map(seq => ({
+          ...seq,
+          sequence: seq.sequence.slice(0, 4), // Limitar a 4 etapas
+          originalLength: seq.sequence.length,
+          score: calculateSequenceScore(seq)
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8)
+    : analytics.commonSequences
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
 
   // Flow connections (para diagrama simples de 2 colunas)
   const connectionMap = new Map<string, number>();
