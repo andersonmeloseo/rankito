@@ -54,7 +54,7 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
         <div>
           <h2 className="text-3xl font-bold text-foreground flex items-center gap-2">
             <Store className="w-8 h-8 text-primary" />
-            Google Business Profile
+            (em breve nos melhores cinemas... 😊) Google Business Profile
           </h2>
           <p className="text-muted-foreground mt-1">
             Gerencie seus perfis do Google Meu Negócio, reviews e posts
