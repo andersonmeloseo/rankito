@@ -18,27 +18,36 @@ import { GBPPhotosManager } from './GBPPhotosManager';
 import { GBPQuestionsManager } from './GBPQuestionsManager';
 import { GBPProfileOverview } from './GBPProfileOverview';
 import { GBPProfileCard } from './GBPProfileCard';
-
 interface GBPDashboardTabProps {
   userId: string;
 }
-
-export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
-  const { profiles, isLoading, planLimits, testConnection, isTesting, deleteProfile, isDeleting, syncReviews, isSyncing } = useGBPProfiles(userId);
-  const { generateMockData, isGenerating } = useGBPMockData();
+export function GBPDashboardTab({
+  userId
+}: GBPDashboardTabProps) {
+  const {
+    profiles,
+    isLoading,
+    planLimits,
+    testConnection,
+    isTesting,
+    deleteProfile,
+    isDeleting,
+    syncReviews,
+    isSyncing
+  } = useGBPProfiles(userId);
+  const {
+    generateMockData,
+    isGenerating
+  } = useGBPMockData();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
-
   if (isLoading) {
-    return (
-      <div className="space-y-4">
+    return <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-32 w-full" />
-      </div>
-    );
+      </div>;
   }
-
   const canAddMore = planLimits?.canAddMore ?? false;
   const currentCount = planLimits?.currentCount ?? 0;
   const maxIntegrations = planLimits?.maxIntegrations;
@@ -46,33 +55,23 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
   // Separate mock and real profiles
   const mockProfiles = profiles?.filter(p => p.is_mock) || [];
   const realProfiles = profiles?.filter(p => !p.is_mock) || [];
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-foreground flex items-center gap-2">
             <Store className="w-8 h-8 text-primary" />
-            (em breve nos melhores cinemas... 😊) Google Business Profile
+            Google Business Profile (em breve nos melhores cinemas... 😊) 
           </h2>
           <p className="text-muted-foreground mt-1">
             Gerencie seus perfis do Google Meu Negócio, reviews e posts
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {planLimits && (
-            <Badge variant="secondary" className="text-sm">
-              {maxIntegrations === null 
-                ? 'Integrações Ilimitadas' 
-                : `${currentCount} / ${maxIntegrations} perfis`}
-            </Badge>
-          )}
-          <Button 
-            onClick={() => setShowAddDialog(true)}
-            disabled={!canAddMore}
-            size="lg"
-          >
+          {planLimits && <Badge variant="secondary" className="text-sm">
+              {maxIntegrations === null ? 'Integrações Ilimitadas' : `${currentCount} / ${maxIntegrations} perfis`}
+            </Badge>}
+          <Button onClick={() => setShowAddDialog(true)} disabled={!canAddMore} size="lg">
             <Plus className="w-5 h-5 mr-2" />
             Adicionar Perfil GBP
           </Button>
@@ -80,8 +79,7 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
       </div>
 
       {/* Lista de Perfis */}
-      {!profiles || profiles.length === 0 ? (
-        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+      {!profiles || profiles.length === 0 ? <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {/* Card 1: Dados de Demonstração */}
           <Card className="relative overflow-hidden border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-background">
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100 dark:bg-purple-900/30 rounded-full -mr-16 -mt-16 opacity-50" />
@@ -109,12 +107,9 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
                   Perfeito para aprender o sistema
                 </li>
               </ul>
-              <Button 
-                size="lg" 
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                onClick={() => generateMockData({ clearExisting: false })}
-                disabled={isGenerating}
-              >
+              <Button size="lg" className="w-full bg-purple-600 hover:bg-purple-700 text-white" onClick={() => generateMockData({
+            clearExisting: false
+          })} disabled={isGenerating}>
                 <Sparkles className="mr-2 h-5 w-5" />
                 {isGenerating ? 'Gerando...' : 'Gerar Perfis Demo'}
               </Button>
@@ -148,22 +143,15 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
                   Dados do Google My Business
                 </li>
               </ul>
-              <Button 
-                size="lg" 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => setShowAddDialog(true)}
-              >
+              <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setShowAddDialog(true)}>
                 <LinkIcon className="mr-2 h-5 w-5" />
                 Conectar Primeiro Perfil
               </Button>
             </CardContent>
           </Card>
-        </div>
-      ) : (
-        <div className="space-y-8">
+        </div> : <div className="space-y-8">
           {/* Perfis Mockados */}
-          {mockProfiles.length > 0 && (
-            <div>
+          {mockProfiles.length > 0 && <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-semibold">Perfis de Demonstração</h3>
@@ -172,76 +160,43 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
                     Demo
                   </Badge>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateMockData({ clearExisting: true })}
-                  disabled={isGenerating}
-                  className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950/30"
-                >
+                <Button variant="outline" size="sm" onClick={() => generateMockData({
+            clearExisting: true
+          })} disabled={isGenerating} className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950/30">
                   <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
                   Regenerar Dados
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mockProfiles.map((profile) => (
-                  <GBPProfileCard
-                    key={profile.id}
-                    profile={profile}
-                    onClick={() => setSelectedProfile(profile)}
-                  />
-                ))}
+                {mockProfiles.map(profile => <GBPProfileCard key={profile.id} profile={profile} onClick={() => setSelectedProfile(profile)} />)}
               </div>
-            </div>
-          )}
+            </div>}
 
           {/* Perfis Reais */}
-          {realProfiles.length > 0 && (
-            <div>
-              {mockProfiles.length > 0 && (
-                <div className="flex items-center gap-2 mb-4">
+          {realProfiles.length > 0 && <div>
+              {mockProfiles.length > 0 && <div className="flex items-center gap-2 mb-4">
                   <h3 className="text-lg font-semibold">Perfis Conectados</h3>
                   <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                     <LinkIcon className="w-3 h-3 mr-1" />
                     Real
                   </Badge>
-                </div>
-              )}
+                </div>}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {realProfiles.map((profile) => (
-                  <GBPProfileCard
-                    key={profile.id}
-                    profile={profile}
-                    onClick={() => setSelectedProfile(profile)}
-                  />
-                ))}
+                {realProfiles.map(profile => <GBPProfileCard key={profile.id} profile={profile} onClick={() => setSelectedProfile(profile)} />)}
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            </div>}
+        </div>}
 
       {/* Botão de Sync Global */}
-      {profiles && profiles.length > 0 && (
-        <Button
-          variant="outline"
-          onClick={() => syncReviews.mutate()}
-          disabled={isSyncing}
-          className="w-full"
-        >
+      {profiles && profiles.length > 0 && <Button variant="outline" onClick={() => syncReviews.mutate()} disabled={isSyncing} className="w-full">
           <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
           Sincronizar Todos os Reviews
-        </Button>
-      )}
+        </Button>}
 
       {/* Dialog para adicionar perfil */}
-      <AddGBPIntegrationDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        onSuccess={() => {
-          setShowAddDialog(false);
-        }}
-      />
+      <AddGBPIntegrationDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={() => {
+      setShowAddDialog(false);
+    }} />
 
       {/* Dialog de confirmação de exclusão */}
       <AlertDialog open={!!profileToDelete} onOpenChange={() => setProfileToDelete(null)}>
@@ -255,15 +210,12 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (profileToDelete) {
-                  deleteProfile.mutate(profileToDelete);
-                  setProfileToDelete(null);
-                }
-              }}
-              className="bg-destructive hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={() => {
+            if (profileToDelete) {
+              deleteProfile.mutate(profileToDelete);
+              setProfileToDelete(null);
+            }
+          }} className="bg-destructive hover:bg-destructive/90">
               Remover
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -277,17 +229,14 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
             <DialogTitle className="flex items-center gap-2">
               <Store className="w-5 h-5" />
               {selectedProfile?.business_name || selectedProfile?.connection_name}
-              {selectedProfile?.is_mock && (
-                <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+              {selectedProfile?.is_mock && <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
                   <Sparkles className="w-3 h-3 mr-1" />
                   Demo
-                </Badge>
-              )}
+                </Badge>}
             </DialogTitle>
           </DialogHeader>
 
-          {selectedProfile && (
-            <Tabs defaultValue="overview" className="w-full">
+          {selectedProfile && <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="edit">Editar</TabsTrigger>
@@ -345,12 +294,10 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
                       <span className="text-muted-foreground">Verificação:</span>
                       <span>{selectedProfile.verification_status || 'N/A'}</span>
                     </div>
-                    {selectedProfile.last_sync_at && (
-                      <div className="flex justify-between">
+                    {selectedProfile.last_sync_at && <div className="flex justify-between">
                         <span className="text-muted-foreground">Última Sync:</span>
                         <span>{new Date(selectedProfile.last_sync_at).toLocaleString('pt-BR')}</span>
-                      </div>
-                    )}
+                      </div>}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Tipo:</span>
                       <Badge variant="secondary">
@@ -360,10 +307,8 @@ export function GBPDashboardTab({ userId }: GBPDashboardTabProps) {
                   </div>
                 </div>
               </TabsContent>
-            </Tabs>
-          )}
+            </Tabs>}
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 }
