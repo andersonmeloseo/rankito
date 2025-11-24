@@ -4943,6 +4943,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      normalize_page_url: { Args: { url: string }; Returns: string }
       reset_gsc_integration_health: { Args: never; Returns: undefined }
       trigger_all_notification_checks: {
         Args: never
