@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Send, ExternalLink, Globe, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Send, ExternalLink, Globe, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, AlertCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Pagination, 
@@ -70,75 +71,67 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
     sentToIndexNow: 'all'
   });
 
-  // Query 1: Total count
+  // Query 1: Total count com filtros aplicados
   const { data: totalCount = 0 } = useQuery({
-    queryKey: ['gsc-discovered-urls-count', siteId],
+    queryKey: ['gsc-discovered-urls-count', siteId, filters],
     queryFn: async () => {
-      const { count, error } = await supabase
+      let query = supabase
         .from('gsc_discovered_urls')
         .select('*', { count: 'exact', head: true })
         .eq('site_id', siteId);
+      
+      // Aplicar os mesmos filtros
+      if (filters.status !== 'all') {
+        query = query.eq('current_status', filters.status);
+      }
+      if (filters.sentToIndexNow === 'yes') {
+        query = query.eq('sent_to_indexnow', true);
+      } else if (filters.sentToIndexNow === 'no') {
+        query = query.eq('sent_to_indexnow', false);
+      }
+      
+      const { count, error } = await query;
       
       if (error) throw error;
       return count || 0;
     },
   });
 
-  // Query 2: Paginated URLs (server-side pagination)
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage - 1;
-
-  const { data: urls, isLoading } = useQuery({
-    queryKey: ['gsc-discovered-urls-indexnow', siteId, currentPage],
+  // Query 2: URLs com paginação e filtros SERVER-SIDE
+  const { data: urls, isLoading, error: urlsError } = useQuery({
+    queryKey: ['gsc-discovered-urls-indexnow', siteId, currentPage, filters, sortState],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('gsc_discovered_urls')
         .select('id, url, current_status, discovered_at, sent_to_indexnow')
-        .eq('site_id', siteId)
-        .range(0, 9999999); // Fetch all for client-side processing
+        .eq('site_id', siteId);
+      
+      // Aplicar filtros no servidor
+      if (filters.status !== 'all') {
+        query = query.eq('current_status', filters.status);
+      }
+      if (filters.sentToIndexNow === 'yes') {
+        query = query.eq('sent_to_indexnow', true);
+      } else if (filters.sentToIndexNow === 'no') {
+        query = query.eq('sent_to_indexnow', false);
+      }
+      
+      // Aplicar ordenação
+      query = query.order(sortState.field, { ascending: sortState.direction === 'asc' });
+      
+      // Paginação SERVER-SIDE
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage - 1;
+      
+      const { data, error } = await query.range(startIndex, endIndex);
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
   
-  // Client-side filtering and sorting
-  const sortData = <T extends Record<string, any>>(data: T[], sortState: SortState): T[] => {
-    return [...data].sort((a, b) => {
-      const aVal = a[sortState.field];
-      const bVal = b[sortState.field];
-      if (aVal === null || aVal === undefined) return 1;
-      if (bVal === null || bVal === undefined) return -1;
-      if (typeof aVal === 'string') {
-        return sortState.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      }
-      if (typeof aVal === 'boolean') {
-        return sortState.direction === 'asc' ? (aVal === bVal ? 0 : aVal ? 1 : -1) : (aVal === bVal ? 0 : aVal ? -1 : 1);
-      }
-      return sortState.direction === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal > bVal ? -1 : 1);
-    });
-  };
-  
-  const filterData = (data: any[]) => {
-    return data.filter(item => {
-      if (filters.status !== 'all' && item.current_status !== filters.status) return false;
-      if (filters.sentToIndexNow === 'yes' && !item.sent_to_indexnow) return false;
-      if (filters.sentToIndexNow === 'no' && item.sent_to_indexnow) return false;
-      return true;
-    });
-  };
-  
-  const processedUrls = useMemo(() => {
-    if (!urls) return [];
-    const filtered = filterData(urls);
-    return sortData(filtered, sortState);
-  }, [urls, filters, sortState]);
-  
-  const paginatedUrls = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return processedUrls.slice(start, end);
-  }, [processedUrls, currentPage, itemsPerPage]);
+  // URLs já vêm filtradas e ordenadas do servidor
+  const paginatedUrls = urls || [];
 
   // Query 3: Already sent count
   const { data: alreadySentCount = 0 } = useQuery({
@@ -155,7 +148,7 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
     },
   });
 
-  const totalPages = Math.ceil(processedUrls.length / itemsPerPage);
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
   
   const handleSort = (field: SortField) => {
     setSortState(prev => ({
@@ -210,8 +203,30 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
     };
   }, [paginatedUrls, selectedUrls]);
 
-  const selectAllFiltered = () => {
-    const allFilteredUrls = processedUrls.map(u => u.url);
+  const selectAllFiltered = async () => {
+    // Buscar todas as URLs com os filtros aplicados (não paginadas)
+    let query = supabase
+      .from('gsc_discovered_urls')
+      .select('url')
+      .eq('site_id', siteId);
+    
+    if (filters.status !== 'all') {
+      query = query.eq('current_status', filters.status);
+    }
+    if (filters.sentToIndexNow === 'yes') {
+      query = query.eq('sent_to_indexnow', true);
+    } else if (filters.sentToIndexNow === 'no') {
+      query = query.eq('sent_to_indexnow', false);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      toast.error('Erro ao selecionar URLs');
+      return;
+    }
+    
+    const allFilteredUrls = data?.map(u => u.url) || [];
     setSelectedUrls(allFilteredUrls);
     toast.success(`${allFilteredUrls.length} URLs selecionadas`);
   };
@@ -233,9 +248,35 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+          <div className="flex flex-col items-center justify-center gap-4 py-12">
+            <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full" />
+            <div className="text-center">
+              <p className="text-lg font-medium mb-1">Carregando URLs descobertas...</p>
+              <p className="text-sm text-muted-foreground">
+                {totalCount > 0 ? `${totalCount} URLs encontradas no total` : 'Buscando dados do servidor'}
+              </p>
+            </div>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Verificar erro de permissão ou ausência de dados
+  if (urlsError || (!urls && !isLoading)) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Sem acesso às URLs</AlertTitle>
+            <AlertDescription>
+              {urlsError ? 
+                `Erro ao carregar URLs: ${urlsError.message}` :
+                'Você não tem permissão para visualizar as URLs descobertas deste site. Entre em contato com o administrador.'
+              }
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     );
@@ -252,7 +293,7 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
           <CardContent>
             <div className="flex items-center gap-2">
               <Globe className="h-5 w-5 text-blue-600" />
-              <span className="text-2xl font-bold">{processedUrls.length}</span>
+              <span className="text-2xl font-bold">{totalCount}</span>
             </div>
           </CardContent>
         </Card>
@@ -289,17 +330,17 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
             <div>
               <CardTitle>URLs Descobertas Disponíveis</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, processedUrls.length)} de {processedUrls.length} URLs
+                Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalCount)} de {totalCount} URLs
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 onClick={selectAllFiltered}
-                disabled={processedUrls.length === 0}
+                disabled={totalCount === 0}
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Selecionar Todas ({processedUrls.length})
+                Selecionar Todas ({totalCount})
               </Button>
               
               {selectedUrls.length > 0 && (
