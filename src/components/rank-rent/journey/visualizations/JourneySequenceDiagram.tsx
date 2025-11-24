@@ -229,41 +229,9 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
                         : 0.7
                     }
                     className="transition-all duration-300 cursor-pointer"
-                    onMouseEnter={() => setHoveredSequence(path.sequences[0])}
-                    onMouseLeave={() => setHoveredSequence(null)}
-                  />
-                  
-                  {isHighlighted && (
-                    <g className="pointer-events-none">
-                      <rect
-                        x={path.x1 + (path.x2 - path.x1) / 2 - 110}
-                        y={Math.min(path.y1, path.y2) - 45}
-                        width={220}
-                        height={35}
-                        fill="hsl(var(--popover))"
-                        stroke="hsl(var(--border))"
-                        strokeWidth={2}
-                        rx={6}
-                        filter="drop-shadow(0 4px 6px rgba(0,0,0,0.1))"
-                      />
-                      <text
-                        x={path.x1 + (path.x2 - path.x1) / 2}
-                        y={Math.min(path.y1, path.y2) - 22}
-                        textAnchor="middle"
-                        className="fill-popover-foreground text-xs font-semibold"
-                      >
-                        {path.totalCount} {path.totalCount === 1 ? 'sessão' : 'sessões'}
-                      </text>
-                      <text
-                        x={path.x1 + (path.x2 - path.x1) / 2}
-                        y={Math.min(path.y1, path.y2) - 8}
-                        textAnchor="middle"
-                        className="fill-muted-foreground text-xs"
-                      >
-                        {formatPageName(path.from)} → {formatPageName(path.to)}
-                      </text>
-                    </g>
-                  )}
+                  onMouseEnter={() => setHoveredSequence(path.sequences[0])}
+                  onMouseLeave={() => setHoveredSequence(null)}
+                />
                 </g>
               );
             })}
