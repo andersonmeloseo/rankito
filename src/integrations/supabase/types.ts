@@ -3298,6 +3298,7 @@ export type Database = {
       }
       rank_rent_sessions: {
         Row: {
+          bot_name: string | null
           city: string | null
           country: string | null
           created_at: string | null
@@ -3315,6 +3316,7 @@ export type Database = {
           total_duration_seconds: number | null
         }
         Insert: {
+          bot_name?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
@@ -3332,6 +3334,7 @@ export type Database = {
           total_duration_seconds?: number | null
         }
         Update: {
+          bot_name?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null

@@ -12,6 +12,7 @@ interface Session {
   device: string | null;
   city: string | null;
   country: string | null;
+  bot_name: string | null;
 }
 
 export const useRecentSessions = (siteId: string, limit: number = 50) => {
