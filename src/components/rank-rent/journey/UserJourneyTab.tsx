@@ -6,6 +6,7 @@ import { TopPagesAnalysis } from "./TopPagesAnalysis";
 import { SessionCards } from "./SessionCards";
 import { JourneyHeatmapGrid } from "./visualizations/JourneyHeatmapGrid";
 import { JourneyFlowDiagram } from "./visualizations/JourneyFlowDiagram";
+import { JourneySequenceDiagram } from "./visualizations/JourneySequenceDiagram";
 import { TemporalComparison } from "./insights/TemporalComparison";
 import { useSessionAnalytics } from "@/hooks/useSessionAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -108,7 +109,13 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
     }
   });
 
-  // Flow connections
+  // Determinar se usar diagrama multi-etapas ou simples
+  const maxSequenceLength = Math.max(...analytics.commonSequences.map(s => s.sequence.length));
+  const topSequences = analytics.commonSequences
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
+  // Flow connections (para diagrama simples de 2 colunas)
   const connectionMap = new Map<string, number>();
   analytics.commonSequences.forEach(seq => {
     for (let i = 0; i < seq.sequence.length - 1; i++) {
@@ -183,8 +190,12 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
           {/* Heatmap de Atividade */}
           <JourneyHeatmapGrid data={heatmapData} />
 
-          {/* Flow Diagram */}
-          <JourneyFlowDiagram connections={flowConnections} topPages={topPages} />
+          {/* Flow Diagram - Multi-etapas ou Simples */}
+          {maxSequenceLength > 2 ? (
+            <JourneySequenceDiagram sequences={topSequences} />
+          ) : (
+            <JourneyFlowDiagram connections={flowConnections} topPages={topPages} />
+          )}
 
           {/* Top Pages Analysis */}
           <TopPagesAnalysis 
