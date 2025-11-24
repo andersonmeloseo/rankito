@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { isConversionEvent, filterConversions } from '@/lib/conversionUtils';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
 import React from 'react';
 
@@ -98,7 +99,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
 
       // Calculate metrics
       const totalPages = sites?.reduce((acc, s) => acc + (s.rank_rent_pages?.length || 0), 0) || 0;
-      const totalConversions = conversions?.filter(c => c.event_type !== 'page_view').length || 0;
+      const totalConversions = filterConversions(conversions || []).length;
       const pageViews = conversions?.filter(c => c.event_type === 'page_view').length || 0;
       const conversionRate = pageViews > 0 ? ((totalConversions / pageViews) * 100) : 0;
       
@@ -201,7 +202,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
 
       // NEW: Conversions by type
       const conversionsByType = conversions?.reduce((acc: any, conv) => {
-        if (conv.event_type !== 'page_view') {
+        if (isConversionEvent(conv.event_type)) {
           acc[conv.event_type] = (acc[conv.event_type] || 0) + 1;
         }
         return acc;
@@ -214,7 +215,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
 
       // NEW: Conversions by day with types
       const conversionsByDay = conversions?.reduce((acc: any, conv) => {
-        if (conv.event_type !== 'page_view') {
+        if (isConversionEvent(conv.event_type)) {
           const date = new Date(conv.created_at).toISOString().split('T')[0]; // YYYY-MM-DD format
           if (!acc[date]) {
             acc[date] = { date, whatsapp_click: 0, phone_click: 0, email_click: 0, form_submit: 0, total: 0 };
@@ -267,7 +268,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         .gte('created_at', previousStartDate.toISOString())
         .lt('created_at', startDate.toISOString());
 
-      const previousTotalConversions = previousConversions?.filter(c => c.event_type !== 'page_view').length || 0;
+      const previousTotalConversions = filterConversions(previousConversions || []).length;
       const previousPageViews = previousConversions?.filter(c => c.event_type === 'page_view').length || 0;
       const previousConversionRate = previousPageViews > 0 ? ((previousTotalConversions / previousPageViews) * 100) : 0;
 
