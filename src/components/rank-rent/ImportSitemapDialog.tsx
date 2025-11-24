@@ -101,6 +101,24 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
       
       setDiscoverMode(false);
 
+      // ✅ Detectar URLs de preview/admin antes de importar
+      const allUrls = data.sitemaps.flatMap((s: any) => s.urls || []);
+      const previewUrls = allUrls.filter((url: string) => 
+        url.includes('elementor-preview') ||
+        url.includes('elementor_library') ||
+        url.includes('preview_id') ||
+        url.includes('preview_nonce') ||
+        url.includes('page_id=') && url.includes('preview')
+      );
+
+      if (previewUrls.length > 0) {
+        toast({
+          title: "⚠️ URLs de preview/admin detectadas",
+          description: `${previewUrls.length} URLs de admin/preview serão automaticamente removidas. Apenas páginas públicas serão importadas.`,
+          variant: "default",
+        });
+      }
+
       // Calcular sobreposição entre sitemaps
       const totalIndividual = data.totalIndividual || data.sitemaps.reduce((sum: number, s: any) => sum + s.urlCount, 0);
       const totalUnique = data.totalUrls;

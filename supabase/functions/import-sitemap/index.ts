@@ -6,6 +6,45 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * Normaliza URLs removendo variações que causam duplicatas visuais
+ */
+function normalizeUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    
+    // 1. Remover query params de preview/admin do WordPress/Elementor
+    const paramsToRemove = [
+      'elementor-preview', 'elementor_library', 'page_id', 
+      'preview', 'preview_id', 'preview_nonce', 'ver',
+      'elementor-action', 'elementor-preview-id'
+    ];
+    paramsToRemove.forEach(param => urlObj.searchParams.delete(param));
+    
+    // 2. Remover fragmentos (#)
+    urlObj.hash = '';
+    
+    // 3. Normalizar trailing slash (exceto raiz)
+    if (urlObj.pathname !== '/' && urlObj.pathname.endsWith('/')) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+    
+    // 4. Forçar HTTPS e lowercase hostname
+    urlObj.protocol = 'https:';
+    urlObj.hostname = urlObj.hostname.toLowerCase();
+    
+    // 5. Se não restaram query params, limpar search
+    if (urlObj.searchParams.toString() === '') {
+      urlObj.search = '';
+    }
+    
+    return urlObj.toString();
+  } catch (error) {
+    console.warn(`⚠️ Failed to normalize URL: ${url}`, error);
+    return url; // Retorna original se falhar
+  }
+}
+
 // Process a single sitemap or sitemap index recursively with limits using regex
 async function processSitemap(
   sitemapUrl: string, 
@@ -302,13 +341,16 @@ serve(async (req) => {
       try {
         if (!pageUrl) continue;
 
-        const url = new URL(pageUrl);
+        // ✅ Normalizar URL antes de processar
+        const normalizedUrl = normalizeUrl(pageUrl);
+        
+        const url = new URL(normalizedUrl);
         const pagePath = url.pathname;
-        const existingPage = existingPagesMap.get(pageUrl);
+        const existingPage = existingPagesMap.get(normalizedUrl);
 
         const pageData: any = {
           site_id,
-          page_url: pageUrl,
+          page_url: normalizedUrl,
           page_path: pagePath,
           last_scraped_at: new Date().toISOString(),
           status: 'active'
@@ -319,8 +361,8 @@ serve(async (req) => {
           pageData.id = existingPage.id;
         }
 
-        // Usa page_url como chave para evitar duplicatas
-        pagesMap.set(pageUrl, pageData);
+        // Usa page_url normalizada como chave para evitar duplicatas
+        pagesMap.set(normalizedUrl, pageData);
 
       } catch (pageError) {
         // ✅ CORREÇÃO 3: Logging detalhado de erros
