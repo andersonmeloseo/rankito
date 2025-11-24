@@ -113,6 +113,61 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
     `;
   };
 
+  // Agregar conexões por caminho único
+  interface AggregatedPath {
+    from: string;
+    to: string;
+    stepIdx: number;
+    totalCount: number;
+    sequences: number[];
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }
+
+  const aggregatedPaths: AggregatedPath[] = [];
+
+  sequences.forEach((seq, seqIdx) => {
+    seq.sequence.forEach((page, stepIdx) => {
+      if (stepIdx === seq.sequence.length - 1) return;
+
+      const currentNode = stepColumns[stepIdx].find(n => n.page === page);
+      const nextPage = seq.sequence[stepIdx + 1];
+      const nextNode = stepColumns[stepIdx + 1]?.find(n => n.page === nextPage);
+
+      if (!currentNode || !nextNode) return;
+
+      let existingPath = aggregatedPaths.find(
+        p => p.stepIdx === stepIdx && p.from === page && p.to === nextPage
+      );
+
+      if (existingPath) {
+        existingPath.totalCount += seq.count;
+        existingPath.sequences.push(seqIdx);
+      } else {
+        const x1 = margin.left + (stepIdx * (nodeWidth + columnGap)) + nodeWidth;
+        const y1 = currentNode.y + nodeHeight / 2;
+        const x2 = margin.left + ((stepIdx + 1) * (nodeWidth + columnGap));
+        const y2 = nextNode.y + nodeHeight / 2;
+
+        aggregatedPaths.push({
+          from: page,
+          to: nextPage,
+          stepIdx,
+          totalCount: seq.count,
+          sequences: [seqIdx],
+          x1,
+          y1,
+          x2,
+          y2,
+        });
+      }
+    });
+  });
+
+  const maxAggregatedCount = Math.max(...aggregatedPaths.map(p => p.totalCount), 1);
+
   return (
     <Card>
       <CardHeader>
@@ -142,68 +197,83 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
               </text>
             ))}
 
-            {/* Renderizar fluxos (conexões entre nós) */}
-            {sequences.map((seq, seqIdx) => {
-              const color = colors[seqIdx % colors.length];
-              const isHovered = hoveredSequence === seqIdx;
-              const strokeWidth = Math.max(2, (seq.count / maxCount) * 12);
+            {/* Renderizar fluxos agregados (conexões entre nós) */}
+            {aggregatedPaths.map((path, pathIdx) => {
+              const strokeWidth = Math.max(2, (path.totalCount / maxAggregatedCount) * 20);
+              const isHovered = hoveredSequence !== null && path.sequences.includes(hoveredSequence);
+              const dominantSeqIdx = path.sequences[0];
+              const color = colors[dominantSeqIdx % colors.length];
 
               return (
-                <g key={`flow-${seqIdx}`}>
-                  {seq.sequence.map((page, stepIdx) => {
-                    if (stepIdx === seq.sequence.length - 1) return null;
-
-                    const currentNode = stepColumns[stepIdx].find(n => n.page === page);
-                    const nextPage = seq.sequence[stepIdx + 1];
-                    const nextNode = stepColumns[stepIdx + 1].find(n => n.page === nextPage);
-
-                    if (!currentNode || !nextNode) return null;
-
-                    const x1 = margin.left + (stepIdx * (nodeWidth + columnGap)) + nodeWidth;
-                    const y1 = currentNode.y + nodeHeight / 2;
-                    const x2 = margin.left + ((stepIdx + 1) * (nodeWidth + columnGap));
-                    const y2 = nextNode.y + nodeHeight / 2;
-
-                    return (
-                      <path
-                        key={`path-${seqIdx}-${stepIdx}`}
-                        d={generatePath(x1, y1, x2, y2, strokeWidth)}
-                        stroke={color}
-                        strokeWidth={strokeWidth}
-                        fill="none"
-                        opacity={hoveredSequence !== null && !isHovered ? 0.15 : 0.6}
-                        className="transition-all duration-300 cursor-pointer"
-                        onMouseEnter={() => setHoveredSequence(seqIdx)}
-                        onMouseLeave={() => setHoveredSequence(null)}
-                      />
-                    );
-                  })}
-
-                  {/* Tooltip quando hover */}
+                <g key={`path-${pathIdx}`}>
+                  <path
+                    d={generatePath(path.x1, path.y1, path.x2, path.y2, strokeWidth)}
+                    stroke={color}
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                    opacity={hoveredSequence !== null && !isHovered ? 0.15 : 0.7}
+                    className="transition-all duration-300 cursor-pointer"
+                    onMouseEnter={() => setHoveredSequence(path.sequences[0])}
+                    onMouseLeave={() => setHoveredSequence(null)}
+                  />
+                  
                   {isHovered && (
-                    <g>
+                    <g className="pointer-events-none">
                       <rect
-                        x={margin.left}
-                        y={height - margin.bottom + 10}
-                        width={width - margin.left - margin.right}
-                        height={30}
+                        x={path.x1 + (path.x2 - path.x1) / 2 - 110}
+                        y={Math.min(path.y1, path.y2) - 45}
+                        width={220}
+                        height={35}
                         fill="hsl(var(--popover))"
                         stroke="hsl(var(--border))"
-                        rx={4}
+                        strokeWidth={2}
+                        rx={6}
+                        filter="drop-shadow(0 4px 6px rgba(0,0,0,0.1))"
                       />
                       <text
-                        x={width / 2}
-                        y={height - margin.bottom + 28}
+                        x={path.x1 + (path.x2 - path.x1) / 2}
+                        y={Math.min(path.y1, path.y2) - 22}
                         textAnchor="middle"
-                        className="fill-popover-foreground text-sm font-medium"
+                        className="fill-popover-foreground text-xs font-semibold"
                       >
-                        {seq.count} sessões: {seq.sequence.map(formatPageName).join(' → ')}
+                        {path.totalCount} {path.totalCount === 1 ? 'sessão' : 'sessões'}
+                      </text>
+                      <text
+                        x={path.x1 + (path.x2 - path.x1) / 2}
+                        y={Math.min(path.y1, path.y2) - 8}
+                        textAnchor="middle"
+                        className="fill-muted-foreground text-xs"
+                      >
+                        {formatPageName(path.from)} → {formatPageName(path.to)}
                       </text>
                     </g>
                   )}
                 </g>
               );
             })}
+
+            {/* Tooltip de sequência completa na parte inferior */}
+            {hoveredSequence !== null && (
+              <g>
+                <rect
+                  x={margin.left}
+                  y={height - margin.bottom + 10}
+                  width={width - margin.left - margin.right}
+                  height={30}
+                  fill="hsl(var(--popover))"
+                  stroke="hsl(var(--border))"
+                  rx={4}
+                />
+                <text
+                  x={width / 2}
+                  y={height - margin.bottom + 28}
+                  textAnchor="middle"
+                  className="fill-popover-foreground text-sm font-medium"
+                >
+                  {sequences[hoveredSequence].count} sessões: {sequences[hoveredSequence].sequence.map(formatPageName).join(' → ')}
+                </text>
+              </g>
+            )}
 
             {/* Renderizar nós por etapa */}
             {stepColumns.map((nodes, stepIdx) => (
