@@ -5,6 +5,7 @@ import { ConversionTypeDistributionChart } from '@/components/analytics/Conversi
 import { ConversionHeatmapChart } from '@/components/analytics/ConversionHeatmapChart';
 import { ConversionsTable } from '@/components/analytics/ConversionsTable';
 import { EmptyState } from '@/components/client-portal/EmptyState';
+import { filterConversions } from '@/lib/conversionUtils';
 
 interface ConversionsTabProps {
   analytics: any;
@@ -45,9 +46,7 @@ export const ConversionsTab = ({ analytics, siteIds }: ConversionsTabProps) => {
     .filter(item => item.value > 0);
 
   // Filter conversions only
-  const conversionsOnly = (analytics.conversions || []).filter(
-    (c: any) => c.event_type !== 'page_view'
-  );
+  const conversionsOnly = filterConversions(analytics.conversions || []);
 
   return (
     <div className="space-y-10">
