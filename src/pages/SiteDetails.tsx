@@ -55,7 +55,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ReportsTab } from "@/components/reports/ReportsTab";
 import { GSCTabContent } from "@/components/gsc/GSCTabContent";
-import { GBPTabContent } from "@/components/gbp/GBPTabContent";
+
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
 import { EcommerceAnalytics } from "@/components/integrations/ecommerce/EcommerceAnalytics";
@@ -855,9 +855,6 @@ const SiteDetails = () => {
                   Jornada do Usuário
                 </ClickUpTabTrigger>
                 
-                <ClickUpTabTrigger value="gbp" icon={Store}>
-                  Google Business Profile
-                </ClickUpTabTrigger>
                 
                 {site?.is_ecommerce && (
                   <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
@@ -1541,24 +1538,6 @@ const SiteDetails = () => {
             <UserJourneyTab siteId={siteId || ""} />
           </TabsContent>
 
-          {/* Google Business Profile Tab */}
-          <TabsContent value="gbp">
-            {userData?.id && siteId ? (
-              <GBPTabContent
-                siteId={siteId}
-                userId={userData.id}
-                siteName={site.site_name}
-              />
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">
-                    Carregando informações de autenticação...
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
 
         </Tabs>
       </div>
