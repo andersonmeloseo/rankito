@@ -94,6 +94,12 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       const visits = visitsResponse.data;
       const clicks = clicksResponse.data;
 
+      // Criar mapeamento UUID ↔ session_id (TEXT) para compatibilidade
+      const uuidToSessionId = new Map<string, string>();
+      sessions.forEach(s => {
+        uuidToSessionId.set(s.id, s.session_id);
+      });
+
       if (!sessions || sessions.length === 0) return {
         metrics: { totalSessions: 0, avgDuration: 0, avgPagesPerSession: 0, bounceRate: 0 },
         topEntryPages: [],
@@ -176,10 +182,15 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
           session.duration += v.time_spent_seconds || 0;
         });
 
-        sessionSequences.forEach((data, sessionId) => {
+        sessionSequences.forEach((data, sessionUuid) => {
           if (data.urls.length >= 1) {
             const key = data.urls.join(' → ');
-            const session = sessions.find(s => s.id === sessionId);
+            const session = sessions.find(s => s.id === sessionUuid);
+            // Converter UUID para session_id TEXT para compatibilidade com clicks
+            const sessionIdText = uuidToSessionId.get(sessionUuid);
+            
+            if (!sessionIdText) return; // Skip se não encontrar mapeamento
+            
             const existing = sequencesMap.get(key) || {
               count: 0,
               sessionIds: [],
@@ -196,7 +207,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
             }
             
             existing.count++;
-            existing.sessionIds.push(sessionId);
+            existing.sessionIds.push(sessionIdText); // Usar TEXT ao invés de UUID
             existing.totalDuration += data.duration;
             sequencesMap.set(key, existing);
           }
@@ -256,8 +267,9 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         .map(([sequenceStr, data]) => {
           const locations = new Map<string, LocationData>();
           
-          data.sessionIds.forEach(sessionId => {
-            const session = sessions.find(s => s.id === sessionId);
+          data.sessionIds.forEach(sessionIdText => {
+            // Buscar session por session_id TEXT
+            const session = sessions.find(s => s.session_id === sessionIdText);
             if (session?.city && session?.country) {
               const key = `${session.city}-${session.country}`;
               const existing = locations.get(key) || {
@@ -310,7 +322,11 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
           });
           
           // Count sessions that followed the sequence up to this step
-          sessionVisitsMap.forEach((urls, sessionId) => {
+          sessionVisitsMap.forEach((urls, sessionUuid) => {
+            // Converter UUID para TEXT para comparação consistente
+            const sessionIdText = uuidToSessionId.get(sessionUuid);
+            if (!sessionIdText) return;
+            
             // Check if session followed the sequence up to this step
             let matches = true;
             for (let i = 0; i <= stepIndex; i++) {
@@ -320,7 +336,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
               }
             }
             if (matches) {
-              sessionsThatReachedStep.add(sessionId);
+              sessionsThatReachedStep.add(sessionIdText);
             }
           });
           
