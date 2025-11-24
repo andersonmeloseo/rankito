@@ -9,15 +9,16 @@ import { JourneyFlowDiagram } from "./visualizations/JourneyFlowDiagram";
 import { TemporalComparison } from "./insights/TemporalComparison";
 import { useSessionAnalytics } from "@/hooks/useSessionAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, BarChart3, Route, Calendar } from "lucide-react";
+import { AlertCircle, BarChart3, Route, Calendar, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface UserJourneyTabProps {
   siteId: string;
 }
 
 export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
-  const { data: analytics, isLoading, error } = useSessionAnalytics(siteId, 30);
+  const { data: analytics, isLoading, error, refetch } = useSessionAnalytics(siteId, 30);
   const { data: previousAnalytics } = useSessionAnalytics(siteId, 60); // Para comparação
 
   if (isLoading) {
@@ -111,6 +112,22 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-2xl font-bold">Jornada do Usuário</h2>
+          <p className="text-muted-foreground text-sm">Atualização automática a cada 15 segundos</p>
+        </div>
+        <Button 
+          onClick={() => refetch()} 
+          variant="outline" 
+          size="sm"
+          disabled={isLoading}
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
+      </div>
+      
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview" className="flex items-center gap-2">
