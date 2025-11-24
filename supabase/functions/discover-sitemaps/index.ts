@@ -90,13 +90,26 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${sitemapUrls.length} sitemaps in index`);
 
-    // Count URLs in each sitemap
+    // Count URLs in each sitemap and collect ALL unique URLs
     const discoveredSitemaps: DiscoveredSitemap[] = [];
-    let totalUrls = 0;
+    const allUniqueUrls = new Set<string>();
 
     for (const sitemapUrl of sitemapUrls) {
-      const urlCount = await countUrlsInSitemap(sitemapUrl);
+      const response = await fetch(sitemapUrl);
+      if (!response.ok) {
+        console.warn(`Failed to fetch ${sitemapUrl}: ${response.status}`);
+        continue;
+      }
+      
+      const sitemapXml = await response.text();
+      const urlMatches = sitemapXml.matchAll(/<loc>\s*([^<]+)\s*<\/loc>/g);
+      const urls = Array.from(urlMatches).map(match => match[1].trim());
+      
+      // Add to unique URLs set
+      urls.forEach(url => allUniqueUrls.add(url));
+      
       const name = extractSitemapName(sitemapUrl);
+      const urlCount = urls.length;
       
       discoveredSitemaps.push({
         url: sitemapUrl,
@@ -104,10 +117,15 @@ Deno.serve(async (req) => {
         urlCount
       });
       
-      totalUrls += urlCount;
-      
       console.log(`Sitemap ${name}: ${urlCount} URLs`);
     }
+
+    // Calculate REAL total after deduplication
+    const totalUrls = allUniqueUrls.size;
+    const totalIndividual = discoveredSitemaps.reduce((sum, s) => sum + s.urlCount, 0);
+    const duplicateCount = totalIndividual - totalUrls;
+
+    console.log(`✅ Total unique URLs: ${totalUrls} (${duplicateCount} duplicates removed)`);
 
     // Sort by URL count descending
     discoveredSitemaps.sort((a, b) => b.urlCount - a.urlCount);
@@ -117,7 +135,9 @@ Deno.serve(async (req) => {
         sitemaps: discoveredSitemaps,
         totalUrls,
         totalSitemaps: discoveredSitemaps.length,
-        isSitemapIndex: true
+        isSitemapIndex: true,
+        duplicateCount,
+        totalIndividual
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
