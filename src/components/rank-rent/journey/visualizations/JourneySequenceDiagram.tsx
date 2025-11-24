@@ -5,7 +5,7 @@ import { formatPageName } from "@/lib/journey-utils";
 import type { CommonSequence } from "@/hooks/useSessionAnalytics";
 
 interface JourneySequenceDiagramProps {
-  sequences: CommonSequence[];
+  sequences: (CommonSequence & { originalLength?: number })[];
 }
 
 interface StepNode {
@@ -246,6 +246,20 @@ export const JourneySequenceDiagram = ({ sequences }: JourneySequenceDiagramProp
                       >
                         {totalSessions} {totalSessions === 1 ? 'sessão' : 'sessões'}
                       </text>
+                      {stepIdx === stepColumns.length - 1 && sequences.some((seq, idx) => 
+                        node.sequences.includes(idx) && seq.originalLength && seq.originalLength > 4
+                      ) && (
+                        <text
+                          x={x + nodeWidth / 2}
+                          y={y + nodeHeight + 18}
+                          textAnchor="middle"
+                          className="fill-muted-foreground text-[10px] pointer-events-none"
+                        >
+                          +{sequences.find((seq, idx) => 
+                            node.sequences.includes(idx) && seq.originalLength
+                          )?.originalLength! - 4} páginas
+                        </text>
+                      )}
                     </g>
                   );
                 })}

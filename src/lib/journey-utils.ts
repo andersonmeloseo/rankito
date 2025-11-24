@@ -36,6 +36,16 @@ export const formatDuration = (seconds: number): string => {
 };
 
 /**
+ * Calcula score de uma sequência baseado em comprimento, frequência e conversões
+ */
+export const calculateSequenceScore = (sequence: any): number => {
+  const lengthScore = sequence.pageCount * 3;
+  const frequencyScore = sequence.count * 1;
+  const conversionBonus = sequence.sessionsWithClicks > 0 ? 50 : 0;
+  return lengthScore + frequencyScore + conversionBonus;
+};
+
+/**
  * Retorna estilos para ranking de sequências
  */
 export const getRankStyle = (rank: number) => {
