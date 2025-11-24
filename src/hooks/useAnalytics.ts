@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 import React from "react";
+import { isConversionEvent } from "@/lib/conversionUtils";
 
 interface UseAnalyticsParams {
   siteId: string;
@@ -375,7 +376,7 @@ export const useAnalytics = ({
       if (error) throw error;
 
       const pageViews = data?.filter(d => d.event_type === "page_view").length || 0;
-      const conversions = data?.filter(d => d.event_type !== "page_view").length || 0;
+      const conversions = data?.filter(d => isConversionEvent(d.event_type)).length || 0;
       const uniqueIps = new Set(data?.map(d => d.ip_address));
       const uniqueVisitors = uniqueIps.size;
       const uniquePagePaths = new Set(data?.map(d => d.page_path));
