@@ -120,7 +120,7 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
     ? longSequences
         .map(seq => ({
           ...seq,
-          sequence: seq.sequence.slice(0, 4), // Limitar a 4 etapas
+          sequence: seq.sequence.slice(0, 5), // Limitar a 5 etapas
           originalLength: seq.sequence.length,
           score: calculateSequenceScore(seq)
         }))
