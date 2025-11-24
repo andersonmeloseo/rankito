@@ -7,7 +7,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Send, ExternalLink, Globe, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, AlertCircle } from 'lucide-react';
+import { Send, ExternalLink, Globe, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, AlertCircle, Download } from 'lucide-react';
+import { ImportSitemapDialog } from '@/components/rank-rent/ImportSitemapDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Pagination, 
@@ -60,6 +61,7 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
   const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 100;
+  const [showImportDialog, setShowImportDialog] = useState(false);
   
   const [sortState, setSortState] = useState<SortState>({
     field: 'discovered_at',
@@ -335,6 +337,14 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
             </div>
             <div className="flex items-center gap-2">
               <Button
+                variant="secondary"
+                onClick={() => setShowImportDialog(true)}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Descobrir URLs
+              </Button>
+              
+              <Button
                 variant="outline"
                 onClick={selectAllFiltered}
                 disabled={totalCount === 0}
@@ -491,8 +501,27 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      Nenhuma URL descoberta ainda. Importe um sitemap para começar.
+                    <TableCell colSpan={5} className="text-center py-12">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="rounded-full bg-muted p-4">
+                          <Globe className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-lg font-medium">
+                            Nenhuma URL descoberta ainda
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Clique em "Descobrir URLs" acima para importar um sitemap e começar
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => setShowImportDialog(true)}
+                          variant="outline"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Descobrir URLs Agora
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -538,6 +567,13 @@ export const IndexNowDiscoveredUrls = ({ siteId }: IndexNowDiscoveredUrlsProps) 
           )}
         </CardContent>
       </Card>
+
+      {/* Import Sitemap Dialog */}
+      <ImportSitemapDialog
+        siteId={siteId}
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+      />
     </div>
   );
 };
