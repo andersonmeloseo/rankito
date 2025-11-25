@@ -174,23 +174,47 @@ export const InstallationGuide = ({ trackingToken }: InstallationGuideProps) => 
             <div className="p-3 bg-muted/50 rounded-lg space-y-2">
               <h4 className="text-sm font-medium">Rastreamento Manual de E-commerce</h4>
               <p className="text-xs text-muted-foreground mb-2">
-                Para sites HTML personalizados, você pode disparar eventos manualmente:
+                Para sites HTML personalizados, use os métodos da API pública do pixel:
               </p>
               <pre className="p-3 bg-muted rounded text-xs overflow-x-auto">
-{`// Exemplo: Rastrear visualização de produto
-window.RankitoPixel.trackEvent('product_view', {
+{`// Visualização de produto
+window.RankitoPixel.trackProductView({
   product_name: 'Nome do Produto',
   product_id: 'SKU123',
   price: 99.90
 });
 
-// Exemplo: Rastrear compra
-window.RankitoPixel.trackEvent('purchase', {
-  product_name: 'Nome do Produto',
-  revenue: 99.90,
-  order_id: 'ORD123'
+// Adicionar ao carrinho
+window.RankitoPixel.trackAddToCart({
+  product_id: 'SKU123',
+  product_name: 'Nome do Produto'
+});
+
+// Remover do carrinho
+window.RankitoPixel.trackRemoveFromCart({
+  product_id: 'SKU123'
+});
+
+// Iniciar checkout
+window.RankitoPixel.trackBeginCheckout({
+  cart_value: 199.90
+});
+
+// Compra finalizada
+window.RankitoPixel.trackPurchase({
+  order_id: 'ORD123',
+  revenue: 199.90,
+  currency: 'BRL'
+});
+
+// Busca no site
+window.RankitoPixel.trackSearch({
+  search_term: 'tênis esportivo'
 });`}
               </pre>
+              <p className="text-xs text-muted-foreground mt-2">
+                💡 Todos os eventos são automaticamente enviados com session_id, sequence_number e metadata completa.
+              </p>
             </div>
           </TabsContent>
         </Tabs>
