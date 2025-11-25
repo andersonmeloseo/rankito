@@ -148,6 +148,7 @@ export const useAnalytics = ({
         .select("*", { count: "exact", head: true })
         .eq("site_id", siteId)
         .neq("event_type", "page_view")
+        .neq("event_type", "page_exit")
         .gte("created_at", startDate)
         .lte("created_at", endDate);
 
@@ -220,7 +221,7 @@ export const useAnalytics = ({
         }
         if (conv.event_type === "page_view") {
           acc[date].pageViews++;
-        } else {
+        } else if (isConversionEvent(conv.event_type)) {
           acc[date].conversions++;
         }
         return acc;
@@ -397,6 +398,7 @@ export const useAnalytics = ({
         .select("*")
         .eq("site_id", siteId)
         .neq("event_type", "page_view")
+        .neq("event_type", "page_exit")
         .gte("created_at", startDate)
         .lte("created_at", endDate)
         .order("created_at", { ascending: false });
@@ -433,6 +435,7 @@ export const useAnalytics = ({
         .select("created_at, event_type")
         .eq("site_id", siteId)
         .neq("event_type", "page_view")
+        .neq("event_type", "page_exit")
         .gte("created_at", startDate)
         .lte("created_at", endDate)
         .limit(50000);
@@ -544,6 +547,7 @@ export const useAnalytics = ({
         .select("*", { count: 'exact', head: true })
         .eq("site_id", siteId)
         .neq("event_type", "page_view")
+        .neq("event_type", "page_exit")
         .gte("created_at", startDate)
         .lte("created_at", endDate);
 
@@ -580,6 +584,7 @@ export const useAnalytics = ({
         .select("created_at")
         .eq("site_id", siteId)
         .neq("event_type", "page_view")
+        .neq("event_type", "page_exit")
         .gte("created_at", startDate)
         .lte("created_at", endDate);
 
@@ -641,7 +646,7 @@ export const useAnalytics = ({
         if (dayIndex !== -1) {
           if (conv.event_type === "page_view") {
             dailyCounts[dayIndex].pageViews++;
-          } else {
+          } else if (isConversionEvent(conv.event_type)) {
             dailyCounts[dayIndex].conversions++;
           }
         }
@@ -685,7 +690,7 @@ export const useAnalytics = ({
 
         if (conv.event_type === "page_view") {
           dailyStats[dateStr].pageViews++;
-        } else {
+        } else if (isConversionEvent(conv.event_type)) {
           dailyStats[dateStr].conversions++;
         }
       });
@@ -839,7 +844,7 @@ export const useAnalytics = ({
         }
         if (conv.event_type === "page_view") {
           pageStats[conv.page_path].views++;
-        } else {
+        } else if (isConversionEvent(conv.event_type)) {
           pageStats[conv.page_path].conversions++;
         }
       });
@@ -871,10 +876,12 @@ export const useAnalytics = ({
       acc.push(existing);
     }
     
-    // Incrementar contador para o tipo específico de evento dinamicamente
+    // Incrementar contador apenas se for conversão válida
     const eventType = conv.event_type;
-    existing[eventType] = (existing[eventType] || 0) + 1;
-    existing.total++;
+    if (isConversionEvent(eventType)) {
+      existing[eventType] = (existing[eventType] || 0) + 1;
+      existing.total++;
+    }
     
     return acc;
   }, []) || [];
