@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe, FileText, Search, Plug, ShoppingCart, Route, Store } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, Eye, MousePointerClick, DollarSign, Target, Calendar, Edit, Copy, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, RefreshCw, BarChart3, Clock, Trash2, Home, Globe, FileText, Search, Plug, ShoppingCart, Route, Store, Plus, Rocket } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -62,6 +62,8 @@ import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
 import { EcommerceAnalytics } from "@/components/integrations/ecommerce/EcommerceAnalytics";
 import { UserJourneyTab } from "@/components/rank-rent/journey/UserJourneyTab";
 import { GBPIntegrationCard } from "@/components/gbp/GBPIntegrationCard";
+import { CompleteTutorialModal } from "@/components/onboarding/CompleteTutorialModal";
+import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -69,6 +71,15 @@ const SiteDetails = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'pages');
   const queryClient = useQueryClient();
+
+  // Get current user ID
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
+  });
 
   // Handle tab changes with URL sync
   const handleTabChange = (value: string) => {
@@ -83,6 +94,8 @@ const SiteDetails = () => {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPluginGuide, setShowPluginGuide] = useState(false);
+  const [showCompleteTutorial, setShowCompleteTutorial] = useState(false);
+  const [showAddSiteDialog, setShowAddSiteDialog] = useState(false);
   
   // Pagination States
   const [currentPage, setCurrentPage] = useState(1);
@@ -711,6 +724,21 @@ const SiteDetails = () => {
                 ⚠ Plugin Inativo
               </Badge>
             )}
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCompleteTutorial(true)}
+            >
+              <Rocket className="w-4 h-4" />
+              Tutorial
+            </Button>
+            <Button 
+              size="sm"
+              onClick={() => setShowAddSiteDialog(true)}
+            >
+              <Plus className="w-4 h-4" />
+              Novo Projeto
+            </Button>
             <Button 
               variant="outline"
               size="sm"
@@ -1556,6 +1584,17 @@ const SiteDetails = () => {
         siteName={site?.site_name || ""}
         totalPages={totalPagesCount || 0}
         isRented={site?.is_rented || false}
+      />
+      
+      <CompleteTutorialModal 
+        open={showCompleteTutorial} 
+        onOpenChange={setShowCompleteTutorial} 
+      />
+      
+      <AddSiteDialog 
+        open={showAddSiteDialog} 
+        onOpenChange={setShowAddSiteDialog}
+        userId={currentUser?.id || ""}
       />
       
       <Footer />
