@@ -57,7 +57,6 @@ export const tutorialSteps: TutorialStep[] = [
     description: "(Se o site for WordPress) Vá em Projetos → seu projeto → aba 'Plugin WordPress' → clique em 'Baixar Plugin WordPress'. Instale o plugin no painel do WordPress do seu site (Plugins → Adicionar novo → Enviar plugin).",
     icon: Download,
     category: "tracking",
-    isOptional: true,
   },
   {
     id: "configure-wordpress",
@@ -65,7 +64,6 @@ export const tutorialSteps: TutorialStep[] = [
     description: "No Rankito, copie a 'URL de Rastreamento' que aparece acima do botão de download. No WordPress do seu site, vá em Configurações → Rank & Rent Tracker, cole a URL no campo, salve e clique em 'Conectar'. Volte ao Rankito e verifique se aparece 'Conectado'.",
     icon: Settings,
     category: "tracking",
-    isOptional: true,
   },
   {
     id: "install-pixel",
@@ -73,7 +71,6 @@ export const tutorialSteps: TutorialStep[] = [
     description: "(Se NÃO for WordPress) Vá em Projetos → seu projeto → aba 'Pixel & E-commerce' → copie o código do pixel. Cole este código no <head> do seu site, antes do fechamento da tag </head>.",
     icon: FileSearch,
     category: "tracking",
-    isOptional: true,
   },
   {
     id: "test-connection",
