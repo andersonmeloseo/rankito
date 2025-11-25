@@ -62,6 +62,7 @@ import { UserCommunicationsTab } from "@/components/dashboard/UserCommunications
 import { AcademyTab } from "@/components/training/AcademyTab";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { CompleteTutorialModal } from "@/components/onboarding/CompleteTutorialModal";
 
 const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
@@ -76,6 +77,7 @@ const Dashboard = () => {
   const { role, isSuperAdmin, isEndClient, isLoading: roleLoading, user } = useRole();
   const { viewMode, setViewMode } = useViewMode("sites-view", "table");
   const { restartOnboarding } = useOnboarding();
+  const [showCompleteTutorial, setShowCompleteTutorial] = useState(false);
 
   // Handle tab changes with URL sync
   const handleTabChange = (value: string) => {
@@ -289,6 +291,12 @@ const Dashboard = () => {
       {/* Onboarding Tour */}
       <OnboardingTour onAction={handleOnboardingAction} />
       
+      {/* Complete Tutorial Modal */}
+      <CompleteTutorialModal 
+        open={showCompleteTutorial} 
+        onOpenChange={setShowCompleteTutorial}
+      />
+      
       {isSuperAdmin && <SuperAdminBanner currentView="client" />}
       
       {/* Trial Expired Banner */}
@@ -342,7 +350,7 @@ const Dashboard = () => {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={restartOnboarding}
+                onClick={() => setShowCompleteTutorial(true)}
                 className="gap-2"
               >
                 <Rocket className="w-4 h-4" />
