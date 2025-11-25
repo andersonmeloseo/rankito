@@ -16,6 +16,9 @@ import { TutorialCategory } from "./TutorialCategory";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
 interface CompleteTutorialModalProps {
   open: boolean;
@@ -49,25 +52,78 @@ export const CompleteTutorialModal = ({
     }
   };
 
+  // Fetch user sites for navigation
+  const { data: sites } = useQuery({
+    queryKey: ['sites-for-tutorial'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('rank_rent_sites')
+        .select('id, site_name')
+        .eq('owner_user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   const handleStepAction = (action: string) => {
     // Close modal and perform action
     onOpenChange(false);
     
+    const firstSite = sites && sites.length > 0 ? sites[0] : null;
+    
     switch (action) {
       case "add-site":
-        // Will be handled by Dashboard component
+        // Navigate to sites tab - the parent component has the AddSiteDialog
+        navigate("/dashboard?tab=sites");
+        toast({
+          title: "Adicione um Projeto",
+          description: "Use o botão 'Adicionar Projeto' para criar seu primeiro site",
+        });
         break;
       case "view-projects":
         navigate("/dashboard?tab=sites");
         break;
       case "setup-gsc":
-        navigate("/dashboard?tab=sites");
+        if (firstSite) {
+          navigate(`/dashboard/site/${firstSite.id}?tab=gsc`);
+        } else {
+          toast({
+            title: "Nenhum projeto encontrado",
+            description: "Crie um projeto primeiro para configurar o GSC",
+            variant: "destructive",
+          });
+          navigate("/dashboard?tab=sites");
+        }
         break;
       case "view-analytics":
-        navigate("/dashboard?tab=sites");
+        if (firstSite) {
+          navigate(`/dashboard/site/${firstSite.id}?tab=analytics-overview`);
+        } else {
+          toast({
+            title: "Nenhum projeto encontrado",
+            description: "Crie um projeto primeiro para ver analytics",
+            variant: "destructive",
+          });
+          navigate("/dashboard?tab=sites");
+        }
         break;
       case "view-reports":
-        navigate("/dashboard?tab=sites");
+        if (firstSite) {
+          navigate(`/dashboard/site/${firstSite.id}?tab=reports`);
+        } else {
+          toast({
+            title: "Nenhum projeto encontrado",
+            description: "Crie um projeto primeiro para ver relatórios",
+            variant: "destructive",
+          });
+          navigate("/dashboard?tab=sites");
+        }
         break;
     }
   };
