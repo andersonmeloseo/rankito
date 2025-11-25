@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/contexts/RoleContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin, MessageCircle, GraduationCap, Rocket } from "lucide-react";
+import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin, MessageCircle, GraduationCap, Rocket, Store } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Breadcrumb,
@@ -63,6 +63,7 @@ import { AcademyTab } from "@/components/training/AcademyTab";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { CompleteTutorialModal } from "@/components/onboarding/CompleteTutorialModal";
+import { GBPDashboardTab } from "@/components/gbp/GBPDashboardTab";
 
 const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
@@ -398,13 +399,17 @@ const Dashboard = () => {
                     Overview
                   </ClickUpTabTrigger>
                   
-                  <ClickUpTabTrigger value="sites" icon={Globe}>
-                    Projetos
-                  </ClickUpTabTrigger>
-                  
-                  <ClickUpTabTrigger value="crm" icon={Briefcase}>
-                    CRM
-                  </ClickUpTabTrigger>
+            <ClickUpTabTrigger value="sites" icon={Globe}>
+              Projetos
+            </ClickUpTabTrigger>
+            
+            <ClickUpTabTrigger value="gbp" icon={Store}>
+              Google Business Profile
+            </ClickUpTabTrigger>
+            
+            <ClickUpTabTrigger value="crm" icon={Briefcase}>
+              CRM
+            </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="financial" icon={DollarSign}>
                     Financeiro
@@ -516,6 +521,10 @@ const Dashboard = () => {
                 selectedSites={selectedSites}
                 onSelectSite={handleSelectSite}
               />
+            </TabsContent>
+
+            <TabsContent value="gbp" className="space-y-6">
+              <GBPDashboardTab userId={user?.id || ''} />
             </TabsContent>
 
             <TabsContent value="crm" className="space-y-8">
