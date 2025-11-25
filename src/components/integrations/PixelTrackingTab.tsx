@@ -1,6 +1,5 @@
 import { UniversalPixelManager } from "./ecommerce/UniversalPixelManager";
 import { InstallationGuide } from "./ecommerce/InstallationGuide";
-import { EcommerceAnalytics } from "./ecommerce/EcommerceAnalytics";
 
 interface PixelTrackingTabProps {
   siteId: string;
@@ -25,8 +24,6 @@ export const PixelTrackingTab = ({
       />
       
       <InstallationGuide trackingToken={trackingToken} />
-      
-      <EcommerceAnalytics siteId={siteId} />
     </div>
   );
 };
