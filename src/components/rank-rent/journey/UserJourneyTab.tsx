@@ -22,8 +22,8 @@ interface UserJourneyTabProps {
 
 export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
   const queryClient = useQueryClient();
-  const { data: analytics, isLoading, error } = useSessionAnalytics(siteId, 30);
-  const { data: previousAnalytics } = useSessionAnalytics(siteId, 60); // Para comparação
+  const { data: analytics, isLoading, error } = useSessionAnalytics(siteId, 90); // 3 meses padrão
+  const { data: previousAnalytics } = useSessionAnalytics(siteId, 180); // 6 meses para comparação
 
   const handleRefresh = async () => {
     // Invalidar TODAS as queries relacionadas a jornada do usuário

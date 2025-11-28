@@ -8,6 +8,7 @@ export interface JourneyFilters {
   locationFilter: string;
   conversionFilter: 'all' | 'converted' | 'not_converted';
   dateRange: { start: Date; end: Date };
+  periodDays: number;
 }
 
 export const useJourneyFilters = (sequences: CommonSequence[]) => {
@@ -16,6 +17,13 @@ export const useJourneyFilters = (sequences: CommonSequence[]) => {
   const [minPercentage, setMinPercentage] = useState<number>(0);
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [conversionFilter, setConversionFilter] = useState<'all' | 'converted' | 'not_converted'>('all');
+  const [periodDays, setPeriodDays] = useState<number>(90); // 3 meses padrão
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 90);
+    return { start, end };
+  });
 
   // Extract unique locations from sequences
   const uniqueLocations = useMemo(() => {
@@ -62,10 +70,15 @@ export const useJourneyFilters = (sequences: CommonSequence[]) => {
     setMinPercentage(0);
     setLocationFilter('all');
     setConversionFilter('all');
+    setPeriodDays(90);
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 90);
+    setDateRange({ start, end });
   };
 
   const isFiltered = limit !== 10 || minPages !== 1 || minPercentage !== 0 || 
-                     locationFilter !== 'all' || conversionFilter !== 'all';
+                     locationFilter !== 'all' || conversionFilter !== 'all' || periodDays !== 90;
 
   return {
     // State
@@ -74,6 +87,8 @@ export const useJourneyFilters = (sequences: CommonSequence[]) => {
     minPercentage,
     locationFilter,
     conversionFilter,
+    periodDays,
+    dateRange,
     
     // Setters
     setLimit,
@@ -81,6 +96,8 @@ export const useJourneyFilters = (sequences: CommonSequence[]) => {
     setMinPercentage,
     setLocationFilter,
     setConversionFilter,
+    setPeriodDays,
+    setDateRange,
     
     // Computed
     filteredSequences,

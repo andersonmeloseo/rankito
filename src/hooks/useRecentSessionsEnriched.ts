@@ -39,20 +39,64 @@ export interface EnrichedSession {
   percentOfTotal: number;
 }
 
-export const useRecentSessionsEnriched = (siteId: string, limit: number = 50) => {
+export interface PaginationResult {
+  sessions: EnrichedSession[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+}
+
+export const useRecentSessionsEnriched = (
+  siteId: string,
+  options?: {
+    page?: number;
+    pageSize?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }
+) => {
+  const page = options?.page || 1;
+  const pageSize = options?.pageSize || 25;
+  const startDate = options?.startDate || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // 90 dias padrão
+  const endDate = options?.endDate || new Date();
+
   return useQuery({
-    queryKey: ['recent-sessions-enriched', siteId, limit],
-    queryFn: async (): Promise<EnrichedSession[]> => {
-      // Buscar sessões
+    queryKey: ['recent-sessions-enriched', siteId, page, pageSize, startDate.toISOString(), endDate.toISOString()],
+    queryFn: async (): Promise<PaginationResult> => {
+      // Primeiro, contar total de sessões
+      const { count, error: countError } = await supabase
+        .from('rank_rent_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('site_id', siteId)
+        .gte('entry_time', startDate.toISOString())
+        .lte('entry_time', endDate.toISOString());
+
+      if (countError) throw countError;
+
+      const totalCount = count || 0;
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      // Buscar sessões paginadas
+      const offset = (page - 1) * pageSize;
       const { data: sessions, error: sessionsError } = await supabase
         .from('rank_rent_sessions')
         .select('*')
         .eq('site_id', siteId)
+        .gte('entry_time', startDate.toISOString())
+        .lte('entry_time', endDate.toISOString())
         .order('entry_time', { ascending: false })
-        .limit(limit);
+        .range(offset, offset + pageSize - 1);
 
       if (sessionsError) throw sessionsError;
-      if (!sessions || sessions.length === 0) return [];
+      
+      if (!sessions || sessions.length === 0) {
+        return {
+          sessions: [],
+          totalCount: 0,
+          totalPages: 0,
+          currentPage: page,
+        };
+      }
 
       // Usar session_id (string token) ao invés de id (UUID)
       const sessionTokens = sessions.map(s => s.session_id);
@@ -126,13 +170,20 @@ export const useRecentSessionsEnriched = (siteId: string, limit: number = 50) =>
       const totalSessions = sessions.length;
 
       // Enriquecer cada sessão
-      return sessions.map(session => ({
+      const enrichedSessions = sessions.map(session => ({
         ...session,
         total_duration_seconds: durationMap.get(session.session_id) || 0,
         visits: visitsMap.get(session.session_id) || [],
         clicks: clicksMap.get(session.session_id) || [],
         percentOfTotal: totalSessions > 0 ? (1 / totalSessions) * 100 : 0,
       }));
+
+      return {
+        sessions: enrichedSessions,
+        totalCount,
+        totalPages,
+        currentPage: page,
+      };
     },
     enabled: !!siteId,
     staleTime: 30000,
