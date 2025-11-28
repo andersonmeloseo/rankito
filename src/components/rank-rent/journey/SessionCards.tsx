@@ -10,7 +10,7 @@ import { SessionStepTimeline } from "./SessionStepTimeline";
 import { formatDuration } from "@/lib/journey-utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { SequenceFilters } from "./SequenceFilters";
+import { SessionFilters } from "./SessionFilters";
 import { 
   Pagination, 
   PaginationContent, 
@@ -37,12 +37,26 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
     return date;
   });
   const [endDate, setEndDate] = useState<Date>(new Date());
+  
+  // Novos filtros
+  const [minPages, setMinPages] = useState(1);
+  const [minDuration, setMinDuration] = useState(0);
+  const [deviceFilter, setDeviceFilter] = useState('all');
+  const [conversionFilter, setConversionFilter] = useState('all');
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [excludeBots, setExcludeBots] = useState(false);
 
   const { data, isLoading, error } = useRecentSessionsEnriched(siteId, {
     page: currentPage,
     pageSize,
     startDate,
     endDate,
+    minPages,
+    minDuration,
+    device: deviceFilter !== 'all' ? deviceFilter : undefined,
+    hasClicks: conversionFilter === 'converted' ? true : conversionFilter === 'not_converted' ? false : undefined,
+    city: locationFilter !== 'all' ? locationFilter : undefined,
+    excludeBots,
   });
 
   if (isLoading) {
@@ -118,6 +132,23 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
 
   const periodLabel = `Últimos ${periodDays} dias`;
 
+  // Extrair localizações únicas das sessões
+  const uniqueLocations = Array.from(
+    new Set(sessions.map(s => s.city).filter((city): city is string => !!city))
+  ).sort();
+
+  const handleResetFilters = () => {
+    setPeriodDays(90);
+    handlePeriodChange(90);
+    setMinPages(1);
+    setMinDuration(0);
+    setDeviceFilter('all');
+    setConversionFilter('all');
+    setLocationFilter('all');
+    setExcludeBots(false);
+    setCurrentPage(1);
+  };
+
   // Gerar números de página para exibir
   const pageNumbers: (number | 'ellipsis')[] = [];
   const maxVisiblePages = 5;
@@ -149,24 +180,46 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <SequenceFilters
-        totalSequences={totalCount}
+      <SessionFilters
+        totalSessions={totalCount}
         filteredCount={sessions.length}
-        limit={pageSize}
-        minPages={1}
-        minPercentage={0}
-        onLimitChange={(value) => handlePageSizeChange(value.toString())}
-        onMinPagesChange={() => {}}
-        onMinPercentageChange={() => {}}
-        onReset={() => {
-          setPeriodDays(90);
-          handlePeriodChange(90);
+        minPages={minPages}
+        minDuration={minDuration}
+        onMinPagesChange={(value) => {
+          setMinPages(value);
+          setCurrentPage(1);
         }}
+        onMinDurationChange={(value) => {
+          setMinDuration(value);
+          setCurrentPage(1);
+        }}
+        onReset={handleResetFilters}
         periodDays={periodDays}
         onPeriodChange={handlePeriodChange}
         customDateRange={customDateRange}
         onCustomDateRangeChange={setCustomDateRange}
         periodLabel={periodLabel}
+        deviceFilter={deviceFilter}
+        onDeviceFilterChange={(value) => {
+          setDeviceFilter(value);
+          setCurrentPage(1);
+        }}
+        conversionFilter={conversionFilter}
+        onConversionFilterChange={(value) => {
+          setConversionFilter(value);
+          setCurrentPage(1);
+        }}
+        locationFilter={locationFilter}
+        onLocationFilterChange={(value) => {
+          setLocationFilter(value);
+          setCurrentPage(1);
+        }}
+        uniqueLocations={uniqueLocations}
+        excludeBots={excludeBots}
+        onExcludeBotsChange={(value) => {
+          setExcludeBots(value);
+          setCurrentPage(1);
+        }}
       />
 
       {/* Header com contador e controle de itens por página */}

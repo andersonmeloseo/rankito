@@ -53,6 +53,12 @@ export const useRecentSessionsEnriched = (
     pageSize?: number;
     startDate?: Date;
     endDate?: Date;
+    minPages?: number;
+    minDuration?: number;
+    device?: string;
+    hasClicks?: boolean;
+    city?: string;
+    excludeBots?: boolean;
   }
 ) => {
   const page = options?.page || 1;
@@ -61,32 +67,70 @@ export const useRecentSessionsEnriched = (
   const endDate = options?.endDate || new Date();
 
   return useQuery({
-    queryKey: ['recent-sessions-enriched', siteId, page, pageSize, startDate.toISOString(), endDate.toISOString()],
+    queryKey: ['recent-sessions-enriched', siteId, page, pageSize, startDate.toISOString(), endDate.toISOString(), options?.minPages, options?.minDuration, options?.device, options?.hasClicks, options?.city, options?.excludeBots],
     queryFn: async (): Promise<PaginationResult> => {
-      // Primeiro, contar total de sessões
-      const { count, error: countError } = await supabase
+      // Construir query de contagem com filtros
+      let countQuery = supabase
         .from('rank_rent_sessions')
         .select('*', { count: 'exact', head: true })
         .eq('site_id', siteId)
         .gte('entry_time', startDate.toISOString())
         .lte('entry_time', endDate.toISOString());
 
+      // Aplicar filtros na contagem
+      if (options?.minPages && options.minPages > 1) {
+        countQuery = countQuery.gte('pages_visited', options.minPages);
+      }
+      if (options?.minDuration && options.minDuration > 0) {
+        countQuery = countQuery.gte('total_duration_seconds', options.minDuration);
+      }
+      if (options?.device) {
+        countQuery = countQuery.eq('device', options.device);
+      }
+      if (options?.city) {
+        countQuery = countQuery.eq('city', options.city);
+      }
+      if (options?.excludeBots) {
+        countQuery = countQuery.is('bot_name', null);
+      }
+
+      const { count, error: countError } = await countQuery;
       if (countError) throw countError;
 
       const totalCount = count || 0;
       const totalPages = Math.ceil(totalCount / pageSize);
 
-      // Buscar sessões paginadas
+      // Construir query de dados com filtros
       const offset = (page - 1) * pageSize;
-      const { data: sessions, error: sessionsError } = await supabase
+      let dataQuery = supabase
         .from('rank_rent_sessions')
         .select('*')
         .eq('site_id', siteId)
         .gte('entry_time', startDate.toISOString())
-        .lte('entry_time', endDate.toISOString())
+        .lte('entry_time', endDate.toISOString());
+
+      // Aplicar mesmos filtros nos dados
+      if (options?.minPages && options.minPages > 1) {
+        dataQuery = dataQuery.gte('pages_visited', options.minPages);
+      }
+      if (options?.minDuration && options.minDuration > 0) {
+        dataQuery = dataQuery.gte('total_duration_seconds', options.minDuration);
+      }
+      if (options?.device) {
+        dataQuery = dataQuery.eq('device', options.device);
+      }
+      if (options?.city) {
+        dataQuery = dataQuery.eq('city', options.city);
+      }
+      if (options?.excludeBots) {
+        dataQuery = dataQuery.is('bot_name', null);
+      }
+
+      dataQuery = dataQuery
         .order('entry_time', { ascending: false })
         .range(offset, offset + pageSize - 1);
 
+      const { data: sessions, error: sessionsError } = await dataQuery;
       if (sessionsError) throw sessionsError;
       
       if (!sessions || sessions.length === 0) {
@@ -170,13 +214,20 @@ export const useRecentSessionsEnriched = (
       const totalSessions = sessions.length;
 
       // Enriquecer cada sessão
-      const enrichedSessions = sessions.map(session => ({
+      let enrichedSessions = sessions.map(session => ({
         ...session,
         total_duration_seconds: durationMap.get(session.session_id) || 0,
         visits: visitsMap.get(session.session_id) || [],
         clicks: clicksMap.get(session.session_id) || [],
         percentOfTotal: totalSessions > 0 ? (1 / totalSessions) * 100 : 0,
       }));
+
+      // Filtro de hasClicks (aplicado após enriquecimento)
+      if (options?.hasClicks !== undefined) {
+        enrichedSessions = enrichedSessions.filter(session => 
+          options.hasClicks ? session.clicks.length > 0 : session.clicks.length === 0
+        );
+      }
 
       return {
         sessions: enrichedSessions,
