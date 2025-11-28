@@ -58,7 +58,7 @@ export const useRecentSessionsEnriched = (
     device?: string;
     hasClicks?: boolean;
     city?: string;
-    excludeBots?: boolean;
+    botFilter?: 'all' | 'humans' | 'bots';
   }
 ) => {
   const page = options?.page || 1;
@@ -67,7 +67,7 @@ export const useRecentSessionsEnriched = (
   const endDate = options?.endDate || new Date();
 
   return useQuery({
-    queryKey: ['recent-sessions-enriched', siteId, page, pageSize, startDate.toISOString(), endDate.toISOString(), options?.minPages, options?.minDuration, options?.device, options?.hasClicks, options?.city, options?.excludeBots],
+    queryKey: ['recent-sessions-enriched', siteId, page, pageSize, startDate.toISOString(), endDate.toISOString(), options?.minPages, options?.minDuration, options?.device, options?.hasClicks, options?.city, options?.botFilter],
     queryFn: async (): Promise<PaginationResult> => {
       // Construir query de contagem com filtros
       let countQuery = supabase
@@ -90,8 +90,10 @@ export const useRecentSessionsEnriched = (
       if (options?.city) {
         countQuery = countQuery.eq('city', options.city);
       }
-      if (options?.excludeBots) {
+      if (options?.botFilter === 'humans') {
         countQuery = countQuery.is('bot_name', null);
+      } else if (options?.botFilter === 'bots') {
+        countQuery = countQuery.not('bot_name', 'is', null);
       }
 
       const { count, error: countError } = await countQuery;
@@ -122,8 +124,10 @@ export const useRecentSessionsEnriched = (
       if (options?.city) {
         dataQuery = dataQuery.eq('city', options.city);
       }
-      if (options?.excludeBots) {
+      if (options?.botFilter === 'humans') {
         dataQuery = dataQuery.is('bot_name', null);
+      } else if (options?.botFilter === 'bots') {
+        dataQuery = dataQuery.not('bot_name', 'is', null);
       }
 
       dataQuery = dataQuery
