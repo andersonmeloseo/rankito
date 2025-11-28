@@ -3,7 +3,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { X, Filter, MapPin, Target, Monitor, Clock, Bot } from "lucide-react";
 import { JourneyPeriodFilter } from "./JourneyPeriodFilter";
 import { DateRange } from "react-day-picker";
@@ -22,8 +21,8 @@ interface SessionFiltersProps {
   onDeviceFilterChange?: (value: string) => void;
   conversionFilter?: string;
   onConversionFilterChange?: (value: string) => void;
-  excludeBots?: boolean;
-  onExcludeBotsChange?: (value: boolean) => void;
+  botFilter?: 'all' | 'humans' | 'bots';
+  onBotFilterChange?: (value: 'all' | 'humans' | 'bots') => void;
   uniqueLocations?: string[];
   periodDays?: number;
   onPeriodChange?: (days: number, startDate?: Date, endDate?: Date) => void;
@@ -46,8 +45,8 @@ export const SessionFilters = ({
   onDeviceFilterChange,
   conversionFilter = 'all',
   onConversionFilterChange,
-  excludeBots = false,
-  onExcludeBotsChange,
+  botFilter = 'all',
+  onBotFilterChange,
   uniqueLocations = [],
   periodDays = 90,
   onPeriodChange,
@@ -55,7 +54,7 @@ export const SessionFilters = ({
   onCustomDateRangeChange,
   periodLabel,
 }: SessionFiltersProps) => {
-  const isFiltered = minPages !== 1 || minDuration !== 0 || locationFilter !== 'all' || deviceFilter !== 'all' || conversionFilter !== 'all' || excludeBots;
+  const isFiltered = minPages !== 1 || minDuration !== 0 || locationFilter !== 'all' || deviceFilter !== 'all' || conversionFilter !== 'all' || botFilter !== 'all';
 
   return (
     <Card className="bg-muted/30 border-border/50">
@@ -100,34 +99,40 @@ export const SessionFilters = ({
             {/* Min Pages Slider */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground">
-                📄 Mínimo de {minPages} {minPages === 1 ? 'página' : 'páginas'}
+                📄 Mínimo de Páginas
               </label>
-              <div className="pt-2">
+              <div className="flex items-center gap-2">
                 <Slider
                   value={[minPages]}
                   onValueChange={(value) => onMinPagesChange(value[0])}
                   min={1}
                   max={10}
                   step={1}
-                  className="cursor-pointer"
+                  className="cursor-pointer flex-1"
                 />
+                <Badge variant="outline" className="min-w-[40px] justify-center font-mono">
+                  {minPages}
+                </Badge>
               </div>
             </div>
 
             {/* Min Duration Slider */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground">
-                ⏱️ Mínimo de {minDuration}s
+                ⏱️ Duração Mínima
               </label>
-              <div className="pt-2">
+              <div className="flex items-center gap-2">
                 <Slider
                   value={[minDuration]}
                   onValueChange={(value) => onMinDurationChange(value[0])}
                   min={0}
                   max={300}
                   step={10}
-                  className="cursor-pointer"
+                  className="cursor-pointer flex-1"
                 />
+                <Badge variant="outline" className="min-w-[50px] justify-center font-mono">
+                  {minDuration}s
+                </Badge>
               </div>
             </div>
 
@@ -193,26 +198,23 @@ export const SessionFilters = ({
               </div>
             )}
 
-            {/* Exclude Bots Checkbox */}
-            {onExcludeBotsChange && (
+            {/* Bot Filter */}
+            {onBotFilterChange && (
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   <Bot className="h-3 w-3" />
-                  Filtrar Bots
+                  Tipo de Sessão
                 </label>
-                <div className="flex items-center gap-2 h-9 px-3 border rounded-md bg-background">
-                  <Checkbox
-                    id="exclude-bots"
-                    checked={excludeBots}
-                    onCheckedChange={onExcludeBotsChange}
-                  />
-                  <label
-                    htmlFor="exclude-bots"
-                    className="text-sm cursor-pointer flex-1"
-                  >
-                    Excluir Bots
-                  </label>
-                </div>
+                <Select value={botFilter} onValueChange={onBotFilterChange}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">🌐 Todas as Sessões</SelectItem>
+                    <SelectItem value="humans">👤 Apenas Humanos</SelectItem>
+                    <SelectItem value="bots">🤖 Apenas Bots</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>

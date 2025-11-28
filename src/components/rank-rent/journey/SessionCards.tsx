@@ -44,7 +44,7 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
   const [deviceFilter, setDeviceFilter] = useState('all');
   const [conversionFilter, setConversionFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
-  const [excludeBots, setExcludeBots] = useState(false);
+  const [botFilter, setBotFilter] = useState<'all' | 'humans' | 'bots'>('all');
 
   const { data, isLoading, error } = useRecentSessionsEnriched(siteId, {
     page: currentPage,
@@ -56,7 +56,7 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
     device: deviceFilter !== 'all' ? deviceFilter : undefined,
     hasClicks: conversionFilter === 'converted' ? true : conversionFilter === 'not_converted' ? false : undefined,
     city: locationFilter !== 'all' ? locationFilter : undefined,
-    excludeBots,
+    botFilter,
   });
 
   if (isLoading) {
@@ -145,7 +145,7 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
     setDeviceFilter('all');
     setConversionFilter('all');
     setLocationFilter('all');
-    setExcludeBots(false);
+    setBotFilter('all');
     setCurrentPage(1);
   };
 
@@ -215,9 +215,9 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
           setCurrentPage(1);
         }}
         uniqueLocations={uniqueLocations}
-        excludeBots={excludeBots}
-        onExcludeBotsChange={(value) => {
-          setExcludeBots(value);
+        botFilter={botFilter}
+        onBotFilterChange={(value) => {
+          setBotFilter(value);
           setCurrentPage(1);
         }}
       />
