@@ -4,6 +4,8 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X, Filter, MapPin, Target } from "lucide-react";
+import { JourneyPeriodFilter } from "./JourneyPeriodFilter";
+import { DateRange } from "react-day-picker";
 
 interface SequenceFiltersProps {
   totalSequences: number;
@@ -20,6 +22,11 @@ interface SequenceFiltersProps {
   conversionFilter?: string;
   onConversionFilterChange?: (value: string) => void;
   uniqueLocations?: string[];
+  periodDays?: number;
+  onPeriodChange?: (days: number, startDate?: Date, endDate?: Date) => void;
+  customDateRange?: DateRange;
+  onCustomDateRangeChange?: (range: DateRange | undefined) => void;
+  periodLabel?: string;
 }
 
 export const SequenceFilters = ({
@@ -36,7 +43,12 @@ export const SequenceFilters = ({
   onLocationFilterChange,
   conversionFilter = 'all',
   onConversionFilterChange,
-  uniqueLocations = []
+  uniqueLocations = [],
+  periodDays = 90,
+  onPeriodChange,
+  customDateRange,
+  onCustomDateRangeChange,
+  periodLabel,
 }: SequenceFiltersProps) => {
   const isFiltered = limit !== 10 || minPages !== 1 || minPercentage !== 0 || locationFilter !== 'all' || conversionFilter !== 'all';
 
@@ -64,7 +76,22 @@ export const SequenceFilters = ({
           </div>
 
           {/* Filters Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            {/* Period Filter */}
+            {onPeriodChange && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Período
+                </label>
+                <JourneyPeriodFilter
+                  periodDays={periodDays}
+                  onPeriodChange={onPeriodChange}
+                  customDateRange={customDateRange}
+                  onCustomDateRangeChange={onCustomDateRangeChange}
+                />
+              </div>
+            )}
+
             {/* Limit Dropdown */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground">
@@ -165,7 +192,7 @@ export const SequenceFilters = ({
           {/* Results Counter */}
           <div className="flex items-center justify-center pt-2">
             <Badge variant="secondary" className="text-xs font-normal">
-              📊 Mostrando {filteredCount} de {totalSequences} sequências
+              📊 Mostrando {filteredCount} de {totalSequences} sessões {periodLabel && `• ${periodLabel}`}
             </Badge>
           </div>
         </div>

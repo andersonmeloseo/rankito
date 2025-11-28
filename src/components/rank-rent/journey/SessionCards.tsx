@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -9,13 +10,40 @@ import { SessionStepTimeline } from "./SessionStepTimeline";
 import { formatDuration } from "@/lib/journey-utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { SequenceFilters } from "./SequenceFilters";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "@/components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DateRange } from "react-day-picker";
 
 interface SessionCardsProps {
   siteId: string;
 }
 
 export const SessionCards = ({ siteId }: SessionCardsProps) => {
-  const { data: sessions, isLoading, error } = useRecentSessionsEnriched(siteId, 50);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [periodDays, setPeriodDays] = useState(90); // 3 meses padrão
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 90);
+    return date;
+  });
+  const [endDate, setEndDate] = useState<Date>(new Date());
+
+  const { data, isLoading, error } = useRecentSessionsEnriched(siteId, {
+    page: currentPage,
+    pageSize,
+    startDate,
+    endDate,
+  });
 
   if (isLoading) {
     return (
@@ -43,7 +71,11 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
     );
   }
 
-  if (!sessions || sessions.length === 0) {
+  const sessions = data?.sessions || [];
+  const totalCount = data?.totalCount || 0;
+  const totalPages = data?.totalPages || 0;
+
+  if (!data && !isLoading && !error) {
     return (
       <Alert>
         <AlertCircle className="h-4 w-4" />
@@ -64,12 +96,97 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
     return session.clicks.filter(click => click.page_url === pageUrl);
   };
 
+  const handlePeriodChange = (days: number, start?: Date, end?: Date) => {
+    setPeriodDays(days);
+    if (start && end) {
+      setStartDate(start);
+      setEndDate(end);
+    } else {
+      const newEnd = new Date();
+      const newStart = new Date();
+      newStart.setDate(newStart.getDate() - days);
+      setStartDate(newStart);
+      setEndDate(newEnd);
+    }
+    setCurrentPage(1); // Reset para primeira página
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(parseInt(value));
+    setCurrentPage(1); // Reset para primeira página
+  };
+
+  const periodLabel = `Últimos ${periodDays} dias`;
+
+  // Gerar números de página para exibir
+  const pageNumbers: (number | 'ellipsis')[] = [];
+  const maxVisiblePages = 5;
+
+  if (totalPages <= maxVisiblePages) {
+    for (let i = 1; i <= totalPages; i++) {
+      pageNumbers.push(i);
+    }
+  } else {
+    if (currentPage <= 3) {
+      for (let i = 1; i <= 4; i++) pageNumbers.push(i);
+      pageNumbers.push('ellipsis');
+      pageNumbers.push(totalPages);
+    } else if (currentPage >= totalPages - 2) {
+      pageNumbers.push(1);
+      pageNumbers.push('ellipsis');
+      for (let i = totalPages - 3; i <= totalPages; i++) pageNumbers.push(i);
+    } else {
+      pageNumbers.push(1);
+      pageNumbers.push('ellipsis');
+      pageNumbers.push(currentPage - 1);
+      pageNumbers.push(currentPage);
+      pageNumbers.push(currentPage + 1);
+      pageNumbers.push('ellipsis');
+      pageNumbers.push(totalPages);
+    }
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Filtros */}
+      <SequenceFilters
+        totalSequences={totalCount}
+        filteredCount={sessions.length}
+        limit={pageSize}
+        minPages={1}
+        minPercentage={0}
+        onLimitChange={(value) => handlePageSizeChange(value.toString())}
+        onMinPagesChange={() => {}}
+        onMinPercentageChange={() => {}}
+        onReset={() => {
+          setPeriodDays(90);
+          handlePeriodChange(90);
+        }}
+        periodDays={periodDays}
+        onPeriodChange={handlePeriodChange}
+        customDateRange={customDateRange}
+        onCustomDateRangeChange={setCustomDateRange}
+        periodLabel={periodLabel}
+      />
+
+      {/* Header com contador e controle de itens por página */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">
-          {sessions.length} Sessões Recentes
+          Mostrando {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalCount)} de {totalCount} sessões
         </h3>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Por página:</span>
+          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+            <SelectTrigger className="h-9 w-[100px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Accordion type="multiple" className="space-y-4">
@@ -178,6 +295,49 @@ export const SessionCards = ({ siteId }: SessionCardsProps) => {
           );
         })}
       </Accordion>
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="flex flex-col items-center gap-4 pt-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+
+              {pageNumbers.map((pageNum, idx) => (
+                <PaginationItem key={idx}>
+                  {pageNum === 'ellipsis' ? (
+                    <span className="px-4 py-2">...</span>
+                  ) : (
+                    <PaginationLink
+                      onClick={() => setCurrentPage(pageNum)}
+                      isActive={currentPage === pageNum}
+                      className="cursor-pointer"
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+
+          <p className="text-xs text-muted-foreground">
+            Página {currentPage} de {totalPages} • {pageSize} por página
+          </p>
+        </div>
+      )}
     </div>
   );
 };
