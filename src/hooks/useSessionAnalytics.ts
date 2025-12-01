@@ -4,8 +4,12 @@ import { subDays, startOfDay, endOfDay } from "date-fns";
 
 export interface SessionMetrics {
   totalSessions: number;
+  uniqueVisitors: number;
+  newVisitors: number;
+  returningVisitors: number;
   avgDuration: number;
   avgPagesPerSession: number;
+  engagementRate: number;
   bounceRate: number;
 }
 
@@ -101,7 +105,16 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       });
 
       if (!sessions || sessions.length === 0) return {
-        metrics: { totalSessions: 0, avgDuration: 0, avgPagesPerSession: 0, bounceRate: 0 },
+        metrics: { 
+          totalSessions: 0, 
+          uniqueVisitors: 0,
+          newVisitors: 0,
+          returningVisitors: 0,
+          avgDuration: 0, 
+          avgPagesPerSession: 0, 
+          engagementRate: 0,
+          bounceRate: 0 
+        },
         topEntryPages: [],
         topExitPages: [],
         commonSequences: [],
@@ -114,6 +127,23 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       const avgDuration = sessions.reduce((acc, s) => acc + (s.total_duration_seconds || 0), 0) / totalSessions || 0;
       const avgPagesPerSession = sessions.reduce((acc, s) => acc + (s.pages_visited || 0), 0) / totalSessions || 0;
       const bounceRate = totalSessions > 0 ? (bounceSessions / totalSessions) * 100 : 0;
+      
+      // New metrics: Unique visitors (by IP or session_id)
+      const uniqueSessionIds = new Set(sessions.map(s => s.session_id));
+      const uniqueVisitors = uniqueSessionIds.size;
+      
+      // Simulate new vs returning (in real app, would check historical data)
+      // For now, approximate: if session_id appears multiple times in period, it's returning
+      const sessionIdCounts = new Map<string, number>();
+      sessions.forEach(s => {
+        sessionIdCounts.set(s.session_id, (sessionIdCounts.get(s.session_id) || 0) + 1);
+      });
+      const returningCount = Array.from(sessionIdCounts.values()).filter(count => count > 1).length;
+      const newCount = uniqueVisitors - returningCount;
+      
+      const newVisitors = newCount;
+      const returningVisitors = returningCount;
+      const engagementRate = 100 - bounceRate;
 
       // Top entry pages
       const entryPagesMap = new Map<string, number>();
@@ -347,8 +377,12 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       return {
         metrics: {
           totalSessions,
+          uniqueVisitors,
+          newVisitors,
+          returningVisitors,
           avgDuration: Math.round(avgDuration),
           avgPagesPerSession: parseFloat(avgPagesPerSession.toFixed(2)),
+          engagementRate: parseFloat(engagementRate.toFixed(1)),
           bounceRate: parseFloat(bounceRate.toFixed(2))
         },
         topEntryPages,
