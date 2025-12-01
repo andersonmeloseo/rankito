@@ -63,6 +63,7 @@ import { AcademyTab } from "@/components/training/AcademyTab";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { CompleteTutorialModal } from "@/components/onboarding/CompleteTutorialModal";
+import { PublicRoadmapTab } from "@/components/backlog/user/PublicRoadmapTab";
 
 const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
@@ -431,10 +432,13 @@ const Dashboard = () => {
                     )}
                   </ClickUpTabTrigger>
 
-                  <ClickUpTabTrigger value="academia" icon={GraduationCap}>
-                    Academia
-                  </ClickUpTabTrigger>
-                </TabsList>
+            <ClickUpTabTrigger value="academia" icon={GraduationCap}>
+              Academia
+            </ClickUpTabTrigger>
+            <ClickUpTabTrigger value="atualizacoes" icon={Rocket}>
+              Atualizações
+            </ClickUpTabTrigger>
+          </TabsList>
               </div>
             </div>
 
