@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState } from "react";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { CommunicationPillarsSection } from "@/components/landing/CommunicationPillarsSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
@@ -16,6 +16,8 @@ import { CTASection } from "@/components/landing/CTASection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LanguageSwitcher } from "@/components/landing/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLandingTranslation } from "@/hooks/useLandingTranslation";
 import { LandingLanguageProvider } from "@/contexts/LandingLanguageContext";
@@ -24,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 const LandingPageContent = () => {
   const navigate = useNavigate();
   const { t, locale, setLocale, isTransitioning } = useLandingTranslation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Redirecionamento temporariamente desabilitado para edição
   // useEffect(() => {
@@ -80,14 +83,25 @@ const LandingPageContent = () => {
               <Button 
                 variant="ghost"
                 onClick={() => navigate('/auth')}
+                className="hidden md:inline-flex"
               >
                 {t.nav.login}
               </Button>
               <Button
-                className="bg-blue-600 text-white hover:bg-blue-700"
+                className="hidden md:inline-flex bg-blue-600 text-white hover:bg-blue-700"
                 onClick={() => navigate('/auth')}
               >
                 {t.nav.startFree}
+              </Button>
+              
+              {/* Mobile Menu Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <Menu className="h-6 w-6" />
               </Button>
             </div>
           </div>
@@ -136,6 +150,81 @@ const LandingPageContent = () => {
       <CTASection />
       
       <LandingFooter />
+      
+      {/* Mobile Navigation Sheet */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="right" className="w-[300px]">
+          <SheetHeader>
+            <SheetTitle>Menu</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col gap-6 mt-8">
+            <a 
+              href="#features" 
+              className="text-lg text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t.nav.features}
+            </a>
+            <a 
+              href="#gsc" 
+              className="text-lg text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t.nav.gsc}
+            </a>
+            <a 
+              href="#ecommerce" 
+              className="text-lg text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              E-commerce
+            </a>
+            <a 
+              href="#user-journey" 
+              className="text-lg text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Jornada do Usuário
+            </a>
+            <a 
+              href="#pricing" 
+              className="text-lg text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t.nav.pricing}
+            </a>
+            <a 
+              href="#faq" 
+              className="text-lg text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t.nav.faq}
+            </a>
+            
+            <div className="flex flex-col gap-3 mt-4 pt-6 border-t">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate('/auth');
+                }}
+                className="w-full"
+              >
+                {t.nav.login}
+              </Button>
+              <Button
+                className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate('/auth');
+                }}
+              >
+                {t.nav.startFree}
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

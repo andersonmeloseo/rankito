@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, LayoutDashboard, Globe, DollarSign, Briefcase, Home, ShoppingCart, MapPin, MessageCircle, GraduationCap, Rocket } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -64,6 +65,7 @@ import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { CompleteTutorialModal } from "@/components/onboarding/CompleteTutorialModal";
 import { PublicRoadmapTab } from "@/components/backlog/user/PublicRoadmapTab";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
@@ -79,6 +81,7 @@ const Dashboard = () => {
   const { viewMode, setViewMode } = useViewMode("sites-view", "table");
   const { restartOnboarding } = useOnboarding();
   const [showCompleteTutorial, setShowCompleteTutorial] = useState(false);
+  const isMobile = useIsMobile();
 
   // Handle tab changes with URL sync
   const handleTabChange = (value: string) => {
@@ -394,51 +397,71 @@ const Dashboard = () => {
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
             <div className="border-b border-gray-200">
               <div className="container mx-auto px-4 lg:px-8 xl:px-12">
-                <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0">
-                  <ClickUpTabTrigger value="overview" icon={LayoutDashboard}>
-                    Overview
-                  </ClickUpTabTrigger>
-                  
-            <ClickUpTabTrigger value="sites" icon={Globe}>
-              Projetos
-            </ClickUpTabTrigger>
-            
-            <ClickUpTabTrigger value="crm" icon={Briefcase}>
-              CRM
-            </ClickUpTabTrigger>
-                  
-                  <ClickUpTabTrigger value="financial" icon={DollarSign}>
-                    Financeiro
-                  </ClickUpTabTrigger>
-                  
-                  <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
-                    E-commerce
-                  </ClickUpTabTrigger>
-                  
-                  <ClickUpTabTrigger value="geolocation" icon={MapPin}>
-                    Geolocalização
-                  </ClickUpTabTrigger>
-                  
-                  <ClickUpTabTrigger value="clients" icon={Users}>
-                    Clientes
-                  </ClickUpTabTrigger>
+                {isMobile ? (
+                  <Select value={activeTab} onValueChange={handleTabChange}>
+                    <SelectTrigger className="w-full mb-4">
+                      <SelectValue placeholder="Selecione uma seção" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="overview">📊 Overview</SelectItem>
+                      <SelectItem value="sites">🌐 Projetos</SelectItem>
+                      <SelectItem value="crm">💼 CRM</SelectItem>
+                      <SelectItem value="financial">💰 Financeiro</SelectItem>
+                      <SelectItem value="ecommerce">🛒 E-commerce</SelectItem>
+                      <SelectItem value="geolocation">📍 Geolocalização</SelectItem>
+                      <SelectItem value="clients">👥 Clientes</SelectItem>
+                      <SelectItem value="communication">💬 Suporte {unreadCount > 0 && `(${unreadCount})`}</SelectItem>
+                      <SelectItem value="academia">🎓 Academia</SelectItem>
+                      <SelectItem value="atualizacoes">🚀 Atualizações</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0 overflow-x-auto scrollbar-hide">
+                    <ClickUpTabTrigger value="overview" icon={LayoutDashboard}>
+                      Overview
+                    </ClickUpTabTrigger>
+                    
+                    <ClickUpTabTrigger value="sites" icon={Globe}>
+                      Projetos
+                    </ClickUpTabTrigger>
+                    
+                    <ClickUpTabTrigger value="crm" icon={Briefcase}>
+                      CRM
+                    </ClickUpTabTrigger>
+                    
+                    <ClickUpTabTrigger value="financial" icon={DollarSign}>
+                      Financeiro
+                    </ClickUpTabTrigger>
+                    
+                    <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
+                      E-commerce
+                    </ClickUpTabTrigger>
+                    
+                    <ClickUpTabTrigger value="geolocation" icon={MapPin}>
+                      Geolocalização
+                    </ClickUpTabTrigger>
+                    
+                    <ClickUpTabTrigger value="clients" icon={Users}>
+                      Clientes
+                    </ClickUpTabTrigger>
 
-                  <ClickUpTabTrigger value="communication" icon={MessageCircle}>
-                    Suporte
-                    {unreadCount > 0 && (
-                      <Badge variant="destructive" className="ml-2 animate-pulse">
-                        {unreadCount}
-                      </Badge>
-                    )}
-                  </ClickUpTabTrigger>
+                    <ClickUpTabTrigger value="communication" icon={MessageCircle}>
+                      Suporte
+                      {unreadCount > 0 && (
+                        <Badge variant="destructive" className="ml-2 animate-pulse">
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </ClickUpTabTrigger>
 
-            <ClickUpTabTrigger value="academia" icon={GraduationCap}>
-              Academia
-            </ClickUpTabTrigger>
-            <ClickUpTabTrigger value="atualizacoes" icon={Rocket}>
-              Atualizações
-            </ClickUpTabTrigger>
-          </TabsList>
+                    <ClickUpTabTrigger value="academia" icon={GraduationCap}>
+                      Academia
+                    </ClickUpTabTrigger>
+                    <ClickUpTabTrigger value="atualizacoes" icon={Rocket}>
+                      Atualizações
+                    </ClickUpTabTrigger>
+                  </TabsList>
+                )}
               </div>
             </div>
 

@@ -64,6 +64,7 @@ import { UserJourneyTab } from "@/components/rank-rent/journey/UserJourneyTab";
 
 import { CompleteTutorialModal } from "@/components/onboarding/CompleteTutorialModal";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -71,6 +72,7 @@ const SiteDetails = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'pages');
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   // Get current user ID
   const { data: currentUser } = useQuery({
@@ -840,45 +842,65 @@ const SiteDetails = () => {
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
           <div className="border-b border-gray-200">
             <div className="container mx-auto px-4 lg:px-8 xl:px-12">
-              <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0">
-                <ClickUpTabTrigger value="pages" icon={Globe}>
-                  Páginas
-                </ClickUpTabTrigger>
-                
-                <ClickUpTabTrigger value="advanced-analytics" icon={BarChart3}>
-                  Analytics Avançado
-                </ClickUpTabTrigger>
-                
-                <ClickUpTabTrigger value="journey" icon={Route}>
-                  Jornada do Usuário
-                </ClickUpTabTrigger>
-                
-                
-                {site?.is_ecommerce && (
-                  <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
-                    E-commerce
-                    <Badge variant="default" className="ml-2 bg-green-600 hover:bg-green-600">
-                      Ativo
-                    </Badge>
+              {isMobile ? (
+                <Select value={activeTab} onValueChange={handleTabChange}>
+                  <SelectTrigger className="w-full mb-4">
+                    <SelectValue placeholder="Selecione uma seção" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pages">🌐 Páginas</SelectItem>
+                    <SelectItem value="advanced-analytics">📊 Analytics Avançado</SelectItem>
+                    <SelectItem value="journey">🛤️ Jornada do Usuário</SelectItem>
+                    {site?.is_ecommerce && (
+                      <SelectItem value="ecommerce">🛒 E-commerce</SelectItem>
+                    )}
+                    <SelectItem value="reports">📄 Relatórios</SelectItem>
+                    <SelectItem value="gsc">🔍 Indexador</SelectItem>
+                    <SelectItem value="plugin">🔌 Plugin WordPress</SelectItem>
+                    <SelectItem value="pixel-tracking">🎯 Pixel & E-commerce</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <TabsList className="bg-transparent w-full justify-start gap-1 h-auto p-0 overflow-x-auto scrollbar-hide">
+                  <ClickUpTabTrigger value="pages" icon={Globe}>
+                    Páginas
                   </ClickUpTabTrigger>
-                )}
-                
-                <ClickUpTabTrigger value="reports" icon={FileText}>
-                  Relatórios
-                </ClickUpTabTrigger>
-                
-          <ClickUpTabTrigger value="gsc" icon={Search}>
-            Indexador
-          </ClickUpTabTrigger>
-                
-                <ClickUpTabTrigger value="plugin" icon={Plug}>
-                  Plugin WordPress
-                </ClickUpTabTrigger>
-                
-                <ClickUpTabTrigger value="pixel-tracking" icon={Globe}>
-                  Pixel & E-commerce
-                </ClickUpTabTrigger>
-              </TabsList>
+                  
+                  <ClickUpTabTrigger value="advanced-analytics" icon={BarChart3}>
+                    Analytics Avançado
+                  </ClickUpTabTrigger>
+                  
+                  <ClickUpTabTrigger value="journey" icon={Route}>
+                    Jornada do Usuário
+                  </ClickUpTabTrigger>
+                  
+                  
+                  {site?.is_ecommerce && (
+                    <ClickUpTabTrigger value="ecommerce" icon={ShoppingCart}>
+                      E-commerce
+                      <Badge variant="default" className="ml-2 bg-green-600 hover:bg-green-600">
+                        Ativo
+                      </Badge>
+                    </ClickUpTabTrigger>
+                  )}
+                  
+                  <ClickUpTabTrigger value="reports" icon={FileText}>
+                    Relatórios
+                  </ClickUpTabTrigger>
+                  
+                  <ClickUpTabTrigger value="gsc" icon={Search}>
+                    Indexador
+                  </ClickUpTabTrigger>
+                  
+                  <ClickUpTabTrigger value="plugin" icon={Plug}>
+                    Plugin WordPress
+                  </ClickUpTabTrigger>
+                  
+                  <ClickUpTabTrigger value="pixel-tracking" icon={Globe}>
+                    Pixel & E-commerce
+                  </ClickUpTabTrigger>
+                </TabsList>
+              )}
             </div>
           </div>
 
