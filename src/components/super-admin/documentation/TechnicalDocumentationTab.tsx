@@ -1,10 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Server, Database, Rocket, Package, Activity } from "lucide-react";
+import { BookOpen, Server, Database, Rocket, Package, Activity, Kanban } from "lucide-react";
 import { SystemArchitectureDoc } from "./SystemArchitectureDoc";
 import { EdgeFunctionsDoc } from "./EdgeFunctionsDoc";
 import { DatabaseSchemaDoc } from "./DatabaseSchemaDoc";
 import { DeploymentGuideDoc } from "./DeploymentGuideDoc";
 import { SystemModulesDoc } from "./SystemModulesDoc";
+import { BacklogModuleDoc } from "./BacklogModuleDoc";
 
 export const TechnicalDocumentationTab = () => {
   return (
@@ -18,7 +19,7 @@ export const TechnicalDocumentationTab = () => {
       </div>
 
       <Tabs defaultValue="architecture" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-muted/50">
+        <TabsList className="grid w-full grid-cols-6 bg-muted/50">
           <TabsTrigger value="architecture" className="gap-2">
             <Server className="h-4 w-4" />
             Arquitetura
@@ -38,6 +39,10 @@ export const TechnicalDocumentationTab = () => {
           <TabsTrigger value="modules" className="gap-2">
             <Package className="h-4 w-4" />
             Módulos
+          </TabsTrigger>
+          <TabsTrigger value="backlog" className="gap-2">
+            <Kanban className="h-4 w-4" />
+            Backlog
           </TabsTrigger>
         </TabsList>
 
@@ -59,6 +64,10 @@ export const TechnicalDocumentationTab = () => {
 
         <TabsContent value="modules">
           <SystemModulesDoc />
+        </TabsContent>
+
+        <TabsContent value="backlog">
+          <BacklogModuleDoc />
         </TabsContent>
       </Tabs>
     </div>

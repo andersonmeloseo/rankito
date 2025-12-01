@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Search, Zap, MessageSquare, FileText, CreditCard } from "lucide-react";
+import { Activity, Search, Zap, MessageSquare, FileText, CreditCard, Layers } from "lucide-react";
 
 export const SystemModulesDoc = () => {
   return (
@@ -358,11 +358,70 @@ Scopes: webmasters + indexing`}
         </CardContent>
       </Card>
 
+      {/* Módulo Backlog & Roadmap */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Layers className="h-5 w-5 text-indigo-600" />
+            7. Backlog & Roadmap Público
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <h4 className="font-semibold mb-2">Kanban Board</h4>
+            <p className="text-sm text-muted-foreground">
+              Quadro Kanban com drag-and-drop (@dnd-kit) para gestão visual do backlog através dos estágios de desenvolvimento
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">Solicitações de Funcionalidades</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              Sistema completo de feedback com votação onde usuários podem sugerir melhorias
+            </p>
+            <ul className="text-sm space-y-1 text-muted-foreground">
+              <li>• Criação de solicitações com categoria e descrição</li>
+              <li>• Sistema de votação (1 voto por usuário por solicitação)</li>
+              <li>• Admin pode aceitar (cria no backlog) ou rejeitar</li>
+              <li>• Notificação automática efusiva ao aceitar</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">Roadmap Público</h4>
+            <p className="text-sm text-muted-foreground">
+              Timeline visual mostrando funcionalidades planejadas e implementadas (items com is_public=true)
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">Funcionalidades Principais</h4>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">Drag & Drop</Badge>
+              <Badge variant="outline">Barra de Progresso</Badge>
+              <Badge variant="outline">Versões de Release</Badge>
+              <Badge variant="outline">Timeline Público</Badge>
+              <Badge variant="outline">Sistema de Votação</Badge>
+              <Badge variant="outline">Notificações</Badge>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">Tabelas Principais</h4>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">product_backlog</Badge>
+              <Badge variant="outline">feature_requests</Badge>
+              <Badge variant="outline">feature_request_votes</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">
-            <strong>Total:</strong> 6 módulos principais integrados formando um sistema completo de gestão de 
-            Rank & Rent com analytics, indexação, CRM, relatórios e monetização.
+            <strong>Total:</strong> 7 módulos principais integrados formando um sistema completo de gestão de 
+            Rank & Rent com analytics, indexação, CRM, relatórios, monetização e feedback de usuários.
           </p>
         </CardContent>
       </Card>
