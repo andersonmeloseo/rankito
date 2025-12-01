@@ -23,6 +23,20 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
         if (session?.user) {
           setUser(session.user);
           
+          // Check if account is active (approved)
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_active')
+            .eq('id', session.user.id)
+            .single();
+          
+          // If account not approved, redirect to pending page
+          if (profile && !profile.is_active) {
+            setLoading(false);
+            window.location.href = '/pending-approval';
+            return;
+          }
+          
           // Fetch role only if required
           if (requiredRole) {
             const { data } = await supabase
