@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Eye, EyeOff, Pencil, Trash2, Search } from "lucide-react";
 import { useBacklogItems, BacklogItem } from "@/hooks/useBacklogItems";
 import { CreateBacklogItemDialog } from "./CreateBacklogItemDialog";
 import { EditBacklogItemDialog } from "./EditBacklogItemDialog";
+import { ViewBacklogItemDialog } from "./ViewBacklogItemDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,17 +33,25 @@ const categoryLabels = {
   security: 'Segurança',
 };
 
+const priorityLabels = {
+  low: 'Baixa',
+  medium: 'Média',
+  high: 'Alta',
+  critical: 'Crítica',
+};
+
 const priorityColors = {
-  low: 'bg-gray-500',
-  medium: 'bg-blue-500',
-  high: 'bg-orange-500',
-  critical: 'bg-red-500',
+  low: 'bg-gray-500 text-white',
+  medium: 'bg-blue-500 text-white',
+  high: 'bg-red-500 text-white',
+  critical: 'bg-red-700 text-white',
 };
 
 export const BacklogKanban = () => {
   const { items, isLoading, updateItem, deleteItem } = useBacklogItems();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<BacklogItem | null>(null);
+  const [viewItem, setViewItem] = useState<BacklogItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
@@ -122,8 +132,8 @@ export const BacklogKanban = () => {
                     </CardHeader>
                     <CardContent className="p-3 pt-0 space-y-2">
                       <div className="flex gap-1 flex-wrap">
-                        <Badge variant="outline" className={`text-[10px] ${priorityColors[item.priority]}`}>
-                          {item.priority}
+                        <Badge className={`text-[10px] border-0 ${priorityColors[item.priority]}`}>
+                          {priorityLabels[item.priority]}
                         </Badge>
                         <Badge variant="outline" className="text-[10px]">
                           {categoryLabels[item.category]}
@@ -154,6 +164,23 @@ export const BacklogKanban = () => {
                       </div>
 
                       <div className="flex gap-1">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2"
+                                onClick={() => setViewItem(item)}
+                              >
+                                <Search className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Visualizar detalhes</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -190,6 +217,14 @@ export const BacklogKanban = () => {
           item={editItem}
           open={!!editItem}
           onOpenChange={(open) => !open && setEditItem(null)}
+        />
+      )}
+
+      {viewItem && (
+        <ViewBacklogItemDialog
+          item={viewItem}
+          open={!!viewItem}
+          onOpenChange={(open) => !open && setViewItem(null)}
         />
       )}
 
