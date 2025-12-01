@@ -218,15 +218,8 @@ const Auth = () => {
         }
 
         if (profile && !profile.is_active) {
-          // Conta não aprovada, fazer logout
-          await supabase.auth.signOut();
-          
-          toast({
-            title: "Conta aguardando aprovação",
-            description: "Sua conta ainda não foi aprovada pela nossa equipe. Você receberá um email quando sua conta for ativada.",
-            variant: "destructive",
-          });
-          
+          // Conta não aprovada, redirecionar para página de pendência
+          navigate('/pending-approval', { replace: true });
           setLoading(false);
           return;
         }

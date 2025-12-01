@@ -18,8 +18,8 @@ const PendingApproval = () => {
       <Card className="w-full max-w-md shadow-xl border-0 bg-card/95 backdrop-blur">
         <CardHeader className="space-y-3 pb-6">
           <div className="flex items-center justify-center mb-2">
-            <div className="h-16 w-16 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-              <Clock className="h-10 w-10 text-yellow-600 dark:text-yellow-500" />
+            <div className="h-16 w-16 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center animate-pulse">
+              <Clock className="h-10 w-10 text-yellow-600 dark:text-yellow-500 animate-spin" style={{ animationDuration: '3s' }} />
             </div>
           </div>
           <CardTitle className="text-2xl font-bold text-center">
