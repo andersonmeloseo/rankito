@@ -27,26 +27,32 @@ export const PagePerformanceAnalysis = ({ pagePerformance }: PagePerformanceAnal
   const avgTimeOnPage = pagePerformance.reduce((acc, p) => acc + p.avgTimeOnPage, 0) / pagePerformance.length;
   const avgConversionRate = pagePerformance.reduce((acc, p) => acc + p.conversionRate, 0) / pagePerformance.length;
 
+  // Calculate average visits for opportunities filtering
+  const avgVisits = pagePerformance.reduce((acc, p) => acc + p.totalVisits, 0) / pagePerformance.length;
+
   // Categorize pages
   const champions = pagePerformance.filter(p => 
-    p.avgTimeOnPage > avgTimeOnPage && 
-    p.bounceRate < 50 && 
-    p.conversions > 0
-  ).slice(0, 5);
+    p.conversions > 0 && // Tem conversões
+    (p.avgTimeOnPage > avgTimeOnPage || p.conversionRate > avgConversionRate)
+  ).sort((a, b) => b.conversions - a.conversions).slice(0, 5);
 
   const alerts = pagePerformance.filter(p => 
-    p.bounceRate > 70 || p.avgTimeOnPage < 10
+    // Bounce alto SEM engajamento compensatório
+    (p.bounceRate > 70 && p.avgTimeOnPage < 60 && p.conversions === 0) ||
+    // Tempo muito baixo sem conversão (problema técnico ou irrelevância)
+    (p.avgTimeOnPage < 15 && p.conversions === 0)
   ).slice(0, 5);
 
   const opportunities = pagePerformance.filter(p => 
-    p.totalVisits >= (pagePerformance[0]?.totalVisits || 0) * 0.3 && // Top 30% traffic
-    p.conversionRate < avgConversionRate &&
+    p.totalVisits >= avgVisits && // Tem tráfego significativo
+    p.conversions === 0 && // Mas não converte
+    p.avgTimeOnPage > 30 && // Pessoa lê mas não age
     !alerts.some(a => a.page_url === p.page_url) // Exclude alerts
   ).slice(0, 5);
 
   const highConversion = pagePerformance
     .filter(p => p.conversions > 0)
-    .sort((a, b) => b.conversionRate - a.conversionRate)
+    .sort((a, b) => b.conversions - a.conversions) // Ordenar por total, não taxa
     .slice(0, 5);
 
   return (
