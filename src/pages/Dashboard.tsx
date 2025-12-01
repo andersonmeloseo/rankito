@@ -553,6 +553,10 @@ const Dashboard = () => {
             <TabsContent value="academia" className="space-y-8">
               <AcademyTab />
             </TabsContent>
+
+            <TabsContent value="atualizacoes" className="space-y-8">
+              <PublicRoadmapTab />
+            </TabsContent>
           </Tabs>
         </div>
       </div>
