@@ -90,8 +90,8 @@ export const useAnalytics = ({
         .select("ip_address", { head: false })
         .match(baseFilters)
         .gte("created_at", startDate)
-        .lte("created_at", endDate)
-        .range(0, 49999); // Range para bypass do limite PostgREST
+        .lte("created_at", endDate);
+      // SEM .range() aqui - será aplicado DEPOIS dos filtros!
 
       if (device !== "all") {
         uniqueVisitorsQuery = uniqueVisitorsQuery.filter('metadata->>device', 'eq', device);
@@ -103,7 +103,8 @@ export const useAnalytics = ({
         uniqueVisitorsQuery = uniqueVisitorsQuery.eq("is_ecommerce_event", false);
       }
 
-      const { data: ipsData, error: ipsError } = await uniqueVisitorsQuery;
+      // RANGE COMO ÚLTIMA CHAMADA após todos os filtros!
+      const { data: ipsData, error: ipsError } = await uniqueVisitorsQuery.range(0, 49999);
       if (ipsError) throw ipsError;
       const uniqueVisitors = new Set(ipsData?.map(d => d.ip_address)).size;
 
@@ -113,8 +114,8 @@ export const useAnalytics = ({
         .select("page_path", { head: false })
         .match(baseFilters)
         .gte("created_at", startDate)
-        .lte("created_at", endDate)
-        .range(0, 49999); // Range para bypass do limite PostgREST
+        .lte("created_at", endDate);
+      // SEM .range() aqui - será aplicado DEPOIS dos filtros!
 
       if (device !== "all") {
         uniquePagesQuery = uniquePagesQuery.filter('metadata->>device', 'eq', device);
@@ -126,7 +127,8 @@ export const useAnalytics = ({
         uniquePagesQuery = uniquePagesQuery.eq("is_ecommerce_event", false);
       }
 
-      const { data: pagesData, error: pagesError } = await uniquePagesQuery;
+      // RANGE COMO ÚLTIMA CHAMADA após todos os filtros!
+      const { data: pagesData, error: pagesError } = await uniquePagesQuery.range(0, 49999);
       if (pagesError) throw pagesError;
       const uniquePages = new Set(pagesData?.map(d => d.page_path)).size;
 
@@ -183,14 +185,17 @@ export const useAnalytics = ({
         ? ((conversions || 0) / (pageViews || 0) * 100).toFixed(2) 
         : "0.00";
 
-      // LOGGING DE DEBUG - RESULTADO
+      // LOGGING DE DEBUG - RESULTADO (deve mostrar > 1000 se funcionar!)
       console.log('📊 Metrics Query Result:', {
         uniqueVisitors,
         uniquePages,
         pageViews,
         conversions,
-        ipsDataLength: ipsData?.length,
-        pagesDataLength: pagesData?.length
+        ipsDataLength: ipsData?.length,  // Deve mostrar > 1000 para períodos longos
+        pagesDataLength: pagesData?.length, // Deve mostrar > 1000 para períodos longos
+        limitReached: ipsData?.length === 1000 || pagesData?.length === 1000 ? '⚠️ LIMITE ATINGIDO!' : '✅ Bypass OK',
+        startDate,
+        endDate
       });
 
       return {
