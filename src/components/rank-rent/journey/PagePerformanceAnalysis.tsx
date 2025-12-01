@@ -6,9 +6,10 @@ import { Trophy, AlertTriangle, Target, Zap } from "lucide-react";
 
 interface PagePerformanceAnalysisProps {
   pagePerformance: PagePerformanceData[];
+  days: number;
 }
 
-export const PagePerformanceAnalysis = ({ pagePerformance }: PagePerformanceAnalysisProps) => {
+export const PagePerformanceAnalysis = ({ pagePerformance, days }: PagePerformanceAnalysisProps) => {
   if (!pagePerformance || pagePerformance.length === 0) {
     return (
       <Card>
@@ -71,24 +72,28 @@ export const PagePerformanceAnalysis = ({ pagePerformance }: PagePerformanceAnal
           pages={champions}
           insight={pagePerformanceInsights.champions}
           icon={<Trophy className="h-5 w-5" />}
+          days={days}
         />
         
         <PagePerformanceCard
           pages={alerts}
           insight={pagePerformanceInsights.alerts}
           icon={<AlertTriangle className="h-5 w-5" />}
+          days={days}
         />
         
         <PagePerformanceCard
           pages={opportunities}
           insight={pagePerformanceInsights.opportunities}
           icon={<Target className="h-5 w-5" />}
+          days={days}
         />
         
         <PagePerformanceCard
           pages={highConversion}
           insight={pagePerformanceInsights.highConversion}
           icon={<Zap className="h-5 w-5" />}
+          days={days}
         />
       </div>
     </div>

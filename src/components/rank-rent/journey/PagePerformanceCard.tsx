@@ -14,9 +14,10 @@ interface PagePerformanceCardProps {
   pages: PagePerformanceData[];
   insight: PageInsightExplanation;
   icon: React.ReactNode;
+  days: number;
 }
 
-export const PagePerformanceCard = ({ pages, insight, icon }: PagePerformanceCardProps) => {
+export const PagePerformanceCard = ({ pages, insight, icon, days }: PagePerformanceCardProps) => {
   const formatUrl = (url: string) => {
     try {
       const urlObj = new URL(url);
@@ -87,7 +88,7 @@ export const PagePerformanceCard = ({ pages, insight, icon }: PagePerformanceCar
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <TrendingUp className="h-3 w-3" />
-                    <span>{page.totalVisits} visitas</span>
+                    <span>{page.entries} {page.entries === 1 ? 'entrada' : 'entradas'}</span>
                   </div>
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <Clock className="h-3 w-3" />
@@ -102,6 +103,9 @@ export const PagePerformanceCard = ({ pages, insight, icon }: PagePerformanceCar
                     <span>{page.conversions} conversões</span>
                   </div>
                 </div>
+                <p className="text-[10px] text-muted-foreground mt-2 italic">
+                  Últimos {days} dias • Bounce rate calculado sobre entradas
+                </p>
               </div>
             ))}
           </div>
