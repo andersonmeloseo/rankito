@@ -17,32 +17,6 @@ interface PagePerformanceCardProps {
 }
 
 export const PagePerformanceCard = ({ pages, insight, icon }: PagePerformanceCardProps) => {
-  const getColorClasses = (color: string) => {
-    switch (color) {
-      case 'success':
-        return 'border-green-500/20 bg-green-500/5';
-      case 'destructive':
-        return 'border-red-500/20 bg-red-500/5';
-      case 'secondary':
-        return 'border-purple-500/20 bg-purple-500/5';
-      default:
-        return 'border-blue-500/20 bg-blue-500/5';
-    }
-  };
-
-  const getIconColorClasses = (color: string) => {
-    switch (color) {
-      case 'success':
-        return 'text-green-600 dark:text-green-400';
-      case 'destructive':
-        return 'text-red-600 dark:text-red-400';
-      case 'secondary':
-        return 'text-purple-600 dark:text-purple-400';
-      default:
-        return 'text-blue-600 dark:text-blue-400';
-    }
-  };
-
   const formatUrl = (url: string) => {
     try {
       const urlObj = new URL(url);
@@ -55,11 +29,11 @@ export const PagePerformanceCard = ({ pages, insight, icon }: PagePerformanceCar
   };
 
   return (
-    <Card className={`${getColorClasses(insight.color)} transition-all duration-200 hover:shadow-lg`}>
+    <Card>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <div className={`${getIconColorClasses(insight.color)}`}>
+            <div className="text-muted-foreground">
               {icon}
             </div>
             <CardTitle className="text-lg">{insight.title}</CardTitle>
@@ -100,7 +74,7 @@ export const PagePerformanceCard = ({ pages, insight, icon }: PagePerformanceCar
             {pages.slice(0, 5).map((page, index) => (
               <div 
                 key={`${page.page_url}-${index}`} 
-                className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-start justify-between mb-2">
                   <p className="text-sm font-medium truncate flex-1" title={page.page_url}>
