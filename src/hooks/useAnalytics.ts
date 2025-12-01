@@ -91,7 +91,7 @@ export const useAnalytics = ({
         .match(baseFilters)
         .gte("created_at", startDate)
         .lte("created_at", endDate)
-        .limit(50000); // Limite aumentado para capturar mais registros
+        .range(0, 49999); // Range para bypass do limite PostgREST
 
       if (device !== "all") {
         uniqueVisitorsQuery = uniqueVisitorsQuery.filter('metadata->>device', 'eq', device);
@@ -114,7 +114,7 @@ export const useAnalytics = ({
         .match(baseFilters)
         .gte("created_at", startDate)
         .lte("created_at", endDate)
-        .limit(50000); // Limite aumentado para capturar mais registros
+        .range(0, 49999); // Range para bypass do limite PostgREST
 
       if (device !== "all") {
         uniquePagesQuery = uniquePagesQuery.filter('metadata->>device', 'eq', device);
@@ -319,7 +319,7 @@ export const useAnalytics = ({
           query = query.eq("is_ecommerce_event", false);
         }
 
-        query = query.limit(50000);
+        query = query.range(0, 49999);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -355,7 +355,7 @@ export const useAnalytics = ({
         query = query.eq("is_ecommerce_event", false);
       }
 
-      query = query.limit(50000);
+      query = query.range(0, 49999);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -392,7 +392,7 @@ export const useAnalytics = ({
         query = query.eq("is_ecommerce_event", false);
       }
 
-      query = query.limit(50000);
+      query = query.range(0, 49999);
 
       const { data, error } = await query;
 
@@ -460,7 +460,7 @@ export const useAnalytics = ({
         .neq("event_type", "page_exit")
         .gte("created_at", startDate)
         .lte("created_at", endDate)
-        .limit(50000);
+        .range(0, 49999);
 
       if (device !== "all") {
         query = query.filter('metadata->>device', 'eq', device);
@@ -508,9 +508,9 @@ export const useAnalytics = ({
 
       query = query.order("created_at", { ascending: false });
 
-      // Aplicar limite apenas se não for "todo período"
+      // Aplicar range apenas se não for "todo período"
       if (period !== "all") {
-        query = query.limit(50000);
+        query = query.range(0, 49999);
       }
 
       if (device !== "all") {
