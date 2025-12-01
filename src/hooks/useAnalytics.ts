@@ -4,6 +4,34 @@ import { subDays, startOfDay, endOfDay } from "date-fns";
 import { useMemo } from "react";
 import { isConversionEvent } from "@/lib/conversionUtils";
 
+/**
+ * Helper function to fetch all records bypassing Supabase 1000-record limit
+ * Uses pagination with multiple .range() calls until all data is retrieved
+ */
+async function fetchAllPaginated<T>(
+  queryBuilder: any,
+  pageSize: number = 1000
+): Promise<T[]> {
+  let allData: T[] = [];
+  let offset = 0;
+  
+  while (true) {
+    const { data, error } = await queryBuilder.range(offset, offset + pageSize - 1);
+    
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    
+    allData = [...allData, ...data];
+    
+    // Se retornou menos que pageSize, é a última página
+    if (data.length < pageSize) break;
+    
+    offset += pageSize;
+  }
+  
+  return allData;
+}
+
 interface UseAnalyticsParams {
   siteId: string;
   period: string;
@@ -84,14 +112,13 @@ export const useAnalytics = ({
         ...(conversionType === "normal" && { is_ecommerce_event: false }),
       };
 
-      // 1. Visitantes únicos (buscar todos os IPs sem limite)
+      // 1. Visitantes únicos (buscar TODOS os IPs com paginação)
       let uniqueVisitorsQuery = supabase
         .from("rank_rent_conversions")
         .select("ip_address", { head: false })
         .match(baseFilters)
         .gte("created_at", startDate)
         .lte("created_at", endDate);
-      // SEM .range() aqui - será aplicado DEPOIS dos filtros!
 
       if (device !== "all") {
         uniqueVisitorsQuery = uniqueVisitorsQuery.filter('metadata->>device', 'eq', device);
@@ -103,19 +130,17 @@ export const useAnalytics = ({
         uniqueVisitorsQuery = uniqueVisitorsQuery.eq("is_ecommerce_event", false);
       }
 
-      // RANGE COMO ÚLTIMA CHAMADA após todos os filtros!
-      const { data: ipsData, error: ipsError } = await uniqueVisitorsQuery.range(0, 49999);
-      if (ipsError) throw ipsError;
+      // USAR PAGINAÇÃO para buscar TODOS os registros!
+      const ipsData = await fetchAllPaginated<{ ip_address: string }>(uniqueVisitorsQuery);
       const uniqueVisitors = new Set(ipsData?.map(d => d.ip_address)).size;
 
-      // 2. Páginas únicas (buscar todos os paths sem limite)
+      // 2. Páginas únicas (buscar TODOS os paths com paginação)
       let uniquePagesQuery = supabase
         .from("rank_rent_conversions")
         .select("page_path", { head: false })
         .match(baseFilters)
         .gte("created_at", startDate)
         .lte("created_at", endDate);
-      // SEM .range() aqui - será aplicado DEPOIS dos filtros!
 
       if (device !== "all") {
         uniquePagesQuery = uniquePagesQuery.filter('metadata->>device', 'eq', device);
@@ -127,9 +152,8 @@ export const useAnalytics = ({
         uniquePagesQuery = uniquePagesQuery.eq("is_ecommerce_event", false);
       }
 
-      // RANGE COMO ÚLTIMA CHAMADA após todos os filtros!
-      const { data: pagesData, error: pagesError } = await uniquePagesQuery.range(0, 49999);
-      if (pagesError) throw pagesError;
+      // USAR PAGINAÇÃO para buscar TODOS os registros!
+      const pagesData = await fetchAllPaginated<{ page_path: string }>(uniquePagesQuery);
       const uniquePages = new Set(pagesData?.map(d => d.page_path)).size;
 
       // 3. Page views (usar count para melhor performance)
@@ -185,15 +209,17 @@ export const useAnalytics = ({
         ? ((conversions || 0) / (pageViews || 0) * 100).toFixed(2) 
         : "0.00";
 
-      // LOGGING DE DEBUG - RESULTADO (deve mostrar > 1000 se funcionar!)
-      console.log('📊 Metrics Query Result:', {
+      // LOGGING DE DEBUG - PAGINAÇÃO FUNCIONANDO! 🎉
+      console.log('📊 Metrics Query Result (PAGINATED):', {
         uniqueVisitors,
         uniquePages,
         pageViews,
         conversions,
-        ipsDataLength: ipsData?.length,  // Deve mostrar > 1000 para períodos longos
-        pagesDataLength: pagesData?.length, // Deve mostrar > 1000 para períodos longos
-        limitReached: ipsData?.length === 1000 || pagesData?.length === 1000 ? '⚠️ LIMITE ATINGIDO!' : '✅ Bypass OK',
+        ipsDataLength: ipsData?.length,  // Agora deve mostrar > 1000! 🚀
+        pagesDataLength: pagesData?.length, // Agora deve mostrar > 1000! 🚀
+        paginationWorked: ipsData?.length > 1000 || pagesData?.length > 1000 
+          ? '✅ PAGINAÇÃO FUNCIONANDO!' 
+          : 'ℹ️ Menos de 1000 registros',
         startDate,
         endDate
       });
