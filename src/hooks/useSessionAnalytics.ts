@@ -46,12 +46,24 @@ export interface CommonSequence {
   firstAccessTime: string;
 }
 
+export interface PagePerformanceData {
+  page_url: string;
+  totalVisits: number;
+  avgTimeOnPage: number;
+  bounceRate: number;
+  conversions: number;
+  conversionRate: number;
+  entries: number;
+  exits: number;
+}
+
 interface SessionAnalytics {
   metrics: SessionMetrics;
   topEntryPages: TopPage[];
   topExitPages: TopPage[];
   commonSequences: CommonSequence[];
   stepVolumes: Map<string, number>;
+  pagePerformance: PagePerformanceData[];
 }
 
 export const useSessionAnalytics = (siteId: string, days: number = 30) => {
@@ -118,7 +130,8 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         topEntryPages: [],
         topExitPages: [],
         commonSequences: [],
-        stepVolumes: new Map()
+        stepVolumes: new Map(),
+        pagePerformance: []
       };
 
       // Calculate metrics
@@ -374,6 +387,73 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         });
       }
 
+      // Calculate page performance metrics
+      const pagePerformanceMap = new Map<string, {
+        visits: number;
+        totalTime: number;
+        bounces: number;
+        conversions: number;
+        entries: number;
+        exits: number;
+      }>();
+
+      // Aggregate data per page
+      if (visits) {
+        visits.forEach(visit => {
+          const existing = pagePerformanceMap.get(visit.page_url) || {
+            visits: 0,
+            totalTime: 0,
+            bounces: 0,
+            conversions: 0,
+            entries: 0,
+            exits: 0
+          };
+          existing.visits++;
+          existing.totalTime += visit.time_spent_seconds || 0;
+          pagePerformanceMap.set(visit.page_url, existing);
+        });
+      }
+
+      // Add entries and exits
+      sessions.forEach(s => {
+        const entryData = pagePerformanceMap.get(s.entry_page_url);
+        if (entryData) entryData.entries++;
+        
+        if (s.exit_page_url) {
+          const exitData = pagePerformanceMap.get(s.exit_page_url);
+          if (exitData) exitData.exits++;
+        }
+        
+        // Count bounces (single-page sessions)
+        if (s.pages_visited === 1) {
+          const bounceData = pagePerformanceMap.get(s.entry_page_url);
+          if (bounceData) bounceData.bounces++;
+        }
+      });
+
+      // Add conversions
+      if (clicks) {
+        clicks.forEach(click => {
+          const pageData = pagePerformanceMap.get(click.page_url);
+          if (pageData) pageData.conversions++;
+        });
+      }
+
+      // Convert to array with calculated metrics
+      const pagePerformance: PagePerformanceData[] = Array.from(pagePerformanceMap.entries())
+        .map(([page_url, data]) => ({
+          page_url,
+          totalVisits: data.visits,
+          avgTimeOnPage: data.visits > 0 ? Math.round(data.totalTime / data.visits) : 0,
+          bounceRate: data.entries > 0 ? parseFloat(((data.bounces / data.entries) * 100).toFixed(1)) : 0,
+          conversions: data.conversions,
+          conversionRate: data.visits > 0 ? parseFloat(((data.conversions / data.visits) * 100).toFixed(1)) : 0,
+          entries: data.entries,
+          exits: data.exits
+        }))
+        .filter(p => p.totalVisits > 0) // Only pages with visits
+        .sort((a, b) => b.totalVisits - a.totalVisits);
+
       return {
         metrics: {
           totalSessions,
@@ -388,7 +468,8 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         topEntryPages,
         topExitPages,
         commonSequences,
-        stepVolumes
+        stepVolumes,
+        pagePerformance
       };
     },
     enabled: !!siteId,
