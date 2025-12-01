@@ -60,9 +60,9 @@ export const CreateBacklogItemDialog = ({ open, onOpenChange }: CreateBacklogIte
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Feature</DialogTitle>
+          <DialogTitle>Nova Funcionalidade</DialogTitle>
           <DialogDescription>
-            Crie uma nova feature para o roadmap do produto
+            Crie uma nova funcionalidade para o roadmap do produto
           </DialogDescription>
         </DialogHeader>
 
@@ -73,7 +73,7 @@ export const CreateBacklogItemDialog = ({ open, onOpenChange }: CreateBacklogIte
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Nome da feature"
+              placeholder="Nome da funcionalidade"
             />
           </div>
 
@@ -83,7 +83,7 @@ export const CreateBacklogItemDialog = ({ open, onOpenChange }: CreateBacklogIte
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Descreva a feature..."
+              placeholder="Descreva a funcionalidade..."
               rows={4}
             />
           </div>
@@ -99,7 +99,7 @@ export const CreateBacklogItemDialog = ({ open, onOpenChange }: CreateBacklogIte
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="new_feature">Nova Feature</SelectItem>
+                  <SelectItem value="new_feature">Nova Funcionalidade</SelectItem>
                   <SelectItem value="improvement">Melhoria</SelectItem>
                   <SelectItem value="bugfix">Correção</SelectItem>
                   <SelectItem value="security">Segurança</SelectItem>
@@ -178,7 +178,7 @@ export const CreateBacklogItemDialog = ({ open, onOpenChange }: CreateBacklogIte
             <div>
               <Label className="text-base">Tornar Público</Label>
               <p className="text-sm text-muted-foreground">
-                Feature será visível no roadmap para usuários
+                Funcionalidade será visível no roadmap para usuários
               </p>
             </div>
             <Switch
@@ -193,7 +193,7 @@ export const CreateBacklogItemDialog = ({ open, onOpenChange }: CreateBacklogIte
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={!formData.title}>
-            Criar Feature
+            Criar Funcionalidade
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -27,7 +27,7 @@ const statusColumns = [
 ] as const;
 
 const categoryLabels = {
-  new_feature: 'Nova Feature',
+  new_feature: 'Nova Funcionalidade',
   improvement: 'Melhoria',
   bugfix: 'Correção',
   security: 'Segurança',
@@ -81,7 +81,7 @@ export const BacklogKanban = () => {
       <div className="flex justify-end">
         <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Nova Feature
+          Nova Funcionalidade
         </Button>
       </div>
 
@@ -233,7 +233,7 @@ export const BacklogKanban = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta feature? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir esta funcionalidade? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useBacklogItems } from "@/hooks/useBacklogItems";
 import { useFeatureRequests, FeatureRequest } from "@/hooks/useFeatureRequests";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AcceptRequestDialogProps {
   request: FeatureRequest;
@@ -41,17 +42,30 @@ export const AcceptRequestDialog = ({ request, open, onOpenChange }: AcceptReque
   });
 
   const handleAccept = async () => {
-    // Cria item no backlog
+    // Criar item no backlog
     createItem({
       ...formData,
       status: 'planned',
       is_public: true,
     });
 
-    // Atualiza solicitação
+    // Atualizar status da solicitação
     updateRequest({
       id: request.id,
       status: 'accepted',
+    });
+
+    // Enviar notificação efusiva ao usuário
+    await supabase.from('user_notifications').insert({
+      user_id: request.user_id,
+      type: 'feature_request_accepted',
+      title: '🎉 Parabéns! Sua sugestão foi aprovada!',
+      message: `Ótimas notícias! Sua sugestão "${request.title}" foi aceita e será implementada em breve. Obrigado por contribuir para melhorar o Rankito CRM! 🚀`,
+      link: '/dashboard?tab=atualizacoes',
+      metadata: {
+        request_id: request.id,
+        request_title: request.title
+      }
     });
 
     onOpenChange(false);
@@ -63,7 +77,7 @@ export const AcceptRequestDialog = ({ request, open, onOpenChange }: AcceptReque
         <DialogHeader>
           <DialogTitle>Aceitar Solicitação</DialogTitle>
           <DialogDescription>
-            Criar feature no backlog a partir desta solicitação
+            Criar funcionalidade no backlog e notificar o usuário
           </DialogDescription>
         </DialogHeader>
 
@@ -96,7 +110,7 @@ export const AcceptRequestDialog = ({ request, open, onOpenChange }: AcceptReque
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="new_feature">Nova Feature</SelectItem>
+                  <SelectItem value="new_feature">Nova Funcionalidade</SelectItem>
                   <SelectItem value="improvement">Melhoria</SelectItem>
                   <SelectItem value="bugfix">Correção</SelectItem>
                   <SelectItem value="security">Segurança</SelectItem>
@@ -149,7 +163,7 @@ export const AcceptRequestDialog = ({ request, open, onOpenChange }: AcceptReque
             Cancelar
           </Button>
           <Button onClick={handleAccept}>
-            Aceitar e Criar Feature
+            Aceitar e Criar Funcionalidade
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -47,7 +47,7 @@ export const RequestFeatureDialog = ({ open, onOpenChange }: RequestFeatureDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Solicitar Nova Feature</DialogTitle>
+          <DialogTitle>Solicitar Nova Funcionalidade</DialogTitle>
           <DialogDescription>
             Descreva sua ideia ou sugestão para melhorarmos a plataforma
           </DialogDescription>

@@ -17,7 +17,7 @@ export const BacklogManagementTab = () => {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Backlog & Roadmap</h2>
         <p className="text-muted-foreground">
-          Gerencie features, solicitações de usuários e histórico de releases
+          Gerencie funcionalidades, solicitações de usuários e histórico de releases
         </p>
       </div>
 

@@ -41,7 +41,7 @@ const statusColors = {
 };
 
 const categoryLabels = {
-  new_feature: 'Nova Feature',
+  new_feature: 'Nova Funcionalidade',
   improvement: 'Melhoria',
   integration: 'Integração',
   other: 'Outro',
@@ -68,7 +68,7 @@ export const FeatureRequestsTable = () => {
           <div>
             <CardTitle>Solicitações de Usuários</CardTitle>
             <CardDescription>
-              Gerencie as solicitações de features enviadas pelos usuários
+              Gerencie as solicitações de funcionalidades enviadas pelos usuários
             </CardDescription>
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -91,7 +91,7 @@ export const FeatureRequestsTable = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Usuário</TableHead>
-              <TableHead>Feature</TableHead>
+              <TableHead>Funcionalidade</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Data</TableHead>
               <TableHead>Votos</TableHead>
