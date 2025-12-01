@@ -133,6 +133,53 @@ serve(async (req) => {
       );
     }
 
+    // Auto-detectar tipo de clique baseado na URL de destino
+    const autoDetectEventType = (
+      eventType: string, 
+      metadata: any, 
+      ctaText: string | null
+    ): string => {
+      // Só reclassificar se for button_click genérico
+      if (eventType !== 'button_click') return eventType;
+      
+      const clickUrl = metadata?.url || metadata?.href || '';
+      const clickUrlLower = clickUrl.toLowerCase();
+      const ctaLower = (ctaText || '').toLowerCase();
+      
+      // Detectar WhatsApp
+      if (
+        clickUrlLower.includes('wa.me') || 
+        clickUrlLower.includes('whatsapp') || 
+        clickUrlLower.includes('api.whatsapp.com') ||
+        ctaLower.includes('whatsapp')
+      ) {
+        console.log('🔄 Auto-detected: button_click → whatsapp_click');
+        return 'whatsapp_click';
+      }
+      
+      // Detectar Telefone
+      if (clickUrlLower.startsWith('tel:') || ctaLower.includes('ligar')) {
+        console.log('🔄 Auto-detected: button_click → phone_click');
+        return 'phone_click';
+      }
+      
+      // Detectar Email
+      if (clickUrlLower.startsWith('mailto:')) {
+        console.log('🔄 Auto-detected: button_click → email_click');
+        return 'email_click';
+      }
+      
+      return eventType;
+    };
+
+    // Aplicar auto-detecção inteligente de cliques
+    const detectedEventType = autoDetectEventType(event_type, metadata, cta_text);
+
+    // Log se houve reclassificação
+    if (detectedEventType !== event_type) {
+      console.log(`🔄 Event type auto-corrected: ${event_type} → ${detectedEventType}`);
+    }
+
     // Detectar se é evento e-commerce
     const ecommerceEvents = [
       'product_view', 
@@ -142,9 +189,9 @@ serve(async (req) => {
       'purchase', 
       'search'
     ];
-    const isEcommerceEvent = ecommerceEvents.includes(event_type);
+    const isEcommerceEvent = ecommerceEvents.includes(detectedEventType);
 
-    console.log('✅ Valid tracking event:', { token, site_name, page_url, event_type, is_ecommerce: isEcommerceEvent, session_id, sequence_number });
+    console.log('✅ Valid tracking event:', { token, site_name, page_url, event_type: detectedEventType, is_ecommerce: isEcommerceEvent, session_id, sequence_number });
 
     // Validate required fields
     if (!page_url || !event_type) {
@@ -536,7 +583,7 @@ serve(async (req) => {
 
       // Handle page_view event - create page visit
       // CRITICAL: Only create page_visits when ALL session data is present
-      if (event_type === 'page_view' && dbSessionId && sequence_number !== undefined && sequence_number !== null) {
+      if (detectedEventType === 'page_view' && dbSessionId && sequence_number !== undefined && sequence_number !== null) {
         console.log('📄 Creating page visit:', { dbSessionId, sequence_number, page_url });
         
         const { error: visitError } = await supabase
@@ -562,7 +609,7 @@ serve(async (req) => {
             pages_visited: existingSession ? existingSession.pages_visited + 1 : 1 
           })
           .eq('id', dbSessionId);
-      } else if (event_type === 'page_view') {
+      } else if (detectedEventType === 'page_view') {
         console.log('⚠️ Skipping page visit creation - missing required data:', { 
           hasDbSessionId: !!dbSessionId, 
           hasSequenceNumber: sequence_number !== undefined && sequence_number !== null,
@@ -571,7 +618,7 @@ serve(async (req) => {
       }
 
       // Handle page_exit event - update visit time and session exit
-      if (event_type === 'page_exit' && dbSessionId && time_spent_seconds !== undefined) {
+      if (detectedEventType === 'page_exit' && dbSessionId && time_spent_seconds !== undefined) {
         // Find the most recent page visit for this session
         const { data: lastVisit } = await supabase
           .from('rank_rent_page_visits')
@@ -619,7 +666,7 @@ serve(async (req) => {
         page_id: pageId,
         page_url,
         page_path,
-        event_type,
+        event_type: detectedEventType,
         cta_text: finalCtaText,
         is_ecommerce_event: isEcommerceEvent,
         session_id: session_id || null,
