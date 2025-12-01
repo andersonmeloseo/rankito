@@ -229,18 +229,18 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
           {/* Temporal Comparison */}
           <TemporalComparison current={currentMetrics} previous={previousMetrics} />
 
-          {/* Page Performance Analysis - 4 Strategic Cards */}
-          <PagePerformanceAnalysis pagePerformance={analytics.pagePerformance} />
+            {/* Flow Diagram - Multi-etapas ou Simples (visualmente mais impactante) */}
+            {maxSequenceLength > 2 ? (
+              <JourneySequenceDiagram sequences={topSequences} />
+            ) : (
+              <JourneyFlowDiagram connections={flowConnections} topPages={topPages} />
+            )}
 
-          {/* Heatmap de Atividade */}
-          <JourneyHeatmapGrid data={heatmapData} />
+            {/* Page Performance Analysis - 4 Strategic Cards */}
+            <PagePerformanceAnalysis pagePerformance={analytics.pagePerformance} />
 
-          {/* Flow Diagram - Multi-etapas ou Simples */}
-          {maxSequenceLength > 2 ? (
-            <JourneySequenceDiagram sequences={topSequences} />
-          ) : (
-            <JourneyFlowDiagram connections={flowConnections} topPages={topPages} />
-          )}
+            {/* Heatmap de Atividade */}
+            <JourneyHeatmapGrid data={heatmapData} />
 
           {/* Top Pages Analysis */}
           <TopPagesAnalysis 
