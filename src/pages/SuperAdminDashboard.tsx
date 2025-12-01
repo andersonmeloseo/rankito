@@ -158,7 +158,7 @@ const SuperAdminDashboard = () => {
                 className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-b-4 data-[state=active]:border-gray-300 rounded-none border-b-2 border-transparent hover:bg-blue-500/10 hover:border-blue-400 transition-all"
               >
                 <Shield className="mr-2 h-4 w-4" />
-                Logs de Auditoria
+                Log Audit
               </TabsTrigger>
               
               <TabsTrigger 
