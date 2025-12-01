@@ -8,6 +8,7 @@ import { JourneyHeatmapGrid } from "./visualizations/JourneyHeatmapGrid";
 import { JourneyFlowDiagram } from "./visualizations/JourneyFlowDiagram";
 import { JourneySequenceDiagram } from "./visualizations/JourneySequenceDiagram";
 import { TemporalComparison } from "./insights/TemporalComparison";
+import { PagePerformanceAnalysis } from "./PagePerformanceAnalysis";
 import { useSessionAnalytics } from "@/hooks/useSessionAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, BarChart3, Route, Calendar, RefreshCw } from "lucide-react";
@@ -227,6 +228,9 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
 
           {/* Temporal Comparison */}
           <TemporalComparison current={currentMetrics} previous={previousMetrics} />
+
+          {/* Page Performance Analysis - 4 Strategic Cards */}
+          <PagePerformanceAnalysis pagePerformance={analytics.pagePerformance} />
 
           {/* Heatmap de Atividade */}
           <JourneyHeatmapGrid data={heatmapData} />
