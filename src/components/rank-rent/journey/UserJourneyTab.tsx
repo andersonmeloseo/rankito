@@ -237,7 +237,7 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
             )}
 
             {/* Page Performance Analysis - 4 Strategic Cards */}
-            <PagePerformanceAnalysis pagePerformance={analytics.pagePerformance} />
+            <PagePerformanceAnalysis pagePerformance={analytics.pagePerformance} days={selectedDays} />
 
             {/* Heatmap de Atividade */}
             <JourneyHeatmapGrid data={heatmapData} />

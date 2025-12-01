@@ -16,8 +16,8 @@ export const pagePerformanceInsights: Record<string, PageInsightExplanation> = {
   },
   alerts: {
     title: "Páginas em Alerta",
-    description: "Páginas com alta taxa de rejeição (>70%) ou tempo médio muito baixo (<10s), indicando problemas de engajamento.",
-    interpretation: "Visitantes chegam mas saem rapidamente sem interagir. Pode indicar: conteúdo irrelevante, problemas de UX, velocidade lenta, ou expectativa não atendida.",
+    description: "Páginas onde os visitantes entram e saem rapidamente sem interagir. Alta taxa de rejeição (>70%) em páginas de entrada ou tempo médio muito baixo (<60s) sem conversões.",
+    interpretation: "Quando uma página é usada como entrada do site, a taxa de rejeição indica quantos % dos visitantes saíram sem visitar outra página. Tempo baixo + zero conversões sugere: conteúdo irrelevante, problemas de UX, velocidade lenta, ou expectativa não atendida.",
     action: "Priorize estas páginas para otimização: verifique velocidade de carregamento (PageSpeed Insights), revise relevância do conteúdo, melhore visibilidade dos CTAs, adicione elementos visuais, e teste diferentes versões do conteúdo.",
     color: 'destructive'
   },
