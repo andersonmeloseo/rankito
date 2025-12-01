@@ -13,8 +13,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, BarChart3, Route, Calendar, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { calculateSequenceScore } from "@/lib/journey-utils";
+import { useState } from "react";
 
 interface UserJourneyTabProps {
   siteId: string;
@@ -22,8 +30,10 @@ interface UserJourneyTabProps {
 
 export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
   const queryClient = useQueryClient();
-  const { data: analytics, isLoading, error } = useSessionAnalytics(siteId, 90); // 3 meses padrão
-  const { data: previousAnalytics } = useSessionAnalytics(siteId, 180); // 6 meses para comparação
+  const [selectedDays, setSelectedDays] = useState<number>(30);
+  
+  const { data: analytics, isLoading, error } = useSessionAnalytics(siteId, selectedDays);
+  const { data: previousAnalytics } = useSessionAnalytics(siteId, selectedDays * 2); // Período anterior para comparação
 
   const handleRefresh = async () => {
     // Invalidar TODAS as queries relacionadas a jornada do usuário
@@ -163,20 +173,36 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <div>
           <h2 className="text-2xl font-bold">Jornada do Usuário</h2>
           <p className="text-muted-foreground text-sm">Atualização automática a cada 15 segundos</p>
         </div>
-        <Button 
-          onClick={handleRefresh} 
-          variant="outline" 
-          size="sm"
-          disabled={isLoading}
-        >
-          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-3">
+          <Select 
+            value={selectedDays.toString()} 
+            onValueChange={(value) => setSelectedDays(Number(value))}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Selecione o período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="90">Últimos 90 dias</SelectItem>
+              <SelectItem value="180">Últimos 180 dias</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            onClick={handleRefresh} 
+            variant="outline" 
+            size="sm"
+            disabled={isLoading}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+        </div>
       </div>
       
       <Tabs defaultValue="overview" className="w-full">
@@ -197,7 +223,7 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
 
         <TabsContent value="overview" className="space-y-6 mt-6">
           {/* KPI Metrics */}
-          <SessionMetrics metrics={analytics.metrics} />
+          <SessionMetrics metrics={analytics.metrics} periodDays={selectedDays} />
 
           {/* Temporal Comparison */}
           <TemporalComparison current={currentMetrics} previous={previousMetrics} />
