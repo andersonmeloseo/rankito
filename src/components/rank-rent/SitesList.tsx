@@ -18,6 +18,7 @@ import { ContractStatusBadge } from "./ContractStatusBadge";
 import { useContractStatus } from "@/hooks/useContractStatus";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SitesGrid } from "./SitesGrid";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SitesListProps {
   userId: string;
@@ -32,6 +33,8 @@ export const SitesList = ({
   selectedSites = new Set(),
   onSelectSite = () => {},
 }: SitesListProps) => {
+  const isMobile = useIsMobile();
+  const effectiveViewMode = isMobile ? "grid" : viewMode;
   const navigate = useNavigate();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRentDialog, setShowRentDialog] = useState(false);
@@ -282,7 +285,7 @@ export const SitesList = ({
         </CardHeader>
         <CardContent className="p-6">
           {/* Filters */}
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -292,35 +295,37 @@ export const SitesList = ({
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos Status</SelectItem>
-                <SelectItem value="rented">Alugados</SelectItem>
-                <SelectItem value="available">Disponíveis</SelectItem>
-                <SelectItem value="expiring">Vencendo em 30d</SelectItem>
-                <SelectItem value="expired">Vencidos</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={nicheFilter} onValueChange={setNicheFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Nicho" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos Nichos</SelectItem>
-                {uniqueNiches.map((niche) => (
-                  <SelectItem key={niche} value={niche}>
-                    {niche}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos Status</SelectItem>
+                  <SelectItem value="rented">Alugados</SelectItem>
+                  <SelectItem value="available">Disponíveis</SelectItem>
+                  <SelectItem value="expiring">Vencendo em 30d</SelectItem>
+                  <SelectItem value="expired">Vencidos</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={nicheFilter} onValueChange={setNicheFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Nicho" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos Nichos</SelectItem>
+                  {uniqueNiches.map((niche) => (
+                    <SelectItem key={niche} value={niche}>
+                      {niche}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Table View */}
-          {viewMode === "table" && (
+          {effectiveViewMode === "table" && (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -362,7 +367,7 @@ export const SitesList = ({
           )}
 
           {/* Grid View */}
-          {viewMode === "grid" && (
+          {effectiveViewMode === "grid" && (
             <SitesGrid
               sites={filteredSites}
               selectedSites={selectedSites}

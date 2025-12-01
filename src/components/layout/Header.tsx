@@ -40,17 +40,27 @@ export const Header = ({ showSubtitle = true }: HeaderProps) => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            {/* Command Palette Trigger */}
+            {/* Command Palette Trigger - Desktop */}
             <Button
               variant="outline"
-              className="gap-2 min-w-[240px] justify-start text-muted-foreground hover:text-foreground"
+              className="hidden md:flex gap-2 min-w-[240px] justify-start text-muted-foreground hover:text-foreground"
               onClick={() => setOpen(true)}
             >
               <Search className="w-4 h-4" />
-              <span className="hidden md:inline">Buscar...</span>
-              <kbd className="hidden md:inline-flex ml-auto px-1.5 py-0.5 text-xs bg-muted rounded font-mono">
+              <span>Buscar...</span>
+              <kbd className="ml-auto px-1.5 py-0.5 text-xs bg-muted rounded font-mono">
                 ⌘K
               </kbd>
+            </Button>
+            
+            {/* Command Palette Trigger - Mobile */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setOpen(true)}
+            >
+              <Search className="w-5 h-5" />
             </Button>
 
             {/* Notifications */}
