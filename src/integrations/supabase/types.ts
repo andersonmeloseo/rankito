@@ -772,6 +772,102 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_request_votes: {
+        Row: {
+          created_at: string
+          id: string
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_request_votes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "feature_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feature_request_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_requests: {
+        Row: {
+          admin_notes: string | null
+          category: Database["public"]["Enums"]["request_category"]
+          created_at: string
+          description: string
+          id: string
+          linked_backlog_id: string | null
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["request_status"]
+          title: string
+          updated_at: string
+          user_id: string
+          votes_count: number
+        }
+        Insert: {
+          admin_notes?: string | null
+          category?: Database["public"]["Enums"]["request_category"]
+          created_at?: string
+          description: string
+          id?: string
+          linked_backlog_id?: string | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+          votes_count?: number
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: Database["public"]["Enums"]["request_category"]
+          created_at?: string
+          description?: string
+          id?: string
+          linked_backlog_id?: string | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+          votes_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_requests_linked_backlog_id_fkey"
+            columns: ["linked_backlog_id"]
+            isOneToOne: false
+            referencedRelation: "product_backlog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feature_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geolocation_api_configs: {
         Row: {
           api_key: string
@@ -1892,6 +1988,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_backlog: {
+        Row: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          category: Database["public"]["Enums"]["backlog_category"]
+          created_at: string
+          description: string | null
+          estimated_end_date: string | null
+          estimated_start_date: string | null
+          id: string
+          is_public: boolean
+          priority: Database["public"]["Enums"]["backlog_priority"]
+          progress_percentage: number
+          release_version: string | null
+          status: Database["public"]["Enums"]["backlog_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          category?: Database["public"]["Enums"]["backlog_category"]
+          created_at?: string
+          description?: string | null
+          estimated_end_date?: string | null
+          estimated_start_date?: string | null
+          id?: string
+          is_public?: boolean
+          priority?: Database["public"]["Enums"]["backlog_priority"]
+          progress_percentage?: number
+          release_version?: string | null
+          status?: Database["public"]["Enums"]["backlog_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          category?: Database["public"]["Enums"]["backlog_category"]
+          created_at?: string
+          description?: string | null
+          estimated_end_date?: string | null
+          estimated_start_date?: string | null
+          id?: string
+          is_public?: boolean
+          priority?: Database["public"]["Enums"]["backlog_priority"]
+          progress_percentage?: number
+          release_version?: string | null
+          status?: Database["public"]["Enums"]["backlog_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -4245,6 +4395,14 @@ export type Database = {
         | "plan_renewal"
         | "plan_upgrade"
         | "custom_notification"
+      backlog_category: "new_feature" | "improvement" | "bugfix" | "security"
+      backlog_priority: "low" | "medium" | "high" | "critical"
+      backlog_status:
+        | "planned"
+        | "in_progress"
+        | "testing"
+        | "completed"
+        | "cancelled"
       event_type:
         | "page_view"
         | "phone_click"
@@ -4267,6 +4425,13 @@ export type Database = {
         | "manual"
       notification_type: "broadcast_sent"
       payment_status: "pending" | "paid" | "failed" | "refunded"
+      request_category: "new_feature" | "improvement" | "integration" | "other"
+      request_status:
+        | "pending"
+        | "under_review"
+        | "accepted"
+        | "rejected"
+        | "implemented"
       subscription_status:
         | "trial"
         | "active"
@@ -4422,6 +4587,15 @@ export const Constants = {
         "plan_upgrade",
         "custom_notification",
       ],
+      backlog_category: ["new_feature", "improvement", "bugfix", "security"],
+      backlog_priority: ["low", "medium", "high", "critical"],
+      backlog_status: [
+        "planned",
+        "in_progress",
+        "testing",
+        "completed",
+        "cancelled",
+      ],
       event_type: [
         "page_view",
         "phone_click",
@@ -4446,6 +4620,14 @@ export const Constants = {
       ],
       notification_type: ["broadcast_sent"],
       payment_status: ["pending", "paid", "failed", "refunded"],
+      request_category: ["new_feature", "improvement", "integration", "other"],
+      request_status: [
+        "pending",
+        "under_review",
+        "accepted",
+        "rejected",
+        "implemented",
+      ],
       subscription_status: [
         "trial",
         "active",

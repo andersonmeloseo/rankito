@@ -32,6 +32,7 @@ import { CommunicationTab } from "@/components/super-admin/CommunicationTab";
 import { VideoTrainingManagementTab } from "@/components/super-admin/VideoTrainingManagementTab";
 import { MarketingTab } from "@/components/super-admin/marketing/MarketingTab";
 import { TechnicalDocumentationTab } from "@/components/super-admin/documentation";
+import { BacklogManagementTab } from "@/components/backlog/admin/BacklogManagementTab";
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
