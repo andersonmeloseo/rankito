@@ -19,7 +19,7 @@ interface ViewBacklogItemDialogProps {
 }
 
 const categoryLabels = {
-  new_feature: 'Nova Feature',
+  new_feature: 'Nova Funcionalidade',
   improvement: 'Melhoria',
   bugfix: 'Correção',
   security: 'Segurança',
@@ -62,7 +62,7 @@ export const ViewBacklogItemDialog = ({ item, open, onOpenChange }: ViewBacklogI
         <DialogHeader>
           <DialogTitle className="text-2xl">{item.title}</DialogTitle>
           <DialogDescription>
-            Detalhes da feature
+            Detalhes da funcionalidade
           </DialogDescription>
         </DialogHeader>
 

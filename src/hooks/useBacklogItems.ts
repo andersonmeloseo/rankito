@@ -61,10 +61,10 @@ export const useBacklogItems = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backlog-items'] });
-      toast.success('Feature criada com sucesso!');
+      toast.success('Funcionalidade criada com sucesso!');
     },
     onError: (error: Error) => {
-      toast.error(`Erro ao criar feature: ${error.message}`);
+      toast.error(`Erro ao criar funcionalidade: ${error.message}`);
     },
   });
 
@@ -82,7 +82,7 @@ export const useBacklogItems = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backlog-items'] });
-      toast.success('Feature atualizada!');
+      toast.success('Funcionalidade atualizada!');
     },
     onError: (error: Error) => {
       toast.error(`Erro ao atualizar: ${error.message}`);
@@ -100,7 +100,7 @@ export const useBacklogItems = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backlog-items'] });
-      toast.success('Feature removida!');
+      toast.success('Funcionalidade removida!');
     },
     onError: (error: Error) => {
       toast.error(`Erro ao remover: ${error.message}`);

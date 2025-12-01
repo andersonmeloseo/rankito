@@ -45,9 +45,9 @@ export const EditBacklogItemDialog = ({ item, open, onOpenChange }: EditBacklogI
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Feature</DialogTitle>
+          <DialogTitle>Editar Funcionalidade</DialogTitle>
           <DialogDescription>
-            Atualize os dados da feature no roadmap
+            Atualize os dados da funcionalidade no roadmap
           </DialogDescription>
         </DialogHeader>
 
@@ -82,7 +82,7 @@ export const EditBacklogItemDialog = ({ item, open, onOpenChange }: EditBacklogI
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="new_feature">Nova Feature</SelectItem>
+                  <SelectItem value="new_feature">Nova Funcionalidade</SelectItem>
                   <SelectItem value="improvement">Melhoria</SelectItem>
                   <SelectItem value="bugfix">Correção</SelectItem>
                   <SelectItem value="security">Segurança</SelectItem>
@@ -192,7 +192,7 @@ export const EditBacklogItemDialog = ({ item, open, onOpenChange }: EditBacklogI
             <div>
               <Label className="text-base">Tornar Público</Label>
               <p className="text-sm text-muted-foreground">
-                Feature será visível no roadmap para usuários
+                Funcionalidade será visível no roadmap para usuários
               </p>
             </div>
             <Switch
