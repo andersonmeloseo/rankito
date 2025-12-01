@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { subDays, startOfDay, endOfDay } from "date-fns";
-import React from "react";
+import { useMemo } from "react";
 import { isConversionEvent } from "@/lib/conversionUtils";
 
 interface UseAnalyticsParams {
@@ -24,7 +24,8 @@ export const useAnalytics = ({
   customEndDate,
 }: UseAnalyticsParams) => {
   
-  const getDatesFromPeriod = () => {
+  // Usar useMemo para garantir recálculo quando período muda
+  const { startDate, endDate } = useMemo(() => {
     if (period === "all") {
       return {
         startDate: new Date("2020-01-01").toISOString(),
@@ -44,9 +45,7 @@ export const useAnalytics = ({
     const startDate = startOfDay(subDays(new Date(), days)).toISOString();
     
     return { startDate, endDate };
-  };
-
-  const { startDate, endDate } = getDatesFromPeriod();
+  }, [period, customStartDate, customEndDate]);
 
   // Calcular período anterior para comparação
   const getPreviousPeriodDates = () => {
@@ -66,6 +65,17 @@ export const useAnalytics = ({
   const { data: metrics, isLoading: metricsLoading } = useQuery({
     queryKey: ["analytics-metrics", siteId, startDate, endDate, eventType, device, conversionType, period],
     queryFn: async () => {
+      // LOGGING DE DEBUG
+      console.log('📊 Metrics Query Debug:', {
+        period,
+        startDate,
+        endDate,
+        siteId,
+        eventType,
+        device,
+        conversionType
+      });
+      
       // Query base com filtros
       const baseFilters = {
         site_id: siteId,
@@ -173,6 +183,16 @@ export const useAnalytics = ({
         ? ((conversions || 0) / (pageViews || 0) * 100).toFixed(2) 
         : "0.00";
 
+      // LOGGING DE DEBUG - RESULTADO
+      console.log('📊 Metrics Query Result:', {
+        uniqueVisitors,
+        uniquePages,
+        pageViews,
+        conversions,
+        ipsDataLength: ipsData?.length,
+        pagesDataLength: pagesData?.length
+      });
+
       return {
         uniqueVisitors,
         uniquePages,
@@ -183,6 +203,8 @@ export const useAnalytics = ({
       };
     },
     enabled: !!siteId,
+    staleTime: 0, // Garantir refetch quando queryKey muda
+    gcTime: 0,    // Não manter cache em memória
   });
 
   // Timeline (últimos N dias)
@@ -958,7 +980,7 @@ export const useAnalytics = ({
   });
 
   // Process top page views pages
-  const topPageViewPages = React.useMemo(() => {
+  const topPageViewPages = useMemo(() => {
     if (!pageViewsList || pageViewsList.length === 0) return [];
     
     const pageViewCounts: Record<string, number> = {};
@@ -975,7 +997,7 @@ export const useAnalytics = ({
   }, [pageViewsList]);
 
   // Process page views device distribution
-  const pageViewsDeviceDistribution = React.useMemo(() => {
+  const pageViewsDeviceDistribution = useMemo(() => {
     if (!pageViewsList || pageViewsList.length === 0) return [];
     
     const deviceCounts: Record<string, number> = {

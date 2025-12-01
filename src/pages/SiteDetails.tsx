@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -435,6 +435,14 @@ const SiteDetails = () => {
     staleTime: 30000, // Cache de 30 segundos
   });
   
+  // Handler para mudança de período com invalidação de cache
+  const handlePeriodChange = useCallback((newPeriod: string) => {
+    console.log('🔄 Period changed from', analyticsPeriod, 'to', newPeriod);
+    setAnalyticsPeriod(newPeriod);
+    // Invalidar cache para forçar refetch
+    queryClient.invalidateQueries({ queryKey: ['analytics-metrics'] });
+  }, [analyticsPeriod, queryClient]);
+
   // Analytics hook
   const analyticsData = useAnalytics({
     siteId: siteId || "",
@@ -1344,7 +1352,7 @@ const SiteDetails = () => {
           <TabsContent value="advanced-analytics" className="space-y-6">
             <AnalyticsFilters
               period={analyticsPeriod}
-              onPeriodChange={setAnalyticsPeriod}
+              onPeriodChange={handlePeriodChange}
               eventType={analyticsEventType}
               onEventTypeChange={setAnalyticsEventType}
               device={analyticsDevice}
