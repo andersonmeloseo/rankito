@@ -156,7 +156,14 @@ All colors MUST be HSL.
 */
 
 @layer base {
+  /* Forçar light mode - ignorar preferência do navegador/sistema */
+  html {
+    color-scheme: light only !important;
+  }
+  
   :root {
+    color-scheme: light only;
+    
     /* Pure White Backgrounds */
     --background: 0 0% 100%;
     --foreground: 220 20% 15%;
