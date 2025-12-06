@@ -57,6 +57,32 @@ const getDeviceIcon = (device: string | null) => {
   return <Monitor className="h-3.5 w-3.5" />;
 };
 
+const getSourceInfo = (referrer: string | null): { icon: string; label: string } => {
+  if (!referrer) return { icon: '🔗', label: 'Acesso Direto' };
+  const r = referrer.toLowerCase();
+  
+  if (r.includes('google.com') || r.includes('google.com.br')) return { icon: '🔍', label: 'Google' };
+  if (r.includes('bing.com')) return { icon: '🔍', label: 'Bing' };
+  if (r.includes('instagram.com') || r.includes('l.instagram.com')) return { icon: '📸', label: 'Instagram' };
+  if (r.includes('facebook.com') || r.includes('fb.com') || r.includes('l.facebook.com')) return { icon: '👥', label: 'Facebook' };
+  if (r.includes('chatgpt.com') || r.includes('chat.openai.com')) return { icon: '🤖', label: 'ChatGPT' };
+  if (r.includes('youtube.com')) return { icon: '▶️', label: 'YouTube' };
+  if (r.includes('twitter.com') || r.includes('x.com') || r.includes('t.co')) return { icon: '🐦', label: 'X/Twitter' };
+  if (r.includes('tiktok.com')) return { icon: '🎵', label: 'TikTok' };
+  if (r.includes('linkedin.com')) return { icon: '💼', label: 'LinkedIn' };
+  if (r.includes('pinterest.com')) return { icon: '📌', label: 'Pinterest' };
+  if (r.includes('whatsapp.com') || r.includes('wa.me')) return { icon: '💬', label: 'WhatsApp' };
+  if (r.includes('ads') || r.includes('gclid') || r.includes('utm_')) return { icon: '📢', label: 'Anúncio' };
+  
+  // Extrair domínio para origem desconhecida
+  try {
+    const domain = new URL(referrer).hostname.replace('www.', '');
+    return { icon: '🌐', label: domain };
+  } catch {
+    return { icon: '🌐', label: 'Externo' };
+  }
+};
+
 const formatDuration = (seconds: number | null): string => {
   if (!seconds || seconds <= 0) return '0s';
   if (seconds < 60) return `${Math.round(seconds)}s`;
@@ -162,6 +188,19 @@ export const ConversionJourneyCard = ({
                     </div>
                   </>
                 )}
+                {/* Origem do acesso */}
+                {(() => {
+                  const source = getSourceInfo(journey.session.referrer);
+                  return (
+                    <>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <span>{source.icon}</span>
+                        <span>{source.label}</span>
+                      </div>
+                    </>
+                  );
+                })()}
                 {journey.session.total_duration_seconds && (
                   <>
                     <span>•</span>
