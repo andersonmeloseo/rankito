@@ -132,10 +132,12 @@ serve(async (req) => {
       'remove_from_cart', 
       'begin_checkout', 
       'purchase', 
-      'search'
+      'search',
+      // Engagement events
+      'scroll_depth'
     ];
 
-    // Rejeitar silenciosamente eventos não suportados (ex: scroll_depth)
+    // Rejeitar silenciosamente eventos não suportados
     if (!validEventTypes.includes(event_type)) {
       console.log(`⚠️ Ignoring unsupported event type: ${event_type}`);
       return new Response(
@@ -637,6 +639,26 @@ serve(async (req) => {
             }
 
             matches = ctaMatch && pageMatch && urlMatch;
+            break;
+          }
+
+          case 'scroll_depth': {
+            // Check if scroll depth percentage meets threshold
+            const scrollPercent = metadata?.scroll_depth || 0;
+            if (goal.min_scroll_depth && scrollPercent >= goal.min_scroll_depth) {
+              console.log(`📜 Scroll depth ${scrollPercent}% meets threshold ${goal.min_scroll_depth}%`);
+              matches = true;
+            }
+            break;
+          }
+
+          case 'time_on_page': {
+            // Check if time spent meets threshold
+            const timeSpent = metadata?.time_spent_seconds || 0;
+            if (goal.min_time_seconds && timeSpent >= goal.min_time_seconds) {
+              console.log(`⏱️ Time spent ${timeSpent}s meets threshold ${goal.min_time_seconds}s`);
+              matches = true;
+            }
             break;
           }
         }

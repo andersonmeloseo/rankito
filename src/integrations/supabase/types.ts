@@ -239,6 +239,8 @@ export type Database = {
           goal_type: string
           id: string
           is_active: boolean | null
+          min_scroll_depth: number | null
+          min_time_seconds: number | null
           page_urls: string[] | null
           priority: number | null
           site_id: string
@@ -255,6 +257,8 @@ export type Database = {
           goal_type: string
           id?: string
           is_active?: boolean | null
+          min_scroll_depth?: number | null
+          min_time_seconds?: number | null
           page_urls?: string[] | null
           priority?: number | null
           site_id: string
@@ -271,6 +275,8 @@ export type Database = {
           goal_type?: string
           id?: string
           is_active?: boolean | null
+          min_scroll_depth?: number | null
+          min_time_seconds?: number | null
           page_urls?: string[] | null
           priority?: number | null
           site_id?: string
