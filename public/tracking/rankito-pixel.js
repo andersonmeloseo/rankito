@@ -113,6 +113,60 @@
   let pageEntryTime = Date.now();
   let currentPageUrl = window.location.href;
 
+  // ============================================
+  // ADS CLICK ID & UTM CAPTURE (PHASE 1)
+  // Captures gclid, fbclid, fbc, fbp for Google/Meta Ads integration
+  // ============================================
+  
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  }
+
+  function getAdsTrackingData() {
+    const storageKey = 'rankito_ads_tracking';
+    let storedData = sessionStorage.getItem(storageKey);
+    
+    if (storedData) {
+      try {
+        return JSON.parse(storedData);
+      } catch (e) {
+        log('Error parsing ads tracking data:', e);
+      }
+    }
+    
+    // Capture from current URL and cookies on first page view
+    const params = new URLSearchParams(window.location.search);
+    
+    const adsData = {
+      // Google Ads Click ID
+      gclid: params.get('gclid') || null,
+      
+      // Meta Ads Click ID and cookies
+      fbclid: params.get('fbclid') || null,
+      fbc: getCookie('_fbc') || null,
+      fbp: getCookie('_fbp') || null,
+      
+      // UTM Parameters
+      utm_source: params.get('utm_source') || null,
+      utm_medium: params.get('utm_medium') || null,
+      utm_campaign: params.get('utm_campaign') || null,
+      utm_content: params.get('utm_content') || null,
+      utm_term: params.get('utm_term') || null
+    };
+    
+    // Only store if we have at least one value
+    const hasData = Object.values(adsData).some(v => v !== null);
+    if (hasData) {
+      sessionStorage.setItem(storageKey, JSON.stringify(adsData));
+      log('Ads tracking data captured:', adsData);
+    }
+    
+    return adsData;
+  }
+
   function getSessionId() {
     const storageKey = 'rankito_session';
     let sessionData = sessionStorage.getItem(storageKey);
@@ -151,6 +205,9 @@
     // ✅ ALWAYS get session data automatically
     const { sessionId, sequence } = getSessionId();
     
+    // ✅ Get ads tracking data (gclid, fbclid, UTM)
+    const adsData = getAdsTrackingData();
+    
     // Calculate time spent on current page
     const timeOnCurrentPage = Math.floor((Date.now() - pageEntryTime) / 1000);
     const currentScrollDepth = Math.round((window.scrollY / Math.max(document.documentElement.scrollHeight - window.innerHeight, 1)) * 100);
@@ -185,6 +242,16 @@
       sequence_number: sequence,  // ✅ ALWAYS included
       time_spent_seconds: eventData.time_spent_seconds || null,
       exit_url: eventData.exit_url || null,
+      // ✅ Ads tracking fields (Google Ads + Meta Ads)
+      gclid: adsData.gclid,
+      fbclid: adsData.fbclid,
+      fbc: adsData.fbc,
+      fbp: adsData.fbp,
+      utm_source: adsData.utm_source,
+      utm_medium: adsData.utm_medium,
+      utm_campaign: adsData.utm_campaign,
+      utm_content: adsData.utm_content,
+      utm_term: adsData.utm_term,
       metadata: metadata
     };
 
