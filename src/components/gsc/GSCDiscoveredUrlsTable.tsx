@@ -77,7 +77,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
 
   const pageSize = 100;
 
-  const { urls, isLoading, totalCount } = useGSCDiscoveredUrls(siteId);
+  const { urls, isLoading, totalCount, realTotalCount } = useGSCDiscoveredUrls(siteId);
 
   const { validationStats, retryStats, inspectionStats } = useGSCMonitoring(siteId);
 
@@ -308,7 +308,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   
   const processedHistory = sortData(filterHistoryData(indexingHistory || []), historySort);
 
-  const totalUrls = totalCount;
+  const totalUrls = realTotalCount || totalCount;
   const discoveredUrls = discoveredCount || 0;
   const sentUrls = sentCount || 0;
   const selectedCount = selectedUrls.length;
