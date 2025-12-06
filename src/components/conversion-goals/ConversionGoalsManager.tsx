@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useConversionGoals, ConversionGoal } from '@/hooks/useConversionGoals';
 import { CreateGoalDialog } from './CreateGoalDialog';
+import { ConversionGoalsAnalytics } from './ConversionGoalsAnalytics';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -190,71 +191,77 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Metas de Conversão
-            </CardTitle>
-            <CardDescription>
-              Defina quais ações contam como conversão para este projeto
-            </CardDescription>
-          </div>
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Meta
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {isLoading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-          </div>
-        ) : goals.length === 0 ? (
-          <div className="text-center py-12 border-2 border-dashed rounded-lg">
-            <Target className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="font-medium mb-2">Nenhuma meta configurada</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-              Sem metas definidas, todos os cliques em botões, WhatsApp, telefone e email serão contados como conversão.
-            </p>
+    <div className="space-y-6">
+      {/* Analytics Section - Only shows when goals exist */}
+      <ConversionGoalsAnalytics siteId={siteId} />
+      
+      {/* Goals Manager */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Metas de Conversão
+              </CardTitle>
+              <CardDescription>
+                Defina quais ações contam como conversão para este projeto
+              </CardDescription>
+            </div>
             <Button onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Criar Primeira Meta
+              Nova Meta
             </Button>
           </div>
-        ) : (
-          <>
-            <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
-              <Info className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-              <p className="text-sm text-muted-foreground">
-                Com metas ativas, apenas eventos que correspondam aos critérios configurados serão contados como conversão.
-                Metas desativadas são ignoradas.
-              </p>
-            </div>
-            
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isLoading ? (
             <div className="space-y-3">
-              {goals.map((goal) => (
-                <GoalCard
-                  key={goal.id}
-                  goal={goal}
-                  onToggle={handleToggle}
-                  onDelete={handleDelete}
-                />
-              ))}
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
             </div>
-          </>
-        )}
-      </CardContent>
+          ) : goals.length === 0 ? (
+            <div className="text-center py-12 border-2 border-dashed rounded-lg">
+              <Target className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="font-medium mb-2">Nenhuma meta configurada</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                Sem metas definidas, todos os cliques em botões, WhatsApp, telefone e email serão contados como conversão.
+              </p>
+              <Button onClick={() => setShowCreateDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeira Meta
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
+                <Info className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                <p className="text-sm text-muted-foreground">
+                  Com metas ativas, apenas eventos que correspondam aos critérios configurados serão contados como conversão.
+                  Metas desativadas são ignoradas.
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                {goals.map((goal) => (
+                  <GoalCard
+                    key={goal.id}
+                    goal={goal}
+                    onToggle={handleToggle}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </CardContent>
 
-      <CreateGoalDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        siteId={siteId}
-      />
-    </Card>
+        <CreateGoalDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          siteId={siteId}
+        />
+      </Card>
+    </div>
   );
 };
