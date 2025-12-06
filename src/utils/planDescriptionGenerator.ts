@@ -3,11 +3,13 @@ export const generatePlanDescription = (limits: {
   max_pages_per_site: string | number | null;
   max_gsc_integrations: string | number | null;
   trial_days: string | number;
+  has_advanced_tracking?: boolean;
 }): string => {
   const sites = limits.max_sites ? Number(limits.max_sites) : null;
   const pages = limits.max_pages_per_site ? Number(limits.max_pages_per_site) : null;
   const gsc = limits.max_gsc_integrations ? Number(limits.max_gsc_integrations) : null;
   const trial = Number(limits.trial_days);
+  const advancedTracking = limits.has_advanced_tracking ?? false;
 
   // Construir lista de entregáveis
   const deliverables: string[] = [];
@@ -39,6 +41,11 @@ export const generatePlanDescription = (limits: {
     deliverables.push("1 integração Google Search Console");
   } else {
     deliverables.push(`até ${gsc} integrações Google Search Console`);
+  }
+
+  // Tracking Avançado
+  if (advancedTracking) {
+    deliverables.push("Tracking Avançado (Metas, Google Ads, Meta CAPI)");
   }
 
   // Trial

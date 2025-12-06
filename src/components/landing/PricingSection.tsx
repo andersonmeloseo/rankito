@@ -2,7 +2,7 @@ import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Infinity, ExternalLink } from "lucide-react";
+import { CheckCircle, Infinity, ExternalLink, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLandingTranslation } from "@/hooks/useLandingTranslation";
 
@@ -105,6 +105,18 @@ export const PricingSection = () => {
                       <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
                       <span className="text-sm text-foreground">
                         {formatLimit(plan.max_gsc_integrations)} {t.pricing.integrations}
+                      </span>
+                    </li>
+                    
+                    {/* Tracking Avançado */}
+                    <li className="flex items-start gap-2">
+                      {plan.has_advanced_tracking ? (
+                        <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <X className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                      )}
+                      <span className={`text-sm ${plan.has_advanced_tracking ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        Tracking Avançado (Google Ads + Meta)
                       </span>
                     </li>
                     

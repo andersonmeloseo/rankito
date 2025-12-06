@@ -58,6 +58,7 @@ export const PlansManagementTable = () => {
               <TableHead>Preço</TableHead>
               <TableHead>Limites</TableHead>
               <TableHead>Trial</TableHead>
+              <TableHead>Tracking</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -89,6 +90,11 @@ export const PlansManagementTable = () => {
                   <TableCell className="p-4">
                     <Badge variant={plan.trial_days > 0 ? "default" : "secondary"}>
                       {plan.trial_days > 0 ? `${plan.trial_days} dias` : 'Sem trial'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="p-4">
+                    <Badge variant={plan.has_advanced_tracking ? "default" : "outline"}>
+                      {plan.has_advanced_tracking ? "✓ Ativo" : "—"}
                     </Badge>
                   </TableCell>
                   <TableCell className="p-4">

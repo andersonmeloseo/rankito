@@ -3561,6 +3561,7 @@ export type Database = {
           description: string | null
           display_order: number | null
           features: Json | null
+          has_advanced_tracking: boolean | null
           id: string
           is_active: boolean | null
           max_gsc_integrations: number | null
@@ -3579,6 +3580,7 @@ export type Database = {
           description?: string | null
           display_order?: number | null
           features?: Json | null
+          has_advanced_tracking?: boolean | null
           id?: string
           is_active?: boolean | null
           max_gsc_integrations?: number | null
@@ -3597,6 +3599,7 @@ export type Database = {
           description?: string | null
           display_order?: number | null
           features?: Json | null
+          has_advanced_tracking?: boolean | null
           id?: string
           is_active?: boolean | null
           max_gsc_integrations?: number | null
