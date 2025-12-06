@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, MessageCircle, Phone, Mail, MousePointer, FileText, Clock, MapPin, Monitor, Smartphone, Tablet, Info, Target } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageCircle, Phone, Mail, MousePointer, FileText, Clock, MapPin, Monitor, Smartphone, Tablet, Info, Target, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -283,19 +283,33 @@ export const ConversionJourneyCard = ({
 
               {/* CTA que converteu - Destacado */}
               {ctaText && (
-                <div className="flex items-center gap-2 text-sm bg-green-50 p-3 rounded-lg border-2 border-green-200">
-                  <Target className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-[10px] uppercase text-green-600 font-semibold tracking-wide">
-                      CTA que converteu
-                    </span>
-                    <span className="font-semibold text-green-800">
-                      "{ctaText}"
-                    </span>
+                <div className="flex flex-col gap-2 text-sm bg-green-50 p-3 rounded-lg border-2 border-green-200">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase text-green-600 font-semibold tracking-wide">
+                        CTA que converteu
+                      </span>
+                      <span className="font-semibold text-green-800">
+                        "{ctaText}"
+                      </span>
+                    </div>
+                    <Badge className="ml-auto bg-green-600 text-white text-xs">
+                      {formatPageName(conversionPage)}
+                    </Badge>
                   </div>
-                  <Badge className="ml-auto bg-green-600 text-white text-xs">
-                    {formatPageName(conversionPage)}
-                  </Badge>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground border-t border-green-200 pt-2">
+                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                    <a 
+                      href={conversionPage} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="hover:text-green-600 hover:underline truncate"
+                      title={conversionPage}
+                    >
+                      {conversionPage}
+                    </a>
+                  </div>
                 </div>
               )}
             </>
