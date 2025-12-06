@@ -4879,6 +4879,8 @@ export type Database = {
         | "purchase"
         | "search"
         | "page_exit"
+        | "scroll_depth"
+        | "time_on_page"
       external_source_type:
         | "wordpress"
         | "webhook"
@@ -5072,6 +5074,8 @@ export const Constants = {
         "purchase",
         "search",
         "page_exit",
+        "scroll_depth",
+        "time_on_page",
       ],
       external_source_type: [
         "wordpress",
