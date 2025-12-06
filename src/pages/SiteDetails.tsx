@@ -856,7 +856,7 @@ const SiteDetails = () => {
                       <SelectItem value="ecommerce">🛒 E-commerce</SelectItem>
                     )}
                     <SelectItem value="reports">📄 Relatórios</SelectItem>
-                    <SelectItem value="conversion-goals">🎯 Metas de Conversão</SelectItem>
+                    <SelectItem value="conversion-goals">📡 Tracking Avançado</SelectItem>
                     <SelectItem value="gsc">🔍 Indexador</SelectItem>
                     <SelectItem value="plugin">🔌 Plugin WordPress</SelectItem>
                     <SelectItem value="pixel-tracking">🎯 Pixel & E-commerce</SelectItem>
@@ -891,7 +891,7 @@ const SiteDetails = () => {
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="conversion-goals" icon={Target}>
-                    Metas de Conversão
+                    Tracking Avançado
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="gsc" icon={Search}>
