@@ -93,7 +93,7 @@ export const ConversionJourneyCard = ({
         className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors text-left"
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 text-amber-600">
+          <div className="flex items-center gap-1.5 text-green-600">
             {getEventIcon(eventType)}
             <span className="text-sm font-medium">{getEventLabel(eventType)}</span>
           </div>
@@ -139,7 +139,7 @@ export const ConversionJourneyCard = ({
             <>
               {/* Indicador de jornada parcial */}
               {journey.isPartial && (
-                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
+                <Badge variant="outline" className="text-xs text-green-600 border-green-300 bg-green-50">
                   <Info className="w-3 h-3 mr-1" />
                   Jornada parcial
                 </Badge>
@@ -187,7 +187,7 @@ export const ConversionJourneyCard = ({
                     let icon = "🔵";
 
                     if (isConversion) {
-                      badgeClass += " bg-amber-100 text-amber-800 border-amber-300";
+                      badgeClass += " bg-green-100 text-green-800 border-green-300";
                       icon = "🎯";
                     } else if (isEntry) {
                       badgeClass += " bg-green-100 text-green-800 border-green-300";
@@ -226,12 +226,12 @@ export const ConversionJourneyCard = ({
 
               {/* CTA que converteu */}
               {ctaText && (
-                <div className="flex items-center gap-2 text-sm bg-amber-50 dark:bg-amber-950/30 p-2 rounded-md border border-amber-200 dark:border-amber-800">
-                  <span className="text-amber-600">{getEventIcon(eventType)}</span>
-                  <span className="font-medium text-amber-800 dark:text-amber-200">
+                <div className="flex items-center gap-2 text-sm bg-green-50 dark:bg-green-950/30 p-2 rounded-md border border-green-200 dark:border-green-800">
+                  <span className="text-green-600">{getEventIcon(eventType)}</span>
+                  <span className="font-medium text-green-800 dark:text-green-200">
                     "{ctaText}"
                   </span>
-                  <span className="text-amber-600/70 text-xs">
+                  <span className="text-green-600/70 text-xs">
                     em {formatPageName(conversionPage)}
                   </span>
                 </div>
