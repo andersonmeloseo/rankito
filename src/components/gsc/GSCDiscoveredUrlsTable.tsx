@@ -233,20 +233,6 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
     });
   };
 
-  const filterUrlsData = (data: any[]) => {
-    return data.filter(item => {
-      // Filtro de busca local em tempo real
-      if (searchTerm && !item.url.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-      if (urlsFilters.status !== 'all' && item.current_status !== urlsFilters.status) return false;
-      if (urlsFilters.origin === 'gsc' && !item.gsc_data) return false;
-      if (urlsFilters.origin === 'sitemap' && !item.indexnow_data) return false;
-      if (urlsFilters.origin === 'both' && !(item.gsc_data && item.indexnow_data)) return false;
-      if (urlsFilters.hasClicks === 'yes' && (!item.clicks || item.clicks === 0)) return false;
-      if (urlsFilters.hasClicks === 'no' && item.clicks && item.clicks > 0) return false;
-      return true;
-    });
-  };
-
   const filterHistoryData = (data: any[]) => {
     return data.filter(item => {
       if (historyFilters.status !== 'all' && item.status !== historyFilters.status) return false;
@@ -258,7 +244,18 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
 
   // Aplicar filtros e ordenação ANTES da paginação (com useMemo para performance)
   const filteredAndSorted = useMemo(() => {
-    return sortData(filterUrlsData(urls || []), urlsSort);
+    const filtered = (urls || []).filter(item => {
+      // Filtro de busca local em tempo real
+      if (searchTerm && !item.url.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      if (urlsFilters.status !== 'all' && item.current_status !== urlsFilters.status) return false;
+      if (urlsFilters.origin === 'gsc' && !item.gsc_data) return false;
+      if (urlsFilters.origin === 'sitemap' && !item.indexnow_data) return false;
+      if (urlsFilters.origin === 'both' && !(item.gsc_data && item.indexnow_data)) return false;
+      if (urlsFilters.hasClicks === 'yes' && (!item.clicks || item.clicks === 0)) return false;
+      if (urlsFilters.hasClicks === 'no' && item.clicks && item.clicks > 0) return false;
+      return true;
+    });
+    return sortData(filtered, urlsSort);
   }, [urls, urlsSort, urlsFilters, searchTerm]);
   
   // Calcular paginação baseada em dados filtrados
