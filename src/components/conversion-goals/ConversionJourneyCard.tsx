@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, MessageCircle, Phone, Mail, MousePointer, FileText, Clock, MapPin, Monitor, Smartphone, Tablet, Info, Target, ExternalLink, Globe, Hash } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageCircle, Phone, Mail, MousePointer, FileText, Clock, MapPin, Monitor, Smartphone, Tablet, Info, Target, ExternalLink, Globe, Hash, ArrowDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -217,6 +217,15 @@ export const ConversionJourneyCard = ({
                 <div className="flex items-center gap-1">
                   {getDeviceIcon(deviceFromProps)}
                   <span>{deviceFromProps}</span>
+                </div>
+              </>
+            )}
+            {journey?.maxScrollDepth !== null && journey?.maxScrollDepth !== undefined && (
+              <>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <ArrowDown className="h-3 w-3" />
+                  <span>Scroll: {journey.maxScrollDepth}%</span>
                 </div>
               </>
             )}
