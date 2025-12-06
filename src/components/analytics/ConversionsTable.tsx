@@ -379,6 +379,7 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                     </div>
                   </TableHead>
                   <TableHead>CTA</TableHead>
+                  <TableHead>Meta</TableHead>
                   <TableHead
                     className="cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort("device")}
@@ -453,8 +454,24 @@ export const ConversionsTable = ({ conversions, isLoading, siteId }: Conversions
                       </TableCell>
                 <TableCell>
                   <div className="text-sm max-w-[200px] truncate">
-                    {conv.metadata?.cta_text || "-"}
+                    {conv.cta_text || "-"}
                   </div>
+                </TableCell>
+                <TableCell>
+                  {conv.goal_name ? (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {conv.goal_name}
+                      </Badge>
+                      {conv.conversion_value > 0 && (
+                        <Badge variant="secondary" className="text-xs text-green-600">
+                          R$ {Number(conv.conversion_value).toFixed(2)}
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">-</span>
+                  )}
                 </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
