@@ -24,7 +24,8 @@ export const useGSCDiscoveredUrls = (siteId: string) => {
           google_inspection_data
         `)
         .eq('site_id', siteId)
-        .order('last_seen_at', { ascending: false });
+        .order('last_seen_at', { ascending: false })
+        .range(0, 9999999);
 
       if (error) throw error;
       return data;
