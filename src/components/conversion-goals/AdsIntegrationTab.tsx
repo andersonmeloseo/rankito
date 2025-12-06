@@ -4,32 +4,40 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { 
   Download, 
   Send, 
-  Settings, 
   CheckCircle2, 
   AlertCircle,
   ExternalLink,
-  FileSpreadsheet,
-  Code,
+  RefreshCw,
+  Zap,
   Info,
-  CalendarIcon,
-  BarChart3
+  TrendingUp
 } from 'lucide-react';
-import { AdsTrackingDashboard } from './AdsTrackingDashboard';
+import { useAdsTrackingMetrics, useRecentAdsEvents } from '@/hooks/useAdsTrackingMetrics';
+import { useCampaignPerformance } from '@/hooks/useCampaignPerformance';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { addDays, format } from 'date-fns';
+import { addDays, format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import type { DateRange } from 'react-day-picker';
-import { cn } from '@/lib/utils';
 
 interface AdsIntegrationTabProps {
   siteId: string;
@@ -40,12 +48,11 @@ interface AdsIntegrationTabProps {
 export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [testResult, setTestResult] = useState<'idle' | 'pending' | 'success' | 'fail'>('idle');
   
-  // Date range
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -30),
-    to: new Date()
-  });
+  // Period filter
+  const [period, setPeriod] = useState<7 | 30 | 90>(30);
 
   // Meta settings
   const [metaPixelId, setMetaPixelId] = useState('');
@@ -53,10 +60,54 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
   const [metaTestCode, setMetaTestCode] = useState('');
   const [useTestMode, setUseTestMode] = useState(true);
 
-  // Selected goals
-  const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
+  // Data hooks
+  const { data: metrics, isLoading: metricsLoading, refetch: refetchMetrics } = useAdsTrackingMetrics(siteId);
+  const { data: recentEvents, refetch: refetchEvents } = useRecentAdsEvents(siteId);
+  const { data: campaigns, isLoading: campaignsLoading, refetch: refetchCampaigns } = useCampaignPerformance(siteId, period);
 
-  const activeGoals = goals.filter(g => g.is_active);
+  const handleTestConnection = async () => {
+    if (!siteUrl) {
+      toast.error('URL do site não configurada');
+      return;
+    }
+
+    setIsTestingConnection(true);
+    setTestResult('pending');
+
+    const testParams = new URLSearchParams({
+      gclid: `TEST_GCLID_${Date.now()}`,
+      utm_source: 'rankito_test',
+      utm_medium: 'test',
+      utm_campaign: 'connection_test'
+    });
+
+    const testUrl = `${siteUrl}?${testParams.toString()}`;
+    window.open(testUrl, '_blank');
+    
+    toast.info('Acesse o link aberto e aguarde 30 segundos...');
+
+    setTimeout(async () => {
+      await Promise.all([refetchMetrics(), refetchEvents()]);
+      
+      const hasTestEvent = recentEvents?.some(e => 
+        e.gclid?.includes('TEST_GCLID') || e.utm_campaign === 'connection_test'
+      );
+
+      if (hasTestEvent) {
+        setTestResult('success');
+        toast.success('Conexão funcionando! Evento de teste capturado.');
+      } else {
+        setTestResult('fail');
+        toast.warning('Evento de teste não detectado ainda. Verifique se o plugin está ativo.');
+      }
+      setIsTestingConnection(false);
+    }, 30000);
+  };
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchMetrics(), refetchEvents(), refetchCampaigns()]);
+    toast.success('Dados atualizados!');
+  };
 
   const handleExportGoogleAds = async () => {
     setIsExporting(true);
@@ -64,15 +115,13 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
       const { data, error } = await supabase.functions.invoke('export-google-ads-conversions', {
         body: {
           siteId,
-          startDate: dateRange?.from?.toISOString(),
-          endDate: dateRange?.to?.toISOString(),
-          goalIds: selectedGoalIds.length > 0 ? selectedGoalIds : undefined
+          startDate: addDays(new Date(), -period).toISOString(),
+          endDate: new Date().toISOString()
         }
       });
 
       if (error) throw error;
 
-      // Download CSV
       const blob = new Blob([data], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -98,16 +147,14 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
       const { data, error } = await supabase.functions.invoke('export-meta-conversions', {
         body: {
           siteId,
-          startDate: dateRange?.from?.toISOString(),
-          endDate: dateRange?.to?.toISOString(),
-          goalIds: selectedGoalIds.length > 0 ? selectedGoalIds : undefined,
+          startDate: addDays(new Date(), -period).toISOString(),
+          endDate: new Date().toISOString(),
           mode: 'export'
         }
       });
 
       if (error) throw error;
 
-      // Download JSON
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -141,9 +188,8 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
           pixelId: metaPixelId,
           accessToken: metaAccessToken,
           testEventCode: useTestMode ? metaTestCode : undefined,
-          startDate: dateRange?.from?.toISOString(),
-          endDate: dateRange?.to?.toISOString(),
-          goalIds: selectedGoalIds.length > 0 ? selectedGoalIds : undefined,
+          startDate: addDays(new Date(), -period).toISOString(),
+          endDate: new Date().toISOString(),
           mode: 'send'
         }
       });
@@ -159,358 +205,361 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
     }
   };
 
-  const toggleGoalSelection = (goalId: string) => {
-    setSelectedGoalIds(prev => 
-      prev.includes(goalId) 
-        ? prev.filter(id => id !== goalId)
-        : [...prev, goalId]
+  const getStatusIndicator = (count: number, label: string, type: 'google' | 'meta' | 'utm') => {
+    const isActive = count > 0;
+    const colorClass = isActive 
+      ? 'bg-green-100 border-green-300 text-green-800' 
+      : 'bg-amber-50 border-amber-200 text-amber-700';
+    const iconColor = isActive ? 'text-green-500' : 'text-amber-500';
+    
+    return (
+      <div className={`flex flex-col items-center p-4 rounded-lg border-2 ${colorClass} transition-all`}>
+        <div className="flex items-center gap-2 mb-1">
+          {isActive ? (
+            <CheckCircle2 className={`h-5 w-5 ${iconColor}`} />
+          ) : (
+            <AlertCircle className={`h-5 w-5 ${iconColor}`} />
+          )}
+          <span className="font-medium">{label}</span>
+        </div>
+        <span className="text-2xl font-bold">{count}</span>
+        <span className="text-xs opacity-75">
+          {isActive ? 'conversões' : 'pendente'}
+        </span>
+      </div>
     );
   };
 
   return (
     <div className="space-y-6">
-      {/* Ads Tracking Dashboard */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Dashboard de Captura de Ads
-          </CardTitle>
-          <CardDescription>
-            Monitore em tempo real a captura de Google Ads (gclid), Meta Ads (fbclid) e parâmetros UTM
-          </CardDescription>
+      {/* HERO SECTION - Status da Integração */}
+      <Card className="border-2">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <TrendingUp className="h-6 w-6 text-primary" />
+                Status de Integração
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Monitoramento em tempo real da captura de dados de campanhas
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleRefresh}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Atualizar
+              </Button>
+              <Button 
+                size="sm"
+                onClick={handleTestConnection}
+                disabled={isTestingConnection || !siteUrl}
+                className="flex items-center gap-2"
+              >
+                {isTestingConnection ? (
+                  <>
+                    <Zap className="h-4 w-4 animate-pulse" />
+                    Testando...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4" />
+                    Testar Conexão
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <AdsTrackingDashboard siteId={siteId} siteUrl={siteUrl} />
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* Info Alert */}
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          Exporte conversões com Click IDs (gclid/fbclid) para melhorar a inteligência das suas campanhas.
-          O pixel Rankito captura automaticamente esses IDs quando visitantes chegam via anúncios.
-        </AlertDescription>
-      </Alert>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Filtros de Exportação
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Período</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !dateRange && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
-                          {format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}
-                        </>
-                      ) : (
-                        format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })
-                      )
-                    ) : (
-                      <span>Selecione o período</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange?.from}
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    numberOfMonths={2}
-                    locale={ptBR}
-                  />
-                </PopoverContent>
-              </Popover>
+          {metricsLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Array(4).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-lg" />
+              ))}
             </div>
-            
-            <div className="space-y-2">
-              <Label>Metas de Conversão (opcional)</Label>
-              <div className="flex flex-wrap gap-2">
-                {activeGoals.length > 0 ? (
-                  activeGoals.map(goal => (
-                    <Badge
-                      key={goal.id}
-                      variant={selectedGoalIds.includes(goal.id) ? 'default' : 'outline'}
-                      className="cursor-pointer"
-                      onClick={() => toggleGoalSelection(goal.id)}
-                    >
-                      {goal.goal_name}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">Nenhuma meta configurada</span>
-                )}
-              </div>
-              {selectedGoalIds.length === 0 && activeGoals.length > 0 && (
-                <p className="text-xs text-muted-foreground">Todas as conversões serão incluídas</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {getStatusIndicator(metrics?.with_gclid || 0, 'Google Ads', 'google')}
+              {getStatusIndicator(metrics?.with_fbclid || 0, 'Meta Ads', 'meta')}
+              {getStatusIndicator(metrics?.with_utm_source || 0, 'UTM Source', 'utm')}
+              {getStatusIndicator(metrics?.with_utm_campaign || 0, 'Campanhas', 'utm')}
+            </div>
+          )}
+          
+          {/* Test Result Badge */}
+          <div className="flex items-center justify-between mt-4 pt-4 border-t">
+            <div className="flex items-center gap-2">
+              {testResult === 'success' && (
+                <Badge className="bg-green-500">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Conexão Funcionando
+                </Badge>
+              )}
+              {testResult === 'fail' && (
+                <Badge variant="destructive">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Evento não detectado
+                </Badge>
+              )}
+              {testResult === 'pending' && (
+                <Badge variant="secondary">
+                  <Zap className="h-3 w-3 mr-1 animate-pulse" />
+                  Aguardando teste (30s)...
+                </Badge>
               )}
             </div>
+            <span className="text-xs text-muted-foreground">
+              Atualizado há {formatDistanceToNow(new Date(), { locale: ptBR, addSuffix: false })}
+            </span>
           </div>
+
+          {!siteUrl && (
+            <Alert className="mt-4" variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Configure a URL do site nas configurações para usar o teste de conexão
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="google" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="google" className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4" />
-            Google Ads
-          </TabsTrigger>
-          <TabsTrigger value="meta" className="flex items-center gap-2">
-            <Code className="h-4 w-4" />
-            Meta Ads
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Google Ads Tab */}
-        <TabsContent value="google" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <img 
-                  src="https://www.gstatic.com/images/branding/product/1x/ads_48dp.png" 
-                  alt="Google Ads" 
-                  className="h-6 w-6"
-                />
-                Google Ads Offline Conversions
-              </CardTitle>
-              <CardDescription>
-                Exporte conversões no formato CSV compatível com Google Ads para upload manual
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Alert variant="default" className="bg-blue-50 border-blue-200">
-                <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
-                  <strong>Como funciona:</strong>
-                  <ol className="list-decimal ml-4 mt-2 space-y-1">
-                    <li>Clique em "Exportar CSV" para baixar o arquivo</li>
-                    <li>Acesse Google Ads → Ferramentas → Conversões</li>
-                    <li>Selecione sua conversão → Upload manual</li>
-                    <li>Faça upload do arquivo CSV</li>
-                  </ol>
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex items-center gap-4">
-                <Button 
-                  onClick={handleExportGoogleAds}
-                  disabled={isExporting}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  {isExporting ? 'Exportando...' : 'Exportar CSV'}
-                </Button>
-
-                <a 
-                  href="https://support.google.com/google-ads/answer/7014069" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  Documentação Google
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Meta Ads Tab */}
-        <TabsContent value="meta" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <img 
-                  src="https://www.facebook.com/images/fb_icon_325x325.png" 
-                  alt="Meta" 
-                  className="h-6 w-6"
-                />
-                Meta Conversions API (CAPI)
-              </CardTitle>
-              <CardDescription>
-                Envie conversões diretamente para o Meta via API server-to-server
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Configuration */}
-              <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="pixelId">Pixel ID</Label>
-                    <Input
-                      id="pixelId"
-                      placeholder="123456789012345"
-                      value={metaPixelId}
-                      onChange={(e) => setMetaPixelId(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="accessToken">Access Token</Label>
-                    <Input
-                      id="accessToken"
-                      type="password"
-                      placeholder="EAAxxxxxxxxxx..."
-                      value={metaAccessToken}
-                      onChange={(e) => setMetaAccessToken(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="testMode"
-                      checked={useTestMode}
-                      onCheckedChange={setUseTestMode}
-                    />
-                    <Label htmlFor="testMode">Modo de Teste</Label>
-                  </div>
-                  
-                  {useTestMode && (
-                    <div className="flex-1 max-w-xs">
-                      <Input
-                        placeholder="TEST12345"
-                        value={metaTestCode}
-                        onChange={(e) => setMetaTestCode(e.target.value)}
-                        className="text-sm"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {useTestMode && (
-                  <Alert variant="default" className="bg-amber-50 border-amber-200">
-                    <AlertCircle className="h-4 w-4 text-amber-600" />
-                    <AlertDescription className="text-amber-800">
-                      Modo de teste ativo. Eventos aparecerão em Events Manager → Test Events.
-                      <a 
-                        href="https://business.facebook.com/events_manager" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="ml-1 underline"
-                      >
-                        Abrir Events Manager
-                      </a>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Actions */}
-              <div className="flex flex-wrap items-center gap-4">
-                <Button 
-                  variant="outline"
-                  onClick={handleExportMeta}
-                  disabled={isExporting}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  {isExporting ? 'Exportando...' : 'Exportar JSON'}
-                </Button>
-
-                <Button 
-                  onClick={handleSendToMeta}
-                  disabled={isSending || !metaPixelId || !metaAccessToken}
-                  className="flex items-center gap-2"
-                >
-                  <Send className="h-4 w-4" />
-                  {isSending ? 'Enviando...' : 'Enviar para Meta'}
-                </Button>
-
-                <a 
-                  href="https://developers.facebook.com/docs/marketing-api/conversions-api" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  Documentação Meta CAPI
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-
-              {/* How to get credentials */}
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Como obter as credenciais:</strong>
-                  <ol className="list-decimal ml-4 mt-2 space-y-1 text-sm">
-                    <li>Acesse <a href="https://business.facebook.com/events_manager" target="_blank" rel="noopener noreferrer" className="underline">Events Manager</a></li>
-                    <li>Selecione seu Pixel → Configurações</li>
-                    <li>Em "Conversions API", gere um Access Token</li>
-                    <li>Copie o Pixel ID e o Access Token</li>
-                  </ol>
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Tracking Status */}
+      {/* TABELA DE CAMPANHAS */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Status do Rastreamento</CardTitle>
-          <CardDescription>
-            Verifique se o pixel está capturando os Click IDs corretamente
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span className="font-medium">gclid (Google)</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Capturado automaticamente quando visitantes chegam via Google Ads
-              </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Performance por Campanha</CardTitle>
+              <CardDescription>Análise de resultados por fonte de tráfego</CardDescription>
             </div>
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span className="font-medium">fbclid / fbc / fbp</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Capturado via URL param e cookies do Meta Pixel
-              </p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span className="font-medium">UTM Parameters</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                utm_source, utm_medium, utm_campaign capturados
-              </p>
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+              {[7, 30, 90].map((p) => (
+                <Button
+                  key={p}
+                  size="sm"
+                  variant={period === p ? 'default' : 'ghost'}
+                  onClick={() => setPeriod(p as 7 | 30 | 90)}
+                  className="text-xs px-3"
+                >
+                  {p}d
+                </Button>
+              ))}
             </div>
           </div>
+        </CardHeader>
+        <CardContent>
+          {campaignsLoading ? (
+            <div className="space-y-2">
+              {Array(5).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : campaigns && campaigns.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Campanha</TableHead>
+                    <TableHead>Fonte</TableHead>
+                    <TableHead className="text-right">Visitas</TableHead>
+                    <TableHead className="text-right">Conversões</TableHead>
+                    <TableHead className="text-right">Taxa Conv.</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {campaigns.map((campaign, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="font-medium">
+                        {campaign.utm_campaign || '(direto)'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {campaign.source === 'google' && '🔵 Google'}
+                          {campaign.source === 'meta' && '🟣 Meta'}
+                          {campaign.source === 'organic' && '⚪ Orgânico'}
+                          {!campaign.source && '⚪ Direto'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{campaign.visits}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant={campaign.conversions > 0 ? 'default' : 'secondary'} className="text-xs">
+                          {campaign.conversions}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className={campaign.conversion_rate > 2 ? 'text-green-600 font-medium' : ''}>
+                          {campaign.conversion_rate.toFixed(1)}%
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>Nenhuma campanha detectada nos últimos {period} dias</p>
+              <p className="text-sm mt-1">Use UTM parameters ou ads com gclid/fbclid</p>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* EXPORTAÇÃO - Accordion Colapsável */}
+      <Accordion type="single" collapsible className="space-y-2">
+        {/* Google Ads Export */}
+        <AccordionItem value="google" className="border rounded-lg px-4">
+          <AccordionTrigger className="hover:no-underline">
+            <div className="flex items-center gap-3">
+              <img 
+                src="https://www.gstatic.com/images/branding/product/1x/ads_48dp.png" 
+                alt="Google Ads" 
+                className="h-6 w-6"
+              />
+              <div className="text-left">
+                <div className="font-medium">Exportar para Google Ads</div>
+                <div className="text-xs text-muted-foreground font-normal">CSV para upload de conversões offline</div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-4 space-y-4">
+            <Alert className="bg-blue-50 border-blue-200">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800 text-sm">
+                <strong>Como funciona:</strong> Baixe o CSV e faça upload em Google Ads → Ferramentas → Conversões → Upload manual
+              </AlertDescription>
+            </Alert>
+
+            <div className="flex items-center gap-4">
+              <Button 
+                onClick={handleExportGoogleAds}
+                disabled={isExporting}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {isExporting ? 'Exportando...' : `Exportar CSV (${period} dias)`}
+              </Button>
+
+              <a 
+                href="https://support.google.com/google-ads/answer/7014069" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline flex items-center gap-1"
+              >
+                Documentação
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Meta Ads Config */}
+        <AccordionItem value="meta" className="border rounded-lg px-4">
+          <AccordionTrigger className="hover:no-underline">
+            <div className="flex items-center gap-3">
+              <img 
+                src="https://www.facebook.com/images/fb_icon_325x325.png" 
+                alt="Meta" 
+                className="h-6 w-6"
+              />
+              <div className="text-left">
+                <div className="font-medium">Configurar Meta CAPI</div>
+                <div className="text-xs text-muted-foreground font-normal">Envio direto via Conversions API</div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-4 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="pixelId">Pixel ID</Label>
+                <Input
+                  id="pixelId"
+                  placeholder="123456789012345"
+                  value={metaPixelId}
+                  onChange={(e) => setMetaPixelId(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accessToken">Access Token</Label>
+                <Input
+                  id="accessToken"
+                  type="password"
+                  placeholder="EAAxxxxxxxxxx..."
+                  value={metaAccessToken}
+                  onChange={(e) => setMetaAccessToken(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="testMode"
+                  checked={useTestMode}
+                  onCheckedChange={setUseTestMode}
+                />
+                <Label htmlFor="testMode">Modo de Teste</Label>
+              </div>
+              
+              {useTestMode && (
+                <Input
+                  placeholder="TEST12345"
+                  value={metaTestCode}
+                  onChange={(e) => setMetaTestCode(e.target.value)}
+                  className="max-w-[150px] text-sm"
+                />
+              )}
+            </div>
+
+            {useTestMode && (
+              <Alert className="bg-amber-50 border-amber-200">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800 text-sm">
+                  Eventos aparecerão em Events Manager → Test Events
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex flex-wrap items-center gap-4 pt-2">
+              <Button 
+                variant="outline"
+                onClick={handleExportMeta}
+                disabled={isExporting}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Exportar JSON
+              </Button>
+
+              <Button 
+                onClick={handleSendToMeta}
+                disabled={isSending || !metaPixelId || !metaAccessToken}
+                className="flex items-center gap-2"
+              >
+                <Send className="h-4 w-4" />
+                {isSending ? 'Enviando...' : 'Enviar para Meta'}
+              </Button>
+
+              <a 
+                href="https://developers.facebook.com/docs/marketing-api/conversions-api" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline flex items-center gap-1"
+              >
+                Documentação
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
