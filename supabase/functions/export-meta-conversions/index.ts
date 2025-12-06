@@ -16,6 +16,11 @@ async function sha256Hash(value: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Validate if a string is a valid SHA256 hash (64 hex characters)
+function isValidSha256(hash: string): boolean {
+  return /^[a-f0-9]{64}$/i.test(hash);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -56,7 +61,7 @@ serve(async (req) => {
         ip_address, user_agent,
         city, region, country, country_code,
         email_hash, phone_hash,
-        matched_goal_id
+        goal_id, session_id
       `)
       .eq('site_id', siteId)
       .or('fbclid.not.is.null,fbc.not.is.null,fbp.not.is.null')
@@ -69,7 +74,7 @@ serve(async (req) => {
       query = query.lte('created_at', endDate);
     }
     if (goalIds && goalIds.length > 0) {
-      query = query.in('matched_goal_id', goalIds);
+      query = query.in('goal_id', goalIds);
     }
 
     const { data: conversions, error } = await query;
@@ -84,7 +89,7 @@ serve(async (req) => {
     // Fetch goal names
     let goalNames: Record<string, string> = {};
     if (conversions && conversions.length > 0) {
-      const uniqueGoalIds = [...new Set(conversions.map(c => c.matched_goal_id).filter(Boolean))];
+      const uniqueGoalIds = [...new Set(conversions.map(c => c.goal_id).filter(Boolean))];
       if (uniqueGoalIds.length > 0) {
         const { data: goals } = await supabase
           .from('conversion_goals')
@@ -110,15 +115,15 @@ serve(async (req) => {
       'product_view': 'ViewContent'
     };
 
-    // Build Meta CAPI events
-    const events = (conversions || []).map(conv => {
+    // Build Meta CAPI events with async hashing using Promise.all
+    const events = await Promise.all((conversions || []).map(async (conv) => {
       const eventTime = Math.floor(new Date(conv.created_at).getTime() / 1000);
       
       // Determine event name
       let eventName = 'Lead';
-      if (conv.matched_goal_id && goalNames[conv.matched_goal_id]) {
+      if (conv.goal_id && goalNames[conv.goal_id]) {
         // Custom event name from goal
-        eventName = goalNames[conv.matched_goal_id].replace(/\s+/g, '');
+        eventName = goalNames[conv.goal_id].replace(/\s+/g, '');
       } else if (conv.event_type && eventTypeMap[conv.event_type]) {
         eventName = eventTypeMap[conv.event_type];
       }
@@ -131,18 +136,37 @@ serve(async (req) => {
       if (conv.fbp) userData.fbp = conv.fbp;
       if (conv.fbclid) userData.fbclid = conv.fbclid;
       
-      // Add hashed PII if available
-      if (conv.email_hash) userData.em = [conv.email_hash];
-      if (conv.phone_hash) userData.ph = [conv.phone_hash];
+      // Add hashed PII if available (validate they are proper SHA256 hashes)
+      if (conv.email_hash) {
+        if (isValidSha256(conv.email_hash)) {
+          userData.em = [conv.email_hash];
+        } else {
+          // Hash it if it's plain text
+          userData.em = [await sha256Hash(conv.email_hash)];
+        }
+      }
+      if (conv.phone_hash) {
+        if (isValidSha256(conv.phone_hash)) {
+          userData.ph = [conv.phone_hash];
+        } else {
+          // Hash it if it's plain text
+          userData.ph = [await sha256Hash(conv.phone_hash)];
+        }
+      }
       
-      // Add IP and user agent for matching
+      // Add IP and user agent for matching (required for website events)
       if (conv.ip_address) userData.client_ip_address = conv.ip_address;
       if (conv.user_agent) userData.client_user_agent = conv.user_agent;
       
-      // Add location data
-      if (conv.city) userData.ct = [sha256Hash(conv.city)];
-      if (conv.region) userData.st = [sha256Hash(conv.region)];
-      if (conv.country_code) userData.country = [sha256Hash(conv.country_code.toLowerCase())];
+      // Add location data with proper async hashing
+      if (conv.city) userData.ct = [await sha256Hash(conv.city)];
+      if (conv.region) userData.st = [await sha256Hash(conv.region)];
+      if (conv.country_code) userData.country = [await sha256Hash(conv.country_code.toLowerCase())];
+
+      // Add external_id for better matching if session_id exists
+      if (conv.session_id) {
+        userData.external_id = [await sha256Hash(conv.session_id)];
+      }
 
       // Build custom_data
       const customData: Record<string, any> = {
@@ -166,9 +190,10 @@ serve(async (req) => {
         event_source_url: conv.page_url,
         action_source: 'website',
         user_data: userData,
-        custom_data: customData
+        custom_data: customData,
+        data_processing_options: [] // Required for compliance (empty = no restrictions)
       };
-    });
+    }));
 
     // Mode: Export JSON
     if (mode === 'export') {
