@@ -45,6 +45,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   const [currency, setCurrency] = useState<Currency>('BRL');
   const [locale, setLocale] = useState<ReportLocale>('pt-BR');
   const [calculationMode, setCalculationMode] = useState<'all' | 'goals'>('all');
+  const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
   const [style, setStyle] = useState<ReportStyle>({
     theme: 'modern',
     customColors: {
@@ -96,10 +97,10 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
     }
 
     // Validar metas se modo "goals"
-    if (calculationMode === 'goals' && activeGoals.length === 0) {
+    if (calculationMode === 'goals' && selectedGoalIds.length === 0) {
       toast({
-        title: "⚠️ Nenhuma meta configurada",
-        description: "Configure metas de conversão para usar este modo de cálculo.",
+        title: "⚠️ Nenhuma meta selecionada",
+        description: "Selecione pelo menos uma meta de conversão.",
         variant: "destructive"
       });
       return;
@@ -112,9 +113,13 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
     };
 
     const periodDays = period === 'all' ? -1 : parseInt(period);
+    const selectedGoals = calculationMode === 'goals' 
+      ? (goals || []).filter(g => selectedGoalIds.includes(g.id))
+      : goals || [];
+    
     await fetchReportData(siteId, periodDays, enableComparison, financialConfig, {
       useGoalsOnly: calculationMode === 'goals',
-      conversionGoals: goals || []
+      conversionGoals: selectedGoals
     });
     setShowPreview(true);
   };
@@ -448,27 +453,65 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
             </RadioGroup>
           </div>
 
-          {/* Metas configuradas (se modo goals) */}
+          {/* Seletor de metas (se modo goals) */}
           {calculationMode === 'goals' && (
-            <div className="p-4 bg-muted/50 rounded-lg border space-y-2">
-              <Label className="flex items-center gap-2">
-                <Target className="h-4 w-4" />
-                Metas configuradas ({activeGoals.length}):
-              </Label>
+            <div className="p-4 bg-muted/50 rounded-lg border space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Selecione as metas ({selectedGoalIds.length}/{activeGoals.length}):
+                </Label>
+                {activeGoals.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (selectedGoalIds.length === activeGoals.length) {
+                        setSelectedGoalIds([]);
+                      } else {
+                        setSelectedGoalIds(activeGoals.map(g => g.id));
+                      }
+                    }}
+                    className="text-xs h-7"
+                  >
+                    {selectedGoalIds.length === activeGoals.length ? 'Desmarcar todas' : 'Selecionar todas'}
+                  </Button>
+                )}
+              </div>
               {activeGoals.length > 0 ? (
-                <div className="space-y-1 max-h-32 overflow-y-auto">
+                <div className="space-y-2 max-h-40 overflow-y-auto">
                   {activeGoals.map(goal => (
-                    <div key={goal.id} className="flex justify-between text-sm py-1 border-b border-border/50 last:border-0">
-                      <span className="font-medium">{goal.goal_name}</span>
-                      <span className="text-green-600">
+                    <label 
+                      key={goal.id} 
+                      className="flex items-center justify-between p-2 rounded-md hover:bg-background/50 cursor-pointer border border-transparent hover:border-border transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Checkbox 
+                          checked={selectedGoalIds.includes(goal.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedGoalIds(prev => [...prev, goal.id]);
+                            } else {
+                              setSelectedGoalIds(prev => prev.filter(id => id !== goal.id));
+                            }
+                          }}
+                        />
+                        <span className="font-medium text-sm">{goal.goal_name}</span>
+                      </div>
+                      <span className="text-green-600 text-sm">
                         {goal.conversion_value ? `R$ ${goal.conversion_value.toFixed(2)}` : 'Sem valor'}
                       </span>
-                    </div>
+                    </label>
                   ))}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Nenhuma meta ativa configurada. Configure metas na aba "Metas de Conversão".
+                </p>
+              )}
+              {selectedGoalIds.length === 0 && activeGoals.length > 0 && (
+                <p className="text-xs text-amber-600">
+                  Selecione pelo menos uma meta para gerar o relatório
                 </p>
               )}
             </div>
