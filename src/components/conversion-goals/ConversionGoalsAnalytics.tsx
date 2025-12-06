@@ -14,7 +14,9 @@ import {
   Route,
   ChevronLeft,
   ChevronRight,
-  Search
+  Search,
+  Download,
+  Loader2
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +37,9 @@ import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { ConversionJourneyCard } from './ConversionJourneyCard';
+import { exportConversionsToExcel } from '@/utils/exportHelpers';
+import { toast } from 'sonner';
+import { formatPageName } from '@/lib/journey-utils';
 
 interface ConversionGoalsAnalyticsProps {
   siteId: string;
@@ -92,6 +97,7 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
   const [currentPage, setCurrentPage] = useState(1);
   const [journeyEventFilter, setJourneyEventFilter] = useState<string>('all');
   const [journeyCTASearch, setJourneyCTASearch] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
   const ITEMS_PER_PAGE = 10;
 
   // Filter conversions by selected goal, event type and CTA search
@@ -179,6 +185,85 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
   };
 
   const isLoading = goalsLoading || conversionsLoading;
+
+  // Export function with journey enrichment
+  const handleExportConversions = async () => {
+    if (!filteredConversions.length) {
+      toast.error('Nenhuma conversão para exportar');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // Fetch journey data for each conversion
+      const enrichedData = await Promise.all(
+        filteredConversions.map(async (conv) => {
+          // Try to get session data if session_id exists
+          let device = '-';
+          let city = '-';
+          let country = '-';
+          let referrer = '-';
+          let journeyPages = '-';
+          let totalDuration = 0;
+
+          if (conv.session_id) {
+            // Fetch all events from this session
+            const { data: sessionEvents } = await supabase
+              .from('rank_rent_conversions')
+              .select('page_url, event_type, created_at, metadata, referrer, city, country')
+              .eq('session_id', conv.session_id)
+              .order('created_at', { ascending: true });
+
+            if (sessionEvents && sessionEvents.length > 0) {
+              // Get device from metadata
+              const firstEvent = sessionEvents[0];
+              const metadata = firstEvent.metadata as Record<string, unknown> | null;
+              device = (metadata?.device as string) || '-';
+              city = firstEvent.city || '-';
+              country = firstEvent.country || '-';
+              referrer = firstEvent.referrer || '-';
+
+              // Build journey string from page_view events
+              const pageViews = sessionEvents.filter(e => e.event_type === 'page_view');
+              if (pageViews.length > 0) {
+                journeyPages = pageViews.map(p => formatPageName(p.page_url)).join(' → ');
+                
+                // Calculate duration
+                const firstTime = new Date(pageViews[0].created_at).getTime();
+                const lastTime = new Date(pageViews[pageViews.length - 1].created_at).getTime();
+                totalDuration = Math.round((lastTime - firstTime) / 1000);
+              }
+            }
+          }
+
+          return {
+            id: conv.id,
+            goal_name: conv.goal_name,
+            event_type: conv.event_type,
+            cta_text: conv.cta_text,
+            conversion_value: conv.conversion_value,
+            page_url: conv.page_url,
+            created_at: conv.created_at,
+            session_id: conv.session_id,
+            device,
+            city,
+            country,
+            referrer,
+            journey_pages: journeyPages,
+            total_duration_seconds: totalDuration || undefined,
+          };
+        })
+      );
+
+      exportConversionsToExcel(enrichedData);
+      toast.success(`${enrichedData.length} conversões exportadas com sucesso!`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Erro ao exportar conversões');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (goals.length === 0) {
     return null;
@@ -414,7 +499,22 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
                 <Route className="h-4 w-4" />
                 Jornadas de Conversão
               </h4>
-              <Badge variant="secondary">{filteredConversions.length} conversões</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{filteredConversions.length} conversões</Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportConversions}
+                  disabled={isExporting || filteredConversions.length === 0}
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  {isExporting ? 'Exportando...' : 'Exportar Excel'}
+                </Button>
+              </div>
             </div>
             
             {/* Filtros das Jornadas */}
