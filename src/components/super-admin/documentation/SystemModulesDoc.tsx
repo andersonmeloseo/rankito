@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Search, Zap, MessageSquare, FileText, CreditCard, Layers } from "lucide-react";
+import { Activity, Search, Zap, MessageSquare, FileText, CreditCard, Layers, Target } from "lucide-react";
 
 export const SystemModulesDoc = () => {
   return (
@@ -417,11 +417,106 @@ Scopes: webmasters + indexing`}
         </CardContent>
       </Card>
 
+      {/* Módulo de Tracking Avançado */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-red-600" />
+            8. Módulo de Tracking Avançado
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <h4 className="font-semibold mb-2">Metas de Conversão Personalizadas</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              Sistema de metas customizáveis para definir o que realmente é conversão
+            </p>
+            <ul className="text-sm space-y-1 text-muted-foreground">
+              <li>• <strong>cta_match:</strong> Match por texto de CTA (parcial ou exato)</li>
+              <li>• <strong>page_destination:</strong> Conversão por visita em URLs específicas</li>
+              <li>• <strong>url_pattern:</strong> Regex patterns para URLs</li>
+              <li>• <strong>combined:</strong> Combinação de múltiplos critérios</li>
+            </ul>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Badge variant="secondary">Valor monetário por conversão</Badge>
+              <Badge variant="secondary">CTAs auto-descobertos</Badge>
+              <Badge variant="secondary">Prioridade de match</Badge>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">Google Ads Offline Conversions</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              Export CSV compatível com Google Ads Data Manager
+            </p>
+            <ul className="text-sm space-y-1 text-muted-foreground">
+              <li>• GCLID tracking automático</li>
+              <li>• Enhanced Conversions (email/phone SHA256)</li>
+              <li>• Timezone e currency configuráveis</li>
+              <li>• Consent fields (LGPD/GDPR)</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">Meta Conversions API (CAPI)</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              Envio direto de conversões para Meta via Server-Side API
+            </p>
+            <ul className="text-sm space-y-1 text-muted-foreground">
+              <li>• fbclid, fbc, fbp tracking</li>
+              <li>• User data hashing (SHA256)</li>
+              <li>• Batch de até 1000 eventos</li>
+              <li>• Modo teste integrado</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">Dashboard de Campanhas</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              Gerenciamento de campanhas UTM vinculadas a metas
+            </p>
+            <ul className="text-sm space-y-1 text-muted-foreground">
+              <li>• Detecção automática de campanhas via UTMs</li>
+              <li>• Vínculo com metas de conversão</li>
+              <li>• Métricas por campanha (views, conversões, valor)</li>
+              <li>• Budget tracking</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">Controle de Acesso</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              Feature controlada por plano via has_advanced_tracking
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">Toggle no Super Admin</Badge>
+              <Badge variant="secondary">useFeatureAccess hook</Badge>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">Edge Functions</h4>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">export-google-ads-conversions</Badge>
+              <Badge variant="outline">export-meta-conversions</Badge>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">Tabelas Principais</h4>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">conversion_goals</Badge>
+              <Badge variant="outline">marketing_campaign_configs</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">
-            <strong>Total:</strong> 7 módulos principais integrados formando um sistema completo de gestão de 
-            Rank & Rent com analytics, indexação, CRM, relatórios, monetização e feedback de usuários.
+            <strong>Total:</strong> 8 módulos principais integrados formando um sistema completo de gestão de 
+            Rank & Rent com analytics, indexação, CRM, relatórios, monetização, feedback de usuários e tracking avançado para Google Ads e Meta.
           </p>
         </CardContent>
       </Card>
