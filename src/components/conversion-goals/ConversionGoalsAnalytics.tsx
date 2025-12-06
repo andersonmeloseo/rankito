@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { 
   Target, 
   TrendingUp, 
@@ -11,8 +12,9 @@ import {
   Calendar,
   Filter,
   Route,
-  ChevronDown,
-  ChevronUp
+  ChevronLeft,
+  ChevronRight,
+  Search
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,16 +88,50 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
     enabled: !!siteId && goals.length > 0,
   });
 
-  // State for journey section
-  const [showAllJourneys, setShowAllJourneys] = useState(false);
-  const INITIAL_JOURNEYS_COUNT = 5;
+  // State for journey section - paginação e filtros
+  const [currentPage, setCurrentPage] = useState(1);
+  const [journeyEventFilter, setJourneyEventFilter] = useState<string>('all');
+  const [journeyCTASearch, setJourneyCTASearch] = useState('');
+  const ITEMS_PER_PAGE = 10;
 
-  // Filter conversions by selected goal
+  // Filter conversions by selected goal, event type and CTA search
   const filteredConversions = useMemo(() => {
     if (!conversionsData) return [];
-    if (selectedGoalId === 'all') return conversionsData;
-    return conversionsData.filter(c => c.goal_id === selectedGoalId);
-  }, [conversionsData, selectedGoalId]);
+    let filtered = conversionsData;
+    
+    // Filter by goal
+    if (selectedGoalId !== 'all') {
+      filtered = filtered.filter(c => c.goal_id === selectedGoalId);
+    }
+    
+    // Filter by event type (for journeys)
+    if (journeyEventFilter !== 'all') {
+      filtered = filtered.filter(c => c.event_type === journeyEventFilter);
+    }
+    
+    // Filter by CTA text search
+    if (journeyCTASearch.trim()) {
+      const search = journeyCTASearch.toLowerCase();
+      filtered = filtered.filter(c => 
+        c.cta_text?.toLowerCase().includes(search) ||
+        c.goal_name?.toLowerCase().includes(search)
+      );
+    }
+    
+    return filtered;
+  }, [conversionsData, selectedGoalId, journeyEventFilter, journeyCTASearch]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredConversions.length / ITEMS_PER_PAGE);
+  const paginatedConversions = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredConversions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredConversions, currentPage]);
+
+  // Reset page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [selectedGoalId, journeyEventFilter, journeyCTASearch]);
 
   const analytics = useMemo(() => {
     if (!filteredConversions || filteredConversions.length === 0) {
@@ -371,9 +407,9 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
         )}
 
         {/* Jornadas de Conversão */}
-        {filteredConversions.length > 0 && (
+        {conversionsData && conversionsData.length > 0 && (
           <div className="space-y-4 pt-4 border-t">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <h4 className="font-medium flex items-center gap-2">
                 <Route className="h-4 w-4" />
                 Jornadas de Conversão
@@ -381,41 +417,86 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
               <Badge variant="secondary">{filteredConversions.length} conversões</Badge>
             </div>
             
-            <div className="space-y-2">
-              {(showAllJourneys ? filteredConversions : filteredConversions.slice(0, INITIAL_JOURNEYS_COUNT)).map((conversion) => (
-                <ConversionJourneyCard
-                  key={conversion.id}
-                  conversionId={conversion.id}
-                  goalName={conversion.goal_name || 'Meta'}
-                  conversionPage={conversion.page_url}
-                  conversionTime={conversion.created_at}
-                  sessionId={conversion.session_id}
-                  conversionValue={conversion.conversion_value ?? undefined}
-                  ctaText={conversion.cta_text}
-                  eventType={conversion.event_type}
+            {/* Filtros das Jornadas */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[200px] max-w-xs">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por CTA ou meta..."
+                  value={journeyCTASearch}
+                  onChange={(e) => setJourneyCTASearch(e.target.value)}
+                  className="pl-9 h-9"
                 />
-              ))}
+              </div>
+              
+              <Select value={journeyEventFilter} onValueChange={setJourneyEventFilter}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="whatsapp_click">WhatsApp</SelectItem>
+                  <SelectItem value="phone_click">Telefone</SelectItem>
+                  <SelectItem value="email_click">E-mail</SelectItem>
+                  <SelectItem value="form_submit">Formulário</SelectItem>
+                  <SelectItem value="button_click">Botão</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
-            {filteredConversions.length > INITIAL_JOURNEYS_COUNT && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAllJourneys(!showAllJourneys)}
-                className="w-full"
-              >
-                {showAllJourneys ? (
-                  <>
-                    <ChevronUp className="h-4 w-4 mr-2" />
-                    Mostrar menos
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4 mr-2" />
-                    Ver todas ({filteredConversions.length - INITIAL_JOURNEYS_COUNT} mais)
-                  </>
-                )}
-              </Button>
+            {/* Lista paginada */}
+            <div className="space-y-2">
+              {paginatedConversions.length > 0 ? (
+                paginatedConversions.map((conversion) => (
+                  <ConversionJourneyCard
+                    key={conversion.id}
+                    conversionId={conversion.id}
+                    goalName={conversion.goal_name || 'Meta'}
+                    conversionPage={conversion.page_url}
+                    conversionTime={conversion.created_at}
+                    sessionId={conversion.session_id}
+                    conversionValue={conversion.conversion_value ?? undefined}
+                    ctaText={conversion.cta_text}
+                    eventType={conversion.event_type}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <p>Nenhuma conversão encontrada com os filtros aplicados</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Paginação */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">
+                <span className="text-sm text-muted-foreground">
+                  Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredConversions.length)} de {filteredConversions.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Anterior
+                  </Button>
+                  <span className="text-sm px-3 py-1.5 bg-muted rounded-md">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Próxima
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         )}
