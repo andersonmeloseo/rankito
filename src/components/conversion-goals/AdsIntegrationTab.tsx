@@ -207,26 +207,24 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
 
   const getStatusIndicator = (count: number, label: string, type: 'google' | 'meta' | 'utm') => {
     const isActive = count > 0;
-    const colorClass = isActive 
-      ? 'bg-green-100 border-green-300 text-green-800' 
-      : 'bg-amber-50 border-amber-200 text-amber-700';
-    const iconColor = isActive ? 'text-green-500' : 'text-amber-500';
     
     return (
-      <div className={`flex flex-col items-center p-4 rounded-lg border-2 ${colorClass} transition-all`}>
-        <div className="flex items-center gap-2 mb-1">
-          {isActive ? (
-            <CheckCircle2 className={`h-5 w-5 ${iconColor}`} />
-          ) : (
-            <AlertCircle className={`h-5 w-5 ${iconColor}`} />
-          )}
-          <span className="font-medium">{label}</span>
-        </div>
-        <span className="text-2xl font-bold">{count}</span>
-        <span className="text-xs opacity-75">
-          {isActive ? 'conversões' : 'pendente'}
-        </span>
-      </div>
+      <Card className="shadow-card">
+        <CardContent className="p-4 flex flex-col items-center">
+          <div className="flex items-center gap-2 mb-1">
+            {isActive ? (
+              <CheckCircle2 className="h-5 w-5 text-success opacity-80" />
+            ) : (
+              <AlertCircle className="h-5 w-5 text-warning opacity-80" />
+            )}
+            <span className="font-medium text-foreground">{label}</span>
+          </div>
+          <span className="text-2xl font-bold text-foreground">{count}</span>
+          <span className="text-xs text-muted-foreground">
+            {isActive ? 'conversões' : 'pendente'}
+          </span>
+        </CardContent>
+      </Card>
     );
   };
 
