@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -7,35 +7,73 @@ import {
   TrendingUp, 
   DollarSign,
   BarChart3,
-  Activity
+  Activity,
+  Calendar,
+  Filter
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConversionGoals, ConversionGoal } from '@/hooks/useConversionGoals';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { DateRange } from 'react-day-picker';
+import { cn } from '@/lib/utils';
 
 interface ConversionGoalsAnalyticsProps {
   siteId: string;
 }
+
+type PeriodOption = '7' | '30' | '90' | 'custom';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
 export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsProps) => {
   const { goals, isLoading: goalsLoading } = useConversionGoals(siteId);
   
+  // Filter states
+  const [period, setPeriod] = useState<PeriodOption>('30');
+  const [selectedGoalId, setSelectedGoalId] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  
+  // Calculate date range based on period selection
+  const { startDate, endDate } = useMemo(() => {
+    const end = new Date();
+    let start = new Date();
+    
+    if (period === 'custom' && dateRange?.from) {
+      return {
+        startDate: dateRange.from,
+        endDate: dateRange.to || new Date()
+      };
+    }
+    
+    const days = parseInt(period);
+    start.setDate(start.getDate() - days);
+    return { startDate: start, endDate: end };
+  }, [period, dateRange]);
+  
   // Fetch conversions with goal_id for analytics
   const { data: conversionsData, isLoading: conversionsLoading } = useQuery({
-    queryKey: ['goal-conversions', siteId],
+    queryKey: ['goal-conversions', siteId, startDate.toISOString(), endDate.toISOString()],
     queryFn: async () => {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
       const { data, error } = await supabase
         .from('rank_rent_conversions')
         .select('goal_id, goal_name, conversion_value, created_at')
         .eq('site_id', siteId)
         .not('goal_id', 'is', null)
-        .gte('created_at', thirtyDaysAgo.toISOString())
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -44,22 +82,30 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
     enabled: !!siteId && goals.length > 0,
   });
 
+  // Filter conversions by selected goal
+  const filteredConversions = useMemo(() => {
+    if (!conversionsData) return [];
+    if (selectedGoalId === 'all') return conversionsData;
+    return conversionsData.filter(c => c.goal_id === selectedGoalId);
+  }, [conversionsData, selectedGoalId]);
+
   const analytics = useMemo(() => {
-    if (!conversionsData || conversionsData.length === 0) {
+    if (!filteredConversions || filteredConversions.length === 0) {
       return {
         totalConversions: 0,
         totalValue: 0,
-        byGoal: [] as { name: string; conversions: number; value: number }[],
+        byGoal: [] as { name: string; goalId: string | null; conversions: number; value: number }[],
         topGoal: null as { name: string; conversions: number } | null,
       };
     }
 
-    const byGoalMap = new Map<string, { conversions: number; value: number }>();
+    const byGoalMap = new Map<string, { goalId: string | null; conversions: number; value: number }>();
     
-    conversionsData.forEach((conv) => {
+    filteredConversions.forEach((conv) => {
       const goalName = conv.goal_name || 'Sem meta';
-      const current = byGoalMap.get(goalName) || { conversions: 0, value: 0 };
+      const current = byGoalMap.get(goalName) || { goalId: conv.goal_id, conversions: 0, value: 0 };
       byGoalMap.set(goalName, {
+        goalId: conv.goal_id,
         conversions: current.conversions + 1,
         value: current.value + (conv.conversion_value || 0),
       });
@@ -72,12 +118,21 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
     const topGoal = byGoal.length > 0 ? { name: byGoal[0].name, conversions: byGoal[0].conversions } : null;
 
     return {
-      totalConversions: conversionsData.length,
-      totalValue: conversionsData.reduce((sum, c) => sum + (c.conversion_value || 0), 0),
+      totalConversions: filteredConversions.length,
+      totalValue: filteredConversions.reduce((sum, c) => sum + (c.conversion_value || 0), 0),
       byGoal,
       topGoal,
     };
-  }, [conversionsData]);
+  }, [filteredConversions]);
+  
+  const getPeriodLabel = () => {
+    if (period === 'custom' && dateRange?.from) {
+      const from = format(dateRange.from, 'dd/MM', { locale: ptBR });
+      const to = dateRange.to ? format(dateRange.to, 'dd/MM', { locale: ptBR }) : 'hoje';
+      return `${from} - ${to}`;
+    }
+    return `Últimos ${period} dias`;
+  };
 
   const isLoading = goalsLoading || conversionsLoading;
 
@@ -108,13 +163,75 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5" />
-          Performance das Metas
-        </CardTitle>
-        <CardDescription>
-          Últimos 30 dias de conversões por meta configurada
-        </CardDescription>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Performance das Metas
+            </CardTitle>
+            <CardDescription>
+              {getPeriodLabel()} de conversões por meta configurada
+            </CardDescription>
+          </div>
+          
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={period} onValueChange={(v) => setPeriod(v as PeriodOption)}>
+              <SelectTrigger className="w-[130px] h-9">
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">7 dias</SelectItem>
+                <SelectItem value="30">30 dias</SelectItem>
+                <SelectItem value="90">90 dias</SelectItem>
+                <SelectItem value="custom">Período</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {period === 'custom' && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    {dateRange?.from ? (
+                      <>
+                        {format(dateRange.from, 'dd/MM', { locale: ptBR })}
+                        {dateRange.to && ` - ${format(dateRange.to, 'dd/MM', { locale: ptBR })}`}
+                      </>
+                    ) : (
+                      'Selecionar'
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <CalendarComponent
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                    locale={ptBR}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+            
+            <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
+              <SelectTrigger className="w-[160px] h-9">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Todas metas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas metas</SelectItem>
+                {goals.map((goal) => (
+                  <SelectItem key={goal.id} value={goal.id}>
+                    {goal.goal_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary Cards */}
