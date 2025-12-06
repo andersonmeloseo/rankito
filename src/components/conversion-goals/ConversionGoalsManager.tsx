@@ -452,7 +452,7 @@ export const ConversionGoalsManager = ({ siteId, siteUrl }: ConversionGoalsManag
         <AdsIntegrationTab 
           siteId={siteId}
           siteUrl={siteUrl}
-          goals={goals.map(g => ({ id: g.id, goal_name: g.goal_name, is_active: g.is_active }))} 
+          goals={goals} 
         />
       </TabsContent>
     </Tabs>

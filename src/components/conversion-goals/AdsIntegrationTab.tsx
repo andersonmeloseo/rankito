@@ -38,11 +38,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addDays, format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { CampaignManager } from './CampaignManager';
+import { ConversionGoal } from '@/hooks/useConversionGoals';
 
 interface AdsIntegrationTabProps {
   siteId: string;
   siteUrl?: string;
-  goals: Array<{ id: string; goal_name: string; is_active: boolean }>;
+  goals: ConversionGoal[];
 }
 
 export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabProps) {
@@ -328,87 +330,8 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
         </CardContent>
       </Card>
 
-      {/* TABELA DE CAMPANHAS */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg">Performance por Campanha</CardTitle>
-              <CardDescription>Análise de resultados por fonte de tráfego</CardDescription>
-            </div>
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-              {[7, 30, 90].map((p) => (
-                <Button
-                  key={p}
-                  size="sm"
-                  variant={period === p ? 'default' : 'ghost'}
-                  onClick={() => setPeriod(p as 7 | 30 | 90)}
-                  className="text-xs px-3"
-                >
-                  {p}d
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {campaignsLoading ? (
-            <div className="space-y-2">
-              {Array(5).fill(0).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : campaigns && campaigns.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Campanha</TableHead>
-                    <TableHead>Fonte</TableHead>
-                    <TableHead className="text-right">Visitas</TableHead>
-                    <TableHead className="text-right">Conversões</TableHead>
-                    <TableHead className="text-right">Taxa Conv.</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {campaigns.map((campaign, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell className="font-medium">
-                        {campaign.utm_campaign || '(direto)'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {campaign.source === 'google' && '🔵 Google'}
-                          {campaign.source === 'meta' && '🟣 Meta'}
-                          {campaign.source === 'organic' && '⚪ Orgânico'}
-                          {!campaign.source && '⚪ Direto'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{campaign.visits}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant={campaign.conversions > 0 ? 'default' : 'secondary'} className="text-xs">
-                          {campaign.conversions}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className={campaign.conversion_rate > 2 ? 'text-green-600 font-medium' : ''}>
-                          {campaign.conversion_rate.toFixed(1)}%
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>Nenhuma campanha detectada nos últimos {period} dias</p>
-              <p className="text-sm mt-1">Use UTM parameters ou ads com gclid/fbclid</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* GERENCIADOR DE CAMPANHAS */}
+      <CampaignManager siteId={siteId} goals={goals} />
 
       {/* EXPORTAÇÃO - Accordion Colapsável */}
       <Accordion type="single" collapsible className="space-y-2">
