@@ -217,7 +217,7 @@ export const ConversionJourneyCard = ({
                     <span>
                       Usuário entrou em <strong className="text-foreground">{formatPageName(journey.visits[0].page_url)}</strong>, 
                       navegou por {journey.visits.length - 1} página{journey.visits.length > 2 ? 's' : ''} e 
-                      converteu em <strong className="text-orange-600">{formatPageName(conversionPage)}</strong>
+                      converteu em <strong className="text-green-600">{formatPageName(conversionPage)}</strong>
                     </span>
                   )}
                 </div>
@@ -240,8 +240,8 @@ export const ConversionJourneyCard = ({
                     let label = "";
 
                     if (isConversionPage) {
-                      // CONVERSÃO - Destaque máximo em laranja
-                      badgeClass += "bg-orange-100 text-orange-800 border-orange-400 border-2 shadow-sm";
+                      // CONVERSÃO - Destaque máximo em verde
+                      badgeClass += "bg-green-100 text-green-800 border-green-500 border-2 shadow-sm";
                       icon = "🎯";
                       label = "CONVERTEU";
                     } else if (isEntry) {
@@ -283,17 +283,17 @@ export const ConversionJourneyCard = ({
 
               {/* CTA que converteu - Destacado */}
               {ctaText && (
-                <div className="flex items-center gap-2 text-sm bg-orange-50 p-3 rounded-lg border-2 border-orange-200">
-                  <Target className="h-5 w-5 text-orange-500 flex-shrink-0" />
+                <div className="flex items-center gap-2 text-sm bg-green-50 p-3 rounded-lg border-2 border-green-200">
+                  <Target className="h-5 w-5 text-green-600 flex-shrink-0" />
                   <div className="flex flex-col">
-                    <span className="text-[10px] uppercase text-orange-500 font-semibold tracking-wide">
+                    <span className="text-[10px] uppercase text-green-600 font-semibold tracking-wide">
                       CTA que converteu
                     </span>
-                    <span className="font-semibold text-orange-800">
+                    <span className="font-semibold text-green-800">
                       "{ctaText}"
                     </span>
                   </div>
-                  <Badge className="ml-auto bg-orange-500 text-white text-xs">
+                  <Badge className="ml-auto bg-green-600 text-white text-xs">
                     {formatPageName(conversionPage)}
                   </Badge>
                 </div>
