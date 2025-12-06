@@ -178,7 +178,7 @@ export const ConversionJourneyCard = ({
             <div className="flex items-center gap-1">
               <Hash className="h-3 w-3" />
               <span className="font-mono">
-                Session: {sessionId ? `${sessionId.slice(0, 8)}...` : 'N/A'}
+                {sessionId || 'N/A'}
               </span>
             </div>
             {ipAddress && (
@@ -237,46 +237,13 @@ export const ConversionJourneyCard = ({
                   Conversão direta (1 página)
                 </Badge>
               )}
-
-              {/* Info da sessão */}
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  {getDeviceIcon(journey.session.device)}
-                  <span>{journey.session.device || 'Desktop'}</span>
+              {/* Duração até conversão */}
+              {journey.session.total_duration_seconds && journey.session.total_duration_seconds > 0 && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  <span>Até conversão: {formatDuration(journey.session.total_duration_seconds)}</span>
                 </div>
-                {(journey.session.city || journey.session.country) && (
-                  <>
-                    <span>•</span>
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      <span>
-                        {[journey.session.city, journey.session.country].filter(Boolean).join(', ')}
-                      </span>
-                    </div>
-                  </>
-                )}
-                {(() => {
-                  const source = getSourceInfo(journey.session.referrer);
-                  return (
-                    <>
-                      <span>•</span>
-                      <div className="flex items-center gap-1">
-                        <span>{source.icon}</span>
-                        <span>{source.label}</span>
-                      </div>
-                    </>
-                  );
-                })()}
-                {journey.session.total_duration_seconds && journey.session.total_duration_seconds > 0 && (
-                  <>
-                    <span>•</span>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      <span>Até conversão: {formatDuration(journey.session.total_duration_seconds)}</span>
-                    </div>
-                  </>
-                )}
-              </div>
+              )}
 
               {/* Resumo textual da jornada */}
               {journey.visits.length > 0 && (
