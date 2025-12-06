@@ -2115,6 +2115,173 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_campaigns_v2: {
+        Row: {
+          budget_spent: number | null
+          budget_total: number | null
+          channel: string
+          conversions: number | null
+          cpa: number | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          leads: number | null
+          metrics: Json | null
+          name: string
+          roi: number | null
+          start_date: string | null
+          status: string
+          strategy_id: string | null
+          updated_at: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          budget_spent?: number | null
+          budget_total?: number | null
+          channel: string
+          conversions?: number | null
+          cpa?: number | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          leads?: number | null
+          metrics?: Json | null
+          name: string
+          roi?: number | null
+          start_date?: string | null
+          status?: string
+          strategy_id?: string | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          budget_spent?: number | null
+          budget_total?: number | null
+          channel?: string
+          conversions?: number | null
+          cpa?: number | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          leads?: number | null
+          metrics?: Json | null
+          name?: string
+          roi?: number | null
+          start_date?: string | null
+          status?: string
+          strategy_id?: string | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaigns_v2_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_content_calendar: {
+        Row: {
+          channel: string | null
+          created_at: string | null
+          id: string
+          metrics: Json | null
+          notes: string | null
+          published_date: string | null
+          scheduled_date: string | null
+          status: string
+          target_keywords: string[] | null
+          title: string
+          type: string
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string | null
+          id?: string
+          metrics?: Json | null
+          notes?: string | null
+          published_date?: string | null
+          scheduled_date?: string | null
+          status?: string
+          target_keywords?: string[] | null
+          title: string
+          type?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string | null
+          id?: string
+          metrics?: Json | null
+          notes?: string | null
+          published_date?: string | null
+          scheduled_date?: string | null
+          status?: string
+          target_keywords?: string[] | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
+      marketing_goals: {
+        Row: {
+          actual_conversions: number | null
+          actual_leads: number | null
+          actual_revenue: number | null
+          created_at: string | null
+          id: string
+          month: number
+          notes: string | null
+          target_conversions: number | null
+          target_leads: number | null
+          target_revenue: number | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          actual_conversions?: number | null
+          actual_leads?: number | null
+          actual_revenue?: number | null
+          created_at?: string | null
+          id?: string
+          month: number
+          notes?: string | null
+          target_conversions?: number | null
+          target_leads?: number | null
+          target_revenue?: number | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          actual_conversions?: number | null
+          actual_leads?: number | null
+          actual_revenue?: number | null
+          created_at?: string | null
+          id?: string
+          month?: number
+          notes?: string | null
+          target_conversions?: number | null
+          target_leads?: number | null
+          target_revenue?: number | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       marketing_metrics: {
         Row: {
           campaign_id: string | null
@@ -2155,6 +2322,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      marketing_strategies: {
+        Row: {
+          budget_monthly: number | null
+          channel: string
+          created_at: string | null
+          end_date: string | null
+          id: string
+          kpis: Json | null
+          learnings: string | null
+          name: string
+          notes: string | null
+          priority: number | null
+          responsible: string | null
+          start_date: string | null
+          status: string
+          target_conversions: number | null
+          target_leads: number | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          budget_monthly?: number | null
+          channel: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          kpis?: Json | null
+          learnings?: string | null
+          name: string
+          notes?: string | null
+          priority?: number | null
+          responsible?: string | null
+          start_date?: string | null
+          status?: string
+          target_conversions?: number | null
+          target_leads?: number | null
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          budget_monthly?: number | null
+          channel?: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          kpis?: Json | null
+          learnings?: string | null
+          name?: string
+          notes?: string | null
+          priority?: number | null
+          responsible?: string | null
+          start_date?: string | null
+          status?: string
+          target_conversions?: number | null
+          target_leads?: number | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       product_backlog: {
         Row: {
