@@ -38,6 +38,7 @@ export interface ConversionJourneyData {
   session: SessionData | null;
   visits: PageVisit[];
   clicks: ClickEvent[];
+  isPartial: boolean;
 }
 
 export const useConversionJourney = (sessionId: string | null) => {
@@ -45,23 +46,26 @@ export const useConversionJourney = (sessionId: string | null) => {
     queryKey: ['conversion-journey', sessionId],
     queryFn: async (): Promise<ConversionJourneyData> => {
       if (!sessionId) {
-        return { session: null, visits: [], clicks: [] };
+        return { session: null, visits: [], clicks: [], isPartial: false };
       }
 
-      // Buscar sessão pelo session_id (string)
-      const { data: session, error: sessionError } = await supabase
+      // Buscar sessão pelo session_id (string) - pegar a mais recente em caso de duplicatas
+      const { data: sessions, error: sessionError } = await supabase
         .from('rank_rent_sessions')
         .select('*')
         .eq('session_id', sessionId)
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (sessionError) {
         console.error('Error fetching session:', sessionError);
-        return { session: null, visits: [], clicks: [] };
+        return { session: null, visits: [], clicks: [], isPartial: false };
       }
 
+      const session = sessions?.[0] || null;
+
       if (!session) {
-        return { session: null, visits: [], clicks: [] };
+        return { session: null, visits: [], clicks: [], isPartial: false };
       }
 
       // Buscar page visits usando o ID da sessão (UUID)
@@ -87,10 +91,28 @@ export const useConversionJourney = (sessionId: string | null) => {
         console.error('Error fetching clicks:', clicksError);
       }
 
+      // Se não há visits, criar jornada mínima baseada na sessão
+      let finalVisits = visits || [];
+      let isPartial = false;
+
+      if (finalVisits.length === 0 && session.entry_page_url) {
+        isPartial = true;
+        finalVisits = [{
+          id: 'fallback-entry',
+          page_url: session.entry_page_url,
+          page_title: null,
+          sequence_number: 1,
+          entry_time: session.entry_time,
+          exit_time: session.exit_time,
+          time_spent_seconds: session.total_duration_seconds
+        }];
+      }
+
       return {
         session,
-        visits: visits || [],
-        clicks: clicks || []
+        visits: finalVisits,
+        clicks: clicks || [],
+        isPartial
       };
     },
     enabled: !!sessionId,

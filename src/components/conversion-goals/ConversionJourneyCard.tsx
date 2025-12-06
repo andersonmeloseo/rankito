@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, MessageCircle, Phone, Mail, MousePointer, FileText, Clock, MapPin, Monitor, Smartphone, Tablet } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageCircle, Phone, Mail, MousePointer, FileText, Clock, MapPin, Monitor, Smartphone, Tablet, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -137,6 +137,14 @@ export const ConversionJourneyCard = ({
             </p>
           ) : (
             <>
+              {/* Indicador de jornada parcial */}
+              {journey.isPartial && (
+                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
+                  <Info className="w-3 h-3 mr-1" />
+                  Jornada parcial
+                </Badge>
+              )}
+
               {/* Info da sessão */}
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
