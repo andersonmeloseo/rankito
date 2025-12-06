@@ -31,7 +31,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -61,6 +61,7 @@ interface SortState {
 
 export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUrls, setSelectedUrls] = useState<Array<{id: string, url: string}>>([]);
   const [urlsSort, setUrlsSort] = useState<SortState>({ field: 'last_seen_at', direction: 'desc' });
@@ -77,7 +78,8 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
 
   const pageSize = 100;
 
-  const { urls, isLoading, totalCount, realTotalCount } = useGSCDiscoveredUrls(siteId);
+  // Passa searchTerm para filtro no servidor (só busca com 2+ caracteres)
+  const { urls, isLoading, totalCount, realTotalCount } = useGSCDiscoveredUrls(siteId, deferredSearchTerm.length >= 2 ? deferredSearchTerm : '');
 
   const { validationStats, retryStats, inspectionStats } = useGSCMonitoring(siteId);
 

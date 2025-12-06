@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const useGSCDiscoveredUrls = (siteId: string) => {
+export const useGSCDiscoveredUrls = (siteId: string, searchTerm: string = '') => {
   const queryClient = useQueryClient();
 
   // Query separada para contagem total real do banco
@@ -20,9 +20,9 @@ export const useGSCDiscoveredUrls = (siteId: string) => {
   });
 
   const { data: urls, isLoading } = useQuery({
-    queryKey: ['gsc-discovered-urls', siteId],
+    queryKey: ['gsc-discovered-urls', siteId, searchTerm],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('gsc_discovered_urls')
         .select(`
           *,
@@ -38,15 +38,21 @@ export const useGSCDiscoveredUrls = (siteId: string) => {
           google_inspection_data
         `)
         .eq('site_id', siteId)
-        .order('last_seen_at', { ascending: false })
-        .range(0, 99999);
+        .order('last_seen_at', { ascending: false });
+
+      // Filtro no servidor se searchTerm existir
+      if (searchTerm && searchTerm.length >= 2) {
+        query = query.ilike('url', `%${searchTerm}%`);
+      }
+
+      // Limitar a 5000 para performance
+      const { data, error } = await query.range(0, 4999);
 
       if (error) throw error;
       return data;
     },
     enabled: !!siteId,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 30000, // 30s cache
   });
 
   const updateUrlStatus = useMutation({
