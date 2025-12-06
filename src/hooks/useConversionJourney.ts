@@ -32,6 +32,7 @@ export interface ConversionJourneyData {
     device: string | null;
     city: string | null;
     country: string | null;
+    referrer: string | null;
   } | null;
   visits: PageVisit[];
   clicks: ClickEvent[];
@@ -50,7 +51,7 @@ export const useConversionJourney = (sessionId: string | null) => {
       // Isso inclui page_view, page_exit e cliques
       const { data: allEvents, error: eventsError } = await supabase
         .from('rank_rent_conversions')
-        .select('id, page_url, page_path, event_type, created_at, sequence_number, time_spent_seconds, cta_text, goal_name, city, country, metadata')
+        .select('id, page_url, page_path, event_type, created_at, sequence_number, time_spent_seconds, cta_text, goal_name, city, country, metadata, referrer')
         .eq('session_id', sessionId)
         .order('sequence_number', { ascending: true });
 
@@ -139,7 +140,8 @@ export const useConversionJourney = (sessionId: string | null) => {
         pages_visited: pageViewEvents.length,
         device: deviceFromMetadata,
         city: firstEvent.city,
-        country: firstEvent.country
+        country: firstEvent.country,
+        referrer: firstEvent.referrer || (firstEvent.metadata as any)?.referrer || null
       };
 
       // Verificar se é jornada parcial (apenas 1 página ou sem page_view)
