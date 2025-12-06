@@ -30,7 +30,7 @@ serve(async (req) => {
     // Build query for conversions with gclid
     let query = supabase
       .from('rank_rent_conversions')
-      .select('id, created_at, event_type, gclid, conversion_value, cta_text, page_url, matched_goal_id')
+      .select('id, created_at, event_type, gclid, conversion_value, cta_text, page_url')
       .eq('site_id', siteId)
       .not('gclid', 'is', null)
       .order('created_at', { ascending: false });
@@ -41,9 +41,6 @@ serve(async (req) => {
     if (endDate) {
       query = query.lte('created_at', endDate);
     }
-    if (goalIds && goalIds.length > 0) {
-      query = query.in('matched_goal_id', goalIds);
-    }
 
     const { data: conversions, error } = await query;
 
@@ -53,22 +50,6 @@ serve(async (req) => {
     }
 
     console.log(`[export-google-ads] Found ${conversions?.length || 0} conversions with gclid`);
-
-    // Fetch goal names for mapping
-    let goalNames: Record<string, string> = {};
-    if (conversions && conversions.length > 0) {
-      const uniqueGoalIds = [...new Set(conversions.map(c => c.matched_goal_id).filter(Boolean))];
-      if (uniqueGoalIds.length > 0) {
-        const { data: goals } = await supabase
-          .from('conversion_goals')
-          .select('id, goal_name')
-          .in('id', uniqueGoalIds);
-        
-        if (goals) {
-          goalNames = Object.fromEntries(goals.map(g => [g.id, g.goal_name]));
-        }
-      }
-    }
 
     // Generate CSV in Google Ads Offline Conversions format
     // Required columns: Google Click ID, Conversion Name, Conversion Time, Conversion Value, Conversion Currency
@@ -84,11 +65,9 @@ serve(async (req) => {
       // Format timestamp for Google Ads (ISO 8601 with timezone)
       const conversionTime = new Date(conv.created_at).toISOString();
       
-      // Determine conversion name
+      // Determine conversion name from event type
       let conversionName = 'Rankito Conversion';
-      if (conv.matched_goal_id && goalNames[conv.matched_goal_id]) {
-        conversionName = goalNames[conv.matched_goal_id];
-      } else if (conv.event_type) {
+      if (conv.event_type) {
         const eventTypeMap: Record<string, string> = {
           'whatsapp_click': 'WhatsApp Click',
           'phone_click': 'Phone Call Click',
