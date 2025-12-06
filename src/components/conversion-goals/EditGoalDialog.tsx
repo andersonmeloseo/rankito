@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
 import { CTASelector } from './CTASelector';
-import { useConversionGoals, ConversionGoal } from '@/hooks/useConversionGoals';
-import { MousePointer, FileText, Link, Layers, Loader2 } from 'lucide-react';
+import { useConversionGoals, ConversionGoal, GoalType } from '@/hooks/useConversionGoals';
+import { MousePointer, FileText, Link, Layers, Loader2, ArrowDown, Clock } from 'lucide-react';
 
 interface EditGoalDialogProps {
   open: boolean;
@@ -22,8 +23,6 @@ interface EditGoalDialogProps {
   siteId: string;
   goal: ConversionGoal;
 }
-
-type GoalType = 'cta_match' | 'page_destination' | 'url_pattern' | 'combined';
 
 export const EditGoalDialog = ({ open, onOpenChange, siteId, goal }: EditGoalDialogProps) => {
   const { updateGoal } = useConversionGoals(siteId);
@@ -43,6 +42,12 @@ export const EditGoalDialog = ({ open, onOpenChange, siteId, goal }: EditGoalDia
   // URL pattern fields
   const [urlPatterns, setUrlPatterns] = useState('');
 
+  // Scroll depth fields
+  const [minScrollDepth, setMinScrollDepth] = useState<number>(75);
+
+  // Time on page fields
+  const [minTimeSeconds, setMinTimeSeconds] = useState<number>(60);
+
   // Populate form when goal changes or dialog opens
   useEffect(() => {
     if (open && goal) {
@@ -54,6 +59,8 @@ export const EditGoalDialog = ({ open, onOpenChange, siteId, goal }: EditGoalDia
       setCtaPatterns((goal.cta_patterns || []).join('\n'));
       setPageUrls((goal.page_urls || []).join('\n'));
       setUrlPatterns((goal.url_patterns || []).join('\n'));
+      setMinScrollDepth(goal.min_scroll_depth || 75);
+      setMinTimeSeconds(goal.min_time_seconds || 60);
     }
   }, [open, goal]);
 
@@ -97,6 +104,18 @@ export const EditGoalDialog = ({ open, onOpenChange, siteId, goal }: EditGoalDia
       updates.url_patterns = [];
     }
 
+    if (goalType === 'scroll_depth') {
+      updates.min_scroll_depth = minScrollDepth;
+    } else {
+      updates.min_scroll_depth = null;
+    }
+
+    if (goalType === 'time_on_page') {
+      updates.min_time_seconds = minTimeSeconds;
+    } else {
+      updates.min_time_seconds = null;
+    }
+
     await updateGoal.mutateAsync(updates);
     onOpenChange(false);
   };
@@ -125,7 +144,7 @@ export const EditGoalDialog = ({ open, onOpenChange, siteId, goal }: EditGoalDia
 
           {/* Goal Type Tabs */}
           <Tabs value={goalType} onValueChange={(v) => setGoalType(v as GoalType)}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="cta_match" className="flex items-center gap-1">
                 <MousePointer className="h-3 w-3" />
                 <span className="hidden sm:inline">CTA</span>
@@ -138,9 +157,17 @@ export const EditGoalDialog = ({ open, onOpenChange, siteId, goal }: EditGoalDia
                 <Link className="h-3 w-3" />
                 <span className="hidden sm:inline">URL</span>
               </TabsTrigger>
+              <TabsTrigger value="scroll_depth" className="flex items-center gap-1">
+                <ArrowDown className="h-3 w-3" />
+                <span className="hidden sm:inline">Scroll</span>
+              </TabsTrigger>
+              <TabsTrigger value="time_on_page" className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                <span className="hidden sm:inline">Tempo</span>
+              </TabsTrigger>
               <TabsTrigger value="combined" className="flex items-center gap-1">
                 <Layers className="h-3 w-3" />
-                <span className="hidden sm:inline">Combinado</span>
+                <span className="hidden sm:inline">Combo</span>
               </TabsTrigger>
             </TabsList>
 
@@ -201,6 +228,84 @@ export const EditGoalDialog = ({ open, onOpenChange, siteId, goal }: EditGoalDia
                 />
                 <p className="text-xs text-muted-foreground">
                   Um padrão por linha. Detecta cliques em links que contenham esse texto.
+                </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="scroll_depth" className="space-y-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                Conversão quando o visitante rolar a página até uma determinada profundidade. Identifica usuários que leram o conteúdo completo.
+              </p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Profundidade Mínima de Scroll</Label>
+                  <div className="flex items-center gap-4">
+                    <Slider
+                      value={[minScrollDepth]}
+                      onValueChange={(v) => setMinScrollDepth(v[0])}
+                      min={25}
+                      max={100}
+                      step={25}
+                      className="flex-1"
+                    />
+                    <span className="text-lg font-semibold w-16 text-right">{minScrollDepth}%</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[25, 50, 75, 100].map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={minScrollDepth === value ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setMinScrollDepth(value)}
+                    >
+                      {value}%
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  <strong>25%:</strong> Início da página | <strong>50%:</strong> Metade | <strong>75%:</strong> Maior parte | <strong>100%:</strong> Final completo
+                </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="time_on_page" className="space-y-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                Conversão quando o visitante permanecer na página por um tempo mínimo. Identifica usuários engajados com o conteúdo.
+              </p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Tempo Mínimo na Página (segundos)</Label>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="number"
+                      min={10}
+                      max={600}
+                      value={minTimeSeconds}
+                      onChange={(e) => setMinTimeSeconds(parseInt(e.target.value) || 60)}
+                      className="w-24"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      = {Math.floor(minTimeSeconds / 60)}m {minTimeSeconds % 60}s
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[30, 60, 120, 180].map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={minTimeSeconds === value ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setMinTimeSeconds(value)}
+                    >
+                      {value >= 60 ? `${value / 60}min` : `${value}s`}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Tempo recomendado: 60-120 segundos para artigos, 30-60 segundos para landing pages.
                 </p>
               </div>
             </TabsContent>

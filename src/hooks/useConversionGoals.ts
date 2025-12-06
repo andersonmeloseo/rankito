@@ -2,12 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+export type GoalType = 'cta_match' | 'page_destination' | 'url_pattern' | 'combined' | 'scroll_depth' | 'time_on_page';
+
 export interface ConversionGoal {
   id: string;
   site_id: string;
   user_id: string;
   goal_name: string;
-  goal_type: 'cta_match' | 'page_destination' | 'url_pattern' | 'combined';
+  goal_type: GoalType;
   cta_patterns: string[];
   cta_exact_matches: string[];
   page_urls: string[];
@@ -15,6 +17,8 @@ export interface ConversionGoal {
   conversion_value: number;
   priority: number;
   is_active: boolean;
+  min_scroll_depth: number | null;
+  min_time_seconds: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,7 +26,7 @@ export interface ConversionGoal {
 export interface CreateGoalInput {
   site_id: string;
   goal_name: string;
-  goal_type: 'cta_match' | 'page_destination' | 'url_pattern' | 'combined';
+  goal_type: GoalType;
   cta_patterns?: string[];
   cta_exact_matches?: string[];
   page_urls?: string[];
@@ -30,6 +34,8 @@ export interface CreateGoalInput {
   conversion_value?: number;
   priority?: number;
   is_active?: boolean;
+  min_scroll_depth?: number;
+  min_time_seconds?: number;
 }
 
 export const useConversionGoals = (siteId: string) => {

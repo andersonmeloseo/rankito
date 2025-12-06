@@ -23,7 +23,9 @@ import {
   Pencil,
   Megaphone,
   Lock,
-  Sparkles
+  Sparkles,
+  ArrowDown,
+  Clock
 } from 'lucide-react';
 import {
   Select,
@@ -71,6 +73,10 @@ const getGoalTypeIcon = (type: string) => {
       return <LinkIcon className="h-4 w-4" />;
     case 'combined':
       return <Layers className="h-4 w-4" />;
+    case 'scroll_depth':
+      return <ArrowDown className="h-4 w-4" />;
+    case 'time_on_page':
+      return <Clock className="h-4 w-4" />;
     default:
       return <Target className="h-4 w-4" />;
   }
@@ -86,6 +92,10 @@ const getGoalTypeLabel = (type: string) => {
       return 'Padrão URL';
     case 'combined':
       return 'Combinado';
+    case 'scroll_depth':
+      return 'Scroll Depth';
+    case 'time_on_page':
+      return 'Tempo na Página';
     default:
       return type;
   }
@@ -118,6 +128,12 @@ const GoalCard = ({
     }
     if (goal.url_patterns?.length > 0) {
       parts.push(`${goal.url_patterns.length} padrão(ões) URL`);
+    }
+    if (goal.min_scroll_depth) {
+      parts.push(`Scroll ≥${goal.min_scroll_depth}%`);
+    }
+    if (goal.min_time_seconds) {
+      parts.push(`Tempo ≥${goal.min_time_seconds}s`);
     }
     
     return parts.join(' • ') || 'Nenhum critério configurado';
@@ -220,7 +236,7 @@ const GoalCard = ({
   );
 };
 
-type GoalTypeFilter = 'all' | 'cta_match' | 'page_destination' | 'url_pattern' | 'combined';
+type GoalTypeFilter = 'all' | 'cta_match' | 'page_destination' | 'url_pattern' | 'combined' | 'scroll_depth' | 'time_on_page';
 type StatusFilter = 'all' | 'active' | 'inactive';
 
 export const ConversionGoalsManager = ({ siteId, siteUrl }: ConversionGoalsManagerProps) => {
@@ -419,6 +435,8 @@ export const ConversionGoalsManager = ({ siteId, siteUrl }: ConversionGoalsManag
                     <SelectItem value="page_destination">Página Destino</SelectItem>
                     <SelectItem value="url_pattern">Padrão URL</SelectItem>
                     <SelectItem value="combined">Combinado</SelectItem>
+                    <SelectItem value="scroll_depth">Scroll Depth</SelectItem>
+                    <SelectItem value="time_on_page">Tempo na Página</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
