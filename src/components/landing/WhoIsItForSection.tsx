@@ -1,4 +1,4 @@
-import { Building2, Users, Target, ShoppingCart, Briefcase } from "lucide-react";
+import { Building2, Users, Target, ShoppingCart, Briefcase, Megaphone } from "lucide-react";
 import { useLandingTranslation } from "@/hooks/useLandingTranslation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,14 +25,19 @@ export const WhoIsItForSection = () => {
       ...t.whoIsItFor.profiles[2],
     },
     {
+      icon: Megaphone,
+      gradient: "from-red-500 to-orange-500",
+      ...t.whoIsItFor.profiles[3],
+    },
+    {
       icon: ShoppingCart,
       gradient: "from-orange-500 to-amber-500",
-      ...t.whoIsItFor.profiles[3],
+      ...t.whoIsItFor.profiles[4],
     },
     {
       icon: Briefcase,
       gradient: "from-indigo-500 to-violet-500",
-      ...t.whoIsItFor.profiles[4],
+      ...t.whoIsItFor.profiles[5],
     },
   ];
 
@@ -51,7 +56,7 @@ export const WhoIsItForSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {profiles.map((profile, index) => {
             const Icon = profile.icon;
             return (
