@@ -5,6 +5,20 @@ import { toast } from "sonner";
 export const useGSCDiscoveredUrls = (siteId: string) => {
   const queryClient = useQueryClient();
 
+  // Query separada para contagem total real do banco
+  const { data: realTotalCount } = useQuery({
+    queryKey: ['gsc-discovered-urls-total-count', siteId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('gsc_discovered_urls')
+        .select('*', { count: 'exact', head: true })
+        .eq('site_id', siteId);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!siteId,
+  });
+
   const { data: urls, isLoading } = useQuery({
     queryKey: ['gsc-discovered-urls', siteId],
     queryFn: async () => {
@@ -25,12 +39,14 @@ export const useGSCDiscoveredUrls = (siteId: string) => {
         `)
         .eq('site_id', siteId)
         .order('last_seen_at', { ascending: false })
-        .range(0, 9999999);
+        .range(0, 99999);
 
       if (error) throw error;
       return data;
     },
     enabled: !!siteId,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const updateUrlStatus = useMutation({
@@ -55,6 +71,7 @@ export const useGSCDiscoveredUrls = (siteId: string) => {
     urls,
     isLoading,
     totalCount: urls?.length || 0,
+    realTotalCount: realTotalCount || 0,
     updateUrlStatus,
   };
 };
