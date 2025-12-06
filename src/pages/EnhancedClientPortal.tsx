@@ -26,6 +26,7 @@ import { EmptyState } from '@/components/client-portal/EmptyState';
 import { SavedReportsSection } from '@/components/client-portal/SavedReportsSection';
 import { ProjectSelector } from '@/components/client-portal/ProjectSelector';
 import { PeriodSelector } from '@/components/analytics/PeriodSelector';
+import { ConversionGoalsTab } from '@/components/client-portal/ConversionGoalsTab';
 
 export const EnhancedClientPortal = () => {
   const { token } = useParams();
@@ -337,7 +338,7 @@ export const EnhancedClientPortal = () => {
         />
 
         <Tabs defaultValue="overview" className="space-y-10">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-2">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-2">
             <TabsTrigger value="overview">📊 Visão Geral</TabsTrigger>
             <TabsTrigger value="conversions">🎯 Conversões</TabsTrigger>
             <TabsTrigger value="pageviews">👁️ Visualizações</TabsTrigger>
@@ -349,6 +350,14 @@ export const EnhancedClientPortal = () => {
                     {analytics.ecommerce.totalOrders}
                   </Badge>
                 )}
+              </TabsTrigger>
+            )}
+            {analytics?.goalMetrics && analytics.goalMetrics.length > 0 && (
+              <TabsTrigger value="goals" className="relative">
+                🎯 Metas
+                <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                  {analytics.goalMetrics.length}
+                </Badge>
               </TabsTrigger>
             )}
             <TabsTrigger value="financeiro">💰 Financeiro</TabsTrigger>
@@ -375,6 +384,12 @@ export const EnhancedClientPortal = () => {
 
           <TabsContent value="ecommerce">
             <EcommerceTab analytics={analytics} />
+          </TabsContent>
+
+          <TabsContent value="goals">
+            {analytics?.goalMetrics && (
+              <ConversionGoalsTab goalMetrics={analytics.goalMetrics} />
+            )}
           </TabsContent>
 
           <TabsContent value="financeiro">

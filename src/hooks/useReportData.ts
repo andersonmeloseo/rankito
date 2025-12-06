@@ -4,6 +4,16 @@ import { useToast } from "@/hooks/use-toast";
 import { subDays, format } from 'date-fns';
 import { Currency, ReportLocale } from '@/i18n/reportTranslations';
 
+export interface GoalMetric {
+  goalId: string;
+  goalName: string;
+  goalType: string;
+  conversionValue: number;
+  conversions: number;
+  totalValue: number;
+  percentage: number;
+}
+
 export interface FinancialData {
   costPerConversion: number;
   currency: Currency;
@@ -105,6 +115,7 @@ export interface ReportData {
       purchases: number;
     };
   };
+  goalMetrics?: GoalMetric[];
 }
 
 export const useReportData = () => {
@@ -116,7 +127,8 @@ export const useReportData = () => {
     siteId: string, 
     periodDays: number, 
     enableComparison: boolean = false,
-    financialConfig?: { costPerConversion: number; currency: Currency; locale: ReportLocale }
+    financialConfig?: { costPerConversion: number; currency: Currency; locale: ReportLocale },
+    options?: { useGoalsOnly?: boolean; conversionGoals?: Array<{ id: string; goal_name: string; goal_type: string; conversion_value: number | null; cta_exact_matches: string[] | null; cta_patterns: string[] | null; page_urls: string[] | null; url_patterns: string[] | null; is_active: boolean | null }> }
   ) => {
     setLoading(true);
     try {
@@ -299,6 +311,75 @@ export const useReportData = () => {
         insights.push(`📚 Portfólio diversificado com ${topPages.length} páginas ativas`);
       }
 
+      // Calculate goal metrics if goals are provided
+      let goalMetrics: GoalMetric[] = [];
+      if (options?.conversionGoals && options.conversionGoals.length > 0) {
+        const activeGoals = options.conversionGoals.filter(g => g.is_active !== false);
+        
+        goalMetrics = activeGoals.map(goal => {
+          // Count conversions matching this goal
+          let goalConversions = 0;
+          
+          conversions?.forEach(conv => {
+            let matches = false;
+            
+            // Check CTA exact matches
+            if (goal.cta_exact_matches && goal.cta_exact_matches.length > 0) {
+              if (conv.cta_text && goal.cta_exact_matches.includes(conv.cta_text)) {
+                matches = true;
+              }
+            }
+            
+            // Check CTA patterns
+            if (!matches && goal.cta_patterns && goal.cta_patterns.length > 0) {
+              if (conv.cta_text) {
+                matches = goal.cta_patterns.some(pattern => 
+                  conv.cta_text?.toLowerCase().includes(pattern.toLowerCase())
+                );
+              }
+            }
+            
+            // Check page URLs
+            if (!matches && goal.page_urls && goal.page_urls.length > 0) {
+              if (conv.page_url && goal.page_urls.includes(conv.page_url)) {
+                matches = true;
+              }
+            }
+            
+            // Check URL patterns
+            if (!matches && goal.url_patterns && goal.url_patterns.length > 0) {
+              if (conv.page_url) {
+                matches = goal.url_patterns.some(pattern => 
+                  conv.page_url?.includes(pattern)
+                );
+              }
+            }
+            
+            if (matches) goalConversions++;
+          });
+          
+          const conversionValue = goal.conversion_value || 0;
+          const totalGoalValue = goalConversions * conversionValue;
+          
+          return {
+            goalId: goal.id,
+            goalName: goal.goal_name,
+            goalType: goal.goal_type,
+            conversionValue,
+            conversions: goalConversions,
+            totalValue: totalGoalValue,
+            percentage: 0 // Will be calculated after
+          };
+        });
+        
+        // Calculate percentages
+        const totalGoalConversions = goalMetrics.reduce((sum, g) => sum + g.conversions, 0);
+        goalMetrics = goalMetrics.map(g => ({
+          ...g,
+          percentage: totalGoalConversions > 0 ? (g.conversions / totalGoalConversions) * 100 : 0
+        }));
+      }
+
       const data: ReportData = {
         period: {
           start: format(startDate, 'dd/MM/yyyy'),
@@ -319,17 +400,29 @@ export const useReportData = () => {
         funnelData,
         bubbleData,
         radarData,
-        insights
+        insights,
+        goalMetrics: goalMetrics.length > 0 ? goalMetrics : undefined
       };
 
       if (financialConfig) {
-        const totalValue = financialConfig.costPerConversion * totalConversions;
-        data.financial = {
-          costPerConversion: financialConfig.costPerConversion,
-          currency: financialConfig.currency,
-          locale: financialConfig.locale,
-          totalValue
-        };
+        // If using goals only, calculate value from goals
+        if (options?.useGoalsOnly && goalMetrics.length > 0) {
+          const totalValue = goalMetrics.reduce((sum, g) => sum + g.totalValue, 0);
+          data.financial = {
+            costPerConversion: financialConfig.costPerConversion,
+            currency: financialConfig.currency,
+            locale: financialConfig.locale,
+            totalValue
+          };
+        } else {
+          const totalValue = financialConfig.costPerConversion * totalConversions;
+          data.financial = {
+            costPerConversion: financialConfig.costPerConversion,
+            currency: financialConfig.currency,
+            locale: financialConfig.locale,
+            totalValue
+          };
+        }
       }
 
       // Process e-commerce data

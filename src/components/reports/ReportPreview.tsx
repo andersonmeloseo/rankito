@@ -16,6 +16,16 @@ import { ReportStyle } from "./ReportStyleConfigurator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useReportTranslation, formatCurrency, Currency, ReportLocale } from "@/i18n/reportTranslations";
 
+interface GoalMetric {
+  goalId: string;
+  goalName: string;
+  goalType: string;
+  conversionValue: number;
+  conversions: number;
+  totalValue: number;
+  percentage: number;
+}
+
 interface ReportPreviewProps {
   reportName: string;
   reportData: ReportData;
@@ -25,6 +35,7 @@ interface ReportPreviewProps {
   includeTopPages: boolean;
   includeReferrers: boolean;
   includeEcommerce?: boolean;
+  includeGoals?: boolean;
   financialConfig?: {
     costPerConversion: number;
     currency: Currency;
@@ -43,9 +54,22 @@ export const ReportPreview = ({
   includeTopPages,
   includeReferrers,
   includeEcommerce,
+  includeGoals,
   financialConfig
 }: ReportPreviewProps) => {
   const { t } = useReportTranslation(financialConfig?.locale || 'pt-BR');
+
+  // Helper to get goal type label
+  const getGoalTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      'cta_match': 'CTA Match',
+      'page_destination': 'Página Destino',
+      'url_pattern': 'Padrão URL',
+      'combined': 'Combinado'
+    };
+    return labels[type] || type;
+  };
+
   return (
     <Card id="report-preview" className="mt-6">
       <CardHeader>
@@ -383,6 +407,107 @@ export const ReportPreview = ({
                       <TableCell className="font-medium">{ref.referrer}</TableCell>
                       <TableCell className="text-right font-semibold">
                         {ref.count}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
+        {/* Seção de Metas de Conversão */}
+        {includeGoals && reportData.goalMetrics && reportData.goalMetrics.length > 0 && (
+          <div className="space-y-6 mt-8">
+            <h3 className="text-2xl font-bold flex items-center gap-2">
+              🎯 Performance por Meta de Conversão
+            </h3>
+            
+            {/* Cards Resumo */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Metas Ativas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{reportData.goalMetrics.length}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Conversões em Metas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {reportData.goalMetrics.reduce((sum, g) => sum + g.conversions, 0)}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Valor Gerado</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatCurrency(
+                      reportData.goalMetrics.reduce((sum, g) => sum + g.totalValue, 0),
+                      financialConfig?.currency || 'BRL',
+                      financialConfig?.locale
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Valor Médio/Conversão</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(
+                      reportData.goalMetrics.reduce((sum, g) => sum + g.totalValue, 0) / 
+                      Math.max(reportData.goalMetrics.reduce((sum, g) => sum + g.conversions, 0), 1),
+                      financialConfig?.currency || 'BRL',
+                      financialConfig?.locale
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tabela de Performance */}
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Meta</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead className="text-right">Conversões</TableHead>
+                    <TableHead className="text-right">Valor/Conv.</TableHead>
+                    <TableHead className="text-right">Valor Total</TableHead>
+                    <TableHead className="text-right">%</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reportData.goalMetrics.map((metric) => (
+                    <TableRow key={metric.goalId}>
+                      <TableCell className="font-medium">{metric.goalName}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {getGoalTypeLabel(metric.goalType)}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {metric.conversions}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(metric.conversionValue, financialConfig?.currency || 'BRL', financialConfig?.locale)}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-green-600">
+                        {formatCurrency(metric.totalValue, financialConfig?.currency || 'BRL', financialConfig?.locale)}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {metric.percentage.toFixed(1)}%
                       </TableCell>
                     </TableRow>
                   ))}
