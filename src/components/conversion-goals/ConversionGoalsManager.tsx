@@ -17,7 +17,8 @@ import {
   DollarSign,
   Search,
   Filter,
-  X
+  X,
+  Pencil
 } from 'lucide-react';
 import {
   Select,
@@ -28,6 +29,7 @@ import {
 } from '@/components/ui/select';
 import { useConversionGoals, ConversionGoal } from '@/hooks/useConversionGoals';
 import { CreateGoalDialog } from './CreateGoalDialog';
+import { EditGoalDialog } from './EditGoalDialog';
 import { ConversionGoalsAnalytics } from './ConversionGoalsAnalytics';
 import { ConversionGoalsOnboarding, getOnboardingDismissed, setOnboardingDismissed } from './ConversionGoalsOnboarding';
 import {
@@ -84,11 +86,13 @@ const getGoalTypeLabel = (type: string) => {
 const GoalCard = ({ 
   goal, 
   onToggle, 
-  onDelete 
+  onDelete,
+  onEdit
 }: { 
   goal: ConversionGoal; 
   onToggle: (id: string, active: boolean) => void;
   onDelete: (id: string) => void;
+  onEdit: (goal: ConversionGoal) => void;
 }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -140,20 +144,38 @@ const GoalCard = ({
             </div>
             
             <div className="flex items-center gap-2 flex-shrink-0">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Switch
-                      checked={goal.is_active}
-                      onCheckedChange={(checked) => onToggle(goal.id, checked)}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {goal.is_active ? 'Desativar' : 'Ativar'} meta
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {/* Status Toggle com UI melhorada */}
+              <div 
+                className={`flex items-center gap-2 border rounded-lg px-3 py-1.5 cursor-pointer transition-colors ${
+                  goal.is_active 
+                    ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800' 
+                    : 'bg-muted/50 border-border'
+                }`}
+                onClick={() => onToggle(goal.id, !goal.is_active)}
+              >
+                <Switch
+                  checked={goal.is_active}
+                  onCheckedChange={(checked) => onToggle(goal.id, checked)}
+                  className={goal.is_active ? 'data-[state=checked]:bg-green-500' : ''}
+                />
+                <span className={`text-xs font-medium select-none ${
+                  goal.is_active ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'
+                }`}>
+                  {goal.is_active ? 'Ativa' : 'Inativa'}
+                </span>
+              </div>
+
+              {/* Botão Editar */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => onEdit(goal)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
               
+              {/* Botão Deletar */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -196,6 +218,8 @@ type StatusFilter = 'all' | 'active' | 'inactive';
 export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) => {
   const { goals, isLoading, toggleGoal, deleteGoal } = useConversionGoals(siteId);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<ConversionGoal | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   
   // Filter states
@@ -245,6 +269,11 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
 
   const handleDelete = (id: string) => {
     deleteGoal.mutate(id);
+  };
+
+  const handleEdit = (goal: ConversionGoal) => {
+    setEditingGoal(goal);
+    setShowEditDialog(true);
   };
 
   const handleOnboardingDismiss = () => {
@@ -374,6 +403,7 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
                       goal={goal}
                       onToggle={handleToggle}
                       onDelete={handleDelete}
+                      onEdit={handleEdit}
                     />
                   ))}
                 </div>
@@ -387,6 +417,18 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
           onOpenChange={setShowCreateDialog}
           siteId={siteId}
         />
+
+        {editingGoal && (
+          <EditGoalDialog
+            open={showEditDialog}
+            onOpenChange={(open) => {
+              setShowEditDialog(open);
+              if (!open) setEditingGoal(null);
+            }}
+            siteId={siteId}
+            goal={editingGoal}
+          />
+        )}
       </Card>
     </div>
   );
