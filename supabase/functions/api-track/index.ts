@@ -499,6 +499,149 @@ serve(async (req) => {
       return { city: null, region: null, country: null, country_code: null };
     };
 
+    // ========== CONVERSION GOALS VALIDATION ==========
+    interface ConversionGoalMatch {
+      isConversion: boolean;
+      goalId: string | null;
+      goalName: string | null;
+      conversionValue: number | null;
+      hasConfiguredGoals: boolean;
+    }
+
+    const checkConversionGoals = async (
+      siteId: string,
+      eventType: string,
+      ctaText: string | null,
+      pagePath: string,
+      metadata: any
+    ): Promise<ConversionGoalMatch> => {
+      // Fetch active goals for this site, ordered by priority
+      const { data: goals, error } = await supabase
+        .from('conversion_goals')
+        .select('*')
+        .eq('site_id', siteId)
+        .eq('is_active', true)
+        .order('priority', { ascending: true });
+
+      if (error) {
+        console.error('❌ Error fetching conversion goals:', error);
+        return { isConversion: true, goalId: null, goalName: null, conversionValue: null, hasConfiguredGoals: false };
+      }
+
+      // If no goals configured, maintain backward compatibility (everything counts)
+      if (!goals || goals.length === 0) {
+        return { isConversion: true, goalId: null, goalName: null, conversionValue: null, hasConfiguredGoals: false };
+      }
+
+      // page_view and page_exit are not conversions - always allow them for tracking
+      if (eventType === 'page_view' || eventType === 'page_exit') {
+        return { isConversion: true, goalId: null, goalName: null, conversionValue: null, hasConfiguredGoals: true };
+      }
+
+      const ctaLower = (ctaText || '').toLowerCase().trim();
+      const clickUrl = (metadata?.url || metadata?.href || '').toLowerCase();
+
+      // Check each goal in priority order
+      for (const goal of goals) {
+        let matches = false;
+
+        switch (goal.goal_type) {
+          case 'cta_match': {
+            // Check exact matches first
+            if (goal.cta_exact_matches && goal.cta_exact_matches.length > 0) {
+              const exactMatch = goal.cta_exact_matches.some((exact: string) => 
+                ctaLower === exact.toLowerCase().trim()
+              );
+              if (exactMatch) matches = true;
+            }
+            
+            // Check pattern matches (partial)
+            if (!matches && goal.cta_patterns && goal.cta_patterns.length > 0) {
+              const patternMatch = goal.cta_patterns.some((pattern: string) => 
+                ctaLower.includes(pattern.toLowerCase().trim())
+              );
+              if (patternMatch) matches = true;
+            }
+            break;
+          }
+
+          case 'page_destination': {
+            // Check if current page is in the list
+            if (goal.page_urls && goal.page_urls.length > 0) {
+              matches = goal.page_urls.some((url: string) => 
+                pagePath.includes(url) || url.includes(pagePath)
+              );
+            }
+            break;
+          }
+
+          case 'url_pattern': {
+            // Check if click destination URL matches patterns
+            if (goal.url_patterns && goal.url_patterns.length > 0) {
+              matches = goal.url_patterns.some((pattern: string) => 
+                clickUrl.includes(pattern.toLowerCase())
+              );
+            }
+            break;
+          }
+
+          case 'combined': {
+            // All configured conditions must be met
+            let ctaMatch = true;
+            let pageMatch = true;
+            let urlMatch = true;
+
+            // CTA condition
+            if (goal.cta_exact_matches?.length > 0 || goal.cta_patterns?.length > 0) {
+              ctaMatch = false;
+              if (goal.cta_exact_matches?.length > 0) {
+                ctaMatch = goal.cta_exact_matches.some((exact: string) => 
+                  ctaLower === exact.toLowerCase().trim()
+                );
+              }
+              if (!ctaMatch && goal.cta_patterns?.length > 0) {
+                ctaMatch = goal.cta_patterns.some((pattern: string) => 
+                  ctaLower.includes(pattern.toLowerCase().trim())
+                );
+              }
+            }
+
+            // Page condition
+            if (goal.page_urls?.length > 0) {
+              pageMatch = goal.page_urls.some((url: string) => 
+                pagePath.includes(url) || url.includes(pagePath)
+              );
+            }
+
+            // URL pattern condition
+            if (goal.url_patterns?.length > 0) {
+              urlMatch = goal.url_patterns.some((pattern: string) => 
+                clickUrl.includes(pattern.toLowerCase())
+              );
+            }
+
+            matches = ctaMatch && pageMatch && urlMatch;
+            break;
+          }
+        }
+
+        if (matches) {
+          console.log(`✅ Goal matched: "${goal.goal_name}" (${goal.goal_type})`);
+          return {
+            isConversion: true,
+            goalId: goal.id,
+            goalName: goal.goal_name,
+            conversionValue: goal.conversion_value,
+            hasConfiguredGoals: true
+          };
+        }
+      }
+
+      // Has goals but none matched - NOT a conversion
+      console.log(`⚠️ Event did not match any conversion goal (CTA: "${ctaText}")`);
+      return { isConversion: false, goalId: null, goalName: null, conversionValue: null, hasConfiguredGoals: true };
+    };
+
     const geoData = await tryApiWithFailover(supabase, ip_address);
 
     console.log('IP Address:', ip_address);
@@ -658,7 +801,25 @@ serve(async (req) => {
       return root || meta || null;
     })();
 
-    // Insert conversion
+    // Check conversion goals BEFORE inserting
+    const goalMatch = await checkConversionGoals(
+      site.id,
+      detectedEventType,
+      finalCtaText,
+      page_path,
+      metadata
+    );
+
+    // If site has configured goals and event doesn't match any, skip insert for non-tracking events
+    if (goalMatch.hasConfiguredGoals && !goalMatch.isConversion) {
+      console.log(`🚫 Event skipped - no matching conversion goal (site has ${goalMatch.hasConfiguredGoals ? 'goals configured' : 'no goals'})`);
+      return new Response(
+        JSON.stringify({ success: true, message: 'Event received but not a configured conversion' }), 
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Insert conversion with goal data
     const { error: insertError } = await supabase
       .from('rank_rent_conversions')
       .insert({
@@ -672,10 +833,14 @@ serve(async (req) => {
         session_id: session_id || null,
         sequence_number: sequence_number || null,
         time_spent_seconds: time_spent_seconds || null,
+        goal_id: goalMatch.goalId,
+        goal_name: goalMatch.goalName,
+        conversion_value: goalMatch.conversionValue,
         metadata: { 
           ...metadata, 
           device,
-          detected_at: new Date().toISOString()
+          detected_at: new Date().toISOString(),
+          matched_goal: goalMatch.goalName || null
         },
         ip_address,
         user_agent,
@@ -692,7 +857,7 @@ serve(async (req) => {
         code: insertError.code,
         details: insertError.details,
         hint: insertError.hint,
-        data: { site_id: site.id, page_id: pageId, event_type }
+        data: { site_id: site.id, page_id: pageId, event_type: detectedEventType, goal_id: goalMatch.goalId }
       });
       return new Response(
         JSON.stringify({ error: 'Failed to save conversion', details: insertError.message }), 
@@ -700,7 +865,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Conversion saved successfully for site:', site_name);
+    console.log('Conversion saved successfully for site:', site_name, goalMatch.goalName ? `(Goal: ${goalMatch.goalName})` : '');
 
     return new Response(
       JSON.stringify({ success: true, message: 'Conversion tracked successfully' }), 
