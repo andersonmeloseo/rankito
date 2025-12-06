@@ -7,11 +7,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { RefreshCw, Send, RotateCw, AlertCircle, History, ArrowUp, ArrowDown, ArrowUpDown, FileText, CheckCircle, List } from "lucide-react";
+import { RefreshCw, Send, RotateCw, AlertCircle, History, ArrowUp, ArrowDown, ArrowUpDown, FileText, CheckCircle, List, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface GSCSitemapsManagerProps {
   siteId: string;
@@ -58,6 +68,7 @@ const SortableHeader = ({ field, label, currentSort, onSort, className }: Sortab
 export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManagerProps) {
   const queryClient = useQueryClient();
   const [selectedSitemaps, setSelectedSitemaps] = useState<string[]>([]);
+  const [sitemapToDelete, setSitemapToDelete] = useState<string | null>(null);
   
   const [discoverySort, setDiscoverySort] = useState<SortState>({
     field: 'sitemap_url',
@@ -204,6 +215,36 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
       toast.error(`Erro ao reenviar sitemap: ${error.message}`);
     },
   });
+
+  // Delete sitemap from GSC and database
+  const deleteSitemap = useMutation({
+    mutationFn: async (sitemapUrl: string) => {
+      const response = await supabase.functions.invoke('gsc-delete-sitemap', {
+        body: {
+          integration_id: integrationId,
+          sitemap_url: sitemapUrl,
+        },
+      });
+
+      if (response.error) throw response.error;
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemap-history'] });
+      toast.success('🗑️ Sitemap excluído com sucesso!');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao excluir sitemap: ${error.message}`);
+    },
+  });
+
+  const handleDeleteConfirm = () => {
+    if (sitemapToDelete) {
+      deleteSitemap.mutate(sitemapToDelete);
+      setSitemapToDelete(null);
+    }
+  };
 
   const toggleSitemap = (id: string) => {
     setSelectedSitemaps(prev => 
@@ -533,6 +574,7 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
                     currentSort={discoverySort} 
                     onSort={handleDiscoverySort}
                   />
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -561,6 +603,17 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
                       )}
                     </TableCell>
                     <TableCell>{getStatusBadge(sitemap.gsc_status)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSitemapToDelete(sitemap.sitemap_url)}
+                        className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Excluir
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -730,16 +783,26 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => resubmitSitemap.mutate(submission.sitemap_url)}
-                        disabled={resubmitSitemap.isPending}
-                        className="gap-2"
-                      >
-                        <RotateCw className={`h-4 w-4 ${resubmitSitemap.isPending ? 'animate-spin' : ''}`} />
-                        Reenviar
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => resubmitSitemap.mutate(submission.sitemap_url)}
+                          disabled={resubmitSitemap.isPending}
+                          className="gap-2"
+                        >
+                          <RotateCw className={`h-4 w-4 ${resubmitSitemap.isPending ? 'animate-spin' : ''}`} />
+                          Reenviar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setSitemapToDelete(submission.sitemap_url)}
+                          className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -763,6 +826,31 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={!!sitemapToDelete} onOpenChange={() => setSitemapToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Sitemap?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Esta ação irá remover o sitemap do Google Search Console e do sistema.</p>
+              <p className="font-mono text-xs bg-muted p-2 rounded break-all">
+                {sitemapToDelete}
+              </p>
+              <p className="text-destructive font-medium">Esta ação não pode ser desfeita.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
