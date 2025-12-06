@@ -18,8 +18,10 @@ import {
   FileSpreadsheet,
   Code,
   Info,
-  CalendarIcon
+  CalendarIcon,
+  BarChart3
 } from 'lucide-react';
+import { AdsTrackingDashboard } from './AdsTrackingDashboard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -31,10 +33,11 @@ import { cn } from '@/lib/utils';
 
 interface AdsIntegrationTabProps {
   siteId: string;
+  siteUrl?: string;
   goals: Array<{ id: string; goal_name: string; is_active: boolean }>;
 }
 
-export function AdsIntegrationTab({ siteId, goals }: AdsIntegrationTabProps) {
+export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [isSending, setIsSending] = useState(false);
   
@@ -166,6 +169,24 @@ export function AdsIntegrationTab({ siteId, goals }: AdsIntegrationTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Ads Tracking Dashboard */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Dashboard de Captura de Ads
+          </CardTitle>
+          <CardDescription>
+            Monitore em tempo real a captura de Google Ads (gclid), Meta Ads (fbclid) e parâmetros UTM
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AdsTrackingDashboard siteId={siteId} siteUrl={siteUrl} />
+        </CardContent>
+      </Card>
+
+      <Separator />
+
       {/* Info Alert */}
       <Alert>
         <Info className="h-4 w-4" />

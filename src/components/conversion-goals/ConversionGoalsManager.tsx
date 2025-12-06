@@ -54,6 +54,7 @@ import {
 
 interface ConversionGoalsManagerProps {
   siteId: string;
+  siteUrl?: string;
 }
 
 const getGoalTypeIcon = (type: string) => {
@@ -218,7 +219,7 @@ const GoalCard = ({
 type GoalTypeFilter = 'all' | 'cta_match' | 'page_destination' | 'url_pattern' | 'combined';
 type StatusFilter = 'all' | 'active' | 'inactive';
 
-export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) => {
+export const ConversionGoalsManager = ({ siteId, siteUrl }: ConversionGoalsManagerProps) => {
   const { goals, isLoading, toggleGoal, deleteGoal } = useConversionGoals(siteId);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -449,7 +450,8 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
 
       <TabsContent value="ads">
         <AdsIntegrationTab 
-          siteId={siteId} 
+          siteId={siteId}
+          siteUrl={siteUrl}
           goals={goals.map(g => ({ id: g.id, goal_name: g.goal_name, is_active: g.is_active }))} 
         />
       </TabsContent>
