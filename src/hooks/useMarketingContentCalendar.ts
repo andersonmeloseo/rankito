@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface ContentItem {
   id: string;
@@ -12,7 +13,7 @@ export interface ContentItem {
   published_date: string | null;
   target_keywords: string[] | null;
   url: string | null;
-  metrics: unknown;
+  metrics: Json | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

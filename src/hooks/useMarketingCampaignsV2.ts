@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface MarketingCampaignV2 {
   id: string;
@@ -19,7 +20,7 @@ export interface MarketingCampaignV2 {
   utm_campaign: string | null;
   start_date: string | null;
   end_date: string | null;
-  metrics: unknown;
+  metrics: Json | null;
   created_at: string;
   updated_at: string;
 }
