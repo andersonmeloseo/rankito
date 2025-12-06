@@ -162,7 +162,7 @@ export const useCampaignConfigs = (siteId: string) => {
 // Hook to fetch events for a specific campaign
 export const useCampaignEvents = (siteId: string, campaign: CampaignConfig | null, days: number = 30) => {
   return useQuery({
-    queryKey: ['campaign-events', siteId, campaign?.id, days],
+    queryKey: ['campaign-events', siteId, campaign?.id, campaign?.goal_id, days],
     queryFn: async (): Promise<CampaignEvent[]> => {
       if (!campaign) return [];
 
@@ -171,20 +171,27 @@ export const useCampaignEvents = (siteId: string, campaign: CampaignConfig | nul
 
       let query = supabase
         .from('rank_rent_conversions')
-        .select('id, event_type, cta_text, page_url, page_path, created_at, city, region, country, utm_campaign, utm_source, utm_medium, gclid, fbclid, session_id, conversion_value, goal_name')
+        .select('id, event_type, cta_text, page_url, page_path, created_at, city, region, country, utm_campaign, utm_source, utm_medium, gclid, fbclid, session_id, conversion_value, goal_name, goal_id')
         .eq('site_id', siteId)
         .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: false });
 
-      // Apply UTM filters based on campaign patterns
-      if (campaign.utm_campaign_pattern) {
-        query = query.ilike('utm_campaign', `%${campaign.utm_campaign_pattern}%`);
+      // Se a campanha tem uma meta vinculada, filtrar APENAS eventos dessa meta
+      if (campaign.goal_id) {
+        query = query.eq('goal_id', campaign.goal_id);
       }
-      if (campaign.utm_source_pattern) {
-        query = query.ilike('utm_source', `%${campaign.utm_source_pattern}%`);
-      }
-      if (campaign.utm_medium_pattern) {
-        query = query.ilike('utm_medium', `%${campaign.utm_medium_pattern}%`);
+
+      // Apply UTM filters based on campaign patterns (apenas se não tem goal_id)
+      if (!campaign.goal_id) {
+        if (campaign.utm_campaign_pattern) {
+          query = query.ilike('utm_campaign', `%${campaign.utm_campaign_pattern}%`);
+        }
+        if (campaign.utm_source_pattern) {
+          query = query.ilike('utm_source', `%${campaign.utm_source_pattern}%`);
+        }
+        if (campaign.utm_medium_pattern) {
+          query = query.ilike('utm_medium', `%${campaign.utm_medium_pattern}%`);
+        }
       }
 
       const { data, error } = await query.range(0, 999);
