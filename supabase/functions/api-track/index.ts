@@ -103,7 +103,17 @@ serve(async (req) => {
       sequence_number,
       time_spent_seconds,
       exit_url,
-      referrer: payloadReferrer
+      referrer: payloadReferrer,
+      // Ads tracking fields (Google Ads + Meta Ads)
+      gclid,
+      fbclid,
+      fbc,
+      fbp,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_content,
+      utm_term
     } = await req.json();
 
     // Lista de event_types válidos
@@ -825,7 +835,7 @@ serve(async (req) => {
       );
     }
 
-    // Insert conversion with goal data
+    // Insert conversion with goal data and ads tracking
     const { error: insertError } = await supabase
       .from('rank_rent_conversions')
       .insert({
@@ -842,6 +852,16 @@ serve(async (req) => {
         goal_id: goalMatch.goalId,
         goal_name: goalMatch.goalName,
         conversion_value: goalMatch.conversionValue,
+        // Ads tracking fields (Google Ads + Meta Ads)
+        gclid: gclid || null,
+        fbclid: fbclid || null,
+        fbc: fbc || null,
+        fbp: fbp || null,
+        utm_source: utm_source || null,
+        utm_medium: utm_medium || null,
+        utm_campaign: utm_campaign || null,
+        utm_content: utm_content || null,
+        utm_term: utm_term || null,
         metadata: { 
           ...metadata, 
           device,

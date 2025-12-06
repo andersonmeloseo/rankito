@@ -2266,7 +2266,12 @@ export type Database = {
           country_code: string | null
           created_at: string
           cta_text: string | null
+          email_hash: string | null
           event_type: Database["public"]["Enums"]["event_type"]
+          fbc: string | null
+          fbclid: string | null
+          fbp: string | null
+          gclid: string | null
           goal_id: string | null
           goal_name: string | null
           id: string
@@ -2276,6 +2281,7 @@ export type Database = {
           page_id: string | null
           page_path: string
           page_url: string
+          phone_hash: string | null
           referrer: string | null
           region: string | null
           sequence_number: number | null
@@ -2283,6 +2289,11 @@ export type Database = {
           site_id: string
           time_spent_seconds: number | null
           user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           city?: string | null
@@ -2291,7 +2302,12 @@ export type Database = {
           country_code?: string | null
           created_at?: string
           cta_text?: string | null
+          email_hash?: string | null
           event_type: Database["public"]["Enums"]["event_type"]
+          fbc?: string | null
+          fbclid?: string | null
+          fbp?: string | null
+          gclid?: string | null
           goal_id?: string | null
           goal_name?: string | null
           id?: string
@@ -2301,6 +2317,7 @@ export type Database = {
           page_id?: string | null
           page_path: string
           page_url: string
+          phone_hash?: string | null
           referrer?: string | null
           region?: string | null
           sequence_number?: number | null
@@ -2308,6 +2325,11 @@ export type Database = {
           site_id: string
           time_spent_seconds?: number | null
           user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           city?: string | null
@@ -2316,7 +2338,12 @@ export type Database = {
           country_code?: string | null
           created_at?: string
           cta_text?: string | null
+          email_hash?: string | null
           event_type?: Database["public"]["Enums"]["event_type"]
+          fbc?: string | null
+          fbclid?: string | null
+          fbp?: string | null
+          gclid?: string | null
           goal_id?: string | null
           goal_name?: string | null
           id?: string
@@ -2326,6 +2353,7 @@ export type Database = {
           page_id?: string | null
           page_path?: string
           page_url?: string
+          phone_hash?: string | null
           referrer?: string | null
           region?: string | null
           sequence_number?: number | null
@@ -2333,6 +2361,11 @@ export type Database = {
           site_id?: string
           time_spent_seconds?: number | null
           user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {
