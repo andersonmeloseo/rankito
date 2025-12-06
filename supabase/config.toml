@@ -226,3 +226,11 @@ verify_jwt = true
 # GBP: Deletar Perfil
 [functions.gbp-delete-profile]
 verify_jwt = true
+
+# ===== ADS INTEGRATION FUNCTIONS =====
+
+[functions.export-google-ads-conversions]
+verify_jwt = true
+
+[functions.export-meta-conversions]
+verify_jwt = true
