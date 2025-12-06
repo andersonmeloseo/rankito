@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileSpreadsheet, FileText, Globe, Eye, DollarSign, Save, FolderOpen } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { FileSpreadsheet, FileText, Globe, Eye, DollarSign, Save, FolderOpen, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useReportData } from "@/hooks/useReportData";
 import { useReportHTML } from "@/hooks/useReportHTML";
+import { useConversionGoals } from "@/hooks/useConversionGoals";
 import { ReportStyleConfigurator, ReportStyle } from "./ReportStyleConfigurator";
 import { ReportPreview } from "./ReportPreview";
 import { Currency, ReportLocale } from "@/i18n/reportTranslations";
@@ -26,6 +28,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   const { toast } = useToast();
   const { reportData, loading, fetchReportData } = useReportData();
   const { captureReportHTML } = useReportHTML();
+  const { goals } = useConversionGoals(siteId);
   const [reportName, setReportName] = useState(`Relatório ${siteName}`);
   const [period, setPeriod] = useState('30');
   const [includeConversions, setIncludeConversions] = useState(true);
@@ -34,12 +37,14 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   const [includeTopPages, setIncludeTopPages] = useState(true);
   const [includeReferrers, setIncludeReferrers] = useState(false);
   const [includeEcommerce, setIncludeEcommerce] = useState(false);
+  const [includeGoals, setIncludeGoals] = useState(false);
   const [enableComparison, setEnableComparison] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [costPerConversion, setCostPerConversion] = useState<string>('');
   const [currency, setCurrency] = useState<Currency>('BRL');
   const [locale, setLocale] = useState<ReportLocale>('pt-BR');
+  const [calculationMode, setCalculationMode] = useState<'all' | 'goals'>('all');
   const [style, setStyle] = useState<ReportStyle>({
     theme: 'modern',
     customColors: {
@@ -49,6 +54,8 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
     }
   });
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+
+  const activeGoals = goals?.filter(g => g.is_active) || [];
 
   // Carregar configuração financeira do localStorage
   useEffect(() => {
@@ -78,8 +85,8 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
   }, [costPerConversion, currency, locale, siteId]);
 
   const handleGeneratePreview = async () => {
-    // Validar custo por conversão
-    if (!costPerConversion || parseFloat(costPerConversion) <= 0) {
+    // Validar custo por conversão (apenas se modo "all")
+    if (calculationMode === 'all' && (!costPerConversion || parseFloat(costPerConversion) <= 0)) {
       toast({
         title: "⚠️ Configuração incompleta",
         description: "Por favor, informe o custo por conversão antes de gerar o preview.",
@@ -88,14 +95,27 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
       return;
     }
 
+    // Validar metas se modo "goals"
+    if (calculationMode === 'goals' && activeGoals.length === 0) {
+      toast({
+        title: "⚠️ Nenhuma meta configurada",
+        description: "Configure metas de conversão para usar este modo de cálculo.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const financialConfig = {
-      costPerConversion: parseFloat(costPerConversion),
+      costPerConversion: parseFloat(costPerConversion) || 0,
       currency,
       locale
     };
 
     const periodDays = period === 'all' ? -1 : parseInt(period);
-    await fetchReportData(siteId, periodDays, enableComparison, financialConfig);
+    await fetchReportData(siteId, periodDays, enableComparison, financialConfig, {
+      useGoalsOnly: calculationMode === 'goals',
+      conversionGoals: goals || []
+    });
     setShowPreview(true);
   };
 
@@ -376,6 +396,10 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
                 <Checkbox checked={includeEcommerce} onCheckedChange={(c) => setIncludeEcommerce(!!c)} />
                 <span className="text-sm">Métricas de E-commerce</span>
               </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox checked={includeGoals} onCheckedChange={(c) => setIncludeGoals(!!c)} />
+                <span className="text-sm">🎯 Metas de Conversão</span>
+              </label>
             </div>
           </div>
 
@@ -405,26 +429,74 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="cost-per-conversion" className="mb-2 block">
-              Custo por Conversão *
-            </Label>
-            <Input
-              id="cost-per-conversion"
-              type="number"
-              step="0.01"
-              min="0"
-              value={costPerConversion}
-              onChange={(e) => setCostPerConversion(e.target.value)}
-              placeholder="Ex: 50.00"
-              className={!costPerConversion ? 'border-destructive' : ''}
-            />
-            {!costPerConversion && (
-              <p className="text-xs text-destructive mt-1">
-                Este campo é obrigatório para calcular o valor gerado
-              </p>
-            )}
+          {/* Modo de Cálculo */}
+          <div className="space-y-3">
+            <Label>Calcular valor baseado em:</Label>
+            <RadioGroup value={calculationMode} onValueChange={(v) => setCalculationMode(v as 'all' | 'goals')}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="all" id="mode-all" />
+                <Label htmlFor="mode-all" className="cursor-pointer font-normal">
+                  Todas as conversões (usar custo fixo por conversão)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="goals" id="mode-goals" />
+                <Label htmlFor="mode-goals" className="cursor-pointer font-normal">
+                  Apenas metas de conversão (usar valor configurado por meta)
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
+
+          {/* Metas configuradas (se modo goals) */}
+          {calculationMode === 'goals' && (
+            <div className="p-4 bg-muted/50 rounded-lg border space-y-2">
+              <Label className="flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Metas configuradas ({activeGoals.length}):
+              </Label>
+              {activeGoals.length > 0 ? (
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {activeGoals.map(goal => (
+                    <div key={goal.id} className="flex justify-between text-sm py-1 border-b border-border/50 last:border-0">
+                      <span className="font-medium">{goal.goal_name}</span>
+                      <span className="text-green-600">
+                        {goal.conversion_value ? `R$ ${goal.conversion_value.toFixed(2)}` : 'Sem valor'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma meta ativa configurada. Configure metas na aba "Metas de Conversão".
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Custo por conversão (se modo all) */}
+          {calculationMode === 'all' && (
+            <div>
+              <Label htmlFor="cost-per-conversion" className="mb-2 block">
+                Custo por Conversão *
+              </Label>
+              <Input
+                id="cost-per-conversion"
+                type="number"
+                step="0.01"
+                min="0"
+                value={costPerConversion}
+                onChange={(e) => setCostPerConversion(e.target.value)}
+                placeholder="Ex: 50.00"
+                className={!costPerConversion ? 'border-destructive' : ''}
+              />
+              {!costPerConversion && (
+                <p className="text-xs text-destructive mt-1">
+                  Este campo é obrigatório para calcular o valor gerado
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -470,7 +542,7 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
         <CardContent className="pt-6">
           <Button 
             onClick={handleGeneratePreview} 
-            disabled={loading || !costPerConversion} 
+            disabled={loading || (calculationMode === 'all' && !costPerConversion) || (calculationMode === 'goals' && activeGoals.length === 0)} 
             className="w-full"
             size="lg"
           >
@@ -491,11 +563,16 @@ export const ReportsTab = ({ siteId, siteName }: ReportsTabProps) => {
             includeTopPages={includeTopPages}
             includeReferrers={includeReferrers}
             includeEcommerce={includeEcommerce}
-            financialConfig={costPerConversion ? {
+            includeGoals={includeGoals}
+            financialConfig={calculationMode === 'all' && costPerConversion ? {
               costPerConversion: parseFloat(costPerConversion),
               currency,
               locale
-            } : undefined}
+            } : {
+              costPerConversion: 0,
+              currency,
+              locale
+            }}
           />
 
           <Card>

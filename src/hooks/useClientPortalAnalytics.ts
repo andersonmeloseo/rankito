@@ -373,6 +373,85 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         ecommerceData: ecommerce
       });
 
+      // Fetch conversion goals for the client's sites
+      const { data: conversionGoals } = await supabase
+        .from('conversion_goals')
+        .select('*')
+        .in('site_id', siteIds)
+        .eq('is_active', true);
+
+      // Calculate goal metrics
+      let goalMetrics: Array<{
+        goalId: string;
+        goalName: string;
+        goalType: string;
+        conversionValue: number;
+        conversions: number;
+        totalValue: number;
+        percentage: number;
+      }> = [];
+
+      if (conversionGoals && conversionGoals.length > 0) {
+        goalMetrics = conversionGoals.map(goal => {
+          let goalConversions = 0;
+          
+          conversions?.forEach(conv => {
+            if (conv.event_type === 'page_view') return;
+            
+            let matches = false;
+            
+            if (goal.cta_exact_matches && goal.cta_exact_matches.length > 0) {
+              if (conv.cta_text && goal.cta_exact_matches.includes(conv.cta_text)) {
+                matches = true;
+              }
+            }
+            
+            if (!matches && goal.cta_patterns && goal.cta_patterns.length > 0) {
+              if (conv.cta_text) {
+                matches = goal.cta_patterns.some(pattern => 
+                  conv.cta_text?.toLowerCase().includes(pattern.toLowerCase())
+                );
+              }
+            }
+            
+            if (!matches && goal.page_urls && goal.page_urls.length > 0) {
+              if (conv.page_url && goal.page_urls.includes(conv.page_url)) {
+                matches = true;
+              }
+            }
+            
+            if (!matches && goal.url_patterns && goal.url_patterns.length > 0) {
+              if (conv.page_url) {
+                matches = goal.url_patterns.some(pattern => 
+                  conv.page_url?.includes(pattern)
+                );
+              }
+            }
+            
+            if (matches) goalConversions++;
+          });
+          
+          const conversionValue = goal.conversion_value || 0;
+          const totalGoalValue = goalConversions * conversionValue;
+          
+          return {
+            goalId: goal.id,
+            goalName: goal.goal_name,
+            goalType: goal.goal_type,
+            conversionValue,
+            conversions: goalConversions,
+            totalValue: totalGoalValue,
+            percentage: 0
+          };
+        });
+        
+        const totalGoalConversions = goalMetrics.reduce((sum, g) => sum + g.conversions, 0);
+        goalMetrics = goalMetrics.map(g => ({
+          ...g,
+          percentage: totalGoalConversions > 0 ? (g.conversions / totalGoalConversions) * 100 : 0
+        }));
+      }
+
       return {
         totalSites: sites?.length || 0,
         totalPages,
@@ -406,6 +485,7 @@ export const useClientPortalAnalytics = (clientId: string, periodDays: number = 
         },
         topReferrers: topReferrersList,
         ecommerce,
+        goalMetrics: goalMetrics.length > 0 ? goalMetrics : undefined,
       };
     },
     enabled: !!clientId && clientId !== 'undefined' && clientId !== 'null' && clientId !== '',
