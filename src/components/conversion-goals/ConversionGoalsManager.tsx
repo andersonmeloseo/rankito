@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ import {
 import { useConversionGoals, ConversionGoal } from '@/hooks/useConversionGoals';
 import { CreateGoalDialog } from './CreateGoalDialog';
 import { ConversionGoalsAnalytics } from './ConversionGoalsAnalytics';
+import { ConversionGoalsOnboarding, getOnboardingDismissed, setOnboardingDismissed } from './ConversionGoalsOnboarding';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -181,6 +182,16 @@ const GoalCard = ({
 export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) => {
   const { goals, isLoading, toggleGoal, deleteGoal } = useConversionGoals(siteId);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check if should show onboarding on mount
+  useEffect(() => {
+    if (!isLoading && goals.length === 0 && !getOnboardingDismissed(siteId)) {
+      setShowOnboarding(true);
+    } else {
+      setShowOnboarding(false);
+    }
+  }, [isLoading, goals.length, siteId]);
 
   const handleToggle = (id: string, is_active: boolean) => {
     toggleGoal.mutate({ id, is_active });
@@ -190,8 +201,26 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
     deleteGoal.mutate(id);
   };
 
+  const handleOnboardingDismiss = () => {
+    setShowOnboarding(false);
+  };
+
+  const handleOnboardingCreateGoal = () => {
+    setShowOnboarding(false);
+    setShowCreateDialog(true);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Onboarding - Shows only on first visit with no goals */}
+      {showOnboarding && (
+        <ConversionGoalsOnboarding
+          siteId={siteId}
+          onCreateGoal={handleOnboardingCreateGoal}
+          onDismiss={handleOnboardingDismiss}
+        />
+      )}
+
       {/* Analytics Section - Only shows when goals exist */}
       <ConversionGoalsAnalytics siteId={siteId} />
       
