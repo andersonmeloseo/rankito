@@ -63,12 +63,14 @@ export const CampaignEventsDrawer = ({
 }: CampaignEventsDrawerProps) => {
   const { data: events = [], isLoading } = useCampaignEvents(siteId, campaign);
 
-  // Calculate metrics
-  const pageViews = events.filter(e => e.event_type === 'page_view').length;
-  const conversions = events.filter(e => e.event_type !== 'page_view').length;
-  const totalValue = events.reduce((sum, e) => sum + (e.conversion_value || 0), 0);
-  const conversionRate = pageViews > 0 ? ((conversions / pageViews) * 100).toFixed(1) : '0';
+  // Se tem meta vinculada, todos os eventos são conversões da meta
+  const isFilteredByGoal = !!campaign?.goal_id;
 
+  // Calculate metrics - ajustado para quando filtra por meta
+  const pageViews = isFilteredByGoal ? 0 : events.filter(e => e.event_type === 'page_view').length;
+  const conversions = isFilteredByGoal ? events.length : events.filter(e => e.event_type !== 'page_view').length;
+  const totalValue = events.reduce((sum, e) => sum + (e.conversion_value || 0), 0);
+  const conversionRate = isFilteredByGoal ? '100' : (pageViews > 0 ? ((conversions / pageViews) * 100).toFixed(1) : '0');
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl">
@@ -94,31 +96,45 @@ export const CampaignEventsDrawer = ({
                 </Badge>
               )}
               {campaign.goal && (
-                <Badge variant="secondary">
-                  Meta: {campaign.goal.goal_name}
+                <Badge variant="default" className="bg-success">
+                  🎯 Filtrando por: {campaign.goal.goal_name}
                 </Badge>
               )}
             </div>
           )}
 
           {/* Metrics Summary */}
-          <div className="grid grid-cols-4 gap-2">
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-foreground">{events.length}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
-            </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-foreground">{pageViews}</p>
-              <p className="text-xs text-muted-foreground">Visitas</p>
-            </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className={`grid ${isFilteredByGoal ? 'grid-cols-2' : 'grid-cols-4'} gap-2`}>
+            {!isFilteredByGoal && (
+              <>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">{events.length}</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">{pageViews}</p>
+                  <p className="text-xs text-muted-foreground">Visitas</p>
+                </div>
+              </>
+            )}
+            <div className="bg-success/10 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold text-success">{conversions}</p>
               <p className="text-xs text-muted-foreground">Conversões</p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-foreground">{conversionRate}%</p>
-              <p className="text-xs text-muted-foreground">Taxa</p>
-            </div>
+            {!isFilteredByGoal && (
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-foreground">{conversionRate}%</p>
+                <p className="text-xs text-muted-foreground">Taxa</p>
+              </div>
+            )}
+            {isFilteredByGoal && (
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-foreground">
+                  R$ {(campaign?.goal?.conversion_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-muted-foreground">Valor/Conv.</p>
+              </div>
+            )}
           </div>
 
           {totalValue > 0 && (
