@@ -9,6 +9,7 @@ interface PageVisit {
   entry_time: string;
   exit_time: string | null;
   time_spent_seconds: number | null;
+  isConversionPage?: boolean;
 }
 
 interface ClickEvent {
@@ -37,18 +38,18 @@ export interface ConversionJourneyData {
   visits: PageVisit[];
   clicks: ClickEvent[];
   isPartial: boolean;
+  conversionPageUrl: string | null;
 }
 
-export const useConversionJourney = (sessionId: string | null) => {
+export const useConversionJourney = (sessionId: string | null, conversionId?: string) => {
   return useQuery({
-    queryKey: ['conversion-journey', sessionId],
+    queryKey: ['conversion-journey', sessionId, conversionId],
     queryFn: async (): Promise<ConversionJourneyData> => {
       if (!sessionId) {
-        return { session: null, visits: [], clicks: [], isPartial: false };
+        return { session: null, visits: [], clicks: [], isPartial: false, conversionPageUrl: null };
       }
 
       // Buscar TODOS os eventos da sessão de rank_rent_conversions
-      // Isso inclui page_view, page_exit e cliques
       const { data: allEvents, error: eventsError } = await supabase
         .from('rank_rent_conversions')
         .select('id, page_url, page_path, event_type, created_at, sequence_number, time_spent_seconds, cta_text, goal_name, city, country, metadata, referrer')
@@ -57,23 +58,38 @@ export const useConversionJourney = (sessionId: string | null) => {
 
       if (eventsError) {
         console.error('Error fetching session events:', eventsError);
-        return { session: null, visits: [], clicks: [], isPartial: false };
+        return { session: null, visits: [], clicks: [], isPartial: false, conversionPageUrl: null };
       }
 
       if (!allEvents || allEvents.length === 0) {
-        return { session: null, visits: [], clicks: [], isPartial: false };
+        return { session: null, visits: [], clicks: [], isPartial: false, conversionPageUrl: null };
+      }
+
+      // Se temos conversionId, encontrar o evento de conversão e filtrar eventos até ele
+      let conversionEvent = null;
+      let eventsToProcess = allEvents;
+      
+      if (conversionId) {
+        conversionEvent = allEvents.find(e => e.id === conversionId);
+        if (conversionEvent) {
+          // Filtrar apenas eventos que ocorreram ANTES ou no momento da conversão
+          const conversionTime = new Date(conversionEvent.created_at).getTime();
+          eventsToProcess = allEvents.filter(e => 
+            new Date(e.created_at).getTime() <= conversionTime
+          );
+        }
       }
 
       // Separar eventos por tipo
-      const pageViewEvents = allEvents.filter(e => e.event_type === 'page_view');
-      const pageExitEvents = allEvents.filter(e => e.event_type === 'page_exit');
-      const clickEvents = allEvents.filter(e => 
+      const pageViewEvents = eventsToProcess.filter(e => e.event_type === 'page_view');
+      const pageExitEvents = eventsToProcess.filter(e => e.event_type === 'page_exit');
+      const clickEvents = eventsToProcess.filter(e => 
         ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'].includes(e.event_type)
       );
 
       // Construir lista de visits a partir dos page_view events
       const visits: PageVisit[] = pageViewEvents.map((pv, index) => {
-        // Encontrar o page_exit correspondente (mesmo page_url ou próximo na sequência)
+        // Encontrar o page_exit correspondente
         const exitEvent = pageExitEvents.find(pe => 
           pe.page_url === pv.page_url && 
           (pe.sequence_number || 0) > (pv.sequence_number || 0)
@@ -93,14 +109,18 @@ export const useConversionJourney = (sessionId: string | null) => {
           timeSpent = Math.round((nextEntryTime - entryTime) / 1000);
         }
 
+        // Marcar se esta é a página de conversão
+        const isConversionPage = conversionEvent ? pv.page_url === conversionEvent.page_url : false;
+
         return {
           id: pv.id,
           page_url: pv.page_url,
-          page_title: null, // Não temos título na conversions
+          page_title: null,
           sequence_number: pv.sequence_number || index + 1,
           entry_time: pv.created_at,
           exit_time: exitEvent?.created_at || null,
-          time_spent_seconds: timeSpent
+          time_spent_seconds: timeSpent,
+          isConversionPage
         };
       });
 
@@ -115,10 +135,9 @@ export const useConversionJourney = (sessionId: string | null) => {
       }));
 
       // Construir dados da sessão
-      const firstEvent = allEvents[0];
-      const lastEvent = allEvents[allEvents.length - 1];
+      const firstEvent = eventsToProcess[0];
+      const lastEvent = eventsToProcess[eventsToProcess.length - 1];
       const firstPageView = pageViewEvents[0];
-      const lastPageExit = pageExitEvents[pageExitEvents.length - 1];
 
       let totalDuration: number | null = null;
       if (firstEvent && lastEvent) {
@@ -133,7 +152,7 @@ export const useConversionJourney = (sessionId: string | null) => {
       const session = {
         session_id: sessionId,
         entry_page_url: firstPageView?.page_url || firstEvent.page_url,
-        exit_page_url: lastPageExit?.page_url || lastEvent.page_url,
+        exit_page_url: conversionEvent?.page_url || lastEvent.page_url,
         entry_time: firstEvent.created_at,
         exit_time: lastEvent.created_at,
         total_duration_seconds: totalDuration,
@@ -144,14 +163,15 @@ export const useConversionJourney = (sessionId: string | null) => {
         referrer: firstEvent.referrer || (firstEvent.metadata as any)?.referrer || null
       };
 
-      // Verificar se é jornada parcial (apenas 1 página ou sem page_view)
+      // Verificar se é jornada parcial
       const isPartial = pageViewEvents.length <= 1;
 
       return {
         session,
         visits,
         clicks,
-        isPartial
+        isPartial,
+        conversionPageUrl: conversionEvent?.page_url || null
       };
     },
     enabled: !!sessionId,

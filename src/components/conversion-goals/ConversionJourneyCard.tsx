@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, MessageCircle, Phone, Mail, MousePointer, FileText, Clock, MapPin, Monitor, Smartphone, Tablet, Info } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageCircle, Phone, Mail, MousePointer, FileText, Clock, MapPin, Monitor, Smartphone, Tablet, Info, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -74,7 +74,6 @@ const getSourceInfo = (referrer: string | null): { icon: string; label: string }
   if (r.includes('whatsapp.com') || r.includes('wa.me')) return { icon: '💬', label: 'WhatsApp' };
   if (r.includes('ads') || r.includes('gclid') || r.includes('utm_')) return { icon: '📢', label: 'Anúncio' };
   
-  // Extrair domínio para origem desconhecida
   try {
     const domain = new URL(referrer).hostname.replace('www.', '');
     return { icon: '🌐', label: domain };
@@ -102,14 +101,10 @@ export const ConversionJourneyCard = ({
   eventType
 }: ConversionJourneyCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { data: journey, isLoading } = useConversionJourney(isExpanded ? sessionId : null);
+  // Passar conversionId para filtrar jornada até esta conversão específica
+  const { data: journey, isLoading } = useConversionJourney(isExpanded ? sessionId : null, conversionId);
 
   const formattedDate = format(new Date(conversionTime), "dd/MM HH:mm", { locale: ptBR });
-
-  // Encontrar índice da página de conversão nas visits
-  const conversionPageIndex = journey?.visits.findIndex(v => 
-    v.page_url === conversionPage || v.page_url.includes(conversionPage)
-  ) ?? -1;
 
   return (
     <Card className="overflow-hidden">
@@ -165,9 +160,9 @@ export const ConversionJourneyCard = ({
             <>
               {/* Indicador de jornada parcial */}
               {journey.isPartial && (
-                <Badge variant="outline" className="text-xs text-green-600 border-green-300 bg-green-50">
+                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
                   <Info className="w-3 h-3 mr-1" />
-                  Jornada parcial
+                  Conversão direta (1 página)
                 </Badge>
               )}
 
@@ -188,7 +183,6 @@ export const ConversionJourneyCard = ({
                     </div>
                   </>
                 )}
-                {/* Origem do acesso */}
                 {(() => {
                   const source = getSourceInfo(journey.session.referrer);
                   return (
@@ -201,57 +195,81 @@ export const ConversionJourneyCard = ({
                     </>
                   );
                 })()}
-                {journey.session.total_duration_seconds && (
+                {journey.session.total_duration_seconds && journey.session.total_duration_seconds > 0 && (
                   <>
                     <span>•</span>
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      <span>Sessão: {formatDuration(journey.session.total_duration_seconds)}</span>
+                      <span>Até conversão: {formatDuration(journey.session.total_duration_seconds)}</span>
                     </div>
                   </>
                 )}
               </div>
+
+              {/* Resumo textual da jornada */}
+              {journey.visits.length > 0 && (
+                <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md">
+                  {journey.visits.length === 1 ? (
+                    <span>
+                      Usuário entrou em <strong className="text-foreground">{formatPageName(journey.visits[0].page_url)}</strong> e converteu diretamente
+                    </span>
+                  ) : (
+                    <span>
+                      Usuário entrou em <strong className="text-foreground">{formatPageName(journey.visits[0].page_url)}</strong>, 
+                      navegou por {journey.visits.length - 1} página{journey.visits.length > 2 ? 's' : ''} e 
+                      converteu em <strong className="text-orange-600">{formatPageName(conversionPage)}</strong>
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Timeline da jornada */}
               <div className="flex flex-wrap items-center gap-1.5">
                 {journey.visits.length > 0 ? (
                   journey.visits.map((visit, index) => {
                     const isEntry = index === 0;
-                    const isConversion = index === conversionPageIndex;
-                    const isPostConversion = conversionPageIndex >= 0 && index > conversionPageIndex;
-                    const isExit = index === journey.visits.length - 1 && !isConversion;
+                    const isLast = index === journey.visits.length - 1;
+                    // Determinar se é a página de conversão
+                    const isConversionPage = visit.isConversionPage || 
+                      visit.page_url === conversionPage || 
+                      visit.page_url.includes(conversionPage) ||
+                      (isLast && journey.conversionPageUrl && visit.page_url === journey.conversionPageUrl);
 
-                    let badgeVariant: "default" | "secondary" | "outline" = "secondary";
-                    let badgeClass = "text-xs";
-                    let icon = "🔵";
+                    let badgeClass = "text-xs font-medium ";
+                    let icon = "";
+                    let label = "";
 
-                    if (isConversion) {
-                      badgeClass += " bg-green-100 text-green-800 border-green-300";
+                    if (isConversionPage) {
+                      // CONVERSÃO - Destaque máximo em laranja
+                      badgeClass += "bg-orange-100 text-orange-800 border-orange-400 border-2 shadow-sm";
                       icon = "🎯";
+                      label = "CONVERTEU";
                     } else if (isEntry) {
-                      badgeClass += " bg-green-100 text-green-800 border-green-300";
+                      // ENTRADA - Verde
+                      badgeClass += "bg-green-100 text-green-800 border-green-300";
                       icon = "🟢";
-                    } else if (isPostConversion) {
-                      badgeClass += " bg-purple-100 text-purple-800 border-purple-300";
-                      icon = "🟣";
-                    } else if (isExit) {
-                      badgeClass += " bg-red-100 text-red-800 border-red-300";
-                      icon = "🔴";
+                      label = "Entrada";
+                    } else {
+                      // NAVEGAÇÃO - Azul
+                      badgeClass += "bg-blue-50 text-blue-700 border-blue-200";
+                      icon = "🔵";
+                      label = "";
                     }
 
                     return (
                       <div key={visit.id} className="flex items-center gap-1">
                         <Badge variant="outline" className={badgeClass}>
                           <span className="mr-1">{icon}</span>
-                          #{index + 1} {formatPageName(visit.page_url)}
+                          {label && <span className="mr-1 text-[10px] uppercase opacity-80">{label}:</span>}
+                          {formatPageName(visit.page_url)}
                           {visit.time_spent_seconds && visit.time_spent_seconds > 0 && (
-                            <span className="ml-1 opacity-70">
-                              ({formatDuration(visit.time_spent_seconds)})
+                            <span className="ml-1.5 opacity-60 text-[10px]">
+                              {formatDuration(visit.time_spent_seconds)}
                             </span>
                           )}
                         </Badge>
                         {index < journey.visits.length - 1 && (
-                          <span className="text-muted-foreground">→</span>
+                          <span className="text-muted-foreground font-bold">→</span>
                         )}
                       </div>
                     );
@@ -263,16 +281,21 @@ export const ConversionJourneyCard = ({
                 )}
               </div>
 
-              {/* CTA que converteu */}
+              {/* CTA que converteu - Destacado */}
               {ctaText && (
-                <div className="flex items-center gap-2 text-sm bg-green-50 dark:bg-green-950/30 p-2 rounded-md border border-green-200 dark:border-green-800">
-                  <span className="text-green-600">{getEventIcon(eventType)}</span>
-                  <span className="font-medium text-green-800 dark:text-green-200">
-                    "{ctaText}"
-                  </span>
-                  <span className="text-green-600/70 text-xs">
-                    em {formatPageName(conversionPage)}
-                  </span>
+                <div className="flex items-center gap-2 text-sm bg-orange-50 p-3 rounded-lg border-2 border-orange-200">
+                  <Target className="h-5 w-5 text-orange-500 flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase text-orange-500 font-semibold tracking-wide">
+                      CTA que converteu
+                    </span>
+                    <span className="font-semibold text-orange-800">
+                      "{ctaText}"
+                    </span>
+                  </div>
+                  <Badge className="ml-auto bg-orange-500 text-white text-xs">
+                    {formatPageName(conversionPage)}
+                  </Badge>
                 </div>
               )}
             </>
