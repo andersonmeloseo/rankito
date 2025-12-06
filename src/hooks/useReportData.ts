@@ -137,29 +137,32 @@ export const useReportData = () => {
 
       const { data: conversions, error: convError } = await supabase
         .from('rank_rent_conversions')
-        .select('*')
+        .select('created_at, event_type, cta_text, page_url, referrer, metadata')
         .eq('site_id', siteId)
         .neq('event_type', 'page_view')
         .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
+        .lte('created_at', endDate.toISOString())
+        .range(0, 9999);
 
       if (convError) throw convError;
 
       const { data: pageMetrics, error: pageError } = await supabase
         .from('rank_rent_page_metrics')
-        .select('*')
-        .eq('site_id', siteId);
+        .select('page_title, page_path, total_conversions, total_page_views, conversion_rate')
+        .eq('site_id', siteId)
+        .range(0, 9999);
 
       if (pageError) throw pageError;
 
       // Fetch e-commerce events
       const { data: ecommerceEvents } = await supabase
         .from('rank_rent_conversions')
-        .select('*')
+        .select('event_type, metadata')
         .eq('site_id', siteId)
         .eq('is_ecommerce_event', true)
         .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
+        .lte('created_at', endDate.toISOString())
+        .range(0, 9999);
 
       const totalConversions = conversions?.length || 0;
       const totalPageViews = pageMetrics?.reduce((sum, p) => sum + (Number(p.total_page_views) || 0), 0) || 0;
