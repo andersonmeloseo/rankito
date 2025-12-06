@@ -19,9 +19,10 @@ interface InstantIndexDialogProps {
 }
 
 export const InstantIndexDialog = ({ open, onOpenChange, siteId, integrationId }: InstantIndexDialogProps) => {
-  const { urls, isLoading } = useGSCDiscoveredUrls(siteId, {
-    status: 'discovered', // Only show non-indexed URLs
-  });
+  const { urls: allUrls, isLoading } = useGSCDiscoveredUrls(siteId);
+  
+  // Filter locally for discovered URLs only
+  const urls = allUrls?.filter(u => u.current_status === 'discovered') || [];
 
   const { quotaStatus } = useGSCQuotaStatus(siteId);
 

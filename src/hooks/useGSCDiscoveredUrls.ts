@@ -2,23 +2,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface UseGSCDiscoveredUrlsFilters {
-  status?: string;
-  searchTerm?: string;
-  page?: number;
-  pageSize?: number;
-}
-
-export const useGSCDiscoveredUrls = (
-  siteId: string,
-  filters?: UseGSCDiscoveredUrlsFilters
-) => {
+export const useGSCDiscoveredUrls = (siteId: string) => {
   const queryClient = useQueryClient();
 
   const { data: urls, isLoading } = useQuery({
-    queryKey: ['gsc-discovered-urls', siteId, filters?.searchTerm],
+    queryKey: ['gsc-discovered-urls', siteId],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('gsc_discovered_urls')
         .select(`
           *,
@@ -35,12 +25,6 @@ export const useGSCDiscoveredUrls = (
         `)
         .eq('site_id', siteId)
         .order('last_seen_at', { ascending: false });
-
-      if (filters?.searchTerm) {
-        query = query.ilike('url', `%${filters.searchTerm}%`);
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
       return data;

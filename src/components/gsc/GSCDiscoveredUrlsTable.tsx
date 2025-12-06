@@ -67,9 +67,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
 
   const pageSize = 100;
 
-  const { urls, isLoading, totalCount } = useGSCDiscoveredUrls(siteId, {
-    searchTerm,
-  });
+  const { urls, isLoading, totalCount } = useGSCDiscoveredUrls(siteId);
 
   const { validationStats, retryStats, inspectionStats } = useGSCMonitoring(siteId);
 
@@ -227,6 +225,8 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
 
   const filterUrlsData = (data: any[]) => {
     return data.filter(item => {
+      // Filtro de busca local em tempo real
+      if (searchTerm && !item.url.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       if (urlsFilters.status !== 'all' && item.current_status !== urlsFilters.status) return false;
       if (urlsFilters.origin === 'gsc' && !item.gsc_data) return false;
       if (urlsFilters.origin === 'sitemap' && !item.indexnow_data) return false;
@@ -249,7 +249,7 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
   // Aplicar filtros e ordenação ANTES da paginação (com useMemo para performance)
   const filteredAndSorted = useMemo(() => {
     return sortData(filterUrlsData(urls || []), urlsSort);
-  }, [urls, urlsSort, urlsFilters]);
+  }, [urls, urlsSort, urlsFilters, searchTerm]);
   
   // Calcular paginação baseada em dados filtrados
   const filteredCount = filteredAndSorted.length;
