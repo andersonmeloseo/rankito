@@ -6,6 +6,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// SHA256 hash function for Enhanced Conversions
+async function sha256Hash(value: string): Promise<string> {
+  const normalized = value.toLowerCase().trim();
+  const data = new TextEncoder().encode(normalized);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Validate if a string is a valid SHA256 hash (64 hex characters)
+function isValidSha256(hash: string): boolean {
+  return /^[a-f0-9]{64}$/i.test(hash);
+}
+
+// Format date for Google Ads (yyyy-MM-dd HH:mm:ss timezone)
+function formatGoogleAdsDate(isoDate: string, timezone: string = 'America/Sao_Paulo'): string {
+  const date = new Date(isoDate);
+  
+  // Format: "2024-12-06 15:30:00 America/Sao_Paulo"
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${timezone}`;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -16,7 +45,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { siteId, startDate, endDate, goalIds } = await req.json();
+    const { siteId, startDate, endDate, goalIds, timezone = 'America/Sao_Paulo', currency = 'BRL' } = await req.json();
 
     if (!siteId) {
       return new Response(
@@ -27,10 +56,10 @@ serve(async (req) => {
 
     console.log(`[export-google-ads] Exporting conversions for site ${siteId}`);
 
-    // Build query for conversions with gclid
+    // Build query for conversions with gclid - include email_hash and phone_hash for Enhanced Conversions
     let query = supabase
       .from('rank_rent_conversions')
-      .select('id, created_at, event_type, gclid, conversion_value, cta_text, page_url')
+      .select('id, created_at, event_type, gclid, conversion_value, cta_text, page_url, email_hash, phone_hash, goal_id')
       .eq('site_id', siteId)
       .not('gclid', 'is', null)
       .order('created_at', { ascending: false });
@@ -40,6 +69,9 @@ serve(async (req) => {
     }
     if (endDate) {
       query = query.lte('created_at', endDate);
+    }
+    if (goalIds && goalIds.length > 0) {
+      query = query.in('goal_id', goalIds);
     }
 
     const { data: conversions, error } = await query;
@@ -51,23 +83,47 @@ serve(async (req) => {
 
     console.log(`[export-google-ads] Found ${conversions?.length || 0} conversions with gclid`);
 
-    // Generate CSV in Google Ads Offline Conversions format
-    // Required columns: Google Click ID, Conversion Name, Conversion Time, Conversion Value, Conversion Currency
+    // Fetch goal names for custom conversion names
+    let goalNames: Record<string, string> = {};
+    if (conversions && conversions.length > 0) {
+      const uniqueGoalIds = [...new Set(conversions.map(c => c.goal_id).filter(Boolean))];
+      if (uniqueGoalIds.length > 0) {
+        const { data: goals } = await supabase
+          .from('conversion_goals')
+          .select('id, goal_name')
+          .in('id', uniqueGoalIds);
+        
+        if (goals) {
+          goalNames = Object.fromEntries(goals.map(g => [g.id, g.goal_name]));
+        }
+      }
+    }
+
+    // Generate CSV in Google Ads Enhanced Conversions for Leads format
+    // Required columns + Optional Enhanced Conversions fields
     const csvHeaders = [
       'Google Click ID',
       'Conversion Name', 
       'Conversion Time',
       'Conversion Value',
-      'Conversion Currency'
+      'Conversion Currency',
+      'Order ID',
+      'Email',
+      'Phone Number',
+      'Ad User Data',
+      'Ad Personalization'
     ];
 
-    const csvRows = (conversions || []).map(conv => {
-      // Format timestamp for Google Ads (ISO 8601 with timezone)
-      const conversionTime = new Date(conv.created_at).toISOString();
+    // Process conversions with async hashing for Enhanced Conversions
+    const csvRows = await Promise.all((conversions || []).map(async (conv) => {
+      // Format timestamp for Google Ads with timezone
+      const conversionTime = formatGoogleAdsDate(conv.created_at, timezone);
       
-      // Determine conversion name from event type
+      // Determine conversion name from goal or event type
       let conversionName = 'Rankito Conversion';
-      if (conv.event_type) {
+      if (conv.goal_id && goalNames[conv.goal_id]) {
+        conversionName = goalNames[conv.goal_id];
+      } else if (conv.event_type) {
         const eventTypeMap: Record<string, string> = {
           'whatsapp_click': 'WhatsApp Click',
           'phone_click': 'Phone Call Click',
@@ -81,17 +137,45 @@ serve(async (req) => {
         conversionName = eventTypeMap[conv.event_type] || conv.event_type;
       }
 
-      return [
-        conv.gclid,
-        conversionName,
-        conversionTime,
-        conv.conversion_value || 0,
-        'BRL'
-      ];
-    });
+      // Hash email for Enhanced Conversions (if available)
+      let emailHash = '';
+      if (conv.email_hash) {
+        if (isValidSha256(conv.email_hash)) {
+          emailHash = conv.email_hash;
+        } else {
+          // Hash if it's plain text email
+          emailHash = await sha256Hash(conv.email_hash);
+        }
+      }
 
-    // Build CSV string
+      // Hash phone for Enhanced Conversions (if available)
+      let phoneHash = '';
+      if (conv.phone_hash) {
+        if (isValidSha256(conv.phone_hash)) {
+          phoneHash = conv.phone_hash;
+        } else {
+          // Hash if it's plain text phone
+          phoneHash = await sha256Hash(conv.phone_hash);
+        }
+      }
+
+      return [
+        conv.gclid,                           // Google Click ID
+        conversionName,                       // Conversion Name
+        conversionTime,                       // Conversion Time
+        conv.conversion_value || 0,           // Conversion Value
+        currency,                             // Conversion Currency
+        conv.id,                              // Order ID (unique identifier for deduplication)
+        emailHash,                            // Email (SHA256 hashed)
+        phoneHash,                            // Phone Number (SHA256 hashed)
+        'Granted',                            // Ad User Data consent (LGPD/GDPR)
+        'Granted'                             // Ad Personalization consent (LGPD/GDPR)
+      ];
+    }));
+
+    // Build CSV string with Parameters line for timezone
     const csvContent = [
+      `Parameters:TimeZone=${timezone}`,
       csvHeaders.join(','),
       ...csvRows.map(row => row.map(cell => {
         // Escape cells that contain commas or quotes
