@@ -122,6 +122,9 @@ export const ConversionJourneyCard = ({
   const locationParts = [city, region, country].filter(Boolean);
   const locationString = locationParts.length > 0 ? locationParts.join(', ') : null;
 
+  // Extract first IP if multiple IPs are stored
+  const displayIp = ipAddress ? ipAddress.split(',')[0].trim() : null;
+
   // Get device from userAgent prop or journey
   const getDeviceFromUserAgent = (ua: string | null | undefined): string => {
     if (!ua) return 'Desktop';
@@ -181,12 +184,12 @@ export const ConversionJourneyCard = ({
                 {sessionId || 'N/A'}
               </span>
             </div>
-            {ipAddress && (
+            {displayIp && (
               <>
                 <span>•</span>
                 <div className="flex items-center gap-1">
                   <Globe className="h-3 w-3" />
-                  <span className="font-mono">{ipAddress}</span>
+                  <span className="font-mono">{displayIp}</span>
                 </div>
               </>
             )}
