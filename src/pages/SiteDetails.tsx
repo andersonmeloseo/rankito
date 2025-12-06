@@ -1566,7 +1566,7 @@ const SiteDetails = () => {
 
           {/* Metas de Conversão Tab */}
           <TabsContent value="conversion-goals">
-            <ConversionGoalsManager siteId={siteId || ""} />
+            <ConversionGoalsManager siteId={siteId || ""} siteUrl={site?.site_url} />
           </TabsContent>
 
         </Tabs>
