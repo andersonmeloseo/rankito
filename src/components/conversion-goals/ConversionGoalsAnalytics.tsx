@@ -80,7 +80,7 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
     queryFn: async () => {
       const { data, error } = await supabase
         .from('rank_rent_conversions')
-        .select('id, goal_id, goal_name, conversion_value, created_at, page_url, session_id, cta_text, event_type')
+        .select('id, goal_id, goal_name, conversion_value, created_at, page_url, session_id, cta_text, event_type, ip_address, city, region, country, referrer, user_agent')
         .eq('site_id', siteId)
         .not('goal_id', 'is', null)
         .gte('created_at', startDate.toISOString())
@@ -558,6 +558,12 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
                     conversionValue={conversion.conversion_value ?? undefined}
                     ctaText={conversion.cta_text}
                     eventType={conversion.event_type}
+                    ipAddress={conversion.ip_address}
+                    city={conversion.city}
+                    region={conversion.region}
+                    country={conversion.country}
+                    referrer={conversion.referrer}
+                    userAgent={conversion.user_agent}
                   />
                 ))
               ) : (

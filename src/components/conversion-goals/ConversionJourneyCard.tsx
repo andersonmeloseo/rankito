@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, MessageCircle, Phone, Mail, MousePointer, FileText, Clock, MapPin, Monitor, Smartphone, Tablet, Info, Target, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageCircle, Phone, Mail, MousePointer, FileText, Clock, MapPin, Monitor, Smartphone, Tablet, Info, Target, ExternalLink, Globe, Hash } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +17,12 @@ interface ConversionJourneyCardProps {
   conversionValue?: number;
   ctaText?: string | null;
   eventType: string;
+  ipAddress?: string | null;
+  city?: string | null;
+  region?: string | null;
+  country?: string | null;
+  referrer?: string | null;
+  userAgent?: string | null;
 }
 
 const getEventIcon = (eventType: string) => {
@@ -98,13 +104,33 @@ export const ConversionJourneyCard = ({
   sessionId,
   conversionValue,
   ctaText,
-  eventType
+  eventType,
+  ipAddress,
+  city,
+  region,
+  country,
+  referrer,
+  userAgent
 }: ConversionJourneyCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   // Passar conversionId para filtrar jornada até esta conversão específica
   const { data: journey, isLoading } = useConversionJourney(isExpanded ? sessionId : null, conversionId);
 
   const formattedDate = format(new Date(conversionTime), "dd/MM HH:mm", { locale: ptBR });
+
+  // Build location string from props (fallback to journey data)
+  const locationParts = [city, region, country].filter(Boolean);
+  const locationString = locationParts.length > 0 ? locationParts.join(', ') : null;
+
+  // Get device from userAgent prop or journey
+  const getDeviceFromUserAgent = (ua: string | null | undefined): string => {
+    if (!ua) return 'Desktop';
+    const lower = ua.toLowerCase();
+    if (lower.includes('mobile') || lower.includes('android') || lower.includes('iphone')) return 'Mobile';
+    if (lower.includes('tablet') || lower.includes('ipad')) return 'Tablet';
+    return 'Desktop';
+  };
+  const deviceFromProps = userAgent ? getDeviceFromUserAgent(userAgent) : null;
 
   return (
     <Card className="overflow-hidden">
@@ -147,6 +173,52 @@ export const ConversionJourneyCard = ({
       {/* Conteúdo expandido */}
       {isExpanded && (
         <div className="border-t px-3 py-3 space-y-3 bg-muted/30">
+          {/* Identificação do Visitante - Sempre visível quando expandido */}
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground bg-slate-50 p-2 rounded-md border">
+            <div className="flex items-center gap-1">
+              <Hash className="h-3 w-3" />
+              <span className="font-mono">
+                Session: {sessionId ? `${sessionId.slice(0, 8)}...` : 'N/A'}
+              </span>
+            </div>
+            {ipAddress && (
+              <>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <Globe className="h-3 w-3" />
+                  <span className="font-mono">{ipAddress}</span>
+                </div>
+              </>
+            )}
+            {locationString && (
+              <>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  <span>{locationString}</span>
+                </div>
+              </>
+            )}
+            {referrer && (
+              <>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <span>{getSourceInfo(referrer).icon}</span>
+                  <span>{getSourceInfo(referrer).label}</span>
+                </div>
+              </>
+            )}
+            {deviceFromProps && (
+              <>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  {getDeviceIcon(deviceFromProps)}
+                  <span>{deviceFromProps}</span>
+                </div>
+              </>
+            )}
+          </div>
+
           {isLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-4 w-full" />
