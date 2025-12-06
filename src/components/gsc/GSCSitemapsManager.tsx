@@ -229,10 +229,15 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
       if (response.error) throw response.error;
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps'] });
       queryClient.invalidateQueries({ queryKey: ['gsc-sitemap-history'] });
-      toast.success('🗑️ Sitemap excluído com sucesso!');
+      
+      if (data.warning) {
+        toast.warning(`⚠️ ${data.message}`);
+      } else {
+        toast.success('🗑️ Sitemap excluído com sucesso!');
+      }
     },
     onError: (error: any) => {
       toast.error(`Erro ao excluir sitemap: ${error.message}`);

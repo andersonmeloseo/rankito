@@ -77,28 +77,46 @@ Deno.serve(async (req) => {
     const encodedSiteUrl = encodeURIComponent(propertyUrl);
     const encodedFeedpath = encodeURIComponent(sitemap_url);
 
-    // Deletar sitemap via GSC API
+    // Tentar deletar sitemap via GSC API
     console.log('🗑️ Deleting sitemap from GSC...');
-    const deleteResponse = await fetch(
-      `https://www.googleapis.com/webmasters/v3/sites/${encodedSiteUrl}/sitemaps/${encodedFeedpath}`,
-      {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${integration.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    let gscDeleteSuccess = false;
+    let gscWarning: string | null = null;
+    
+    try {
+      const deleteResponse = await fetch(
+        `https://www.googleapis.com/webmasters/v3/sites/${encodedSiteUrl}/sitemaps/${encodedFeedpath}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${integration.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-    if (!deleteResponse.ok) {
-      const error = await deleteResponse.text();
-      console.error('❌ GSC API Error:', error);
-      throw new Error(`Failed to delete sitemap from GSC: ${error}`);
+      if (deleteResponse.ok || deleteResponse.status === 204) {
+        gscDeleteSuccess = true;
+        console.log('✅ Sitemap deleted from GSC');
+      } else if (deleteResponse.status === 404) {
+        // Sitemap não existe no GSC, ok para continuar
+        gscWarning = 'Sitemap não encontrado no GSC (pode já ter sido removido)';
+        console.log('⚠️ Sitemap not found in GSC (404)');
+      } else if (deleteResponse.status === 403) {
+        // Sem permissão no GSC
+        gscWarning = 'Sem permissão para deletar no GSC. Removido apenas localmente.';
+        console.log('⚠️ No permission to delete from GSC (403)');
+      } else {
+        const errorText = await deleteResponse.text();
+        gscWarning = `Erro ao deletar do GSC (${deleteResponse.status}). Removido apenas localmente.`;
+        console.log('⚠️ GSC API returned error:', deleteResponse.status, errorText);
+      }
+    } catch (gscError) {
+      gscWarning = 'Erro de conexão com GSC. Removido apenas localmente.';
+      console.log('⚠️ GSC API connection error:', gscError);
     }
 
-    console.log('✅ Sitemap deleted from GSC');
-
-    // Deletar do banco de dados
+    // Deletar do banco de dados (sempre)
+    console.log('🗄️ Deleting from database...');
     const { error: dbError } = await supabase
       .from('gsc_sitemap_submissions')
       .delete()
@@ -115,7 +133,11 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Sitemap deleted successfully',
+        gsc_deleted: gscDeleteSuccess,
+        warning: gscWarning,
+        message: gscDeleteSuccess 
+          ? 'Sitemap excluído do GSC e do sistema com sucesso' 
+          : 'Sitemap excluído do sistema' + (gscWarning ? `. ${gscWarning}` : ''),
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
