@@ -39,6 +39,7 @@ export interface ConversionJourneyData {
   clicks: ClickEvent[];
   isPartial: boolean;
   conversionPageUrl: string | null;
+  maxScrollDepth: number | null;
 }
 
 export const useConversionJourney = (sessionId: string | null, conversionId?: string) => {
@@ -46,7 +47,7 @@ export const useConversionJourney = (sessionId: string | null, conversionId?: st
     queryKey: ['conversion-journey', sessionId, conversionId],
     queryFn: async (): Promise<ConversionJourneyData> => {
       if (!sessionId) {
-        return { session: null, visits: [], clicks: [], isPartial: false, conversionPageUrl: null };
+        return { session: null, visits: [], clicks: [], isPartial: false, conversionPageUrl: null, maxScrollDepth: null };
       }
 
       // Buscar TODOS os eventos da sessão de rank_rent_conversions
@@ -58,11 +59,11 @@ export const useConversionJourney = (sessionId: string | null, conversionId?: st
 
       if (eventsError) {
         console.error('Error fetching session events:', eventsError);
-        return { session: null, visits: [], clicks: [], isPartial: false, conversionPageUrl: null };
+        return { session: null, visits: [], clicks: [], isPartial: false, conversionPageUrl: null, maxScrollDepth: null };
       }
 
       if (!allEvents || allEvents.length === 0) {
-        return { session: null, visits: [], clicks: [], isPartial: false, conversionPageUrl: null };
+        return { session: null, visits: [], clicks: [], isPartial: false, conversionPageUrl: null, maxScrollDepth: null };
       }
 
       // Se temos conversionId, encontrar o evento de conversão e filtrar eventos até ele
@@ -83,9 +84,19 @@ export const useConversionJourney = (sessionId: string | null, conversionId?: st
       // Separar eventos por tipo
       const pageViewEvents = eventsToProcess.filter(e => e.event_type === 'page_view');
       const pageExitEvents = eventsToProcess.filter(e => e.event_type === 'page_exit');
+      const scrollEvents = eventsToProcess.filter(e => e.event_type === 'scroll_depth');
       const clickEvents = eventsToProcess.filter(e => 
         ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'].includes(e.event_type)
       );
+
+      // Calcular scroll máximo da sessão
+      let maxScrollDepth: number | null = null;
+      for (const scrollEvent of scrollEvents) {
+        const scrollValue = (scrollEvent.metadata as any)?.scroll_depth;
+        if (typeof scrollValue === 'number' && (maxScrollDepth === null || scrollValue > maxScrollDepth)) {
+          maxScrollDepth = scrollValue;
+        }
+      }
 
       // Construir lista de visits a partir dos page_view events
       const visits: PageVisit[] = pageViewEvents.map((pv, index) => {
@@ -171,7 +182,8 @@ export const useConversionJourney = (sessionId: string | null, conversionId?: st
         visits,
         clicks,
         isPartial,
-        conversionPageUrl: conversionEvent?.page_url || null
+        conversionPageUrl: conversionEvent?.page_url || null,
+        maxScrollDepth
       };
     },
     enabled: !!sessionId,
