@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Plus, 
   Target, 
@@ -18,7 +19,8 @@ import {
   Search,
   Filter,
   X,
-  Pencil
+  Pencil,
+  Megaphone
 } from 'lucide-react';
 import {
   Select,
@@ -32,6 +34,7 @@ import { CreateGoalDialog } from './CreateGoalDialog';
 import { EditGoalDialog } from './EditGoalDialog';
 import { ConversionGoalsAnalytics } from './ConversionGoalsAnalytics';
 import { ConversionGoalsOnboarding, getOnboardingDismissed, setOnboardingDismissed } from './ConversionGoalsOnboarding';
+import { AdsIntegrationTab } from './AdsIntegrationTab';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -286,18 +289,30 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
   };
 
   return (
-    <div className="space-y-6">
-      {/* Onboarding - Shows only on first visit with no goals */}
-      {showOnboarding && (
-        <ConversionGoalsOnboarding
-          siteId={siteId}
-          onCreateGoal={handleOnboardingCreateGoal}
-          onDismiss={handleOnboardingDismiss}
-        />
-      )}
+    <Tabs defaultValue="goals" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="goals" className="flex items-center gap-2">
+          <Target className="h-4 w-4" />
+          Metas de Conversão
+        </TabsTrigger>
+        <TabsTrigger value="ads" className="flex items-center gap-2">
+          <Megaphone className="h-4 w-4" />
+          Google & Meta Ads
+        </TabsTrigger>
+      </TabsList>
 
-      {/* Analytics Section - Only shows when goals exist */}
-      <ConversionGoalsAnalytics siteId={siteId} />
+      <TabsContent value="goals" className="space-y-6">
+        {/* Onboarding - Shows only on first visit with no goals */}
+        {showOnboarding && (
+          <ConversionGoalsOnboarding
+            siteId={siteId}
+            onCreateGoal={handleOnboardingCreateGoal}
+            onDismiss={handleOnboardingDismiss}
+          />
+        )}
+
+        {/* Analytics Section - Only shows when goals exist */}
+        <ConversionGoalsAnalytics siteId={siteId} />
       
       {/* Goals Manager */}
       <Card>
@@ -430,6 +445,14 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
           />
         )}
       </Card>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="ads">
+        <AdsIntegrationTab 
+          siteId={siteId} 
+          goals={goals.map(g => ({ id: g.id, goal_name: g.goal_name, is_active: g.is_active }))} 
+        />
+      </TabsContent>
+    </Tabs>
   );
 };
