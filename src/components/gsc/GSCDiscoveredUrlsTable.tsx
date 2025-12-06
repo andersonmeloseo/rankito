@@ -41,6 +41,16 @@ interface GSCDiscoveredUrlsTableProps {
   siteId: string;
 }
 
+// Helper para extrair URL relativa (sem domínio)
+const getRelativeUrl = (fullUrl: string): string => {
+  try {
+    const url = new URL(fullUrl);
+    return url.pathname + url.search + url.hash || '/';
+  } catch {
+    return fullUrl;
+  }
+};
+
 type SortField = 'url' | 'current_status' | 'impressions' | 'clicks' | 'ctr' | 'position' | 'last_seen_at';
 type SortDirection = 'asc' | 'desc';
 
@@ -720,8 +730,9 @@ export const GSCDiscoveredUrlsTable = ({ siteId }: GSCDiscoveredUrlsTableProps) 
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 dark:text-blue-400 hover:underline truncate text-sm"
+                            title={url.url}
                           >
-                            {url.url}
+                            {getRelativeUrl(url.url)}
                           </a>
                           <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         </div>
