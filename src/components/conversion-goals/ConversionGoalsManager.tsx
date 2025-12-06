@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { 
   Plus, 
   Target, 
@@ -13,8 +14,18 @@ import {
   Layers,
   Trash2,
   Info,
-  DollarSign
+  DollarSign,
+  Search,
+  Filter,
+  X
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useConversionGoals, ConversionGoal } from '@/hooks/useConversionGoals';
 import { CreateGoalDialog } from './CreateGoalDialog';
 import { ConversionGoalsAnalytics } from './ConversionGoalsAnalytics';
@@ -179,10 +190,18 @@ const GoalCard = ({
   );
 };
 
+type GoalTypeFilter = 'all' | 'cta_match' | 'page_destination' | 'url_pattern' | 'combined';
+type StatusFilter = 'all' | 'active' | 'inactive';
+
 export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) => {
   const { goals, isLoading, toggleGoal, deleteGoal } = useConversionGoals(siteId);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState<GoalTypeFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   // Check if should show onboarding on mount
   useEffect(() => {
@@ -192,6 +211,33 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
       setShowOnboarding(false);
     }
   }, [isLoading, goals.length, siteId]);
+  
+  // Filtered goals
+  const filteredGoals = useMemo(() => {
+    return goals.filter((goal) => {
+      // Search by name
+      if (searchTerm && !goal.goal_name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      // Filter by type
+      if (typeFilter !== 'all' && goal.goal_type !== typeFilter) {
+        return false;
+      }
+      // Filter by status
+      if (statusFilter === 'active' && !goal.is_active) return false;
+      if (statusFilter === 'inactive' && goal.is_active) return false;
+      
+      return true;
+    });
+  }, [goals, searchTerm, typeFilter, statusFilter]);
+  
+  const hasActiveFilters = searchTerm || typeFilter !== 'all' || statusFilter !== 'all';
+  
+  const clearFilters = () => {
+    setSearchTerm('');
+    setTypeFilter('all');
+    setStatusFilter('all');
+  };
 
   const handleToggle = (id: string, is_active: boolean) => {
     toggleGoal.mutate({ id, is_active });
@@ -263,6 +309,47 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
             </div>
           ) : (
             <>
+              {/* Filters Row */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar meta..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as GoalTypeFilter)}>
+                  <SelectTrigger className="w-full sm:w-[160px]">
+                    <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os tipos</SelectItem>
+                    <SelectItem value="cta_match">CTA Match</SelectItem>
+                    <SelectItem value="page_destination">Página Destino</SelectItem>
+                    <SelectItem value="url_pattern">Padrão URL</SelectItem>
+                    <SelectItem value="combined">Combinado</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                  <SelectTrigger className="w-full sm:w-[130px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="active">Ativas</SelectItem>
+                    <SelectItem value="inactive">Inativas</SelectItem>
+                  </SelectContent>
+                </Select>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="icon" onClick={clearFilters} className="flex-shrink-0">
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              
               <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
                 <Info className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
                 <p className="text-sm text-muted-foreground">
@@ -271,16 +358,26 @@ export const ConversionGoalsManager = ({ siteId }: ConversionGoalsManagerProps) 
                 </p>
               </div>
               
-              <div className="space-y-3">
-                {goals.map((goal) => (
-                  <GoalCard
-                    key={goal.id}
-                    goal={goal}
-                    onToggle={handleToggle}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
+              {filteredGoals.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Nenhuma meta encontrada com os filtros aplicados</p>
+                  <Button variant="link" onClick={clearFilters} className="mt-2">
+                    Limpar filtros
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredGoals.map((goal) => (
+                    <GoalCard
+                      key={goal.id}
+                      goal={goal}
+                      onToggle={handleToggle}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
+              )}
             </>
           )}
         </CardContent>
