@@ -1974,6 +1974,93 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_campaign_configs: {
+        Row: {
+          budget: number | null
+          campaign_name: string
+          created_at: string | null
+          end_date: string | null
+          goal_id: string | null
+          id: string
+          is_active: boolean | null
+          site_id: string
+          start_date: string | null
+          updated_at: string | null
+          user_id: string
+          utm_campaign_pattern: string | null
+          utm_medium_pattern: string | null
+          utm_source_pattern: string | null
+        }
+        Insert: {
+          budget?: number | null
+          campaign_name: string
+          created_at?: string | null
+          end_date?: string | null
+          goal_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          site_id: string
+          start_date?: string | null
+          updated_at?: string | null
+          user_id: string
+          utm_campaign_pattern?: string | null
+          utm_medium_pattern?: string | null
+          utm_source_pattern?: string | null
+        }
+        Update: {
+          budget?: number | null
+          campaign_name?: string
+          created_at?: string | null
+          end_date?: string | null
+          goal_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          site_id?: string
+          start_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+          utm_campaign_pattern?: string | null
+          utm_medium_pattern?: string | null
+          utm_source_pattern?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaign_configs_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "conversion_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_campaign_configs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_campaign_configs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "marketing_campaign_configs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_campaign_configs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_campaigns: {
         Row: {
           budget_spent: number | null
