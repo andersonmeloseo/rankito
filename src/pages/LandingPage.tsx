@@ -7,6 +7,7 @@ import { WhoIsItForSection } from "@/components/landing/WhoIsItForSection";
 import { GSCShowcase } from "@/components/landing/GSCShowcase";
 import { EcommerceShowcase } from "@/components/landing/EcommerceShowcase";
 import { UserJourneyShowcase } from "@/components/landing/UserJourneyShowcase";
+import { AdsTrackingShowcase } from "@/components/landing/AdsTrackingShowcase";
 import { ROICalculator } from "@/components/landing/ROICalculator";
 import { ComparisonSection } from "@/components/landing/ComparisonSection";
 import { PricingSection } from "@/components/landing/PricingSection";
@@ -64,11 +65,8 @@ const LandingPageContent = () => {
               <a href="#gsc" className="text-muted-foreground hover:text-foreground transition-colors">
                 {t.nav.gsc}
               </a>
-              <a href="#ecommerce" className="text-muted-foreground hover:text-foreground transition-colors">
-                E-commerce
-              </a>
-              <a href="#user-journey" className="text-muted-foreground hover:text-foreground transition-colors">
-                Jornada do Usuário
+              <a href="#ads-tracking" className="text-muted-foreground hover:text-foreground transition-colors">
+                {t.nav?.adsTracking || "Tracking Ads"}
               </a>
               <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">
                 {t.nav.pricing}
@@ -133,6 +131,8 @@ const LandingPageContent = () => {
         <UserJourneyShowcase />
       </div>
       
+      <AdsTrackingShowcase />
+      
       <ROICalculator />
       
       <ComparisonSection />
@@ -173,18 +173,11 @@ const LandingPageContent = () => {
               {t.nav.gsc}
             </a>
             <a 
-              href="#ecommerce" 
+              href="#ads-tracking" 
               className="text-lg text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
-              E-commerce
-            </a>
-            <a 
-              href="#user-journey" 
-              className="text-lg text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Jornada do Usuário
+              {t.nav?.adsTracking || "Tracking Ads"}
             </a>
             <a 
               href="#pricing" 

@@ -8,6 +8,7 @@ export interface LandingTranslations {
     faq: string;
     login: string;
     startFree: string;
+    adsTracking?: string;
   };
   hero: {
     badge: string;
@@ -68,6 +69,21 @@ export interface LandingTranslations {
     description: string;
     ctaButton: string;
     highlight: string;
+    features: Array<{
+      title: string;
+      description: string;
+    }>;
+  };
+  adsTracking: {
+    badge: string;
+    title: string;
+    painPoint: string;
+    description: string;
+    ctaButton: string;
+    ctaSubtext: string;
+    highlight: string;
+    highlightDescription: string;
+    benefits: string[];
     features: Array<{
       title: string;
       description: string;
@@ -253,6 +269,7 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
       faq: 'FAQ',
       login: 'Entrar',
       startFree: 'Começar Grátis',
+      adsTracking: 'Tracking Ads',
     },
     hero: {
       badge: 'Rank & Rent CRM',
@@ -449,6 +466,40 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
       ],
     },
+    adsTracking: {
+      badge: '🎯 Tracking Avançado para Ads',
+      title: 'Pare de Perder Dinheiro com Conversões Invisíveis',
+      painPoint: 'Google Ads e Meta Ads só veem o clique. Eles não sabem quem virou lead, ligou pro WhatsApp ou fechou negócio. Seu CPL está inflado porque as plataformas não conseguem otimizar.',
+      description: 'Com Rankito, você envia conversões REAIS de volta para Google e Meta. Resultado: CPL mais baixo, ROAS mais alto, clientes impressionados.',
+      ctaButton: 'Começar a Enviar Conversões Offline',
+      ctaSubtext: 'Compatível com Google Ads e Meta Ads • Nenhuma configuração técnica complexa',
+      highlight: '🏆 CONVERSÕES OFFLINE → GOOGLE ADS + META CAPI → OTIMIZAÇÃO AUTOMÁTICA INTELIGENTE',
+      highlightDescription: 'Gestores de tráfego que usam Rankito reportam redução média de 25-40% no CPL após 30 dias de envio de conversões offline.',
+      benefits: [
+        'CPL mais baixo com conversões reais',
+        'ROAS mais preciso nas plataformas',
+        'Otimização automática melhorada',
+        'Relatórios que impressionam clientes',
+      ],
+      features: [
+        {
+          title: 'Metas de Conversão Personalizadas',
+          description: "Defina o que REALMENTE é conversão: cliques em 'WhatsApp Advocacia', 'Solicitar Orçamento', visitas em /obrigado. Não mais clique genérico = conversão.",
+        },
+        {
+          title: 'Export Google Ads Offline',
+          description: 'CSV pronto para upload no Google Ads com GCLID, timezone, email hash SHA256. Compatível com Enhanced Conversions for Leads.',
+        },
+        {
+          title: 'Meta Conversions API Direto',
+          description: 'Envie conversões diretamente para Meta CAPI. Suporte a fbp, fbc, fbclid. Modo de teste integrado para validação antes de produção.',
+        },
+        {
+          title: 'Dashboard de Campanhas',
+          description: 'Veja UTM Source, Campaign, Medium, gclid, fbclid de cada conversão. Saiba exatamente qual campanha está performando.',
+        },
+      ],
+    },
     pricing: {
       badge: 'Preços',
       title: 'Planos Para Todos os Tamanhos',
@@ -606,6 +657,11 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
           title: 'Profissionais de Lead Generation',
           description: 'Seus sites geram leads constantemente, mas você não tem visibilidade clara de qual página converte mais, qual horário é pico e quanto cada projeto realmente lucra. Rankito entrega CRM simples + tracking preciso + indexação automática - você vê exatamente o que funciona e escala o que dá resultado.',
           example: 'Meus sites rank & rent geram leads diariamente mas não sei o ROI exato de cada projeto',
+        },
+        {
+          title: 'Gestores de Tráfego',
+          description: 'Você investe milhares em Google e Meta Ads mas não consegue provar ROI real? CPL inflado porque plataformas não recebem dados de conversão offline? Com Rankito você envia conversões reais de volta para otimização automática - CPL cai, ROAS sobe, clientes renovam.',
+          example: 'Reduzi CPL em 35% depois que comecei a enviar conversões offline',
         },
         {
           title: 'Pequenos E-commerces',
@@ -958,6 +1014,40 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         {
           title: 'Sesiones de Rebote',
           description: 'Visualiza páginas con alta tasa de salida. Entiende dónde el 80% de los visitantes está abandonando tu embudo y corrígelo con datos reales.',
+        },
+      ],
+    },
+    adsTracking: {
+      badge: '🎯 Tracking Avanzado para Ads',
+      title: 'Deja de Perder Dinero con Conversiones Invisibles',
+      painPoint: 'Google Ads y Meta Ads solo ven el clic. No saben quién se convirtió en lead, llamó por WhatsApp o cerró negocio. Tu CPL está inflado porque las plataformas no pueden optimizar.',
+      description: 'Con Rankito, envías conversiones REALES de vuelta a Google y Meta. Resultado: CPL más bajo, ROAS más alto, clientes impresionados.',
+      ctaButton: 'Comenzar a Enviar Conversiones Offline',
+      ctaSubtext: 'Compatible con Google Ads y Meta Ads • Sin configuración técnica compleja',
+      highlight: '🏆 CONVERSIONES OFFLINE → GOOGLE ADS + META CAPI → OPTIMIZACIÓN AUTOMÁTICA INTELIGENTE',
+      highlightDescription: 'Gestores de tráfico que usan Rankito reportan reducción promedio de 25-40% en CPL después de 30 días de envío de conversiones offline.',
+      benefits: [
+        'CPL más bajo con conversiones reales',
+        'ROAS más preciso en las plataformas',
+        'Optimización automática mejorada',
+        'Informes que impresionan a clientes',
+      ],
+      features: [
+        {
+          title: 'Metas de Conversión Personalizadas',
+          description: "Define qué REALMENTE es conversión: clics en 'WhatsApp Abogados', 'Solicitar Presupuesto', visitas a /gracias. No más clic genérico = conversión.",
+        },
+        {
+          title: 'Export Google Ads Offline',
+          description: 'CSV listo para subir a Google Ads con GCLID, timezone, email hash SHA256. Compatible con Enhanced Conversions for Leads.',
+        },
+        {
+          title: 'Meta Conversions API Directo',
+          description: 'Envía conversiones directamente a Meta CAPI. Soporte para fbp, fbc, fbclid. Modo de prueba integrado para validación antes de producción.',
+        },
+        {
+          title: 'Dashboard de Campañas',
+          description: 'Ve UTM Source, Campaign, Medium, gclid, fbclid de cada conversión. Sabe exactamente qué campaña está funcionando.',
         },
       ],
     },
@@ -1371,6 +1461,40 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
       ],
     },
+    adsTracking: {
+      badge: '🎯 Advanced Ads Tracking',
+      title: 'Stop Losing Money with Invisible Conversions',
+      painPoint: 'Google Ads and Meta Ads only see the click. They don\'t know who became a lead, called WhatsApp or closed a deal. Your CPL is inflated because platforms can\'t optimize.',
+      description: 'With Rankito, you send REAL conversions back to Google and Meta. Result: lower CPL, higher ROAS, impressed clients.',
+      ctaButton: 'Start Sending Offline Conversions',
+      ctaSubtext: 'Compatible with Google Ads and Meta Ads • No complex technical setup',
+      highlight: '🏆 OFFLINE CONVERSIONS → GOOGLE ADS + META CAPI → SMART AUTOMATIC OPTIMIZATION',
+      highlightDescription: 'Traffic managers using Rankito report average 25-40% CPL reduction after 30 days of sending offline conversions.',
+      benefits: [
+        'Lower CPL with real conversions',
+        'More accurate ROAS on platforms',
+        'Improved automatic optimization',
+        'Reports that impress clients',
+      ],
+      features: [
+        {
+          title: 'Custom Conversion Goals',
+          description: "Define what REALLY is a conversion: clicks on 'WhatsApp Legal', 'Request Quote', visits to /thank-you. No more generic click = conversion.",
+        },
+        {
+          title: 'Google Ads Offline Export',
+          description: 'CSV ready for Google Ads upload with GCLID, timezone, SHA256 email hash. Compatible with Enhanced Conversions for Leads.',
+        },
+        {
+          title: 'Direct Meta Conversions API',
+          description: 'Send conversions directly to Meta CAPI. Support for fbp, fbc, fbclid. Integrated test mode for validation before production.',
+        },
+        {
+          title: 'Campaign Dashboard',
+          description: 'See UTM Source, Campaign, Medium, gclid, fbclid for each conversion. Know exactly which campaign is performing.',
+        },
+      ],
+    },
     pricing: {
       badge: 'Pricing',
       title: 'Plans For All Sizes',
@@ -1781,6 +1905,40 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         },
       ],
     },
+    adsTracking: {
+      badge: '🎯 Tracking Avancé pour Ads',
+      title: 'Arrêtez de Perdre de l\'Argent avec des Conversions Invisibles',
+      painPoint: 'Google Ads et Meta Ads ne voient que le clic. Ils ne savent pas qui est devenu lead, a appelé WhatsApp ou a conclu une affaire. Votre CPL est gonflé car les plateformes ne peuvent pas optimiser.',
+      description: 'Avec Rankito, vous envoyez des conversions RÉELLES à Google et Meta. Résultat: CPL plus bas, ROAS plus élevé, clients impressionnés.',
+      ctaButton: 'Commencer à Envoyer des Conversions Offline',
+      ctaSubtext: 'Compatible avec Google Ads et Meta Ads • Aucune configuration technique complexe',
+      highlight: '🏆 CONVERSIONS OFFLINE → GOOGLE ADS + META CAPI → OPTIMISATION AUTOMATIQUE INTELLIGENTE',
+      highlightDescription: 'Les gestionnaires de trafic utilisant Rankito rapportent une réduction moyenne de 25-40% du CPL après 30 jours d\'envoi de conversions offline.',
+      benefits: [
+        'CPL plus bas avec conversions réelles',
+        'ROAS plus précis sur les plateformes',
+        'Optimisation automatique améliorée',
+        'Rapports qui impressionnent les clients',
+      ],
+      features: [
+        {
+          title: 'Objectifs de Conversion Personnalisés',
+          description: "Définissez ce qu'est VRAIMENT une conversion: clics sur 'WhatsApp Avocats', 'Demander Devis', visites sur /merci. Plus de clic générique = conversion.",
+        },
+        {
+          title: 'Export Google Ads Offline',
+          description: 'CSV prêt pour Google Ads avec GCLID, fuseau horaire, hash email SHA256. Compatible avec Enhanced Conversions for Leads.',
+        },
+        {
+          title: 'Meta Conversions API Direct',
+          description: 'Envoyez des conversions directement à Meta CAPI. Support fbp, fbc, fbclid. Mode test intégré pour validation avant production.',
+        },
+        {
+          title: 'Tableau de Bord Campagnes',
+          description: 'Voyez UTM Source, Campaign, Medium, gclid, fbclid pour chaque conversion. Sachez exactement quelle campagne performe.',
+        },
+      ],
+    },
     pricing: {
       badge: 'Tarifs',
       title: 'Plans Pour Toutes les Tailles',
@@ -2188,6 +2346,40 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
         {
           title: 'Sessões de Rebote',
           description: 'Visualiza páginas com alta taxa de saída. Entende onde 80% dos visitantes estão a abandonar o teu funil e corrige com dados reais.',
+        },
+      ],
+    },
+    adsTracking: {
+      badge: '🎯 Tracking Avançado para Ads',
+      title: 'Para de Perder Dinheiro com Conversões Invisíveis',
+      painPoint: 'Google Ads e Meta Ads só veem o clique. Não sabem quem se tornou lead, ligou para o WhatsApp ou fechou negócio. O teu CPL está inflacionado porque as plataformas não conseguem otimizar.',
+      description: 'Com o Rankito, envias conversões REAIS de volta para Google e Meta. Resultado: CPL mais baixo, ROAS mais alto, clientes impressionados.',
+      ctaButton: 'Começar a Enviar Conversões Offline',
+      ctaSubtext: 'Compatível com Google Ads e Meta Ads • Nenhuma configuração técnica complexa',
+      highlight: '🏆 CONVERSÕES OFFLINE → GOOGLE ADS + META CAPI → OTIMIZAÇÃO AUTOMÁTICA INTELIGENTE',
+      highlightDescription: 'Gestores de tráfego que usam o Rankito reportam redução média de 25-40% no CPL após 30 dias de envio de conversões offline.',
+      benefits: [
+        'CPL mais baixo com conversões reais',
+        'ROAS mais preciso nas plataformas',
+        'Otimização automática melhorada',
+        'Relatórios que impressionam clientes',
+      ],
+      features: [
+        {
+          title: 'Metas de Conversão Personalizadas',
+          description: "Define o que REALMENTE é conversão: cliques em 'WhatsApp Advocacia', 'Solicitar Orçamento', visitas em /obrigado. Não mais clique genérico = conversão.",
+        },
+        {
+          title: 'Export Google Ads Offline',
+          description: 'CSV pronto para upload no Google Ads com GCLID, timezone, email hash SHA256. Compatível com Enhanced Conversions for Leads.',
+        },
+        {
+          title: 'Meta Conversions API Direto',
+          description: 'Envia conversões diretamente para Meta CAPI. Suporte a fbp, fbc, fbclid. Modo de teste integrado para validação antes de produção.',
+        },
+        {
+          title: 'Dashboard de Campanhas',
+          description: 'Vê UTM Source, Campaign, Medium, gclid, fbclid de cada conversão. Sabe exatamente qual campanha está a performar.',
         },
       ],
     },
