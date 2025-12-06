@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Database, Shield, Zap, Users, Globe, DollarSign, MessageSquare, FileText } from "lucide-react";
+import { Database, Shield, Zap, Users, Globe, DollarSign, MessageSquare, FileText, Target } from "lucide-react";
 
 export const DatabaseSchemaDoc = () => {
   return (
@@ -12,7 +12,7 @@ export const DatabaseSchemaDoc = () => {
             <Database className="h-5 w-5" />
             Estrutura do Banco de Dados
           </CardTitle>
-          <CardDescription>66 tabelas organizadas por módulo</CardDescription>
+          <CardDescription>68 tabelas organizadas por módulo</CardDescription>
         </CardHeader>
       </Card>
 
@@ -53,7 +53,7 @@ export const DatabaseSchemaDoc = () => {
               <TableRow>
                 <TableCell className="font-mono text-sm">subscription_plans</TableCell>
                 <TableCell>Planos disponíveis</TableCell>
-                <TableCell className="text-xs">name, slug, price, max_sites, max_pages_per_site, trial_days</TableCell>
+                <TableCell className="text-xs">name, slug, price, max_sites, max_pages_per_site, trial_days, has_advanced_tracking</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -408,6 +408,40 @@ export const DatabaseSchemaDoc = () => {
         </CardContent>
       </Card>
 
+      {/* Tracking Avançado */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-red-600" />
+            Tracking Avançado
+            <Badge variant="secondary">2 tabelas</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tabela</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Campos Principais</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-mono text-sm">conversion_goals</TableCell>
+                <TableCell>Metas de conversão personalizadas</TableCell>
+                <TableCell className="text-xs">site_id, goal_name, goal_type, cta_patterns[], cta_exact_matches[], page_urls[], url_patterns[], conversion_value, priority, is_active</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-mono text-sm">marketing_campaign_configs</TableCell>
+                <TableCell>Configurações de campanhas</TableCell>
+                <TableCell className="text-xs">site_id, goal_id, campaign_name, utm_campaign_pattern, utm_source_pattern, utm_medium_pattern, budget, start_date, end_date, is_active</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       {/* Database Functions */}
       <Card>
         <CardHeader>
@@ -455,7 +489,7 @@ export const DatabaseSchemaDoc = () => {
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">
-            <strong>Total:</strong> 66 tabelas organizadas em 8 módulos principais + 12 views SQL + 30+ funções de banco de dados. 
+            <strong>Total:</strong> 68 tabelas organizadas em 9 módulos principais + 12 views SQL + 30+ funções de banco de dados. 
             Todas as tabelas possuem RLS policies configuradas para segurança em nível de linha.
           </p>
         </CardContent>

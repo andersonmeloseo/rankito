@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Activity, Globe, MessageSquare, FileText, Shield, Search, Zap, Users } from "lucide-react";
+import { Activity, Globe, MessageSquare, FileText, Shield, Search, Zap, Users, TrendingUp } from "lucide-react";
 
 export const EdgeFunctionsDoc = () => {
   return (
@@ -12,7 +12,7 @@ export const EdgeFunctionsDoc = () => {
             <Activity className="h-5 w-5" />
             Edge Functions Overview
           </CardTitle>
-          <CardDescription>67 funções serverless organizadas por categoria</CardDescription>
+          <CardDescription>69 funções serverless organizadas por categoria</CardDescription>
         </CardHeader>
       </Card>
 
@@ -441,10 +441,47 @@ export const EdgeFunctionsDoc = () => {
         </CardContent>
       </Card>
 
+      {/* Ads & Conversions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-red-600" />
+            Ads & Conversions
+            <Badge variant="secondary">2 funções</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Função</TableHead>
+                <TableHead>Método</TableHead>
+                <TableHead>Auth</TableHead>
+                <TableHead>Descrição</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-mono text-sm">export-google-ads-conversions</TableCell>
+                <TableCell><Badge>POST</Badge></TableCell>
+                <TableCell><Badge variant="outline">JWT</Badge></TableCell>
+                <TableCell>Export CSV para Google Ads com GCLID, Enhanced Conversions (SHA256), timezone, consent</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-mono text-sm">export-meta-conversions</TableCell>
+                <TableCell><Badge>POST</Badge></TableCell>
+                <TableCell><Badge variant="outline">JWT</Badge></TableCell>
+                <TableCell>Export JSON ou envio direto para Meta CAPI v18 com fbclid/fbc/fbp, user_data hash, batch até 1000</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">
-            <strong>Total:</strong> 67 Edge Functions implementadas organizadas em 8 categorias principais. 
+            <strong>Total:</strong> 69 Edge Functions implementadas organizadas em 9 categorias principais. 
             Todas as funções estão em produção e são acessíveis via <code className="bg-muted px-1 py-0.5 rounded">https://jhzmgexprjnpgadkxjup.supabase.co/functions/v1/[nome-funcao]</code>
           </p>
         </CardContent>
