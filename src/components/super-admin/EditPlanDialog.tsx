@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useSubscriptionPlans, SubscriptionPlan } from "@/hooks/useSubscriptionPlans";
 
 interface EditPlanDialogProps {
@@ -24,6 +25,7 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
     max_gsc_integrations: plan.max_gsc_integrations || "",
     trial_days: plan.trial_days || 0,
     stripe_checkout_url: plan.stripe_checkout_url || "",
+    has_advanced_tracking: plan.has_advanced_tracking || false,
   });
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
       max_pages_per_site: formData.max_pages_per_site,
       max_gsc_integrations: formData.max_gsc_integrations,
       trial_days: formData.trial_days,
+      has_advanced_tracking: formData.has_advanced_tracking,
     });
     
     setFormData(prev => ({ ...prev, description: autoDescription }));
@@ -39,7 +42,8 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
     formData.max_sites,
     formData.max_pages_per_site,
     formData.max_gsc_integrations,
-    formData.trial_days
+    formData.trial_days,
+    formData.has_advanced_tracking
   ]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -55,6 +59,7 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
         max_gsc_integrations: formData.max_gsc_integrations ? Number(formData.max_gsc_integrations) : null,
         trial_days: Number(formData.trial_days),
         stripe_checkout_url: formData.stripe_checkout_url || null,
+        has_advanced_tracking: formData.has_advanced_tracking,
       },
     });
     onOpenChange(false);
@@ -173,6 +178,22 @@ export const EditPlanDialog = ({ plan, open, onOpenChange }: EditPlanDialogProps
             <p className="text-xs text-muted-foreground mt-1">
               Link gerado no Stripe para pagamento
             </p>
+          </div>
+
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+            <div className="space-y-0.5">
+              <Label htmlFor="has_advanced_tracking" className="text-sm font-medium">
+                Tracking Avançado
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Metas de Conversão, Export Google Ads, Meta CAPI
+              </p>
+            </div>
+            <Switch
+              id="has_advanced_tracking"
+              checked={formData.has_advanced_tracking}
+              onCheckedChange={(checked) => setFormData({ ...formData, has_advanced_tracking: checked })}
+            />
           </div>
 
           <div className="flex justify-end gap-2">

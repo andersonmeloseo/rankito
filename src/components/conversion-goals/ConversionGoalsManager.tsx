@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +12,7 @@ import {
   Target, 
   MousePointer, 
   FileText, 
-  Link, 
+  Link as LinkIcon, 
   Layers,
   Trash2,
   Info,
@@ -20,7 +21,9 @@ import {
   Filter,
   X,
   Pencil,
-  Megaphone
+  Megaphone,
+  Lock,
+  Sparkles
 } from 'lucide-react';
 import {
   Select,
@@ -30,6 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useConversionGoals, ConversionGoal } from '@/hooks/useConversionGoals';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { CreateGoalDialog } from './CreateGoalDialog';
 import { EditGoalDialog } from './EditGoalDialog';
 import { ConversionGoalsAnalytics } from './ConversionGoalsAnalytics';
@@ -64,7 +68,7 @@ const getGoalTypeIcon = (type: string) => {
     case 'page_destination':
       return <FileText className="h-4 w-4" />;
     case 'url_pattern':
-      return <Link className="h-4 w-4" />;
+      return <LinkIcon className="h-4 w-4" />;
     case 'combined':
       return <Layers className="h-4 w-4" />;
     default:
@@ -221,6 +225,7 @@ type StatusFilter = 'all' | 'active' | 'inactive';
 
 export const ConversionGoalsManager = ({ siteId, siteUrl }: ConversionGoalsManagerProps) => {
   const { goals, isLoading, toggleGoal, deleteGoal } = useConversionGoals(siteId);
+  const { hasAdvancedTracking, isLoading: isLoadingAccess, planName } = useFeatureAccess();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingGoal, setEditingGoal] = useState<ConversionGoal | null>(null);
@@ -230,6 +235,44 @@ export const ConversionGoalsManager = ({ siteId, siteUrl }: ConversionGoalsManag
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<GoalTypeFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+
+  // Bloqueio de acesso para planos sem Tracking Avançado
+  if (!isLoadingAccess && !hasAdvancedTracking) {
+    return (
+      <Card className="border-dashed border-2 border-muted">
+        <CardContent className="py-16 text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-6">
+            <Lock className="h-8 w-8 text-muted-foreground/60" />
+          </div>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h3 className="text-xl font-semibold">Tracking Avançado</h3>
+          </div>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            Metas de Conversão personalizadas, Export para Google Ads e integração com Meta Conversions API 
+            disponíveis a partir do plano Professional.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button asChild size="lg">
+              <Link to="/settings?tab=subscription">
+                Fazer Upgrade
+              </Link>
+            </Button>
+            <Button variant="outline" size="lg" asChild>
+              <a href="/#ads-tracking" target="_blank" rel="noopener noreferrer">
+                Saiba Mais
+              </a>
+            </Button>
+          </div>
+          {planName && (
+            <p className="text-xs text-muted-foreground mt-4">
+              Seu plano atual: <span className="font-medium">{planName}</span>
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Check if should show onboarding on mount
   useEffect(() => {

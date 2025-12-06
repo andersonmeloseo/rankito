@@ -17,6 +17,7 @@ export interface SubscriptionPlan {
   is_active: boolean;
   display_order: number;
   stripe_checkout_url: string | null;
+  has_advanced_tracking: boolean;
   created_at: string;
   updated_at: string;
 }
