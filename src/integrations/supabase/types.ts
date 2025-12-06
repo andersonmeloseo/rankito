@@ -229,6 +229,86 @@ export type Database = {
           },
         ]
       }
+      conversion_goals: {
+        Row: {
+          conversion_value: number | null
+          created_at: string | null
+          cta_exact_matches: string[] | null
+          cta_patterns: string[] | null
+          goal_name: string
+          goal_type: string
+          id: string
+          is_active: boolean | null
+          page_urls: string[] | null
+          priority: number | null
+          site_id: string
+          updated_at: string | null
+          url_patterns: string[] | null
+          user_id: string
+        }
+        Insert: {
+          conversion_value?: number | null
+          created_at?: string | null
+          cta_exact_matches?: string[] | null
+          cta_patterns?: string[] | null
+          goal_name: string
+          goal_type: string
+          id?: string
+          is_active?: boolean | null
+          page_urls?: string[] | null
+          priority?: number | null
+          site_id: string
+          updated_at?: string | null
+          url_patterns?: string[] | null
+          user_id: string
+        }
+        Update: {
+          conversion_value?: number | null
+          created_at?: string | null
+          cta_exact_matches?: string[] | null
+          cta_patterns?: string[] | null
+          goal_name?: string
+          goal_type?: string
+          id?: string
+          is_active?: boolean | null
+          page_urls?: string[] | null
+          priority?: number | null
+          site_id?: string
+          updated_at?: string | null
+          url_patterns?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversion_goals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversion_goals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "conversion_goals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversion_goals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_activities: {
         Row: {
           activity_type: string
@@ -2181,11 +2261,14 @@ export type Database = {
       rank_rent_conversions: {
         Row: {
           city: string | null
+          conversion_value: number | null
           country: string | null
           country_code: string | null
           created_at: string
           cta_text: string | null
           event_type: Database["public"]["Enums"]["event_type"]
+          goal_id: string | null
+          goal_name: string | null
           id: string
           ip_address: string | null
           is_ecommerce_event: boolean | null
@@ -2203,11 +2286,14 @@ export type Database = {
         }
         Insert: {
           city?: string | null
+          conversion_value?: number | null
           country?: string | null
           country_code?: string | null
           created_at?: string
           cta_text?: string | null
           event_type: Database["public"]["Enums"]["event_type"]
+          goal_id?: string | null
+          goal_name?: string | null
           id?: string
           ip_address?: string | null
           is_ecommerce_event?: boolean | null
@@ -2225,11 +2311,14 @@ export type Database = {
         }
         Update: {
           city?: string | null
+          conversion_value?: number | null
           country?: string | null
           country_code?: string | null
           created_at?: string
           cta_text?: string | null
           event_type?: Database["public"]["Enums"]["event_type"]
+          goal_id?: string | null
+          goal_name?: string | null
           id?: string
           ip_address?: string | null
           is_ecommerce_event?: boolean | null
@@ -2246,6 +2335,13 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "rank_rent_conversions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "conversion_goals"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rank_rent_conversions_page_id_fkey"
             columns: ["page_id"]
@@ -4301,6 +4397,16 @@ export type Database = {
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
       generate_indexnow_key: { Args: never; Returns: string }
       get_database_health_metrics: { Args: never; Returns: Json }
+      get_detected_ctas: {
+        Args: { p_site_id: string }
+        Returns: {
+          click_count: number
+          cta_text: string
+          event_type: string
+          first_seen: string
+          last_seen: string
+        }[]
+      }
       get_event_distribution: {
         Args: {
           device_filter?: string
