@@ -9,7 +9,10 @@ import {
   BarChart3,
   Activity,
   Calendar,
-  Filter
+  Filter,
+  Route,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +32,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
+import { ConversionJourneyCard } from './ConversionJourneyCard';
 
 interface ConversionGoalsAnalyticsProps {
   siteId: string;
@@ -69,7 +73,7 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
     queryFn: async () => {
       const { data, error } = await supabase
         .from('rank_rent_conversions')
-        .select('goal_id, goal_name, conversion_value, created_at')
+        .select('id, goal_id, goal_name, conversion_value, created_at, page_url, session_id, cta_text, event_type')
         .eq('site_id', siteId)
         .not('goal_id', 'is', null)
         .gte('created_at', startDate.toISOString())
@@ -81,6 +85,10 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
     },
     enabled: !!siteId && goals.length > 0,
   });
+
+  // State for journey section
+  const [showAllJourneys, setShowAllJourneys] = useState(false);
+  const INITIAL_JOURNEYS_COUNT = 5;
 
   // Filter conversions by selected goal
   const filteredConversions = useMemo(() => {
@@ -358,7 +366,57 @@ export const ConversionGoalsAnalytics = ({ siteId }: ConversionGoalsAnalyticsPro
         {analytics.byGoal.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhuma conversão registrada com metas nos últimos 30 dias</p>
+            <p>Nenhuma conversão registrada com metas no período selecionado</p>
+          </div>
+        )}
+
+        {/* Jornadas de Conversão */}
+        {filteredConversions.length > 0 && (
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium flex items-center gap-2">
+                <Route className="h-4 w-4" />
+                Jornadas de Conversão
+              </h4>
+              <Badge variant="secondary">{filteredConversions.length} conversões</Badge>
+            </div>
+            
+            <div className="space-y-2">
+              {(showAllJourneys ? filteredConversions : filteredConversions.slice(0, INITIAL_JOURNEYS_COUNT)).map((conversion) => (
+                <ConversionJourneyCard
+                  key={conversion.id}
+                  conversionId={conversion.id}
+                  goalName={conversion.goal_name || 'Meta'}
+                  conversionPage={conversion.page_url}
+                  conversionTime={conversion.created_at}
+                  sessionId={conversion.session_id}
+                  conversionValue={conversion.conversion_value ?? undefined}
+                  ctaText={conversion.cta_text}
+                  eventType={conversion.event_type}
+                />
+              ))}
+            </div>
+            
+            {filteredConversions.length > INITIAL_JOURNEYS_COUNT && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAllJourneys(!showAllJourneys)}
+                className="w-full"
+              >
+                {showAllJourneys ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-2" />
+                    Mostrar menos
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                    Ver todas ({filteredConversions.length - INITIAL_JOURNEYS_COUNT} mais)
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
