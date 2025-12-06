@@ -102,7 +102,8 @@ serve(async (req) => {
       session_id,
       sequence_number,
       time_spent_seconds,
-      exit_url
+      exit_url,
+      referrer: payloadReferrer
     } = await req.json();
 
     // Lista de event_types válidos
@@ -262,7 +263,12 @@ serve(async (req) => {
     // Extract IP and User-Agent from headers
     const ip_address = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
     const user_agent = req.headers.get('user-agent') || 'unknown';
-    const referrer = metadata?.referrer || null;
+    // Buscar referrer de múltiplas fontes (prioridade: payload raiz > metadata > HTTP header)
+    const referrer = payloadReferrer || metadata?.referrer || req.headers.get('referer') || null;
+    
+    if (referrer) {
+      console.log('📍 Referrer captured:', referrer);
+    }
 
     // Detect bot and identify it
     const detectBot = (userAgent: string, city: string | null): { isBot: boolean; botName: string | null } => {
