@@ -8,6 +8,7 @@ import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { EditPlanDialog } from "./EditPlanDialog";
 import { CreatePlanDialog } from "./CreatePlanDialog";
 import { DeletePlanDialog } from "./DeletePlanDialog";
+import { PricingAnalysisCard } from "./PricingAnalysisCard";
 
 export const PlansManagementTable = () => {
   const { plans, isLoading, updatePlan, deletePlan } = useSubscriptionPlans();
@@ -141,6 +142,7 @@ export const PlansManagementTable = () => {
         </CardContent>
       </Card>
 
+      <PricingAnalysisCard />
       {editingPlan && (
         <EditPlanDialog
           plan={editingPlan}
