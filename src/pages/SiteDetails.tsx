@@ -61,6 +61,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
 import { EcommerceAnalytics } from "@/components/integrations/ecommerce/EcommerceAnalytics";
 import { UserJourneyTab } from "@/components/rank-rent/journey/UserJourneyTab";
+import { ConversionGoalsManager } from "@/components/conversion-goals/ConversionGoalsManager";
 
 import { CompleteTutorialModal } from "@/components/onboarding/CompleteTutorialModal";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
@@ -855,6 +856,7 @@ const SiteDetails = () => {
                       <SelectItem value="ecommerce">🛒 E-commerce</SelectItem>
                     )}
                     <SelectItem value="reports">📄 Relatórios</SelectItem>
+                    <SelectItem value="conversion-goals">🎯 Metas de Conversão</SelectItem>
                     <SelectItem value="gsc">🔍 Indexador</SelectItem>
                     <SelectItem value="plugin">🔌 Plugin WordPress</SelectItem>
                     <SelectItem value="pixel-tracking">🎯 Pixel & E-commerce</SelectItem>
@@ -886,6 +888,10 @@ const SiteDetails = () => {
                   
                   <ClickUpTabTrigger value="reports" icon={FileText}>
                     Relatórios
+                  </ClickUpTabTrigger>
+                  
+                  <ClickUpTabTrigger value="conversion-goals" icon={Target}>
+                    Metas de Conversão
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="gsc" icon={Search}>
@@ -1558,6 +1564,10 @@ const SiteDetails = () => {
             <UserJourneyTab siteId={siteId || ""} />
           </TabsContent>
 
+          {/* Metas de Conversão Tab */}
+          <TabsContent value="conversion-goals">
+            <ConversionGoalsManager siteId={siteId || ""} />
+          </TabsContent>
 
         </Tabs>
       </div>
