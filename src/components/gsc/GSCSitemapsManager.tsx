@@ -230,8 +230,8 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps'] });
-      queryClient.invalidateQueries({ queryKey: ['gsc-sitemap-history'] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemaps', siteId, integrationId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-sitemap-history', siteId, integrationId] });
       
       if (data.warning) {
         toast.warning(`⚠️ ${data.message}`);
