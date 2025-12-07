@@ -66,11 +66,15 @@ export const CampaignEventsDrawer = ({
   // Se tem meta vinculada, todos os eventos são conversões da meta
   const isFilteredByGoal = !!campaign?.goal_id;
 
-  // Calculate metrics - ajustado para quando filtra por meta
-  const pageViews = isFilteredByGoal ? 0 : events.filter(e => e.event_type === 'page_view').length;
+  // Calculate metrics
   const conversions = isFilteredByGoal ? events.length : events.filter(e => e.event_type !== 'page_view').length;
   const totalValue = events.reduce((sum, e) => sum + (e.conversion_value || 0), 0);
-  const conversionRate = isFilteredByGoal ? '100' : (pageViews > 0 ? ((conversions / pageViews) * 100).toFixed(1) : '0');
+  
+  // Métricas de ROI
+  const budget = campaign?.budget || 0;
+  const cpa = conversions > 0 ? budget / conversions : 0;
+  const roi = budget > 0 ? ((totalValue - budget) / budget) * 100 : 0;
+  const hasRoiData = budget > 0;
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl">
@@ -104,46 +108,40 @@ export const CampaignEventsDrawer = ({
           )}
 
           {/* Metrics Summary */}
-          <div className={`grid ${isFilteredByGoal ? 'grid-cols-2' : 'grid-cols-4'} gap-2`}>
-            {!isFilteredByGoal && (
-              <>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">{events.length}</p>
-                  <p className="text-xs text-muted-foreground">Total</p>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">{pageViews}</p>
-                  <p className="text-xs text-muted-foreground">Visitas</p>
-                </div>
-              </>
-            )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div className="bg-success/10 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold text-success">{conversions}</p>
               <p className="text-xs text-muted-foreground">Conversões</p>
             </div>
-            {!isFilteredByGoal && (
-              <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-foreground">{conversionRate}%</p>
-                <p className="text-xs text-muted-foreground">Taxa</p>
-              </div>
-            )}
-            {isFilteredByGoal && (
-              <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-foreground">
-                  R$ {(campaign?.goal?.conversion_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </p>
-                <p className="text-xs text-muted-foreground">Valor/Conv.</p>
-              </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-foreground">
+                R$ {totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+              </p>
+              <p className="text-xs text-muted-foreground">Valor Total</p>
+            </div>
+            {hasRoiData && (
+              <>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">
+                    R$ {cpa.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">CPA</p>
+                </div>
+                <div className={`rounded-lg p-3 text-center ${roi >= 0 ? 'bg-success/10' : 'bg-destructive/10'}`}>
+                  <p className={`text-2xl font-bold ${roi >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {roi >= 0 ? '+' : ''}{roi.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">ROI</p>
+                </div>
+              </>
             )}
           </div>
 
-          {totalValue > 0 && (
-            <div className="bg-success/10 rounded-lg p-3 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Valor Total Gerado</span>
-              <span className="text-lg font-bold text-success flex items-center gap-1">
-                <DollarSign className="h-4 w-4" />
-                {totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
+          {/* Budget info */}
+          {hasRoiData && (
+            <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Orçamento investido</span>
+              <span className="font-medium">R$ {budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
           )}
 

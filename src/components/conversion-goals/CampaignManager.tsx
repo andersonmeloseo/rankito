@@ -1,20 +1,23 @@
 import { useState } from "react";
-import { Plus, Megaphone, Settings2, Trash2, Eye, Target, Calendar, DollarSign } from "lucide-react";
+import { Plus, Megaphone, Settings2, Trash2, Eye, Target, Calendar, DollarSign, HelpCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCampaignConfigs, useDetectedCampaigns, CampaignConfig, CreateCampaignInput } from "@/hooks/useCampaignConfigs";
 import { ConversionGoal } from "@/hooks/useConversionGoals";
 import { CampaignEventsDrawer } from "./CampaignEventsDrawer";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface CampaignManagerProps {
   siteId: string;
@@ -47,7 +50,14 @@ export const CampaignManager = ({ siteId, goals }: CampaignManagerProps) => {
 
   const { data: detectedCampaigns = [] } = useDetectedCampaigns(siteId, configuredPatterns);
 
+  // Validação: pelo menos 1 critério de filtro
+  const hasValidFilter = formData.goal_id || formData.utm_campaign_pattern || formData.utm_source_pattern || formData.utm_medium_pattern;
+
   const handleCreate = async () => {
+    if (!hasValidFilter) {
+      toast.warning('Configure pelo menos um critério de filtro (meta ou padrão UTM)');
+      return;
+    }
     await createCampaign.mutateAsync(formData);
     setIsCreateOpen(false);
     resetForm();
@@ -91,127 +101,211 @@ export const CampaignManager = ({ siteId, goals }: CampaignManagerProps) => {
   return (
     <div className="space-y-6">
       {/* Configured Campaigns */}
-      <Card className="shadow-card">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Megaphone className="h-5 w-5 text-primary opacity-80" />
-            Campanhas Configuradas
-          </CardTitle>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" onClick={resetForm}>
-                <Plus className="h-4 w-4 mr-1" />
-                Nova Campanha
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Nova Campanha</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Nome da Campanha *</Label>
-                  <Input
-                    value={formData.campaign_name}
-                    onChange={(e) => setFormData({ ...formData, campaign_name: e.target.value })}
-                    placeholder="Ex: Black Friday 2024"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Padrão UTM Campaign</Label>
-                  <Input
-                    value={formData.utm_campaign_pattern || ''}
-                    onChange={(e) => setFormData({ ...formData, utm_campaign_pattern: e.target.value })}
-                    placeholder="Ex: black_friday"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Eventos com utm_campaign contendo este texto serão vinculados
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+      <TooltipProvider>
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Megaphone className="h-5 w-5 text-primary opacity-80" />
+                Campanhas Configuradas
+                <Tooltip>
+                  <TooltipTrigger>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Configure suas campanhas de ads para rastrear ROI. Vincule a uma meta de conversão E/OU padrões UTM para medir performance específica.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Rastreie ROI, CPA e performance de cada campanha de ads
+              </CardDescription>
+            </div>
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" onClick={resetForm}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nova Campanha
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Nova Campanha</DialogTitle>
+                  <DialogDescription>
+                    Configure critérios para agrupar e analisar eventos de uma campanha específica
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label>UTM Source</Label>
+                    <Label className="flex items-center gap-1">
+                      Nome da Campanha *
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Nome para identificar a campanha no dashboard</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </Label>
                     <Input
-                      value={formData.utm_source_pattern || ''}
-                      onChange={(e) => setFormData({ ...formData, utm_source_pattern: e.target.value })}
-                      placeholder="google, facebook..."
+                      value={formData.campaign_name}
+                      onChange={(e) => setFormData({ ...formData, campaign_name: e.target.value })}
+                      placeholder="Ex: Black Friday 2024"
                     />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label>UTM Medium</Label>
+                    <Label className="flex items-center gap-1">
+                      Padrão UTM Campaign
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Filtra eventos onde utm_campaign contém este texto</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </Label>
                     <Input
-                      value={formData.utm_medium_pattern || ''}
-                      onChange={(e) => setFormData({ ...formData, utm_medium_pattern: e.target.value })}
-                      placeholder="cpc, social..."
+                      value={formData.utm_campaign_pattern || ''}
+                      onChange={(e) => setFormData({ ...formData, utm_campaign_pattern: e.target.value })}
+                      placeholder="Ex: black_friday"
                     />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label>Meta de Conversão Vinculada</Label>
-                  <Select
-                    value={formData.goal_id || 'none'}
-                    onValueChange={(v) => setFormData({ ...formData, goal_id: v === 'none' ? null : v })}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1">
+                        UTM Source
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Origem do tráfego (google, facebook, etc)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </Label>
+                      <Input
+                        value={formData.utm_source_pattern || ''}
+                        onChange={(e) => setFormData({ ...formData, utm_source_pattern: e.target.value })}
+                        placeholder="google, facebook..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1">
+                        UTM Medium
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Tipo de mídia (cpc, email, social, etc)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </Label>
+                      <Input
+                        value={formData.utm_medium_pattern || ''}
+                        onChange={(e) => setFormData({ ...formData, utm_medium_pattern: e.target.value })}
+                        placeholder="cpc, social..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1">
+                      Meta de Conversão Vinculada
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Vincule a uma meta específica para ver apenas conversões dessa meta na campanha</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </Label>
+                    <Select
+                      value={formData.goal_id || 'none'}
+                      onValueChange={(v) => setFormData({ ...formData, goal_id: v === 'none' ? null : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecionar meta..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhuma (todas as conversões)</SelectItem>
+                        {goals.filter(g => g.is_active).map((goal) => (
+                          <SelectItem key={goal.id} value={goal.id}>
+                            {goal.goal_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1">
+                      Orçamento (R$)
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Valor investido para calcular CPA e ROI automaticamente</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </Label>
+                    <Input
+                      type="number"
+                      value={formData.budget || ''}
+                      onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })}
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Data Início</Label>
+                      <Input
+                        type="date"
+                        value={formData.start_date || ''}
+                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value || null })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Data Fim</Label>
+                      <Input
+                        type="date"
+                        value={formData.end_date || ''}
+                        onChange={(e) => setFormData({ ...formData, end_date: e.target.value || null })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Validação visual */}
+                  {!hasValidFilter && formData.campaign_name && (
+                    <Alert variant="destructive" className="py-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        Configure pelo menos uma meta OU um padrão UTM
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleCreate} 
+                    disabled={!formData.campaign_name || !hasValidFilter || createCampaign.isPending}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar meta..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhuma (todas as conversões)</SelectItem>
-                      {goals.filter(g => g.is_active).map((goal) => (
-                        <SelectItem key={goal.id} value={goal.id}>
-                          {goal.goal_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Orçamento (R$)</Label>
-                  <Input
-                    type="number"
-                    value={formData.budget || ''}
-                    onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Data Início</Label>
-                    <Input
-                      type="date"
-                      value={formData.start_date || ''}
-                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value || null })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Data Fim</Label>
-                    <Input
-                      type="date"
-                      value={formData.end_date || ''}
-                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value || null })}
-                    />
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={handleCreate} 
-                  disabled={!formData.campaign_name || createCampaign.isPending}
-                >
-                  Criar Campanha
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
+                    Criar Campanha
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardHeader>
         <CardContent>
           {isLoading ? (
             <p className="text-muted-foreground text-sm">Carregando...</p>
@@ -305,18 +399,26 @@ export const CampaignManager = ({ siteId, goals }: CampaignManagerProps) => {
 
       {/* Detected Campaigns */}
       {detectedCampaigns.length > 0 && (
-        <Card className="shadow-card">
+        <Card className="shadow-card border-warning/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Settings2 className="h-5 w-5 text-warning opacity-80" />
               Campanhas Detectadas
-              <Badge variant="outline" className="ml-2">{detectedCampaigns.length}</Badge>
+              <Badge variant="outline" className="ml-2 bg-warning/10">{detectedCampaigns.length}</Badge>
+              <Tooltip>
+                <TooltipTrigger>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>Tráfego identificado automaticamente via utm_campaign que ainda não está vinculado a nenhuma campanha configurada. Configure para rastrear métricas e ROI.</p>
+                </TooltipContent>
+              </Tooltip>
             </CardTitle>
+            <CardDescription>
+              Clique em "Configurar" para criar uma campanha e começar a rastrear ROI
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Campanhas detectadas automaticamente via UTM que ainda não foram configuradas
-            </p>
             <Accordion type="single" collapsible className="w-full">
               {detectedCampaigns.slice(0, 10).map((detected, index) => (
                 <AccordionItem key={detected.utm_campaign} value={`item-${index}`}>
@@ -368,13 +470,14 @@ export const CampaignManager = ({ siteId, goals }: CampaignManagerProps) => {
         </Card>
       )}
 
-      {/* Events Drawer */}
-      <CampaignEventsDrawer
-        siteId={siteId}
-        campaign={selectedCampaign}
-        open={isEventsOpen}
-        onOpenChange={setIsEventsOpen}
-      />
+        {/* Events Drawer */}
+        <CampaignEventsDrawer
+          siteId={siteId}
+          campaign={selectedCampaign}
+          open={isEventsOpen}
+          onOpenChange={setIsEventsOpen}
+        />
+      </TooltipProvider>
     </div>
   );
 };

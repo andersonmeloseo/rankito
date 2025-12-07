@@ -176,22 +176,20 @@ export const useCampaignEvents = (siteId: string, campaign: CampaignConfig | nul
         .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: false });
 
-      // Se a campanha tem uma meta vinculada, filtrar APENAS eventos dessa meta
+      // Se a campanha tem uma meta vinculada, adicionar filtro de goal
       if (campaign.goal_id) {
         query = query.eq('goal_id', campaign.goal_id);
       }
 
-      // Apply UTM filters based on campaign patterns (apenas se não tem goal_id)
-      if (!campaign.goal_id) {
-        if (campaign.utm_campaign_pattern) {
-          query = query.ilike('utm_campaign', `%${campaign.utm_campaign_pattern}%`);
-        }
-        if (campaign.utm_source_pattern) {
-          query = query.ilike('utm_source', `%${campaign.utm_source_pattern}%`);
-        }
-        if (campaign.utm_medium_pattern) {
-          query = query.ilike('utm_medium', `%${campaign.utm_medium_pattern}%`);
-        }
+      // SEMPRE aplicar filtros UTM se existirem (combinado com goal_id)
+      if (campaign.utm_campaign_pattern) {
+        query = query.ilike('utm_campaign', `%${campaign.utm_campaign_pattern}%`);
+      }
+      if (campaign.utm_source_pattern) {
+        query = query.ilike('utm_source', `%${campaign.utm_source_pattern}%`);
+      }
+      if (campaign.utm_medium_pattern) {
+        query = query.ilike('utm_medium', `%${campaign.utm_medium_pattern}%`);
       }
 
       const { data, error } = await query.range(0, 999);
