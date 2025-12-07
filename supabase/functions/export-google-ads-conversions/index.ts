@@ -114,18 +114,15 @@ serve(async (req) => {
     };
 
     // Generate CSV in Google Ads Enhanced Conversions for Leads format
-    // Required columns + Optional Enhanced Conversions fields
+    // Official template: exactly 7 columns
     const csvHeaders = [
       'Google Click ID',
       'Conversion Name', 
       'Conversion Time',
       'Conversion Value',
       'Conversion Currency',
-      'Order ID',
       'Email',
-      'Phone Number',
-      'Ad User Data',
-      'Ad Personalization'
+      'Phone Number'
     ];
 
     // Process conversions with async hashing for Enhanced Conversions
@@ -183,11 +180,8 @@ serve(async (req) => {
         conversionTime,                       // Conversion Time
         conversionValue,                      // Conversion Value (from goal or default)
         currency,                             // Conversion Currency
-        conv.id,                              // Order ID (unique identifier for deduplication)
         emailHash,                            // Email (SHA256 hashed)
-        phoneHash,                            // Phone Number (SHA256 hashed)
-        'Granted',                            // Ad User Data consent (LGPD/GDPR)
-        'Granted'                             // Ad Personalization consent (LGPD/GDPR)
+        phoneHash                             // Phone Number (SHA256 hashed)
       ];
     }));
 
