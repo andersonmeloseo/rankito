@@ -223,7 +223,7 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
           </div>
           <span className="text-2xl font-bold text-foreground">{count}</span>
           <span className="text-xs text-muted-foreground">
-            {isActive ? 'conversões' : 'pendente'}
+            {isActive ? 'conversões com rastreio' : 'sem dados'}
           </span>
         </CardContent>
       </Card>
