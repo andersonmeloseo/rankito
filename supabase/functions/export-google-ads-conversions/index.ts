@@ -56,12 +56,14 @@ serve(async (req) => {
 
     console.log(`[export-google-ads] Exporting conversions for site ${siteId}`);
 
-    // Build query for conversions with gclid - include email_hash and phone_hash for Enhanced Conversions
+    // Build query for REAL conversions with gclid (exclude page_view and page_exit)
     let query = supabase
       .from('rank_rent_conversions')
       .select('id, created_at, event_type, gclid, conversion_value, cta_text, page_url, email_hash, phone_hash, goal_id')
       .eq('site_id', siteId)
       .not('gclid', 'is', null)
+      .not('event_type', 'eq', 'page_view')
+      .not('event_type', 'eq', 'page_exit')
       .order('created_at', { ascending: false });
 
     if (startDate) {
@@ -81,23 +83,35 @@ serve(async (req) => {
       throw error;
     }
 
-    console.log(`[export-google-ads] Found ${conversions?.length || 0} conversions with gclid`);
+    console.log(`[export-google-ads] Found ${conversions?.length || 0} real conversions with gclid`);
 
-    // Fetch goal names for custom conversion names
-    let goalNames: Record<string, string> = {};
+    // Fetch goal names AND values for custom conversion names and values
+    let goalData: Record<string, { name: string; value: number | null }> = {};
     if (conversions && conversions.length > 0) {
       const uniqueGoalIds = [...new Set(conversions.map(c => c.goal_id).filter(Boolean))];
       if (uniqueGoalIds.length > 0) {
         const { data: goals } = await supabase
           .from('conversion_goals')
-          .select('id, goal_name')
+          .select('id, goal_name, conversion_value')
           .in('id', uniqueGoalIds);
         
         if (goals) {
-          goalNames = Object.fromEntries(goals.map(g => [g.id, g.goal_name]));
+          goalData = Object.fromEntries(goals.map(g => [g.id, { name: g.goal_name, value: g.conversion_value }]));
         }
       }
     }
+
+    // Default conversion values by event type (in BRL)
+    const defaultValueByType: Record<string, number> = {
+      'whatsapp_click': 25,
+      'phone_click': 25,
+      'email_click': 15,
+      'form_submit': 50,
+      'button_click': 10,
+      'purchase': 100,
+      'add_to_cart': 20,
+      'begin_checkout': 30
+    };
 
     // Generate CSV in Google Ads Enhanced Conversions for Leads format
     // Required columns + Optional Enhanced Conversions fields
@@ -121,8 +135,8 @@ serve(async (req) => {
       
       // Determine conversion name from goal or event type
       let conversionName = 'Rankito Conversion';
-      if (conv.goal_id && goalNames[conv.goal_id]) {
-        conversionName = goalNames[conv.goal_id];
+      if (conv.goal_id && goalData[conv.goal_id]) {
+        conversionName = goalData[conv.goal_id].name;
       } else if (conv.event_type) {
         const eventTypeMap: Record<string, string> = {
           'whatsapp_click': 'WhatsApp Click',
@@ -137,13 +151,18 @@ serve(async (req) => {
         conversionName = eventTypeMap[conv.event_type] || conv.event_type;
       }
 
+      // Determine conversion value: priority is conv.conversion_value > goal value > default by type
+      const conversionValue = conv.conversion_value 
+        || (conv.goal_id && goalData[conv.goal_id]?.value) 
+        || defaultValueByType[conv.event_type] 
+        || 0;
+
       // Hash email for Enhanced Conversions (if available)
       let emailHash = '';
       if (conv.email_hash) {
         if (isValidSha256(conv.email_hash)) {
           emailHash = conv.email_hash;
         } else {
-          // Hash if it's plain text email
           emailHash = await sha256Hash(conv.email_hash);
         }
       }
@@ -154,7 +173,6 @@ serve(async (req) => {
         if (isValidSha256(conv.phone_hash)) {
           phoneHash = conv.phone_hash;
         } else {
-          // Hash if it's plain text phone
           phoneHash = await sha256Hash(conv.phone_hash);
         }
       }
@@ -163,7 +181,7 @@ serve(async (req) => {
         conv.gclid,                           // Google Click ID
         conversionName,                       // Conversion Name
         conversionTime,                       // Conversion Time
-        conv.conversion_value || 0,           // Conversion Value
+        conversionValue,                      // Conversion Value (from goal or default)
         currency,                             // Conversion Currency
         conv.id,                              // Order ID (unique identifier for deduplication)
         emailHash,                            // Email (SHA256 hashed)
