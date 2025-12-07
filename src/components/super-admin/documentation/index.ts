@@ -5,3 +5,4 @@ export { DatabaseSchemaDoc } from './DatabaseSchemaDoc';
 export { DeploymentGuideDoc } from './DeploymentGuideDoc';
 export { SystemModulesDoc } from './SystemModulesDoc';
 export { BacklogModuleDoc } from './BacklogModuleDoc';
+export { AdsTrackingSystemDoc } from './AdsTrackingSystemDoc';

@@ -1,11 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Server, Database, Rocket, Package, Activity, Kanban } from "lucide-react";
+import { BookOpen, Server, Database, Rocket, Package, Activity, Kanban, Megaphone } from "lucide-react";
 import { SystemArchitectureDoc } from "./SystemArchitectureDoc";
 import { EdgeFunctionsDoc } from "./EdgeFunctionsDoc";
 import { DatabaseSchemaDoc } from "./DatabaseSchemaDoc";
 import { DeploymentGuideDoc } from "./DeploymentGuideDoc";
 import { SystemModulesDoc } from "./SystemModulesDoc";
 import { BacklogModuleDoc } from "./BacklogModuleDoc";
+import { AdsTrackingSystemDoc } from "./AdsTrackingSystemDoc";
 
 export const TechnicalDocumentationTab = () => {
   return (
@@ -19,14 +20,14 @@ export const TechnicalDocumentationTab = () => {
       </div>
 
       <Tabs defaultValue="architecture" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 bg-muted/50">
+        <TabsList className="grid w-full grid-cols-7 bg-muted/50">
           <TabsTrigger value="architecture" className="gap-2">
             <Server className="h-4 w-4" />
             Arquitetura
           </TabsTrigger>
           <TabsTrigger value="apis" className="gap-2">
             <Activity className="h-4 w-4" />
-            APIs & Edge Functions
+            APIs
           </TabsTrigger>
           <TabsTrigger value="database" className="gap-2">
             <Database className="h-4 w-4" />
@@ -39,6 +40,10 @@ export const TechnicalDocumentationTab = () => {
           <TabsTrigger value="modules" className="gap-2">
             <Package className="h-4 w-4" />
             Módulos
+          </TabsTrigger>
+          <TabsTrigger value="ads-tracking" className="gap-2">
+            <Megaphone className="h-4 w-4" />
+            Ads Tracking
           </TabsTrigger>
           <TabsTrigger value="backlog" className="gap-2">
             <Kanban className="h-4 w-4" />
@@ -64,6 +69,10 @@ export const TechnicalDocumentationTab = () => {
 
         <TabsContent value="modules">
           <SystemModulesDoc />
+        </TabsContent>
+
+        <TabsContent value="ads-tracking">
+          <AdsTrackingSystemDoc />
         </TabsContent>
 
         <TabsContent value="backlog">
