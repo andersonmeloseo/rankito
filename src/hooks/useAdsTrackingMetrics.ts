@@ -34,20 +34,25 @@ export const useAdsTrackingMetrics = (siteId: string) => {
     queryFn: async (): Promise<AdsTrackingMetrics> => {
       const { data, error } = await supabase
         .from('rank_rent_conversions')
-        .select('gclid, fbclid, fbc, fbp, utm_source, utm_campaign')
+        .select('gclid, fbclid, fbc, fbp, utm_source, utm_campaign, event_type')
         .eq('site_id', siteId)
         .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
         .range(0, 9999);
 
       if (error) throw error;
 
-      const total = data?.length || 0;
-      const withGclid = data?.filter(d => d.gclid).length || 0;
-      const withFbclid = data?.filter(d => d.fbclid).length || 0;
-      const withFbc = data?.filter(d => d.fbc).length || 0;
-      const withFbp = data?.filter(d => d.fbp).length || 0;
-      const withUtmSource = data?.filter(d => d.utm_source).length || 0;
-      const withUtmCampaign = data?.filter(d => d.utm_campaign).length || 0;
+      // Filter only real conversions (exclude page_view and page_exit)
+      const conversions = (data || []).filter(d => 
+        d.event_type && !['page_view', 'page_exit'].includes(d.event_type)
+      );
+
+      const total = conversions.length;
+      const withGclid = conversions.filter(d => d.gclid).length;
+      const withFbclid = conversions.filter(d => d.fbclid).length;
+      const withFbc = conversions.filter(d => d.fbc).length;
+      const withFbp = conversions.filter(d => d.fbp).length;
+      const withUtmSource = conversions.filter(d => d.utm_source).length;
+      const withUtmCampaign = conversions.filter(d => d.utm_campaign).length;
 
       return {
         total_events: total,

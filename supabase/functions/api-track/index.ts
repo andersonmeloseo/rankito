@@ -857,6 +857,57 @@ serve(async (req) => {
       );
     }
 
+    // ========== UTM/ADS IDS INHERITANCE FROM SESSION ==========
+    // For conversion events (not page_view), inherit UTM/gclid/fbclid from session's first page_view if missing
+    let finalGclid = gclid || null;
+    let finalFbclid = fbclid || null;
+    let finalFbc = fbc || null;
+    let finalFbp = fbp || null;
+    let finalUtmSource = utm_source || null;
+    let finalUtmMedium = utm_medium || null;
+    let finalUtmCampaign = utm_campaign || null;
+    let finalUtmContent = utm_content || null;
+    let finalUtmTerm = utm_term || null;
+
+    const isConversionEvent = detectedEventType !== 'page_view' && detectedEventType !== 'page_exit';
+    const hasNoAdsTracking = !gclid && !fbclid && !utm_source;
+
+    if (isConversionEvent && hasNoAdsTracking && session_id) {
+      console.log('🔍 Conversion missing ads tracking, looking for session origin...');
+      
+      // Find the first page_view from this session that has UTM/gclid data
+      const { data: sessionOrigin } = await supabase
+        .from('rank_rent_conversions')
+        .select('gclid, fbclid, fbc, fbp, utm_source, utm_medium, utm_campaign, utm_content, utm_term')
+        .eq('session_id', session_id)
+        .eq('event_type', 'page_view')
+        .or('gclid.not.is.null,fbclid.not.is.null,utm_source.not.is.null')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (sessionOrigin) {
+        console.log('✅ Found session origin with ads tracking:', {
+          gclid: sessionOrigin.gclid ? 'present' : 'null',
+          fbclid: sessionOrigin.fbclid ? 'present' : 'null',
+          utm_source: sessionOrigin.utm_source
+        });
+        
+        // Inherit from session origin
+        finalGclid = sessionOrigin.gclid || finalGclid;
+        finalFbclid = sessionOrigin.fbclid || finalFbclid;
+        finalFbc = sessionOrigin.fbc || finalFbc;
+        finalFbp = sessionOrigin.fbp || finalFbp;
+        finalUtmSource = sessionOrigin.utm_source || finalUtmSource;
+        finalUtmMedium = sessionOrigin.utm_medium || finalUtmMedium;
+        finalUtmCampaign = sessionOrigin.utm_campaign || finalUtmCampaign;
+        finalUtmContent = sessionOrigin.utm_content || finalUtmContent;
+        finalUtmTerm = sessionOrigin.utm_term || finalUtmTerm;
+      } else {
+        console.log('⚠️ No session origin with ads tracking found');
+      }
+    }
+
     // Insert conversion with goal data and ads tracking
     const { error: insertError } = await supabase
       .from('rank_rent_conversions')
@@ -874,16 +925,16 @@ serve(async (req) => {
         goal_id: goalMatch.goalId,
         goal_name: goalMatch.goalName,
         conversion_value: goalMatch.conversionValue,
-        // Ads tracking fields (Google Ads + Meta Ads)
-        gclid: gclid || null,
-        fbclid: fbclid || null,
-        fbc: fbc || null,
-        fbp: fbp || null,
-        utm_source: utm_source || null,
-        utm_medium: utm_medium || null,
-        utm_campaign: utm_campaign || null,
-        utm_content: utm_content || null,
-        utm_term: utm_term || null,
+        // Ads tracking fields (Google Ads + Meta Ads) - with session inheritance
+        gclid: finalGclid,
+        fbclid: finalFbclid,
+        fbc: finalFbc,
+        fbp: finalFbp,
+        utm_source: finalUtmSource,
+        utm_medium: finalUtmMedium,
+        utm_campaign: finalUtmCampaign,
+        utm_content: finalUtmContent,
+        utm_term: finalUtmTerm,
         metadata: { 
           ...metadata, 
           device,
