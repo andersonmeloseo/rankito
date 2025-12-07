@@ -202,6 +202,7 @@ export const useCampaignEvents = (siteId: string, campaign: CampaignConfig | nul
 };
 
 // Hook to detect unconfigured campaigns from UTM data
+// Conta apenas conversões REAIS (exclui page_view e page_exit)
 export const useDetectedCampaigns = (siteId: string, configuredPatterns: string[], days: number = 30) => {
   return useQuery({
     queryKey: ['detected-campaigns', siteId, days],
@@ -211,7 +212,7 @@ export const useDetectedCampaigns = (siteId: string, configuredPatterns: string[
 
       const { data, error } = await supabase
         .from('rank_rent_conversions')
-        .select('utm_campaign, utm_source, utm_medium, gclid, fbclid')
+        .select('utm_campaign, utm_source, utm_medium, gclid, fbclid, event_type')
         .eq('site_id', siteId)
         .gte('created_at', startDate.toISOString())
         .not('utm_campaign', 'is', null)
@@ -219,8 +220,15 @@ export const useDetectedCampaigns = (siteId: string, configuredPatterns: string[
 
       if (error) throw error;
 
-      // Aggregate by utm_campaign
-      const campaignMap = new Map<string, { count: number; sources: Set<string>; mediums: Set<string>; hasGoogle: boolean; hasMeta: boolean }>();
+      // Aggregate by utm_campaign - conta apenas conversões reais
+      const campaignMap = new Map<string, { 
+        conversions: number; 
+        totalEvents: number;
+        sources: Set<string>; 
+        mediums: Set<string>; 
+        hasGoogle: boolean; 
+        hasMeta: boolean 
+      }>();
       
       (data || []).forEach((event) => {
         const campaign = event.utm_campaign;
@@ -234,7 +242,8 @@ export const useDetectedCampaigns = (siteId: string, configuredPatterns: string[
 
         if (!campaignMap.has(campaign)) {
           campaignMap.set(campaign, { 
-            count: 0, 
+            conversions: 0,
+            totalEvents: 0, 
             sources: new Set(), 
             mediums: new Set(),
             hasGoogle: false,
@@ -243,7 +252,13 @@ export const useDetectedCampaigns = (siteId: string, configuredPatterns: string[
         }
         
         const entry = campaignMap.get(campaign)!;
-        entry.count++;
+        entry.totalEvents++;
+        
+        // Só conta como conversão se NÃO for page_view ou page_exit
+        if (!['page_view', 'page_exit'].includes(event.event_type || '')) {
+          entry.conversions++;
+        }
+        
         if (event.utm_source) entry.sources.add(event.utm_source);
         if (event.utm_medium) entry.mediums.add(event.utm_medium);
         if (event.gclid) entry.hasGoogle = true;
@@ -253,13 +268,14 @@ export const useDetectedCampaigns = (siteId: string, configuredPatterns: string[
       return Array.from(campaignMap.entries())
         .map(([name, data]) => ({
           utm_campaign: name,
-          event_count: data.count,
+          conversions: data.conversions,
+          total_events: data.totalEvents,
           sources: Array.from(data.sources),
           mediums: Array.from(data.mediums),
           hasGoogle: data.hasGoogle,
           hasMeta: data.hasMeta,
         }))
-        .sort((a, b) => b.event_count - a.event_count);
+        .sort((a, b) => b.conversions - a.conversions);
     },
     enabled: !!siteId,
   });
