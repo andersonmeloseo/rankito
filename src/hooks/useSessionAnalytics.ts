@@ -66,6 +66,58 @@ interface SessionAnalytics {
   pagePerformance: PagePerformanceData[];
 }
 
+// Tipos para paginação
+interface SessionRow {
+  id: string;
+  session_id: string;
+  entry_page_url: string;
+  exit_page_url: string | null;
+  entry_time: string;
+  pages_visited: number;
+  total_duration_seconds: number | null;
+  device: string | null;
+  city: string | null;
+  country: string | null;
+  referrer: string | null;
+}
+
+interface VisitRow {
+  session_id: string;
+  page_url: string;
+  sequence_number: number;
+  time_spent_seconds: number | null;
+  created_at: string;
+}
+
+interface ClickRow {
+  session_id: string;
+  event_type: string;
+  page_url: string;
+  metadata: unknown;
+  cta_text: string | null;
+  created_at: string;
+}
+
+// Helper para paginação real - bypassa limite de 1000 do PostgREST
+async function fetchAllPaginated<T>(
+  queryFn: (start: number, end: number) => PromiseLike<{ data: T[] | null; error: any }>,
+  pageSize: number = 1000
+): Promise<T[]> {
+  let allData: T[] = [];
+  let offset = 0;
+  
+  while (true) {
+    const { data, error } = await queryFn(offset, offset + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    allData = [...allData, ...data];
+    if (data.length < pageSize) break;
+    offset += pageSize;
+  }
+  
+  return allData;
+}
+
 export const useSessionAnalytics = (siteId: string, days: number = 30) => {
   return useQuery({
     queryKey: ['session-analytics', siteId, days],
@@ -73,42 +125,42 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       const startDate = startOfDay(subDays(new Date(), days));
       const endDate = endOfDay(new Date());
 
-      // OTIMIZAÇÃO: Query única consolidada com Promise.all para máxima performance
-      const [sessionsResponse, visitsResponse, clicksResponse] = await Promise.all([
-        supabase
-          .from('rank_rent_sessions')
-          .select('id, session_id, entry_page_url, exit_page_url, entry_time, pages_visited, total_duration_seconds, device, city, country, referrer')
-          .eq('site_id', siteId)
-          .gte('entry_time', startDate.toISOString())
-          .lte('entry_time', endDate.toISOString())
-          .order('entry_time', { ascending: false })
-          .range(0, 9999999),
+      // PAGINAÇÃO REAL: Busca em lotes de 1000 para bypassa limite do PostgREST
+      const [sessions, visits, clicks] = await Promise.all([
+        fetchAllPaginated<SessionRow>((start, end) =>
+          supabase
+            .from('rank_rent_sessions')
+            .select('id, session_id, entry_page_url, exit_page_url, entry_time, pages_visited, total_duration_seconds, device, city, country, referrer')
+            .eq('site_id', siteId)
+            .gte('entry_time', startDate.toISOString())
+            .lte('entry_time', endDate.toISOString())
+            .order('entry_time', { ascending: false })
+            .range(start, end)
+        ),
         
-        supabase
-          .from('rank_rent_page_visits')
-          .select('session_id, page_url, sequence_number, time_spent_seconds, created_at')
-          .eq('site_id', siteId)
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString())
-          .order('session_id')
-          .order('sequence_number')
-          .range(0, 9999999),
+        fetchAllPaginated<VisitRow>((start, end) =>
+          supabase
+            .from('rank_rent_page_visits')
+            .select('session_id, page_url, sequence_number, time_spent_seconds, created_at')
+            .eq('site_id', siteId)
+            .gte('created_at', startDate.toISOString())
+            .lte('created_at', endDate.toISOString())
+            .order('session_id')
+            .order('sequence_number')
+            .range(start, end)
+        ),
         
-        supabase
-          .from('rank_rent_conversions')
-          .select('session_id, event_type, page_url, metadata, cta_text, created_at')
-          .eq('site_id', siteId)
-          .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'])
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString())
-          .range(0, 9999999)
+        fetchAllPaginated<ClickRow>((start, end) =>
+          supabase
+            .from('rank_rent_conversions')
+            .select('session_id, event_type, page_url, metadata, cta_text, created_at')
+            .eq('site_id', siteId)
+            .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'])
+            .gte('created_at', startDate.toISOString())
+            .lte('created_at', endDate.toISOString())
+            .range(start, end)
+        )
       ]);
-
-      if (sessionsResponse.error) throw sessionsResponse.error;
-      
-      const sessions = sessionsResponse.data;
-      const visits = visitsResponse.data;
-      const clicks = clicksResponse.data;
 
       // Criar mapeamento UUID ↔ session_id (TEXT) para compatibilidade
       const uuidToSessionId = new Map<string, string>();
