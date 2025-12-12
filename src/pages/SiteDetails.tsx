@@ -850,13 +850,13 @@ const SiteDetails = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pages">🌐 Páginas</SelectItem>
-                    <SelectItem value="advanced-analytics">📊 Analytics Avançado</SelectItem>
+                    <SelectItem value="advanced-analytics">📊 Analytics</SelectItem>
                     <SelectItem value="journey">🛤️ Jornada do Usuário</SelectItem>
                     {site?.is_ecommerce && (
                       <SelectItem value="ecommerce">🛒 E-commerce</SelectItem>
                     )}
                     <SelectItem value="reports">📄 Relatórios</SelectItem>
-                    <SelectItem value="conversion-goals">📡 Tracking Avançado</SelectItem>
+                    <SelectItem value="conversion-goals">📡 Tracking</SelectItem>
                     <SelectItem value="gsc">🔍 Indexador</SelectItem>
                     <SelectItem value="plugin">🔌 Plugin WordPress</SelectItem>
                     <SelectItem value="pixel-tracking">🎯 Pixel & E-commerce</SelectItem>
@@ -869,7 +869,7 @@ const SiteDetails = () => {
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="advanced-analytics" icon={BarChart3}>
-                    Analytics Avançado
+                    Analytics
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="journey" icon={Route}>
@@ -891,7 +891,7 @@ const SiteDetails = () => {
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="conversion-goals" icon={Target}>
-                    Tracking Avançado
+                    Tracking
                   </ClickUpTabTrigger>
                   
                   <ClickUpTabTrigger value="gsc" icon={Search}>
