@@ -2,7 +2,7 @@
  * Rankito Universal Tracking Pixel
  * Automatic tracking for Page Views, Clicks, E-commerce Events, Session Journey
  * Compatible with: Shopify, WooCommerce, Generic HTML
- * Version: 2.0.0 - Complete Session Tracking Refactor
+ * Version: 2.1.0 - Automatic WooCommerce DOM Scraping (zero config)
  */
 
 (function() {
@@ -34,7 +34,7 @@
   // Debug logger
   function log(...args) {
     if (config.debug) {
-      console.log('[Rankito Pixel v2.0]', ...args);
+      console.log('[Rankito Pixel v2.1]', ...args);
     }
   }
 
@@ -58,7 +58,7 @@
       z-index: 999999;
       box-shadow: 0 4px 20px rgba(0,255,0,0.3);
     `;
-    panel.innerHTML = '<div style="font-weight: bold; margin-bottom: 10px; color: #00ff00;">🟢 RANKITO DEBUG v2.0 (Session Tracking)</div>';
+    panel.innerHTML = '<div style="font-weight: bold; margin-bottom: 10px; color: #00ff00;">🟢 RANKITO DEBUG v2.1 (DOM Scraping)</div>';
     document.body.appendChild(panel);
     return panel;
   }
@@ -590,9 +590,188 @@
     }
   }
 
+  // ============================================
+  // WOOCOMMERCE DOM SCRAPING - AUTOMATIC PURCHASE DATA CAPTURE
+  // Zero configuration required from client
+  // ============================================
+  
+  function scrapeWooCommercePurchase() {
+    // Detect if on WooCommerce order confirmation page
+    const url = window.location.href.toLowerCase();
+    const path = window.location.pathname.toLowerCase();
+    
+    const isOrderReceivedPage = 
+      path.includes('/order-received/') ||
+      path.includes('/pedido-recebido/') ||
+      path.includes('/checkout/order-received') ||
+      path.includes('/finalizar-compra/pedido-recebido') ||
+      (path.includes('/checkout') && url.includes('order-received')) ||
+      document.querySelector('.woocommerce-order-received') !== null ||
+      document.querySelector('.woocommerce-thankyou') !== null ||
+      document.body.classList.contains('woocommerce-order-received');
+    
+    if (!isOrderReceivedPage) {
+      return null;
+    }
+    
+    log('WooCommerce order confirmation page detected, starting DOM scraping...');
+    
+    // Extract order ID from URL
+    let orderId = null;
+    const orderMatch = path.match(/(?:order-received|pedido-recebido)[\/=](\d+)/i) ||
+                       url.match(/[?&]order[_-]?id=(\d+)/i) ||
+                       path.match(/\/(\d{4,})\/?$/);
+    if (orderMatch) {
+      orderId = orderMatch[1];
+    }
+    
+    // Fallback: try to get from DOM
+    if (!orderId) {
+      const orderElement = document.querySelector('.woocommerce-order-overview__order strong, .order-number strong, .wc-block-order-confirmation-summary-list-item__value');
+      if (orderElement) {
+        const text = orderElement.textContent.trim();
+        const match = text.match(/\d+/);
+        if (match) orderId = match[0];
+      }
+    }
+    
+    if (!orderId) {
+      log('Could not extract order ID from page');
+      return null;
+    }
+    
+    // Extract total value - try multiple selectors
+    let revenue = null;
+    const totalSelectors = [
+      '.woocommerce-order-overview__total .amount',
+      '.woocommerce-order-overview__total .woocommerce-Price-amount',
+      '.order-total .amount',
+      '.order-total .woocommerce-Price-amount',
+      '.wc-block-order-confirmation-totals-wrapper .wc-block-components-totals-footer-item .wc-block-components-totals-item__value',
+      '.total .amount',
+      '[class*="order-total"] .amount',
+      '.woocommerce-table--order-details tfoot .amount:last-child'
+    ];
+    
+    for (const selector of totalSelectors) {
+      const element = document.querySelector(selector);
+      if (element) {
+        const text = element.textContent.trim();
+        // Parse Brazilian format (R$ 1.234,56) or international ($ 1,234.56)
+        const cleanValue = text.replace(/[^\d.,]/g, '');
+        // Detect format: if has comma as decimal separator
+        if (cleanValue.includes(',')) {
+          // Brazilian format: 1.234,56 -> 1234.56
+          revenue = parseFloat(cleanValue.replace(/\./g, '').replace(',', '.'));
+        } else {
+          // International format: 1,234.56 -> 1234.56
+          revenue = parseFloat(cleanValue.replace(/,/g, ''));
+        }
+        if (!isNaN(revenue) && revenue > 0) {
+          log('Total value found:', revenue, 'from selector:', selector);
+          break;
+        }
+      }
+    }
+    
+    // Extract product names
+    const products = [];
+    const productSelectors = [
+      '.order_item .product-name',
+      'td.product-name',
+      '.woocommerce-table__product-name',
+      '.wc-block-order-confirmation-summary-list-item .wc-block-components-order-summary-item__description',
+      '.wc-block-components-order-summary-item__name',
+      '.product-name a'
+    ];
+    
+    for (const selector of productSelectors) {
+      const elements = document.querySelectorAll(selector);
+      if (elements.length > 0) {
+        elements.forEach(el => {
+          let name = el.textContent.trim();
+          // Clean up: remove quantity indicators like "× 2"
+          name = name.replace(/\s*[×x]\s*\d+\s*$/i, '').trim();
+          // Remove extra whitespace
+          name = name.replace(/\s+/g, ' ');
+          if (name && !products.includes(name)) {
+            products.push(name);
+          }
+        });
+        if (products.length > 0) {
+          log('Products found:', products, 'from selector:', selector);
+          break;
+        }
+      }
+    }
+    
+    // Extract payment method
+    let paymentMethod = null;
+    const paymentSelectors = [
+      '.woocommerce-order-overview__payment-method strong',
+      '.woocommerce-order-overview__payment-method',
+      '.wc-block-order-confirmation-summary-list-item:last-child .wc-block-order-confirmation-summary-list-item__value',
+      '.payment_method',
+      '[class*="payment-method"]'
+    ];
+    
+    for (const selector of paymentSelectors) {
+      const element = document.querySelector(selector);
+      if (element) {
+        paymentMethod = element.textContent.trim().toLowerCase();
+        // Clean up payment method name
+        paymentMethod = paymentMethod.replace(/^(método de pagamento|payment method):?\s*/i, '');
+        if (paymentMethod) {
+          log('Payment method found:', paymentMethod, 'from selector:', selector);
+          break;
+        }
+      }
+    }
+    
+    // Extract currency
+    let currency = 'BRL';
+    const currencyElement = document.querySelector('.woocommerce-Price-currencySymbol, [class*="currency"]');
+    if (currencyElement) {
+      const symbol = currencyElement.textContent.trim();
+      if (symbol === '$' || symbol === 'USD') currency = 'USD';
+      else if (symbol === '€' || symbol === 'EUR') currency = 'EUR';
+      else if (symbol === 'R$' || symbol === 'BRL') currency = 'BRL';
+    }
+    
+    // Extract quantity (items count)
+    let itemsCount = products.length || 1;
+    const quantityElements = document.querySelectorAll('.product-quantity, td.product-quantity');
+    if (quantityElements.length > 0) {
+      let totalQty = 0;
+      quantityElements.forEach(el => {
+        const match = el.textContent.match(/\d+/);
+        if (match) totalQty += parseInt(match[0]);
+      });
+      if (totalQty > 0) itemsCount = totalQty;
+    }
+    
+    return {
+      order_id: orderId,
+      revenue: revenue,
+      currency: currency,
+      payment_method: paymentMethod,
+      products: products,
+      items_count: itemsCount,
+      detection_method: 'dom_scraping'
+    };
+  }
+
   // WooCommerce Integration
   function initWooCommerce() {
-    if (typeof woocommerce_params === 'undefined' && typeof wc_add_to_cart_params === 'undefined') return;
+    // Check for WooCommerce - also detect via body classes
+    const isWooCommerce = 
+      typeof woocommerce_params !== 'undefined' || 
+      typeof wc_add_to_cart_params !== 'undefined' ||
+      document.body.classList.contains('woocommerce') ||
+      document.body.classList.contains('woocommerce-page') ||
+      document.querySelector('.woocommerce') !== null;
+    
+    if (!isWooCommerce) return;
     log('WooCommerce detected');
 
     // Product View
@@ -661,17 +840,48 @@
       }, 1000);
     }
 
-    // Purchase (Order Received page)
+    // Purchase Detection - Priority order:
+    // 1. wc_ga_data (if GA4/GTM plugin installed)
+    // 2. DOM scraping (automatic, no plugin needed)
+    
+    let purchaseSent = false;
+    
+    // Method 1: wc_ga_data (requires GA4/GTM plugin)
     if (typeof wc_ga_data !== 'undefined' && wc_ga_data.order) {
       const order = wc_ga_data.order;
-      log('WooCommerce purchase:', order);
+      log('WooCommerce purchase via wc_ga_data:', order);
       sendEvent('purchase', {
         order_id: String(order.id),
         revenue: parseFloat(order.total),
         currency: wc_ga_data.currency,
         payment_method: order.payment_method || null,
+        detection_method: 'wc_ga_data',
         is_ecommerce_event: true
       });
+      purchaseSent = true;
+    }
+    
+    // Method 2: DOM Scraping (automatic, zero config)
+    if (!purchaseSent) {
+      // Wait a bit for page to fully render
+      setTimeout(() => {
+        const scrapedData = scrapeWooCommercePurchase();
+        if (scrapedData && scrapedData.order_id) {
+          log('WooCommerce purchase via DOM scraping:', scrapedData);
+          sendEvent('purchase', {
+            order_id: String(scrapedData.order_id),
+            revenue: scrapedData.revenue,
+            currency: scrapedData.currency,
+            payment_method: scrapedData.payment_method,
+            products: scrapedData.products,
+            product_name: scrapedData.products?.join(', ') || null,
+            items_count: scrapedData.items_count,
+            detection_method: 'dom_scraping',
+            is_ecommerce_event: true
+          });
+          purchaseSent = true;
+        }
+      }, 1500); // Wait for page render
     }
 
     // Search tracking
@@ -927,7 +1137,7 @@
     if (config.ready) return;
     config.ready = true;
 
-    log('Initializing Rankito Pixel v2.0 with Complete Session Tracking', config);
+    log('Initializing Rankito Pixel v2.1 with WooCommerce DOM Scraping', config);
 
     // Track page view
     trackPageView();
@@ -950,7 +1160,7 @@
     // Initialize e-commerce tracking
     initEcommerce();
 
-    log('✅ Rankito Pixel v2.0 initialized successfully - All events now include session_id and sequence_number');
+    log('✅ Rankito Pixel v2.1 initialized - WooCommerce purchases now auto-captured via DOM scraping');
   }
 
   // Wait for DOM ready
