@@ -798,6 +798,86 @@ serve(async (req) => {
         });
       }
 
+      // ========== AUTO-DETECT WOOCOMMERCE PURCHASE ==========
+      // Detect purchase from order confirmation page URL (works without GA plugin)
+      if (detectedEventType === 'page_view') {
+        const isOrderReceivedPage = 
+          page_url.includes('/order-received/') ||
+          page_url.includes('/pedido-recebido/') ||
+          page_url.includes('/checkout/order-received/') ||
+          page_url.includes('key=wc_order_');
+
+        if (isOrderReceivedPage) {
+          console.log('🛒 WooCommerce order confirmation page detected:', page_url);
+          
+          // Extract order ID from URL patterns like /order-received/12345/ or /pedido-recebido/12345/
+          const orderIdMatch = page_url.match(/(?:order-received|pedido-recebido)\/(\d+)/);
+          const orderId = orderIdMatch?.[1] || null;
+
+          if (orderId) {
+            // Check if purchase already exists for this order
+            const { data: existingPurchase } = await supabase
+              .from('rank_rent_conversions')
+              .select('id')
+              .eq('site_id', site.id)
+              .eq('event_type', 'purchase')
+              .contains('metadata', { order_id: orderId })
+              .maybeSingle();
+
+            if (!existingPurchase) {
+              console.log('🛒 Creating auto-detected purchase event for order:', orderId);
+              
+              // Insert purchase event
+              const { error: purchaseError } = await supabase
+                .from('rank_rent_conversions')
+                .insert({
+                  site_id: site.id,
+                  page_id: pageId,
+                  page_url,
+                  page_path,
+                  event_type: 'purchase',
+                  is_ecommerce_event: true,
+                  session_id: session_id || null,
+                  sequence_number: sequence_number ? sequence_number + 1 : null,
+                  metadata: { 
+                    order_id: orderId,
+                    detection_method: 'backend_auto_detect',
+                    device,
+                    detected_at: new Date().toISOString()
+                  },
+                  ip_address,
+                  user_agent,
+                  referrer,
+                  city: geoData.city,
+                  region: geoData.region,
+                  country: geoData.country,
+                  country_code: geoData.country_code,
+                  // Inherit ads tracking from current event
+                  gclid: gclid || null,
+                  fbclid: fbclid || null,
+                  fbc: fbc || null,
+                  fbp: fbp || null,
+                  utm_source: utm_source || null,
+                  utm_medium: utm_medium || null,
+                  utm_campaign: utm_campaign || null,
+                  utm_content: utm_content || null,
+                  utm_term: utm_term || null,
+                });
+
+              if (purchaseError) {
+                console.error('❌ Error creating auto-detected purchase:', purchaseError);
+              } else {
+                console.log('✅ Auto-detected purchase created for order:', orderId);
+              }
+            } else {
+              console.log('⚠️ Purchase already exists for order:', orderId);
+            }
+          } else {
+            console.log('⚠️ Could not extract order ID from URL:', page_url);
+          }
+        }
+      }
+
       // Handle page_exit event - update visit time and session exit
       if (detectedEventType === 'page_exit' && dbSessionId && time_spent_seconds !== undefined) {
         // Find the most recent page visit for this session
