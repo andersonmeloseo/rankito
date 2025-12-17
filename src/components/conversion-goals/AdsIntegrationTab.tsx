@@ -89,18 +89,25 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
     toast.info('Acesse o link aberto e aguarde 30 segundos...');
 
     setTimeout(async () => {
-      await Promise.all([refetchMetrics(), refetchEvents()]);
-      
-      const hasTestEvent = recentEvents?.some(e => 
-        e.gclid?.includes('TEST_GCLID') || e.utm_campaign === 'connection_test'
-      );
+      // Query directly from database to avoid closure bug
+      const { data: testEvents } = await supabase
+        .from('rank_rent_conversions')
+        .select('id, event_type, gclid, utm_campaign')
+        .eq('site_id', siteId)
+        .or('gclid.ilike.%TEST_GCLID%,utm_campaign.eq.connection_test')
+        .gte('created_at', new Date(Date.now() - 60000).toISOString())
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-      if (hasTestEvent) {
+      if (testEvents && testEvents.length > 0) {
         setTestResult('success');
-        toast.success('Conexão funcionando! Evento de teste capturado.');
+        const eventType = testEvents[0].event_type;
+        toast.success(`Conexão funcionando! Evento "${eventType}" capturado com sucesso.`);
+        // Refresh data after successful test
+        await Promise.all([refetchMetrics(), refetchEvents()]);
       } else {
         setTestResult('fail');
-        toast.warning('Evento de teste não detectado ainda. Verifique se o plugin está ativo.');
+        toast.warning('Evento de teste não detectado. Verifique se o plugin está ativo no site.');
       }
       setIsTestingConnection(false);
     }, 30000);
