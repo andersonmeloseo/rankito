@@ -234,3 +234,8 @@ verify_jwt = true
 
 [functions.export-meta-conversions]
 verify_jwt = true
+
+# ===== WOOCOMMERCE WEBHOOK =====
+
+[functions.woocommerce-webhook]
+verify_jwt = false
