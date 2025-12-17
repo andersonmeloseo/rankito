@@ -32,7 +32,8 @@ import {
   Info,
   TrendingUp
 } from 'lucide-react';
-import { useAdsTrackingMetrics, useRecentAdsEvents } from '@/hooks/useAdsTrackingMetrics';
+import { useRecentAdsEvents } from '@/hooks/useAdsTrackingMetrics';
+import { useAdsTrackingCoverage } from '@/hooks/useAdsTrackingCoverage';
 import { useCampaignPerformance } from '@/hooks/useCampaignPerformance';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -63,8 +64,8 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
   const [useTestMode, setUseTestMode] = useState(true);
 
   // Data hooks
-  const { data: metrics, isLoading: metricsLoading, refetch: refetchMetrics } = useAdsTrackingMetrics(siteId);
-  const { data: recentEvents, refetch: refetchEvents } = useRecentAdsEvents(siteId);
+  const { data: coverage, isLoading: coverageLoading, refetch: refetchCoverage } = useAdsTrackingCoverage(siteId);
+  const { refetch: refetchEvents } = useRecentAdsEvents(siteId);
   const { data: campaigns, isLoading: campaignsLoading, refetch: refetchCampaigns } = useCampaignPerformance(siteId, period);
 
   const handleTestConnection = async () => {
@@ -104,7 +105,7 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
         const eventType = testEvents[0].event_type;
         toast.success(`Conexão funcionando! Evento "${eventType}" capturado com sucesso.`);
         // Refresh data after successful test
-        await Promise.all([refetchMetrics(), refetchEvents()]);
+        await Promise.all([refetchCoverage(), refetchEvents()]);
       } else {
         setTestResult('fail');
         toast.warning('Evento de teste não detectado. Verifique se o plugin está ativo no site.');
@@ -114,7 +115,7 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
   };
 
   const handleRefresh = async () => {
-    await Promise.all([refetchMetrics(), refetchEvents(), refetchCampaigns()]);
+    await Promise.all([refetchCoverage(), refetchEvents(), refetchCampaigns()]);
     toast.success('Dados atualizados!');
   };
 
@@ -230,7 +231,7 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
           </div>
           <span className="text-2xl font-bold text-foreground">{count}</span>
           <span className="text-xs text-muted-foreground">
-            {isActive ? 'conversões com rastreio' : 'sem dados'}
+            {isActive ? 'eventos com rastreio' : 'sem dados'}
           </span>
         </CardContent>
       </Card>
@@ -284,7 +285,7 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
           </div>
         </CardHeader>
         <CardContent>
-          {metricsLoading ? (
+          {coverageLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Array(4).fill(0).map((_, i) => (
                 <Skeleton key={i} className="h-24 w-full rounded-lg" />
@@ -292,13 +293,13 @@ export function AdsIntegrationTab({ siteId, siteUrl, goals }: AdsIntegrationTabP
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {getStatusIndicator(metrics?.with_gclid || 0, 'Google Ads', 'google')}
-              {getStatusIndicator(metrics?.with_fbclid || 0, 'Meta Ads', 'meta')}
-              {getStatusIndicator(metrics?.with_utm_source || 0, 'UTM Source', 'utm')}
-              {getStatusIndicator(metrics?.with_utm_campaign || 0, 'Campanhas', 'utm')}
+              {getStatusIndicator(coverage?.with_gclid || 0, 'Google Ads', 'google')}
+              {getStatusIndicator(coverage?.with_fbclid || 0, 'Meta Ads', 'meta')}
+              {getStatusIndicator(coverage?.with_utm_source || 0, 'UTM Source', 'utm')}
+              {getStatusIndicator(coverage?.with_utm_campaign || 0, 'Campanhas', 'utm')}
             </div>
           )}
-          
+
           {/* Test Result Badge */}
           <div className="flex items-center justify-between mt-4 pt-4 border-t">
             <div className="flex items-center gap-2">
