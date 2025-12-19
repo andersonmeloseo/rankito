@@ -4789,6 +4789,15 @@ export type Database = {
         }[]
       }
       get_parent_user_id: { Args: { _user_id: string }; Returns: string }
+      get_plan_distribution: {
+        Args: never
+        Returns: {
+          pages_count: number
+          plan_name: string
+          sites_count: number
+          user_count: number
+        }[]
+      }
       get_top_pages: {
         Args: {
           device_filter?: string

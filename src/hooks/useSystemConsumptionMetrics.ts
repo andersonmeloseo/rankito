@@ -97,15 +97,8 @@ export const useSystemConsumptionMetrics = () => {
         // Top users by consumption
         supabase.rpc('get_top_users_by_consumption', { limit_count: 10 }),
         
-        // Distribution by plan
-        supabase
-          .from('user_subscriptions')
-          .select(`
-            plan_id,
-            user_id,
-            subscription_plans!inner(name)
-          `)
-          .eq('status', 'active')
+        // Distribution by plan - using RPC to avoid N+1 queries
+        supabase.rpc('get_plan_distribution')
       ]);
 
       // Process daily evolution
@@ -130,47 +123,13 @@ export const useSystemConsumptionMetrics = () => {
         totalConversions: Number(user.total_conversions),
       }));
 
-      // Process plan distribution
-      const planMap = new Map<string, { userCount: number; sitesCount: number; pagesCount: number }>();
-      
-      if (planDistributionData.data) {
-        for (const sub of planDistributionData.data) {
-          const planName = (sub.subscription_plans as any)?.name || 'Sem Plano';
-          
-          if (!planMap.has(planName)) {
-            planMap.set(planName, { userCount: 0, sitesCount: 0, pagesCount: 0 });
-          }
-          
-          const plan = planMap.get(planName)!;
-          plan.userCount++;
-          
-          // Get sites and pages for this user
-          const { data: userSites } = await supabase
-            .from('rank_rent_sites')
-            .select('id')
-            .eq('owner_user_id', sub.user_id);
-          
-          if (userSites) {
-            plan.sitesCount += userSites.length;
-            
-            for (const site of userSites) {
-              const { count } = await supabase
-                .from('rank_rent_pages')
-                .select('id', { count: 'exact', head: true })
-                .eq('site_id', site.id);
-              
-              plan.pagesCount += count || 0;
-            }
-          }
-        }
-      }
-
-      const distributionByPlan: PlanDistribution[] = Array.from(planMap.entries()).map(
-        ([planName, stats]) => ({
-          planName,
-          ...stats,
-        })
-      );
+      // Process plan distribution from RPC result
+      const distributionByPlan: PlanDistribution[] = (planDistributionData.data || []).map((plan: any) => ({
+        planName: plan.plan_name,
+        userCount: Number(plan.user_count),
+        sitesCount: Number(plan.sites_count),
+        pagesCount: Number(plan.pages_count),
+      }));
 
       return {
         global: {
