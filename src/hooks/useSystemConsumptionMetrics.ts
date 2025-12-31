@@ -41,65 +41,53 @@ export const useSystemConsumptionMetrics = () => {
     queryFn: async (): Promise<SystemConsumptionMetrics> => {
       const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
 
-      // Fetch all metrics in parallel
+      // Fetch all metrics in parallel - using RPC for counts to bypass RLS timeout
       const [
-        sitesData,
-        pagesData,
-        conversionsData,
-        gscRequests,
-        gscIntegrations,
-        geoRequests,
+        globalCounts,
         dailyConversions,
         topUsersData,
         planDistributionData
       ] = await Promise.all([
-        // Total sites
-        supabase
-          .from('rank_rent_sites')
-          .select('id', { count: 'exact', head: true }),
+        // Global counts via RPC (bypasses RLS for super admins)
+        supabase.rpc('get_system_consumption_counts'),
         
-        // Total pages
-        supabase
-          .from('rank_rent_pages')
-          .select('id', { count: 'exact', head: true }),
-        
-        // Total conversions
-        supabase
-          .from('rank_rent_conversions')
-          .select('id', { count: 'exact', head: true }),
-        
-        // GSC requests (last 30 days)
-        supabase
-          .from('gsc_url_indexing_requests')
-          .select('id', { count: 'exact', head: true })
-          .gte('created_at', thirtyDaysAgo),
-        
-        // Active GSC integrations
-        supabase
-          .from('google_search_console_integrations')
-          .select('id', { count: 'exact', head: true })
-          .eq('is_active', true),
-        
-        // Geo requests (conversions with city)
-        supabase
-          .from('rank_rent_conversions')
-          .select('id', { count: 'exact', head: true })
-          .not('city', 'is', null)
-          .gte('created_at', thirtyDaysAgo),
-        
-        // Daily evolution
+        // Daily evolution - limited query, should work fine
         supabase
           .from('rank_rent_conversions')
           .select('created_at')
           .gte('created_at', thirtyDaysAgo)
-          .order('created_at', { ascending: true }),
+          .order('created_at', { ascending: true })
+          .limit(10000),
         
         // Top users by consumption
         supabase.rpc('get_top_users_by_consumption', { limit_count: 10 }),
         
-        // Distribution by plan - using RPC to avoid N+1 queries
+        // Distribution by plan
         supabase.rpc('get_plan_distribution')
       ]);
+
+      // Parse global counts from RPC - cast to proper type
+      interface GlobalCountsResult {
+        totalSites: number;
+        totalPages: number;
+        totalConversions: number;
+        gscRequestsLast30Days: number;
+        activeGscIntegrations: number;
+        geoRequestsLast30Days: number;
+      }
+      
+      const defaultCounts: GlobalCountsResult = {
+        totalSites: 0,
+        totalPages: 0,
+        totalConversions: 0,
+        gscRequestsLast30Days: 0,
+        activeGscIntegrations: 0,
+        geoRequestsLast30Days: 0
+      };
+      
+      const counts: GlobalCountsResult = globalCounts.data 
+        ? (globalCounts.data as unknown as GlobalCountsResult)
+        : defaultCounts;
 
       // Process daily evolution
       const evolutionByDay: Record<string, number> = {};
@@ -133,12 +121,12 @@ export const useSystemConsumptionMetrics = () => {
 
       return {
         global: {
-          totalSites: sitesData.count || 0,
-          totalPages: pagesData.count || 0,
-          totalConversions: conversionsData.count || 0,
-          gscRequestsLast30Days: gscRequests.count || 0,
-          activeGscIntegrations: gscIntegrations.count || 0,
-          geoRequestsLast30Days: geoRequests.count || 0,
+          totalSites: counts.totalSites || 0,
+          totalPages: counts.totalPages || 0,
+          totalConversions: counts.totalConversions || 0,
+          gscRequestsLast30Days: counts.gscRequestsLast30Days || 0,
+          activeGscIntegrations: counts.activeGscIntegrations || 0,
+          geoRequestsLast30Days: counts.geoRequestsLast30Days || 0,
         },
         evolution,
         topUsers,

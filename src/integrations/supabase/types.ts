@@ -4798,6 +4798,7 @@ export type Database = {
           user_count: number
         }[]
       }
+      get_system_consumption_counts: { Args: never; Returns: Json }
       get_top_pages: {
         Args: {
           device_filter?: string
