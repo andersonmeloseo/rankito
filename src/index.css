@@ -270,7 +270,58 @@ All colors MUST be HSL.
     border: 1px solid rgba(255, 255, 255, 0.18);
   }
   
-  /* Card Hover Effect */
+  /* Modern Card Styles */
+  .card-modern {
+    @apply bg-card rounded-xl border border-border/50 shadow-card;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-modern:hover {
+    @apply shadow-card-hover border-border;
+    transform: translateY(-2px);
+  }
+  
+  .card-interactive {
+    @apply card-modern cursor-pointer;
+  }
+  
+  .card-interactive:hover {
+    @apply shadow-card-hover;
+    transform: translateY(-3px) scale(1.005);
+  }
+  
+  .card-glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    @apply rounded-xl border border-white/30;
+  }
+  
+  .card-gradient-border {
+    position: relative;
+    @apply bg-card rounded-xl overflow-hidden;
+  }
+  
+  .card-gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.3));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .card-gradient-border:hover::before {
+    opacity: 1;
+  }
+  
+  /* Card Hover Effect (legacy) */
   .card-hover {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -278,17 +329,129 @@ All colors MUST be HSL.
     transform: translateY(-2px);
   }
   
+  /* Stagger Animation for Lists */
+  .stagger-fade-in > * {
+    animation: fadeInUp 0.5s ease-out backwards;
+  }
+  
+  .stagger-fade-in > *:nth-child(1) { animation-delay: 0.05s; }
+  .stagger-fade-in > *:nth-child(2) { animation-delay: 0.1s; }
+  .stagger-fade-in > *:nth-child(3) { animation-delay: 0.15s; }
+  .stagger-fade-in > *:nth-child(4) { animation-delay: 0.2s; }
+  .stagger-fade-in > *:nth-child(5) { animation-delay: 0.25s; }
+  .stagger-fade-in > *:nth-child(6) { animation-delay: 0.3s; }
+  .stagger-fade-in > *:nth-child(7) { animation-delay: 0.35s; }
+  .stagger-fade-in > *:nth-child(8) { animation-delay: 0.4s; }
+  
+  /* Modern Skeleton Loader */
+  .skeleton-modern {
+    @apply rounded-lg;
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.08) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+  
+  /* Icon Container Styles */
+  .icon-container {
+    @apply flex items-center justify-center rounded-xl p-3 transition-all duration-200;
+  }
+  
+  .icon-container-sm {
+    @apply flex items-center justify-center rounded-lg p-2 transition-all duration-200;
+  }
+  
   /* Icon Gradient Backgrounds */
   .icon-gradient-blue {
-    @apply bg-gradient-to-br from-blue-500 to-blue-600;
+    @apply bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25;
   }
   .icon-gradient-green {
-    @apply bg-gradient-to-br from-green-500 to-green-600;
+    @apply bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg shadow-green-500/25;
   }
   .icon-gradient-orange {
-    @apply bg-gradient-to-br from-amber-500 to-amber-600;
+    @apply bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/25;
   }
   .icon-gradient-emerald {
-    @apply bg-gradient-to-br from-emerald-500 to-emerald-600;
+    @apply bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25;
+  }
+  .icon-gradient-purple {
+    @apply bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25;
+  }
+  .icon-gradient-rose {
+    @apply bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25;
+  }
+  .icon-gradient-cyan {
+    @apply bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/25;
+  }
+  .icon-gradient-indigo {
+    @apply bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25;
+  }
+  
+  /* Soft Icon Backgrounds */
+  .icon-soft-blue {
+    @apply bg-blue-50 text-blue-600;
+  }
+  .icon-soft-green {
+    @apply bg-green-50 text-green-600;
+  }
+  .icon-soft-orange {
+    @apply bg-amber-50 text-amber-600;
+  }
+  .icon-soft-purple {
+    @apply bg-purple-50 text-purple-600;
+  }
+  .icon-soft-rose {
+    @apply bg-rose-50 text-rose-600;
+  }
+  
+  /* Metric Display */
+  .metric-value {
+    @apply text-3xl font-bold tracking-tight;
+  }
+  
+  .metric-label {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+  
+  .metric-trend {
+    @apply inline-flex items-center gap-1 text-sm font-medium;
+  }
+  
+  .metric-trend-up {
+    @apply text-metric-positive;
+  }
+  
+  .metric-trend-down {
+    @apply text-metric-negative;
+  }
+  
+  /* Section Headers */
+  .section-header {
+    @apply flex items-center justify-between mb-6;
+  }
+  
+  .section-title {
+    @apply text-xl font-semibold tracking-tight;
+  }
+  
+  .section-subtitle {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+  
+  /* Badge Styles */
+  .badge-gradient {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--primary) / 0.05));
+    color: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary) / 0.2);
+  }
+  
+  /* Focus Visible Styles */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }
