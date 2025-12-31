@@ -94,13 +94,13 @@ export function SuperAdminSidebar({ activeTab, onTabChange }: SuperAdminSidebarP
           "flex items-center gap-3 transition-all",
           isCollapsed && "justify-center"
         )}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm">
             <Shield className="h-4 w-4" />
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-sidebar-foreground">Super Admin</span>
-              <span className="text-xs text-sidebar-foreground/60">Painel de Controle</span>
+              <span className="text-sm font-semibold text-foreground">Super Admin</span>
+              <span className="text-xs text-muted-foreground">Painel de Controle</span>
             </div>
           )}
         </div>
@@ -111,7 +111,7 @@ export function SuperAdminSidebar({ activeTab, onTabChange }: SuperAdminSidebarP
       <SidebarContent className="px-2">
         {menuGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label}>
-            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>

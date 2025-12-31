@@ -215,14 +215,14 @@ All colors MUST be HSL.
 
     --radius: 0.875rem;
 
-    /* Sidebar */
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
+    /* Sidebar - Light Theme */
+    --sidebar-background: 0 0% 99%;
+    --sidebar-foreground: 222 47% 20%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 28% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 28% 17%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 20%;
+    --sidebar-border: 214 32% 91%;
     --sidebar-ring: 217 91% 60%;
 
     /* Custom Dashboard Tokens */
