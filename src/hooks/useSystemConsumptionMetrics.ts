@@ -85,7 +85,12 @@ export const useSystemConsumptionMetrics = () => {
         geoRequestsLast30Days: 0
       };
       
-      const counts: GlobalCountsResult = globalCounts.data 
+      // Log error if RPC failed
+      if (globalCounts.error) {
+        console.error('Erro ao buscar métricas globais:', globalCounts.error);
+      }
+      
+      const counts: GlobalCountsResult = globalCounts.data && !globalCounts.error
         ? (globalCounts.data as unknown as GlobalCountsResult)
         : defaultCounts;
 
