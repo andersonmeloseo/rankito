@@ -1,12 +1,48 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, DollarSign, Globe, TrendingUp } from "lucide-react";
+import { BarChart3, DollarSign, Globe, TrendingUp, LucideIcon } from "lucide-react";
+import { SkeletonMetricCards } from "@/components/ui/skeleton-modern";
 
 interface OverviewCardsProps {
   userId: string;
 }
+
+interface MetricCardProps {
+  title: string;
+  value: string | number;
+  icon: LucideIcon;
+  description: string;
+  iconVariant: "blue" | "green" | "orange" | "emerald";
+  onClick?: () => void;
+}
+
+const MetricCard = ({ title, value, icon: Icon, description, iconVariant, onClick }: MetricCardProps) => {
+  const iconClasses = {
+    blue: "icon-gradient-blue",
+    green: "icon-gradient-green",
+    orange: "icon-gradient-orange",
+    emerald: "icon-gradient-emerald",
+  };
+
+  return (
+    <div
+      className="card-interactive p-6 cursor-pointer group"
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          {title}
+        </span>
+        <div className={`icon-container-sm ${iconClasses[iconVariant]} group-hover:scale-110 transition-transform`}>
+          <Icon className="w-4 h-4" />
+        </div>
+      </div>
+      <div className="metric-value text-foreground">{value}</div>
+      <p className="text-sm text-muted-foreground mt-1">{description}</p>
+    </div>
+  );
+};
 
 export const OverviewCards = ({ userId }: OverviewCardsProps) => {
   const navigate = useNavigate();
@@ -67,18 +103,8 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
         totalConversions,
       };
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
-
-  const getIconGradient = (color: string) => {
-    const gradients: Record<string, string> = {
-      'text-primary': 'icon-gradient-blue',
-      'text-success': 'icon-gradient-green',
-      'text-warning': 'icon-gradient-orange',
-      'text-accent': 'icon-gradient-emerald',
-    };
-    return gradients[color] || 'icon-gradient-blue';
-  };
 
   const handleCardClick = (cardTitle: string) => {
     if (cardTitle === "Projetos Alugados") {
@@ -98,84 +124,48 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
       value: metrics?.rentedSites || 0,
       icon: Globe,
       description: `${metrics?.availableSites || 0} disponíveis`,
-      color: "text-primary",
+      iconVariant: "blue" as const,
     },
     {
       title: "Receita Mensal Total",
       value: `R$ ${(metrics?.monthlyRevenue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
       icon: DollarSign,
       description: "Soma de todos os aluguéis",
-      color: "text-success",
+      iconVariant: "green" as const,
     },
     {
       title: "Contratos Vencendo",
       value: metrics?.expiringContracts || 0,
       icon: TrendingUp,
       description: "Próximos 30 dias",
-      color: "text-warning",
+      iconVariant: "orange" as const,
     },
     {
       title: "Taxa de Ocupação",
       value: `${metrics?.occupancyRate || 0}%`,
       icon: BarChart3,
       description: `${metrics?.rentedSites || 0} de ${metrics?.totalSites || 0} projetos`,
-      color: "text-accent",
+      iconVariant: "emerald" as const,
     },
   ];
 
   if (isLoading) {
-    return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="h-8 w-32 bg-muted animate-pulse rounded mb-2" />
-              <div className="h-3 w-40 bg-muted animate-pulse rounded" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
+    return <SkeletonMetricCards count={4} />;
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      {cards.map((card) => {
-        const Icon = card.icon;
-        return (
-          <Card 
-            key={card.title} 
-            className="group relative overflow-hidden border border-border/50 shadow-card hover:shadow-card-hover transition-all duration-300 card-hover bg-gradient-to-br from-card to-muted/30 cursor-pointer active:scale-[0.98]"
-            onClick={() => handleCardClick(card.title)}
-          >
-            {/* Subtle Gradient on Hover */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            
-            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-muted-foreground tracking-wide uppercase">
-                {card.title}
-              </CardTitle>
-              
-              {/* Icon with Colored Background */}
-              <div className={`p-2.5 rounded-xl ${getIconGradient(card.color)} shadow-sm transition-transform duration-200 group-hover:scale-110`}>
-                <Icon className="w-4 h-4 text-white" />
-              </div>
-            </CardHeader>
-            
-            <CardContent className="relative pt-1">
-              <div className="text-3xl font-bold text-foreground tracking-tight mb-1">
-                {card.value}
-              </div>
-              <p className="text-xs font-medium text-muted-foreground">
-                {card.description}
-              </p>
-            </CardContent>
-          </Card>
-        );
-      })}
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 stagger-fade-in">
+      {cards.map((card) => (
+        <MetricCard
+          key={card.title}
+          title={card.title}
+          value={card.value}
+          icon={card.icon}
+          description={card.description}
+          iconVariant={card.iconVariant}
+          onClick={() => handleCardClick(card.title)}
+        />
+      ))}
     </div>
   );
 };
