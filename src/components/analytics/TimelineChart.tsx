@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { SkeletonChart } from "@/components/ui/skeleton-modern";
+import { IllustratedEmptyState } from "@/components/ui/illustrated-empty-state";
 
 interface TimelineChartProps {
   data: any[];
@@ -9,16 +11,14 @@ interface TimelineChartProps {
 export const TimelineChart = ({ data, isLoading }: TimelineChartProps) => {
   if (isLoading) {
     return (
-      <Card className="shadow-lg border-border/50 animate-fade-in">
+      <Card className="card-modern animate-scale-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             📊 Linha do Tempo
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
+          <SkeletonChart height={400} />
         </CardContent>
       </Card>
     );
@@ -26,23 +26,25 @@ export const TimelineChart = ({ data, isLoading }: TimelineChartProps) => {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="shadow-lg border-border/50 animate-fade-in">
+      <Card className="card-modern animate-scale-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             📊 Linha do Tempo
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-            Nenhum dado disponível para o período selecionado
-          </div>
+          <IllustratedEmptyState
+            illustration="analytics"
+            title="Nenhum dado disponível"
+            description="Não há dados para o período selecionado"
+          />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="shadow-lg border-border/50 animate-fade-in hover:shadow-xl transition-all">
+    <Card className="card-modern card-interactive animate-scale-in">
       <CardHeader className="pb-6">
         <CardTitle className="flex items-center gap-2">
           📊 Linha do Tempo
@@ -58,9 +60,9 @@ export const TimelineChart = ({ data, isLoading }: TimelineChartProps) => {
                 <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05}/>
               </linearGradient>
               <linearGradient id="colorConversions" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
-                <stop offset="50%" stopColor="#10b981" stopOpacity={0.4}/>
-                <stop offset="100%" stopColor="#10b981" stopOpacity={0.05}/>
+                <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.8}/>
+                <stop offset="50%" stopColor="hsl(var(--success))" stopOpacity={0.4}/>
+                <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.05}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
@@ -81,8 +83,9 @@ export const TimelineChart = ({ data, isLoading }: TimelineChartProps) => {
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                backdropFilter: 'blur(8px)',
               }}
               labelFormatter={(label) => {
                 const date = new Date(label);
@@ -108,7 +111,7 @@ export const TimelineChart = ({ data, isLoading }: TimelineChartProps) => {
             <Area
               type="monotone"
               dataKey="conversions"
-              stroke="#10b981"
+              stroke="hsl(var(--success))"
               strokeWidth={3}
               fillOpacity={1}
               fill="url(#colorConversions)"

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
 
-type IllustrationType = "projects" | "deals" | "clients" | "conversions" | "charts" | "search" | "notifications" | "files";
+type IllustrationType = "projects" | "deals" | "clients" | "conversions" | "charts" | "search" | "notifications" | "files" | "analytics";
 
 interface IllustratedEmptyStateProps {
   illustration?: IllustrationType;
@@ -103,6 +103,20 @@ const illustrations: Record<IllustrationType, React.ReactNode> = {
       <rect x="70" y="90" width="60" height="6" rx="3" fill="hsl(var(--muted-foreground) / 0.3)"/>
       <rect x="70" y="105" width="45" height="6" rx="3" fill="hsl(var(--muted-foreground) / 0.3)"/>
       <rect x="70" y="120" width="50" height="6" rx="3" fill="hsl(var(--muted-foreground) / 0.3)"/>
+    </svg>
+  ),
+  analytics: (
+    <svg className="w-32 h-32" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 150 L60 120 L90 130 L120 80 L150 100 L180 60" stroke="hsl(var(--primary))" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M30 150 L60 120 L90 130 L120 80 L150 100 L180 60 L180 150 L30 150 Z" fill="hsl(var(--primary) / 0.1)"/>
+      <circle cx="60" cy="120" r="5" fill="hsl(var(--primary))"/>
+      <circle cx="90" cy="130" r="5" fill="hsl(var(--primary))"/>
+      <circle cx="120" cy="80" r="5" fill="hsl(var(--primary))"/>
+      <circle cx="150" cy="100" r="5" fill="hsl(var(--primary))"/>
+      <circle cx="180" cy="60" r="5" fill="hsl(var(--primary))"/>
+      <rect x="30" y="40" width="40" height="20" rx="4" fill="hsl(var(--muted))" stroke="hsl(var(--border))" strokeWidth="1"/>
+      <rect x="35" y="45" width="20" height="4" rx="2" fill="hsl(var(--muted-foreground) / 0.3)"/>
+      <rect x="35" y="52" width="28" height="3" rx="1" fill="hsl(var(--muted-foreground) / 0.2)"/>
     </svg>
   ),
 };

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ChevronDown } from "lucide-react";
+import { SkeletonChart } from "@/components/ui/skeleton-modern";
 
 interface ConversionFunnelChartProps {
   data: {
@@ -13,15 +14,13 @@ interface ConversionFunnelChartProps {
 export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChartProps) => {
   if (isLoading) {
     return (
-      <Card className="shadow-card">
+      <Card className="card-modern animate-scale-in">
         <CardHeader>
           <CardTitle>Funil de Conversão</CardTitle>
           <CardDescription>Jornada do visitante até a conversão</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
+          <SkeletonChart height={300} />
         </CardContent>
       </Card>
     );
@@ -32,7 +31,7 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
   const conversionRate = interactions > 0 ? ((conversions / interactions) * 100).toFixed(1) : "0";
 
   return (
-    <Card className="shadow-lg border-border/50 animate-fade-in hover:shadow-xl transition-all">
+    <Card className="card-modern card-interactive animate-scale-in">
       <CardHeader>
         <CardTitle>Funil de Conversão</CardTitle>
         <CardDescription>Jornada do visitante até a conversão</CardDescription>
@@ -40,39 +39,39 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
       <CardContent>
         <div className="space-y-4 max-w-4xl mx-auto">
           {/* Visualizações */}
-          <div className="relative animate-scale-in">
+          <div className="relative animate-slide-up" style={{ animationDelay: '0s' }}>
             <div className="flex justify-center">
               <div 
-                className="h-24 bg-gradient-to-r from-blue-500/40 to-blue-400/30 rounded-xl flex items-center justify-between px-6 transition-all hover:shadow-md border border-blue-500/30"
+                className="h-24 bg-gradient-to-r from-primary/40 to-primary/30 rounded-xl flex items-center justify-between px-6 transition-all hover:shadow-lg border border-primary/30"
                 style={{ width: "100%", maxWidth: "100%" }}
               >
                 <div>
-                  <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Visualizações</p>
-                  <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{pageViews.toLocaleString()}</p>
+                  <p className="text-sm text-primary font-medium">Visualizações</p>
+                  <p className="text-3xl font-bold text-foreground">{pageViews.toLocaleString()}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg text-blue-700 dark:text-blue-300 font-semibold">100%</p>
+                  <p className="text-lg text-primary font-semibold">100%</p>
                 </div>
               </div>
             </div>
             <div className="flex justify-center mt-3">
-              <ChevronDown className="w-6 h-6 text-blue-500 animate-pulse" />
+              <ChevronDown className="w-6 h-6 text-primary animate-pulse" />
             </div>
           </div>
 
           {/* Interações */}
-          <div className="relative animate-scale-in" style={{ animationDelay: '0.2s' }}>
+          <div className="relative animate-slide-up" style={{ animationDelay: '0.15s' }}>
             <div className="flex justify-center">
               <div 
-                className="h-24 bg-gradient-to-r from-orange-500/40 to-orange-400/30 rounded-xl flex items-center justify-between px-6 transition-all hover:shadow-md border border-orange-500/30"
+                className="h-24 bg-gradient-to-r from-orange-500/40 to-orange-400/30 rounded-xl flex items-center justify-between px-6 transition-all hover:shadow-lg border border-orange-500/30"
                 style={{ width: `${(interactions / pageViews * 100) || 0}%`, minWidth: "75%" }}
               >
                 <div>
-                  <p className="text-sm text-orange-700 dark:text-orange-300 font-medium">Interações</p>
-                  <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">{interactions.toLocaleString()}</p>
+                  <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Interações</p>
+                  <p className="text-3xl font-bold text-foreground">{interactions.toLocaleString()}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg text-orange-700 dark:text-orange-300 font-semibold">{interactionRate}%</p>
+                  <p className="text-lg text-orange-600 dark:text-orange-400 font-semibold">{interactionRate}%</p>
                 </div>
               </div>
             </div>
@@ -82,18 +81,18 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
           </div>
 
           {/* Conversões */}
-          <div className="relative animate-scale-in" style={{ animationDelay: '0.4s' }}>
+          <div className="relative animate-slide-up" style={{ animationDelay: '0.3s' }}>
             <div className="flex justify-center">
               <div 
-                className="h-24 bg-gradient-to-r from-green-500/40 to-green-400/30 rounded-xl flex items-center justify-between px-6 transition-all hover:shadow-md hover:shadow-green-500/20 border border-green-500/30"
+                className="h-24 bg-gradient-to-r from-success/40 to-success/30 rounded-xl flex items-center justify-between px-6 transition-all hover:shadow-lg hover:shadow-success/20 border border-success/30"
                 style={{ width: `${(conversions / pageViews * 100) || 0}%` }}
               >
                 <div>
-                  <p className="text-sm font-medium text-green-700 dark:text-green-300">Conversões</p>
-                  <p className="text-3xl font-bold text-green-900 dark:text-green-100">{conversions.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-success">Conversões</p>
+                  <p className="text-3xl font-bold text-foreground">{conversions.toLocaleString()}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-green-700 dark:text-green-300">{conversionRate}%</p>
+                  <p className="text-lg font-bold text-success">{conversionRate}%</p>
                 </div>
               </div>
             </div>

@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { SkeletonChart } from "@/components/ui/skeleton-modern";
+import { IllustratedEmptyState } from "@/components/ui/illustrated-empty-state";
 
 interface TopPagesChartProps {
   data: any[];
@@ -9,7 +11,7 @@ interface TopPagesChartProps {
 export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
   if (isLoading) {
     return (
-      <Card className="shadow-lg border-border/50 animate-fade-in">
+      <Card className="card-modern animate-scale-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             🏆 Top 10 Páginas Mais Visitadas
@@ -17,9 +19,7 @@ export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
           <CardDescription>Páginas com maior número de eventos</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
+          <SkeletonChart height={400} />
         </CardContent>
       </Card>
     );
@@ -27,7 +27,7 @@ export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="shadow-lg border-border/50 animate-fade-in">
+      <Card className="card-modern animate-scale-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             🏆 Top 10 Páginas Mais Visitadas
@@ -35,25 +35,26 @@ export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
           <CardDescription>Páginas com maior número de eventos</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-            Nenhuma página com tráfego no período selecionado
-          </div>
+          <IllustratedEmptyState
+            illustration="analytics"
+            title="Nenhuma página com tráfego"
+            description="Não há páginas visitadas no período selecionado"
+          />
         </CardContent>
       </Card>
     );
   }
 
-  // Adiciona gradiente de cores baseado na performance
   const maxCount = Math.max(...data.map(item => item.count));
   const getBarColor = (count: number) => {
     const intensity = count / maxCount;
     if (intensity > 0.7) return "hsl(var(--primary))";
-    if (intensity > 0.4) return "hsl(142, 76%, 36%)"; // verde
-    return "hsl(39, 100%, 57%)"; // laranja
+    if (intensity > 0.4) return "hsl(var(--success))";
+    return "hsl(39, 100%, 57%)";
   };
 
   return (
-    <Card className="shadow-lg border-border/50 animate-fade-in hover:shadow-xl transition-all">
+    <Card className="card-modern card-interactive animate-scale-in">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           🏆 Top 10 Páginas Mais Visitadas
@@ -89,8 +90,9 @@ export const TopPagesChart = ({ data, isLoading }: TopPagesChartProps) => {
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                backdropFilter: 'blur(8px)',
               }}
               formatter={(value: number, name: string, props: any) => [
                 <>

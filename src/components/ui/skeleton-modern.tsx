@@ -95,4 +95,15 @@ const SkeletonList = ({ count = 5, hasAvatar = false }: SkeletonListProps) => (
   </div>
 );
 
-export { SkeletonModern, SkeletonCard, SkeletonMetricCards, SkeletonList };
+interface SkeletonChartProps {
+  height?: number;
+}
+
+const SkeletonChart = ({ height = 300 }: SkeletonChartProps) => (
+  <div 
+    className="skeleton-modern rounded-xl w-full"
+    style={{ height }}
+  />
+);
+
+export { SkeletonModern, SkeletonCard, SkeletonMetricCards, SkeletonList, SkeletonChart };

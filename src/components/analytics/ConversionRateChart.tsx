@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { SkeletonChart } from "@/components/ui/skeleton-modern";
+import { IllustratedEmptyState } from "@/components/ui/illustrated-empty-state";
 
 interface ConversionRateChartProps {
   data: { date: string; rate: number }[];
@@ -9,7 +11,7 @@ interface ConversionRateChartProps {
 export const ConversionRateChart = ({ data, isLoading }: ConversionRateChartProps) => {
   if (isLoading) {
     return (
-      <Card className="shadow-lg border-border/50 animate-fade-in">
+      <Card className="card-modern animate-scale-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             📈 Taxa de Conversão ao Longo do Tempo
@@ -17,9 +19,7 @@ export const ConversionRateChart = ({ data, isLoading }: ConversionRateChartProp
           <CardDescription>Acompanhe a evolução da taxa de conversão</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
+          <SkeletonChart height={300} />
         </CardContent>
       </Card>
     );
@@ -27,7 +27,7 @@ export const ConversionRateChart = ({ data, isLoading }: ConversionRateChartProp
 
   if (!data || data.length === 0) {
     return (
-      <Card className="shadow-lg border-border/50 animate-fade-in">
+      <Card className="card-modern animate-scale-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             📈 Taxa de Conversão ao Longo do Tempo
@@ -35,9 +35,11 @@ export const ConversionRateChart = ({ data, isLoading }: ConversionRateChartProp
           <CardDescription>Acompanhe a evolução da taxa de conversão</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-            Dados insuficientes para calcular taxa de conversão
-          </div>
+          <IllustratedEmptyState
+            illustration="analytics"
+            title="Dados insuficientes"
+            description="Não há dados suficientes para calcular a taxa de conversão"
+          />
         </CardContent>
       </Card>
     );
@@ -46,7 +48,7 @@ export const ConversionRateChart = ({ data, isLoading }: ConversionRateChartProp
   const averageRate = data.reduce((sum, item) => sum + item.rate, 0) / data.length;
 
   return (
-    <Card className="shadow-lg border-border/50 animate-fade-in hover:shadow-xl transition-all">
+    <Card className="card-modern card-interactive animate-scale-in">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           📈 Taxa de Conversão ao Longo do Tempo
@@ -83,8 +85,9 @@ export const ConversionRateChart = ({ data, isLoading }: ConversionRateChartProp
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                backdropFilter: 'blur(8px)',
               }}
               formatter={(value: number) => [`${value.toFixed(2)}%`, 'Taxa de Conversão']}
               labelFormatter={(label) => {
