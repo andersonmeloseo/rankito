@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { SkeletonChart } from "@/components/ui/skeleton-modern";
 
 interface HourlyHeatmapProps {
   data: { hour: number; count: number }[];
@@ -8,15 +9,13 @@ interface HourlyHeatmapProps {
 export const HourlyHeatmap = ({ data, isLoading }: HourlyHeatmapProps) => {
   if (isLoading) {
     return (
-      <Card className="shadow-card">
+      <Card className="card-modern animate-scale-in">
         <CardHeader>
           <CardTitle>Horários de Pico</CardTitle>
           <CardDescription>Distribuição de conversões por hora do dia</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[200px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
+          <SkeletonChart height={200} />
         </CardContent>
       </Card>
     );
@@ -25,7 +24,7 @@ export const HourlyHeatmap = ({ data, isLoading }: HourlyHeatmapProps) => {
   const maxCount = Math.max(...data.map(d => d.count));
 
   return (
-    <Card className="shadow-lg border-border/50 animate-fade-in hover:shadow-xl transition-all">
+    <Card className="card-modern card-interactive animate-scale-in">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           ⏰ Horários de Pico

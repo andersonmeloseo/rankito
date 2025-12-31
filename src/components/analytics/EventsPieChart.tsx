@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useMemo } from "react";
+import { SkeletonChart } from "@/components/ui/skeleton-modern";
+import { IllustratedEmptyState } from "@/components/ui/illustrated-empty-state";
 
 interface EventsPieChartProps {
   data: any[];
@@ -9,10 +11,10 @@ interface EventsPieChartProps {
 
 const COLORS = [
   'hsl(var(--primary))',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
+  'hsl(var(--success))',
+  'hsl(39, 100%, 57%)',
+  'hsl(0, 84%, 60%)',
+  'hsl(262, 83%, 58%)',
 ];
 
 export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
@@ -22,16 +24,14 @@ export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
 
   if (isLoading) {
     return (
-      <Card className="shadow-lg border-border/50 animate-fade-in">
+      <Card className="card-modern card-glass animate-scale-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             🎯 Distribuição de Eventos
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
+          <SkeletonChart height={400} />
         </CardContent>
       </Card>
     );
@@ -39,23 +39,25 @@ export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="shadow-lg border-border/50 animate-fade-in">
+      <Card className="card-modern card-glass animate-scale-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             🎯 Distribuição de Eventos
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-            Nenhum evento registrado no período selecionado
-          </div>
+          <IllustratedEmptyState
+            illustration="analytics"
+            title="Nenhum evento registrado"
+            description="Não há eventos no período selecionado"
+          />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="shadow-lg border-border/50 animate-fade-in hover:shadow-xl transition-all">
+    <Card className="card-modern card-glass card-interactive animate-scale-in">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           🎯 Distribuição de Eventos
@@ -89,8 +91,9 @@ export const EventsPieChart = ({ data, isLoading }: EventsPieChartProps) => {
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                backdropFilter: 'blur(8px)',
               }}
             />
             <Legend 
