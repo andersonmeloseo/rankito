@@ -3263,6 +3263,62 @@ export type Database = {
           },
         ]
       }
+      rank_rent_site_metrics_cache: {
+        Row: {
+          last_conversion_at: string | null
+          site_id: string
+          total_conversions: number
+          total_page_views: number
+          unique_pages_with_traffic: number
+          updated_at: string
+        }
+        Insert: {
+          last_conversion_at?: string | null
+          site_id: string
+          total_conversions?: number
+          total_page_views?: number
+          unique_pages_with_traffic?: number
+          updated_at?: string
+        }
+        Update: {
+          last_conversion_at?: string | null
+          site_id?: string
+          total_conversions?: number
+          total_page_views?: number
+          unique_pages_with_traffic?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_rent_site_metrics_cache_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "rank_rent_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_site_metrics_cache_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "rank_rent_metrics"
+            referencedColumns: ["site_id"]
+          },
+          {
+            foreignKeyName: "rank_rent_site_metrics_cache_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "rank_rent_site_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_rent_site_metrics_cache_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "rank_rent_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rank_rent_sites: {
         Row: {
           auto_renew: boolean | null
