@@ -350,11 +350,11 @@ export const SitesList = ({
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Status Contrato</th>
                   <th className="text-center p-3 text-sm font-medium text-muted-foreground">Páginas</th>
                   <th className="text-center p-3 text-sm font-medium text-muted-foreground">Page Views</th>
-                  <th className="text-center p-3 text-sm font-medium text-muted-foreground">Conversões</th>
+                  <th className="text-center p-3 text-sm font-medium text-muted-foreground">Ações</th>
                   <th className="text-center p-3 text-sm font-medium text-muted-foreground">Taxa</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Nicho</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Localização</th>
-                  <th className="text-center p-3 text-sm font-medium text-muted-foreground">Ações</th>
+                  <th className="text-center p-3 text-sm font-medium text-muted-foreground">Ver</th>
                 </tr>
               </thead>
               <tbody>
