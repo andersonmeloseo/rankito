@@ -288,7 +288,30 @@ serve(async (req) => {
     console.log("🌱 Iniciando seed de dados para Claudio Tree Work...");
     console.log(`📅 Período: ${START_DATE.toISOString()} a ${END_DATE.toISOString()}`);
 
-    // 1. Limpar dados existentes do período para este site
+    // 1. Buscar páginas existentes do site para mapear page_id
+    const { data: existingPages, error: pagesError } = await supabase
+      .from('rank_rent_pages')
+      .select('id, page_path')
+      .eq('site_id', SITE_ID);
+
+    if (pagesError) {
+      console.error("Erro ao buscar páginas:", pagesError);
+      throw pagesError;
+    }
+
+    // Criar mapa de path -> page_id (normalizado)
+    const pagePathToId = new Map<string, string>();
+    if (existingPages) {
+      for (const page of existingPages) {
+        const normalizedPath = page.page_path.replace(/\/$/, ''); // remove trailing slash
+        pagePathToId.set(normalizedPath, page.id);
+        pagePathToId.set(normalizedPath + '/', page.id); // também com slash
+        pagePathToId.set(page.page_path, page.id); // path original
+      }
+    }
+    console.log(`📑 Mapeadas ${existingPages?.length || 0} páginas para page_id`);
+
+    // 2. Limpar dados existentes do período para este site
     const { error: deleteError } = await supabase
       .from('rank_rent_conversions')
       .delete()
@@ -302,9 +325,17 @@ serve(async (req) => {
     }
     console.log("🧹 Dados existentes do período removidos");
 
-    // 2. Gerar pool de visitantes únicos (~130 visitantes)
+    // 3. Gerar pool de visitantes únicos (~130 visitantes)
     const visitorPool = generateVisitorPool(130);
     console.log(`👥 Pool de ${visitorPool.length} visitantes únicos gerado`);
+    
+    // Função auxiliar para buscar page_id
+    const getPageId = (pagePath: string): string | null => {
+      return pagePathToId.get(pagePath) || 
+             pagePathToId.get(pagePath.replace(/\/$/, '')) || 
+             pagePathToId.get(pagePath.replace(/\/$/, '') + '/') || 
+             null;
+    };
 
     // 3. Calcular distribuição de page views por dia
     const totalDays = 23;
@@ -393,6 +424,7 @@ serve(async (req) => {
           
           pageViewRecords.push({
             site_id: SITE_ID,
+            page_id: getPageId(pagePath),
             page_url: `${SITE_URL}${pagePath}`,
             page_path: pagePath,
             event_type: "page_view",
@@ -485,6 +517,7 @@ serve(async (req) => {
 
         phoneClickRecords.push({
           site_id: SITE_ID,
+          page_id: getPageId(pagePath),
           page_url: `${SITE_URL}${pagePath}`,
           page_path: pagePath,
           event_type: "phone_click",
@@ -542,6 +575,7 @@ serve(async (req) => {
 
       pageExitRecords.push({
         site_id: SITE_ID,
+        page_id: getPageId(page),
         page_url: `${SITE_URL}${page}`,
         page_path: page,
         event_type: "page_exit",
