@@ -162,50 +162,39 @@ verify_jwt = false
 [functions.mapbox-reset-monthly.schedule]
 every = "0 0 1 * *"
 
-# ===== NOVAS FUNÇÕES DE MELHORIA DO SISTEMA DE INDEXAÇÃO =====
-
-# Melhoria 1: Validação de URLs
 [functions.gsc-validate-urls]
 verify_jwt = true
 
-# Melhoria 2: Sistema de Retry Inteligente
 [functions.gsc-process-retries]
 verify_jwt = false
 
 [functions.gsc-process-retries.schedule]
 every = "2 hours"
 
-# Melhoria 4: Status Real do Google via Inspection API
 [functions.gsc-sync-inspection-status]
 verify_jwt = false
 
 [functions.gsc-sync-inspection-status.schedule]
 every = "1 day"
 
-# ===== GOOGLE BUSINESS PROFILE (GBP) FUNCTIONS =====
-
-# GBP: Sincronizar Reviews
 [functions.gbp-sync-reviews]
 verify_jwt = false
 
 [functions.gbp-sync-reviews.schedule]
 every = "0 */6 * * *"
 
-# GBP: Sincronizar Analytics
 [functions.gbp-sync-analytics]
 verify_jwt = false
 
 [functions.gbp-sync-analytics.schedule]
 every = "0 2 * * *"
 
-# GBP: Publicar Posts Agendados
 [functions.gbp-publish-post]
 verify_jwt = false
 
 [functions.gbp-publish-post.schedule]
 every = "0 * * * *"
 
-# GBP: OAuth2 Authorization Flow
 [functions.gbp-oauth-authorize]
 verify_jwt = true
 
@@ -215,19 +204,14 @@ verify_jwt = false
 [functions.gbp-oauth-refresh]
 verify_jwt = true
 
-# GBP: Testar Conexão
 [functions.gbp-test-connection]
 verify_jwt = true
 
-# GBP: Responder Review
 [functions.gbp-respond-review]
 verify_jwt = true
 
-# GBP: Deletar Perfil
 [functions.gbp-delete-profile]
 verify_jwt = true
-
-# ===== ADS INTEGRATION FUNCTIONS =====
 
 [functions.export-google-ads-conversions]
 verify_jwt = true
@@ -235,7 +219,8 @@ verify_jwt = true
 [functions.export-meta-conversions]
 verify_jwt = true
 
-# ===== WOOCOMMERCE WEBHOOK =====
-
 [functions.woocommerce-webhook]
 verify_jwt = false
+
+[functions.seed-analytics-data]
+verify_jwt = true
