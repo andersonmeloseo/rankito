@@ -16,8 +16,8 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
     return (
       <Card className="card-modern animate-scale-in">
         <CardHeader>
-          <CardTitle>Funil de Conversão</CardTitle>
-          <CardDescription>Jornada do visitante até a conversão</CardDescription>
+          <CardTitle>Funil de Ação</CardTitle>
+          <CardDescription>Jornada do visitante até a ação</CardDescription>
         </CardHeader>
         <CardContent>
           <SkeletonChart height={300} />
@@ -33,8 +33,8 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
   return (
     <Card className="card-modern card-interactive animate-scale-in">
       <CardHeader>
-        <CardTitle>Funil de Conversão</CardTitle>
-        <CardDescription>Jornada do visitante até a conversão</CardDescription>
+        <CardTitle>Funil de Ação</CardTitle>
+        <CardDescription>Jornada do visitante até a ação</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4 max-w-4xl mx-auto">
@@ -88,7 +88,7 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
                 style={{ width: `${(conversions / pageViews * 100) || 0}%` }}
               >
                 <div>
-                  <p className="text-sm font-medium text-success">Conversões</p>
+                  <p className="text-sm font-medium text-success">Ações</p>
                   <p className="text-3xl font-bold text-foreground">{conversions.toLocaleString()}</p>
                 </div>
                 <div className="text-right">
