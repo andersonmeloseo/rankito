@@ -1129,7 +1129,7 @@ const SiteDetails = () => {
                               onClick={() => handleSort("conversion_rate")}
                             >
                               <div className="flex items-center justify-end gap-2">
-                                Taxa Conv.
+                                Ações
                                 <SortIcon column="conversion_rate" />
                               </div>
                             </TableHead>
@@ -1170,7 +1170,7 @@ const SiteDetails = () => {
                                 <SortIcon column="client_name" />
                               </div>
                             </TableHead>
-                            <TableHead className="text-center">Ações</TableHead>
+                            <TableHead className="text-center">Ver</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
