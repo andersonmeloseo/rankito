@@ -1120,7 +1120,7 @@ const SiteDetails = () => {
                               onClick={() => handleSort("total_conversions")}
                             >
                               <div className="flex items-center justify-end gap-2">
-                                Conversões
+                                Ações
                                 <SortIcon column="total_conversions" />
                               </div>
                             </TableHead>
@@ -1129,7 +1129,7 @@ const SiteDetails = () => {
                               onClick={() => handleSort("conversion_rate")}
                             >
                               <div className="flex items-center justify-end gap-2">
-                                Ações
+                                %
                                 <SortIcon column="conversion_rate" />
                               </div>
                             </TableHead>
