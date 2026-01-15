@@ -1139,7 +1139,7 @@ const SiteDetails = () => {
                             >
                               <div className="flex items-center justify-end gap-2">
                                 <Calendar className="w-4 h-4" />
-                                Última Conversão
+                                Última Ação
                                 <SortIcon column="last_conversion_at" />
                               </div>
                             </TableHead>
