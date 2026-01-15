@@ -26,20 +26,32 @@ const USER_AGENTS = [
 ];
 
 // Distribuição de User Agents (peso)
-const UA_WEIGHTS = [35, 15, 10, 25, 15, 5]; // Total 105, normalizar
+const UA_WEIGHTS = [35, 15, 10, 25, 15, 5];
 
-// Cidades de Connecticut
+// Cidades de Connecticut com coordenadas aproximadas
 const CT_CITIES = [
-  "New Milford", "Danbury", "Stamford", "Greenwich", "Sherman",
-  "Brookfield", "Bethel", "Ridgefield", "Fairfield", "Westport",
-  "Norwalk", "Wilton", "New Canaan", "Darien", "Trumbull"
+  { name: "New Milford", lat: 41.5773, lng: -73.4087 },
+  { name: "Danbury", lat: 41.3948, lng: -73.4540 },
+  { name: "Stamford", lat: 41.0534, lng: -73.5387 },
+  { name: "Greenwich", lat: 41.0263, lng: -73.6285 },
+  { name: "Sherman", lat: 41.5795, lng: -73.4968 },
+  { name: "Brookfield", lat: 41.4648, lng: -73.4007 },
+  { name: "Bethel", lat: 41.3712, lng: -73.4140 },
+  { name: "Ridgefield", lat: 41.2815, lng: -73.4982 },
+  { name: "Fairfield", lat: 41.1411, lng: -73.2637 },
+  { name: "Westport", lat: 41.1415, lng: -73.3579 },
+  { name: "Norwalk", lat: 41.1176, lng: -73.4078 },
+  { name: "Wilton", lat: 41.1953, lng: -73.4379 },
+  { name: "New Canaan", lat: 41.1468, lng: -73.4948 },
+  { name: "Darien", lat: 41.0787, lng: -73.4693 },
+  { name: "Trumbull", lat: 41.2429, lng: -73.2007 },
 ];
 
 // Referrers
 const REFERRERS = [
   { url: "https://www.google.com/", weight: 60 },
   { url: "https://www.bing.com/", weight: 15 },
-  { url: "", weight: 25 }, // direct
+  { url: "", weight: 25 },
 ];
 
 // Páginas baseadas no Clarity com distribuição de views
@@ -112,62 +124,64 @@ function weightedRandom<T>(items: T[], weights: number[]): T {
   return items[items.length - 1];
 }
 
-// Gerar data aleatória no período com distribuição natural
-function generateRandomDate(): Date {
-  const totalDays = 23; // 23 dias no período
+// Gerar IP aleatório realista (range de IPs residenciais dos EUA)
+function generateRandomIP(): string {
+  // Ranges de IP residenciais comuns nos EUA
+  const ranges = [
+    // Comcast
+    { start: [24, 0], end: [24, 255] },
+    { start: [50, 128], end: [50, 255] },
+    { start: [68, 32], end: [68, 63] },
+    { start: [71, 56], end: [71, 127] },
+    { start: [73, 0], end: [73, 127] },
+    { start: [75, 64], end: [75, 127] },
+    { start: [76, 96], end: [76, 127] },
+    // AT&T
+    { start: [32, 128], end: [32, 191] },
+    { start: [66, 160], end: [66, 191] },
+    { start: [99, 64], end: [99, 127] },
+    { start: [107, 128], end: [107, 191] },
+    // Verizon
+    { start: [71, 160], end: [71, 191] },
+    { start: [72, 64], end: [72, 95] },
+    { start: [98, 192], end: [98, 255] },
+    // Spectrum
+    { start: [65, 24], end: [65, 31] },
+    { start: [67, 160], end: [67, 191] },
+    { start: [69, 112], end: [69, 127] },
+    // Frontier
+    { start: [74, 40], end: [74, 47] },
+    { start: [75, 48], end: [75, 55] },
+  ];
   
-  // Peso por dia (menos no Natal e Ano Novo)
-  const dayWeights: number[] = [];
-  const startTime = START_DATE.getTime();
+  const range = ranges[Math.floor(Math.random() * ranges.length)];
+  const octet1 = range.start[0];
+  const octet2 = range.start[1] + Math.floor(Math.random() * (range.end[1] - range.start[1] + 1));
+  const octet3 = Math.floor(Math.random() * 256);
+  const octet4 = Math.floor(Math.random() * 254) + 1; // Evitar .0 e .255
   
-  for (let d = 0; d < totalDays; d++) {
-    const currentDate = new Date(startTime + d * 24 * 60 * 60 * 1000);
-    const dayOfWeek = currentDate.getDay(); // 0 = domingo
-    const dayOfMonth = currentDate.getDate();
-    const month = currentDate.getMonth();
-    
-    let weight = 1.0;
-    
-    // Fim de semana: menos peso
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      weight *= 0.5;
-    }
-    
-    // Natal (25/12): muito menos
-    if (month === 11 && dayOfMonth === 25) {
-      weight *= 0.1;
-    }
-    
-    // Véspera e dia depois do Natal
-    if (month === 11 && (dayOfMonth === 24 || dayOfMonth === 26)) {
-      weight *= 0.3;
-    }
-    
-    // Ano Novo (01/01): muito menos
-    if (month === 0 && dayOfMonth === 1) {
-      weight *= 0.1;
-    }
-    
-    // Véspera do Ano Novo
-    if (month === 11 && dayOfMonth === 31) {
-      weight *= 0.2;
-    }
-    
-    // Janeiro tem mais peso (retomada)
-    if (month === 0 && dayOfMonth > 2) {
-      weight *= 1.3;
-    }
-    
-    dayWeights.push(weight);
+  return `${octet1}.${octet2}.${octet3}.${octet4}`;
+}
+
+// Pool de visitantes únicos (simular ~120-150 visitantes únicos)
+function generateVisitorPool(count: number): Array<{ ip: string; city: typeof CT_CITIES[0]; ua: typeof USER_AGENTS[0] }> {
+  const visitors: Array<{ ip: string; city: typeof CT_CITIES[0]; ua: typeof USER_AGENTS[0] }> = [];
+  
+  for (let i = 0; i < count; i++) {
+    visitors.push({
+      ip: generateRandomIP(),
+      city: CT_CITIES[Math.floor(Math.random() * CT_CITIES.length)],
+      ua: weightedRandom(USER_AGENTS, UA_WEIGHTS),
+    });
   }
   
-  // Escolher dia
-  const dayIndex = weightedRandom(
-    Array.from({ length: totalDays }, (_, i) => i),
-    dayWeights
-  );
-  
-  const chosenDay = new Date(startTime + dayIndex * 24 * 60 * 60 * 1000);
+  return visitors;
+}
+
+// Gerar data aleatória no período com distribuição natural NÃO UNIFORME
+function generateRandomDate(dayIndex: number, totalDays: number): Date {
+  const startTime = START_DATE.getTime();
+  const currentDate = new Date(startTime + dayIndex * 24 * 60 * 60 * 1000);
   
   // Gerar hora (mais peso em horário comercial 9h-18h)
   const hourWeights = [
@@ -185,19 +199,67 @@ function generateRandomDate(): Date {
   const minute = Math.floor(Math.random() * 60);
   const second = Math.floor(Math.random() * 60);
   
-  chosenDay.setHours(hour, minute, second, Math.floor(Math.random() * 1000));
+  currentDate.setHours(hour, minute, second, Math.floor(Math.random() * 1000));
   
-  return chosenDay;
+  return currentDate;
 }
 
-// Gerar User Agent aleatório
-function getRandomUserAgent() {
-  return weightedRandom(USER_AGENTS, UA_WEIGHTS);
-}
-
-// Gerar cidade aleatória
-function getRandomCity(): string {
-  return CT_CITIES[Math.floor(Math.random() * CT_CITIES.length)];
+// Calcular peso do dia (para distribuição não uniforme)
+function getDayWeight(dayIndex: number): number {
+  const startTime = START_DATE.getTime();
+  const currentDate = new Date(startTime + dayIndex * 24 * 60 * 60 * 1000);
+  const dayOfWeek = currentDate.getDay(); // 0 = domingo
+  const dayOfMonth = currentDate.getDate();
+  const month = currentDate.getMonth();
+  
+  let weight = 1.0;
+  
+  // Fim de semana: menos peso
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    weight *= 0.4;
+  }
+  
+  // Natal (25/12): muito menos
+  if (month === 11 && dayOfMonth === 25) {
+    weight *= 0.05;
+  }
+  
+  // Véspera e dia depois do Natal
+  if (month === 11 && (dayOfMonth === 24 || dayOfMonth === 26)) {
+    weight *= 0.2;
+  }
+  
+  // Ano Novo (01/01): muito menos
+  if (month === 0 && dayOfMonth === 1) {
+    weight *= 0.05;
+  }
+  
+  // Véspera do Ano Novo
+  if (month === 11 && dayOfMonth === 31) {
+    weight *= 0.15;
+  }
+  
+  // 2 de janeiro (recuperação lenta)
+  if (month === 0 && dayOfMonth === 2) {
+    weight *= 0.3;
+  }
+  
+  // Janeiro tem mais peso (retomada) - dias após 5 de janeiro
+  if (month === 0 && dayOfMonth > 5) {
+    weight *= 1.4;
+  }
+  
+  // Segundas-feiras têm um pouco mais de peso
+  if (dayOfWeek === 1) {
+    weight *= 1.15;
+  }
+  
+  // Quartas e quintas também são fortes
+  if (dayOfWeek === 3 || dayOfWeek === 4) {
+    weight *= 1.1;
+  }
+  
+  return weight;
 }
 
 // Gerar referrer aleatório
@@ -240,47 +302,118 @@ serve(async (req) => {
     }
     console.log("🧹 Dados existentes do período removidos");
 
-    // 2. Gerar Page Views
-    const pageViewRecords: any[] = [];
-    const sessionMap = new Map<string, string>(); // Para manter sessões consistentes
+    // 2. Gerar pool de visitantes únicos (~130 visitantes)
+    const visitorPool = generateVisitorPool(130);
+    console.log(`👥 Pool de ${visitorPool.length} visitantes únicos gerado`);
 
+    // 3. Calcular distribuição de page views por dia
+    const totalDays = 23;
+    const dayWeights: number[] = [];
+    
+    for (let d = 0; d < totalDays; d++) {
+      dayWeights.push(getDayWeight(d));
+    }
+    
+    const totalWeight = dayWeights.reduce((a, b) => a + b, 0);
+    const totalPageViews = PAGES_DISTRIBUTION.reduce((sum, p) => sum + p.views, 0);
+    
+    // Distribuir page views por dia baseado nos pesos
+    const pageViewsPerDay: number[] = dayWeights.map(w => 
+      Math.round((w / totalWeight) * totalPageViews)
+    );
+    
+    // Ajustar para garantir o total correto
+    const currentTotal = pageViewsPerDay.reduce((a, b) => a + b, 0);
+    const diff = totalPageViews - currentTotal;
+    
+    // Adicionar diferença em dias aleatórios com peso alto
+    for (let i = 0; i < Math.abs(diff); i++) {
+      const dayIndex = weightedRandom(
+        Array.from({ length: totalDays }, (_, i) => i),
+        dayWeights
+      );
+      pageViewsPerDay[dayIndex] += diff > 0 ? 1 : -1;
+    }
+    
+    console.log("📅 Distribuição de page views por dia:", pageViewsPerDay);
+
+    // 4. Gerar Page Views
+    const pageViewRecords: any[] = [];
+    const visitorDaySessions = new Map<string, string>(); // visitor-day -> session
+    
+    // Criar pool de páginas com base na distribuição
+    const pagePool: string[] = [];
     for (const page of PAGES_DISTRIBUTION) {
       for (let i = 0; i < page.views; i++) {
-        const ua = getRandomUserAgent();
-        const date = generateRandomDate();
-        const city = getRandomCity();
-        const referrer = getRandomReferrer();
+        pagePool.push(page.path);
+      }
+    }
+    
+    // Shuffle do pool
+    for (let i = pagePool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pagePool[i], pagePool[j]] = [pagePool[j], pagePool[i]];
+    }
+    
+    let pagePoolIndex = 0;
+    
+    for (let dayIndex = 0; dayIndex < totalDays; dayIndex++) {
+      const viewsThisDay = pageViewsPerDay[dayIndex];
+      
+      // Quantos visitantes únicos neste dia? (entre 30-70% do pool baseado no peso)
+      const dayWeight = dayWeights[dayIndex];
+      const maxVisitorsRatio = 0.3 + (dayWeight / Math.max(...dayWeights)) * 0.4;
+      const visitorsThisDay = Math.min(
+        Math.ceil(viewsThisDay * 0.7), // Máximo 70% das views são de visitantes únicos
+        Math.ceil(visitorPool.length * maxVisitorsRatio)
+      );
+      
+      // Selecionar visitantes para este dia
+      const shuffledVisitors = [...visitorPool].sort(() => Math.random() - 0.5);
+      const todayVisitors = shuffledVisitors.slice(0, visitorsThisDay);
+      
+      // Distribuir views entre os visitantes do dia
+      let viewsDistributed = 0;
+      
+      for (const visitor of todayVisitors) {
+        if (viewsDistributed >= viewsThisDay) break;
         
-        // Criar ou reutilizar session (30% chance de reutilizar)
-        let sessionId: string;
-        const sessionKey = `${ua.ua}-${city}-${date.toDateString()}`;
+        // Quantas páginas este visitante vai ver? (1-5, com peso para 1-2)
+        const pagesForVisitor = weightedRandom([1, 2, 3, 4, 5], [40, 30, 15, 10, 5]);
+        const sessionId = generateSessionId();
+        const sessionKey = `${visitor.ip}-${dayIndex}`;
+        visitorDaySessions.set(sessionKey, sessionId);
         
-        if (sessionMap.has(sessionKey) && Math.random() < 0.3) {
-          sessionId = sessionMap.get(sessionKey)!;
-        } else {
-          sessionId = generateSessionId();
-          sessionMap.set(sessionKey, sessionId);
+        for (let p = 0; p < pagesForVisitor && viewsDistributed < viewsThisDay; p++) {
+          if (pagePoolIndex >= pagePool.length) break;
+          
+          const pagePath = pagePool[pagePoolIndex++];
+          const date = generateRandomDate(dayIndex, totalDays);
+          const referrer = p === 0 ? getRandomReferrer() : ""; // Só primeira página tem referrer
+          
+          pageViewRecords.push({
+            site_id: SITE_ID,
+            page_url: `${SITE_URL}${pagePath}`,
+            page_path: pagePath,
+            event_type: "page_view",
+            user_agent: visitor.ua.ua,
+            referrer: referrer,
+            ip_address: visitor.ip,
+            city: visitor.city.name,
+            region: "Connecticut",
+            country: "United States",
+            country_code: "US",
+            session_id: sessionId,
+            created_at: date.toISOString(),
+            metadata: {
+              device: visitor.ua.device,
+              browser: visitor.ua.browser,
+              os: visitor.ua.os
+            }
+          });
+          
+          viewsDistributed++;
         }
-
-        pageViewRecords.push({
-          site_id: SITE_ID,
-          page_url: `${SITE_URL}${page.path}`,
-          page_path: page.path,
-          event_type: "page_view",
-          user_agent: ua.ua,
-          referrer: referrer,
-          city: city,
-          region: "Connecticut",
-          country: "United States",
-          country_code: "US",
-          session_id: sessionId,
-          created_at: date.toISOString(),
-          metadata: {
-            device: ua.device,
-            browser: ua.browser,
-            os: ua.os
-          }
-        });
       }
     }
 
@@ -300,12 +433,30 @@ serve(async (req) => {
     }
     console.log("✅ Page views inseridos com sucesso");
 
-    // 3. Gerar Phone Clicks (conversões)
+    // 5. Gerar Phone Clicks (conversões) - ~40 total
     const phoneClickRecords: any[] = [];
-    const numPhoneClicks = 38 + Math.floor(Math.random() * 7); // 38-44 conversões
+    const numPhoneClicks = 38 + Math.floor(Math.random() * 7);
 
-    // Distribuição de páginas para phone clicks
-    // 60% homepage, 25% serviços, 15% outras
+    // Distribuir conversões por dia (concentrar em dias com mais tráfego)
+    const conversionsPerDay: number[] = dayWeights.map((w, i) => {
+      // Apenas dias com peso > 0.3 têm conversões
+      if (w < 0.3) return 0;
+      return Math.round((w / totalWeight) * numPhoneClicks);
+    });
+    
+    // Ajustar total
+    const currentConvTotal = conversionsPerDay.reduce((a, b) => a + b, 0);
+    const convDiff = numPhoneClicks - currentConvTotal;
+    
+    for (let i = 0; i < Math.abs(convDiff); i++) {
+      const dayIndex = weightedRandom(
+        Array.from({ length: totalDays }, (_, i) => i),
+        dayWeights.map(w => w > 0.3 ? w : 0) // Só adicionar em dias válidos
+      );
+      conversionsPerDay[dayIndex] += convDiff > 0 ? 1 : -1;
+    }
+
+    // Páginas para phone clicks
     const phoneClickPages = [
       { path: "/", weight: 60 },
       { path: "/tree-removal-services/", weight: 8 },
@@ -318,38 +469,44 @@ serve(async (req) => {
       { path: "/tree-removal-danbury-ct/", weight: 3 },
     ];
 
-    for (let i = 0; i < numPhoneClicks; i++) {
-      const ua = getRandomUserAgent();
-      const date = generateRandomDate();
-      const city = getRandomCity();
+    for (let dayIndex = 0; dayIndex < totalDays; dayIndex++) {
+      const conversionsThisDay = conversionsPerDay[dayIndex];
+      if (conversionsThisDay <= 0) continue;
       
-      const pagePath = weightedRandom(
-        phoneClickPages.map(p => p.path),
-        phoneClickPages.map(p => p.weight)
-      );
+      for (let c = 0; c < conversionsThisDay; c++) {
+        // Pegar um visitante aleatório do pool
+        const visitor = visitorPool[Math.floor(Math.random() * visitorPool.length)];
+        const date = generateRandomDate(dayIndex, totalDays);
+        
+        const pagePath = weightedRandom(
+          phoneClickPages.map(p => p.path),
+          phoneClickPages.map(p => p.weight)
+        );
 
-      phoneClickRecords.push({
-        site_id: SITE_ID,
-        page_url: `${SITE_URL}${pagePath}`,
-        page_path: pagePath,
-        event_type: "phone_click",
-        cta_text: PHONE_CTA,
-        user_agent: ua.ua,
-        city: city,
-        region: "Connecticut",
-        country: "United States",
-        country_code: "US",
-        session_id: generateSessionId(),
-        created_at: date.toISOString(),
-        metadata: {
-          device: ua.device,
-          browser: ua.browser,
-          os: ua.os,
-          platform: "gtm",
-          phone: PHONE_CTA,
-          cta_text: PHONE_CTA
-        }
-      });
+        phoneClickRecords.push({
+          site_id: SITE_ID,
+          page_url: `${SITE_URL}${pagePath}`,
+          page_path: pagePath,
+          event_type: "phone_click",
+          cta_text: PHONE_CTA,
+          user_agent: visitor.ua.ua,
+          ip_address: visitor.ip,
+          city: visitor.city.name,
+          region: "Connecticut",
+          country: "United States",
+          country_code: "US",
+          session_id: generateSessionId(),
+          created_at: date.toISOString(),
+          metadata: {
+            device: visitor.ua.device,
+            browser: visitor.ua.browser,
+            os: visitor.ua.os,
+            platform: "gtm",
+            phone: PHONE_CTA,
+            cta_text: PHONE_CTA
+          }
+        });
+      }
     }
 
     console.log(`📞 Gerando ${phoneClickRecords.length} phone clicks...`);
@@ -365,14 +522,18 @@ serve(async (req) => {
     }
     console.log("✅ Phone clicks inseridos com sucesso");
 
-    // 4. Gerar alguns Page Exits (para parecer natural)
+    // 6. Gerar alguns Page Exits
     const pageExitRecords: any[] = [];
-    const numPageExits = Math.floor(pageViewRecords.length * 0.4); // 40% das page views
+    const numPageExits = Math.floor(pageViewRecords.length * 0.35);
 
     for (let i = 0; i < numPageExits; i++) {
-      const ua = getRandomUserAgent();
-      const date = generateRandomDate();
-      const city = getRandomCity();
+      const dayIndex = weightedRandom(
+        Array.from({ length: totalDays }, (_, i) => i),
+        dayWeights
+      );
+      
+      const visitor = visitorPool[Math.floor(Math.random() * visitorPool.length)];
+      const date = generateRandomDate(dayIndex, totalDays);
       
       const page = weightedRandom(
         PAGES_DISTRIBUTION.map(p => p.path),
@@ -384,18 +545,19 @@ serve(async (req) => {
         page_url: `${SITE_URL}${page}`,
         page_path: page,
         event_type: "page_exit",
-        user_agent: ua.ua,
-        city: city,
+        user_agent: visitor.ua.ua,
+        ip_address: visitor.ip,
+        city: visitor.city.name,
         region: "Connecticut",
         country: "United States",
         country_code: "US",
         session_id: generateSessionId(),
         created_at: date.toISOString(),
         metadata: {
-          device: ua.device,
-          browser: ua.browser,
-          os: ua.os,
-          time_on_page: Math.floor(Math.random() * 180) + 10, // 10-190 segundos
+          device: visitor.ua.device,
+          browser: visitor.ua.browser,
+          os: visitor.ua.os,
+          time_on_page: Math.floor(Math.random() * 180) + 10,
           scroll_depth: Math.floor(Math.random() * 100)
         }
       });
@@ -417,6 +579,9 @@ serve(async (req) => {
     }
     console.log("✅ Page exits inseridos com sucesso");
 
+    // Contar visitantes únicos reais
+    const uniqueIPs = new Set(pageViewRecords.map(r => r.ip_address));
+
     // Resumo
     const summary = {
       site_id: SITE_ID,
@@ -430,7 +595,9 @@ serve(async (req) => {
         page_exits: pageExitRecords.length,
         total: pageViewRecords.length + phoneClickRecords.length + pageExitRecords.length
       },
-      phone_cta: PHONE_CTA
+      unique_visitors: uniqueIPs.size,
+      phone_cta: PHONE_CTA,
+      distribution_per_day: pageViewsPerDay
     };
 
     console.log("🎉 Seed concluído com sucesso!", summary);
