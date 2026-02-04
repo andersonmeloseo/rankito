@@ -1,100 +1,124 @@
 
-## Plano: Correção de Bugs Críticos nos Componentes Analytics
+## Plano: Adicionar Paginacao (fetchAllPaginated) em Queries Analytics
 
-### Bug 1: Sparkline Crash
+### Problema Identificado
 
-**Arquivo:** `src/components/analytics/Sparkline.tsx`
+Quatro queries no `useAnalytics.ts` estao limitadas a 1000 registros pelo Supabase PostgREST:
 
-**Problema:** Linha 9 faz `data.map()` sem verificar se `data` é undefined, null ou não é array.
+| Query | Linha | Problema |
+|-------|-------|----------|
+| timeline | 244-288 | `await query` direto, sem paginacao |
+| events | 291-326 | `await query` direto, sem paginacao |
+| hourlyData | 632-662 | `await query` direto, sem paginacao |
+| topReferrers | 825-866 | `await query` direto, sem paginacao |
 
-**Correção:**
+Sites com mais de 1000 conversoes/page views no periodo selecionado mostram dados incompletos.
+
+---
+
+### Solucao
+
+Substituir `await query` por `await fetchAllPaginated(query)` nas 4 queries, utilizando o helper ja existente no arquivo (linhas 11-33).
+
+---
+
+### Alteracao 1: Timeline Query (linhas 244-288)
+
+**Antes (linha 266-267):**
 ```typescript
-export const Sparkline = ({ data, color = "hsl(var(--primary))" }: SparklineProps) => {
-  // Guard clause para dados inválidos
-  if (!data || !Array.isArray(data) || data.length === 0) {
-    return null;
+const { data, error } = await query;
+if (error) throw error;
+```
+
+**Depois:**
+```typescript
+const data = await fetchAllPaginated<{ created_at: string; event_type: string }>(query);
+```
+
+---
+
+### Alteracao 2: Events Query (linhas 291-326)
+
+**Antes (linha 311-313):**
+```typescript
+const { data, error } = await query;
+
+if (error) throw error;
+```
+
+**Depois:**
+```typescript
+const data = await fetchAllPaginated<{ event_type: string }>(query);
+```
+
+---
+
+### Alteracao 3: HourlyData Query (linhas 632-662)
+
+**Antes (linha 650):**
+```typescript
+const { data, error } = await query;
+```
+
+**Depois:**
+```typescript
+const data = await fetchAllPaginated<{ created_at: string }>(query);
+```
+
+---
+
+### Alteracao 4: TopReferrers Query (linhas 825-866)
+
+**Antes (linhas 846-847):**
+```typescript
+const { data, error } = await query;
+if (error) throw error;
+```
+
+**Depois:**
+```typescript
+const data = await fetchAllPaginated<{ referrer: string }>(query);
+```
+
+---
+
+### Resumo das Alteracoes
+
+| Arquivo | Acao |
+|---------|------|
+| `src/hooks/useAnalytics.ts` | 4 substituicoes de `await query` por `fetchAllPaginated()` |
+
+---
+
+### Comportamento do fetchAllPaginated
+
+```typescript
+async function fetchAllPaginated<T>(queryBuilder: any, pageSize: number = 1000): Promise<T[]> {
+  let allData: T[] = [];
+  let offset = 0;
+  
+  while (true) {
+    const { data, error } = await queryBuilder.range(offset, offset + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    
+    allData = [...allData, ...data];
+    if (data.length < pageSize) break;
+    
+    offset += pageSize;
   }
-
-  const chartData = data.map((value, index) => ({ value, index }));
-  // ... resto do código
-};
-```
-
----
-
-### Bug 2: ConversionFunnelChart Divisão por Zero
-
-**Arquivo:** `src/components/analytics/ConversionFunnelChart.tsx`
-
-**Problema:** Linhas 67 e 88 calculam `(interactions / pageViews * 100)` e `(conversions / pageViews * 100)` diretamente no style, sem verificar se `pageViews > 0`. Quando `pageViews = 0`, resulta em `NaN%` ou layout quebrado.
-
-**Linhas afetadas:**
-- Linha 67: `style={{ width: \`${(interactions / pageViews * 100) || 0}%\`, minWidth: "75%" }}`
-- Linha 88: `style={{ width: \`${(conversions / pageViews * 100) || 0}%\` }}`
-
-**Correção:** Criar funções helper seguras no início do componente:
-
-```typescript
-const { pageViews, interactions, conversions } = data;
-
-// Cálculos seguros com verificação de divisão por zero
-const interactionRate = pageViews > 0 ? ((interactions / pageViews) * 100).toFixed(1) : "0";
-const conversionRate = interactions > 0 ? ((conversions / interactions) * 100).toFixed(1) : "0";
-
-// Larguras seguras para o funil visual
-const interactionWidth = pageViews > 0 ? Math.max((interactions / pageViews) * 100, 10) : 75;
-const conversionWidth = pageViews > 0 ? Math.max((conversions / pageViews) * 100, 10) : 50;
-```
-
-Depois usar nos styles:
-- Linha 67: `style={{ width: \`${interactionWidth}%\`, minWidth: "75%" }}`
-- Linha 88: `style={{ width: \`${conversionWidth}%\`, minWidth: "50%" }}`
-
----
-
-### Bug 3: HourlyHeatmap Math.max Vazio
-
-**Arquivo:** `src/components/analytics/HourlyHeatmap.tsx`
-
-**Problema:** Linha 24 faz `Math.max(...data.map(d => d.count))`. Quando `data` é array vazio, `Math.max()` retorna `-Infinity`, causando cálculos incorretos de intensity.
-
-**Correção:**
-```typescript
-// Guard clause para dados vazios
-if (!data || data.length === 0) {
-  // Renderizar estado vazio ou usar array default
+  
+  return allData;
 }
-
-// Cálculo seguro do maxCount
-const counts = data.map(d => d.count);
-const maxCount = counts.length > 0 ? Math.max(...counts) : 0;
 ```
+
+O helper ja trata erros internamente com `throw error`, mantendo o mesmo comportamento de excecao das queries originais.
 
 ---
 
-### Resumo das Alterações
+### Impacto
 
-| Arquivo | Bug | Correção |
-|---------|-----|----------|
-| `Sparkline.tsx` | Crash em `data.map()` | Guard clause no início |
-| `ConversionFunnelChart.tsx` | Divisão por zero | Funções helper + minWidth |
-| `HourlyHeatmap.tsx` | `Math.max()` retorna `-Infinity` | Verificação antes de Math.max |
-
----
-
-### Detalhes Técnicos
-
-**Por que `|| 0` não funciona na linha 67:**
-```javascript
-(interactions / pageViews * 100) || 0
-// Se pageViews = 0, resulta em NaN
-// NaN || 0 = 0 ✓ (funciona)
-// MAS: NaN% no CSS causa problemas de renderização antes da avaliação
-```
-
-**Por que Math.max(...[]) = -Infinity:**
-```javascript
-Math.max()           // → -Infinity (sem argumentos)
-Math.max(...[])      // → -Infinity (spread de array vazio)
-Math.max(0, ...arr)  // → 0 minimum (solução alternativa)
-```
+- Timeline: Grafico de visualizacoes/conversoes mostrara dados completos
+- Events: Distribuicao de eventos sera precisa para todos os registros
+- HourlyData: Heatmap de horarios incluira todas as conversoes
+- TopReferrers: Lista de referenciadores tera contagem correta
