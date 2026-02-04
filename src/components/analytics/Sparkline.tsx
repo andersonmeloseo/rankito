@@ -6,6 +6,11 @@ interface SparklineProps {
 }
 
 export const Sparkline = ({ data, color = "hsl(var(--primary))" }: SparklineProps) => {
+  // Guard clause para dados inválidos
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return null;
+  }
+
   const chartData = data.map((value, index) => ({ value, index }));
 
   return (

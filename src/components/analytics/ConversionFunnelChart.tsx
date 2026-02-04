@@ -29,6 +29,10 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
   const { pageViews, interactions, conversions } = data;
   const interactionRate = pageViews > 0 ? ((interactions / pageViews) * 100).toFixed(1) : "0";
   const conversionRate = interactions > 0 ? ((conversions / interactions) * 100).toFixed(1) : "0";
+  
+  // Larguras seguras para o funil visual
+  const interactionWidth = pageViews > 0 ? Math.max((interactions / pageViews) * 100, 10) : 75;
+  const conversionWidth = pageViews > 0 ? Math.max((conversions / pageViews) * 100, 10) : 50;
 
   return (
     <Card className="card-modern card-interactive animate-scale-in">
@@ -64,7 +68,7 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
             <div className="flex justify-center">
               <div 
                 className="h-24 bg-gradient-to-r from-orange-500/40 to-orange-400/30 rounded-xl flex items-center justify-between px-6 transition-all hover:shadow-lg border border-orange-500/30"
-                style={{ width: `${(interactions / pageViews * 100) || 0}%`, minWidth: "75%" }}
+                style={{ width: `${interactionWidth}%`, minWidth: "75%" }}
               >
                 <div>
                   <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Interações</p>
@@ -85,7 +89,7 @@ export const ConversionFunnelChart = ({ data, isLoading }: ConversionFunnelChart
             <div className="flex justify-center">
               <div 
                 className="h-24 bg-gradient-to-r from-success/40 to-success/30 rounded-xl flex items-center justify-between px-6 transition-all hover:shadow-lg hover:shadow-success/20 border border-success/30"
-                style={{ width: `${(conversions / pageViews * 100) || 0}%` }}
+                style={{ width: `${conversionWidth}%`, minWidth: "50%" }}
               >
                 <div>
                   <p className="text-sm font-medium text-success">Ações</p>

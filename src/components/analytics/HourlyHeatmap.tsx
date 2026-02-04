@@ -21,7 +21,9 @@ export const HourlyHeatmap = ({ data, isLoading }: HourlyHeatmapProps) => {
     );
   }
 
-  const maxCount = Math.max(...data.map(d => d.count));
+  // Cálculo seguro do maxCount para evitar -Infinity em arrays vazios
+  const counts = data.map(d => d.count);
+  const maxCount = counts.length > 0 ? Math.max(...counts) : 0;
 
   return (
     <Card className="card-modern card-interactive animate-scale-in">
