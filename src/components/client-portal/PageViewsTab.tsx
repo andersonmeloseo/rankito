@@ -31,12 +31,6 @@ export const PageViewsTab = ({ analytics, siteIds }: PageViewsTabProps) => {
     views: p.pageViews,
   }));
 
-  console.log('[PageViewsTab] 📊 Top page views:', {
-    topPageViewsDataLength: topPageViewsData.length,
-    sample: topPageViewsData[0],
-    analyticsTopPageViews: analytics.topPageViews?.length
-  });
-
   // Prepare data for device distribution with percentage calculation
   const totalDeviceViews = (analytics.deviceStats || []).reduce((sum: number, d: any) => sum + d.count, 0);
   const deviceDistributionData = (analytics.deviceStats || []).map((d: any) => ({
@@ -46,14 +40,6 @@ export const PageViewsTab = ({ analytics, siteIds }: PageViewsTabProps) => {
       ? ((d.count / totalDeviceViews) * 100).toFixed(1) 
       : '0',
   }));
-
-  // ✅ LOG DE DIAGNÓSTICO 2: Após mapeamento
-  console.log('📊 [PageViewsTab] deviceDistributionData preparado:', {
-    analyticsDeviceStats: analytics.deviceStats,
-    totalDeviceViews,
-    deviceDistributionData,
-    length: deviceDistributionData?.length
-  });
 
   // Filter page views only
   const pageViewsOnly = (analytics.conversions || []).filter(

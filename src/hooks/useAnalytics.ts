@@ -93,16 +93,6 @@ export const useAnalytics = ({
   const { data: metrics, isLoading: metricsLoading } = useQuery({
     queryKey: ["analytics-metrics", siteId, startDate, endDate, eventType, device, conversionType, period],
     queryFn: async () => {
-      // LOGGING DE DEBUG
-      console.log('📊 Metrics Query Debug:', {
-        period,
-        startDate,
-        endDate,
-        siteId,
-        eventType,
-        device,
-        conversionType
-      });
       
       // Query base com filtros
       const baseFilters = {
@@ -208,21 +198,6 @@ export const useAnalytics = ({
       const conversionRate = (pageViews || 0) > 0 
         ? ((conversions || 0) / (pageViews || 0) * 100).toFixed(2) 
         : "0.00";
-
-      // LOGGING DE DEBUG - PAGINAÇÃO FUNCIONANDO! 🎉
-      console.log('📊 Metrics Query Result (PAGINATED):', {
-        uniqueVisitors,
-        uniquePages,
-        pageViews,
-        conversions,
-        ipsDataLength: ipsData?.length,  // Agora deve mostrar > 1000! 🚀
-        pagesDataLength: pagesData?.length, // Agora deve mostrar > 1000! 🚀
-        paginationWorked: ipsData?.length > 1000 || pagesData?.length > 1000 
-          ? '✅ PAGINAÇÃO FUNCIONANDO!' 
-          : 'ℹ️ Menos de 1000 registros',
-        startDate,
-        endDate
-      });
 
       return {
         uniqueVisitors,
@@ -514,15 +489,6 @@ export const useAnalytics = ({
   const { data: pageViewsList, isLoading: pageViewsLoading } = useQuery({
     queryKey: ["analytics-page-views", siteId, period, startDate, endDate, device, conversionType],
     queryFn: async () => {
-      console.log('🔍 PageViewsList Query Debug:', {
-        siteId,
-        startDate,
-        endDate,
-        device,
-        periodDays: period,
-        skipDateFilter: period === "all"
-      });
-
       let query = supabase
         .from("rank_rent_conversions")
         .select("*")
@@ -554,15 +520,6 @@ export const useAnalytics = ({
       }
 
       const { data, error } = await query;
-      
-      console.log('🔍 PageViewsList Query Result:', {
-        dataCount: data?.length || 0,
-        error: error?.message,
-        firstRecord: data?.[0],
-        lastRecord: data?.[data?.length - 1],
-        limitReached: data?.length === 1000
-      });
-
       if (error) throw error;
 
       return data;
@@ -1001,14 +958,6 @@ export const useAnalytics = ({
     return acc;
   }, {} as Record<string, number>) || {};
 
-  // Debug: verificar agregação de page views
-  console.log('🔍 Page View Hourly Data Debug:', {
-    pageViewsListLength: pageViewsList?.length || 0,
-    pageViewsListSample: pageViewsList?.[0],
-    pageViewHourlyDataKeys: Object.keys(pageViewHourlyData || {}),
-    pageViewHourlyDataValues: pageViewHourlyData,
-    pageViewHourlyDataSize: Object.keys(pageViewHourlyData || {}).length
-  });
 
   // Process top page views pages
   const topPageViewPages = useMemo(() => {
