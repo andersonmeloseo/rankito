@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/utils/errorMessages";
+import { extractEdgeFunctionError } from "@/utils/edgeFunctionError";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
 import { Loader2, CheckCircle2, Download, AlertCircle, TrendingUp } from "lucide-react";
@@ -84,7 +85,7 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { data, error } = await supabase.functions.invoke("discover-sitemaps", {
+      const response = await supabase.functions.invoke("discover-sitemaps", {
         body: {
           sitemap_url: sitemapUrl,
           site_id: siteId,
@@ -92,8 +93,18 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
         },
       });
 
-      if (error) throw error;
+      // Check for detailed error in response.data
+      if (response.error) {
+        const detailedError = extractEdgeFunctionError(response);
+        if (detailedError) {
+          const error = new Error(detailedError.message || detailedError.error);
+          (error as any).detailedData = detailedError;
+          throw error;
+        }
+        throw response.error;
+      }
 
+      const data = response.data;
       setDiscoveredSitemaps(data.sitemaps || []);
       
       // Auto-select all by default
@@ -139,12 +150,22 @@ export const ImportSitemapDialog = ({ siteId, open, onOpenChange }: ImportSitema
       });
     } catch (error: any) {
       console.error("Erro ao descobrir sitemaps:", error);
-      const errorMsg = getErrorMessage(error, 'descobrir sitemaps');
-      toast({
-        title: errorMsg.title,
-        description: `${errorMsg.description}${errorMsg.action ? `\n\n💡 ${errorMsg.action}` : ''}`,
-        variant: "destructive",
-      });
+      
+      // Use detailed error data if available
+      if (error.detailedData) {
+        toast({
+          title: error.detailedData.error || "Erro ao descobrir sitemaps",
+          description: `${error.detailedData.message || error.message}${error.detailedData.action ? `\n\n💡 ${error.detailedData.action}` : ''}`,
+          variant: "destructive",
+        });
+      } else {
+        const errorMsg = getErrorMessage(error, 'descobrir sitemaps');
+        toast({
+          title: errorMsg.title,
+          description: `${errorMsg.description}${errorMsg.action ? `\n\n💡 ${errorMsg.action}` : ''}`,
+          variant: "destructive",
+        });
+      }
     } finally {
       setDiscovering(false);
     }
