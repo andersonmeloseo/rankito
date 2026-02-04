@@ -22,6 +22,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { extractEdgeFunctionError, EdgeFunctionErrorData } from "@/utils/edgeFunctionError";
+import { GSCErrorDialog } from "./GSCErrorDialog";
 
 interface GSCSitemapsManagerProps {
   siteId: string;
@@ -69,6 +71,7 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
   const queryClient = useQueryClient();
   const [selectedSitemaps, setSelectedSitemaps] = useState<string[]>([]);
   const [sitemapToDelete, setSitemapToDelete] = useState<string | null>(null);
+  const [errorDialogData, setErrorDialogData] = useState<EdgeFunctionErrorData | null>(null);
   
   const [discoverySort, setDiscoverySort] = useState<SortState>({
     field: 'sitemap_url',
@@ -90,6 +93,26 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
     hasErrors: 'all',
     hasWarnings: 'all'
   });
+
+  // Fetch integration data for service account email
+  const { data: integration } = useQuery({
+    queryKey: ['gsc-integration', integrationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('google_search_console_integrations')
+        .select('id, service_account_json')
+        .eq('id', integrationId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Extract service account email from JSON
+  const serviceAccountEmail = integration?.service_account_json 
+    ? (integration.service_account_json as any)?.client_email 
+    : undefined;
 
   // Fetch sitemaps from database (discovery section)
   const { data: sitemaps, isLoading } = useQuery({
@@ -134,7 +157,16 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
         body: { integration_id: integrationId },
       });
 
-      if (response.error) throw response.error;
+      // Check for detailed error in response.data (edge function returns structured errors)
+      if (response.error) {
+        const detailedError = extractEdgeFunctionError(response);
+        if (detailedError) {
+          const error = new Error(detailedError.message || detailedError.error);
+          (error as any).detailedData = detailedError;
+          throw error;
+        }
+        throw response.error;
+      }
       return response.data;
     },
     onSuccess: (data) => {
@@ -143,6 +175,12 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
       toast.success(`${data.sitemaps.length} sitemaps sincronizados do GSC`);
     },
     onError: (error: any) => {
+      // If has detailed data with instructions, show dialog
+      if (error.detailedData?.instructions) {
+        setErrorDialogData(error.detailedData);
+        return;
+      }
+      // Fallback to simple toast
       toast.error(`Erro ao buscar sitemaps: ${error.message}`);
     },
   });
@@ -856,6 +894,14 @@ export function GSCSitemapsManager({ siteId, integrationId }: GSCSitemapsManager
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog for detailed GSC errors */}
+      <GSCErrorDialog
+        open={!!errorDialogData}
+        onClose={() => setErrorDialogData(null)}
+        data={errorDialogData}
+        serviceAccountEmail={serviceAccountEmail}
+      />
     </div>
   );
 }
