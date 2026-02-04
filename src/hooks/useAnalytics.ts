@@ -263,8 +263,8 @@ export const useAnalytics = ({
         query = query.eq("is_ecommerce_event", false);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      // Usar paginação para buscar todos os registros (> 1000)
+      const data = await fetchAllPaginated<{ created_at: string; event_type: string }>(query);
 
       // Agrupar por dia
       const grouped = data?.reduce((acc: any, conv) => {
@@ -308,9 +308,8 @@ export const useAnalytics = ({
         query = query.eq("is_ecommerce_event", false);
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
+      // Usar paginação para buscar todos os registros (> 1000)
+      const data = await fetchAllPaginated<{ event_type: string }>(query);
 
       const eventCounts: Record<string, number> = {};
       data?.forEach(conv => {
@@ -647,7 +646,8 @@ export const useAnalytics = ({
         query = query.eq("is_ecommerce_event", false);
       }
 
-      const { data, error } = await query;
+      // Usar paginação para buscar todos os registros (> 1000)
+      const data = await fetchAllPaginated<{ created_at: string }>(query);
 
       const hourCounts = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }));
       
@@ -843,8 +843,8 @@ export const useAnalytics = ({
         query = query.eq("is_ecommerce_event", false);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      // Usar paginação para buscar todos os registros (> 1000)
+      const data = await fetchAllPaginated<{ referrer: string }>(query);
 
       const referrerCounts: Record<string, number> = {};
       data?.forEach(pv => {
