@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { lazy, Suspense, useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,18 +54,21 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { format, subDays } from "date-fns";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { ReportsTab } from "@/components/reports/ReportsTab";
-import { GSCTabContent } from "@/components/gsc/GSCTabContent";
 
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
-import { EcommerceAnalytics } from "@/components/integrations/ecommerce/EcommerceAnalytics";
-import { UserJourneyTab } from "@/components/rank-rent/journey/UserJourneyTab";
-import { ConversionGoalsManager } from "@/components/conversion-goals/ConversionGoalsManager";
 
 import { CompleteTutorialModal } from "@/components/onboarding/CompleteTutorialModal";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { PageLoadingFallback } from "@/components/ui/PageLoadingFallback";
+
+// Lazy loaded tab components - only downloaded when their tab is activated
+const ReportsTab = lazy(() => import("@/components/reports/ReportsTab").then(m => ({ default: m.ReportsTab })));
+const GSCTabContent = lazy(() => import("@/components/gsc/GSCTabContent").then(m => ({ default: m.GSCTabContent })));
+const PixelTrackingTab = lazy(() => import("@/components/integrations/PixelTrackingTab").then(m => ({ default: m.PixelTrackingTab })));
+const EcommerceAnalytics = lazy(() => import("@/components/integrations/ecommerce/EcommerceAnalytics").then(m => ({ default: m.EcommerceAnalytics })));
+const UserJourneyTab = lazy(() => import("@/components/rank-rent/journey/UserJourneyTab").then(m => ({ default: m.UserJourneyTab })));
+const ConversionGoalsManager = lazy(() => import("@/components/conversion-goals/ConversionGoalsManager").then(m => ({ default: m.ConversionGoalsManager })));
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -1482,45 +1485,51 @@ const SiteDetails = () => {
           {/* E-commerce Analytics Tab (Conditional) */}
           {site?.is_ecommerce && (
             <TabsContent value="ecommerce" className="min-h-[400px]">
-              {siteId ? (
-                <EcommerceAnalytics siteId={siteId} />
-              ) : (
-                <div className="p-4">
-                  <Card>
-                    <CardContent className="p-6">
-                      <p className="text-muted-foreground">Aguardando ID do site...</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+              <Suspense fallback={<PageLoadingFallback variant="tab" />}>
+                {siteId ? (
+                  <EcommerceAnalytics siteId={siteId} />
+                ) : (
+                  <div className="p-4">
+                    <Card>
+                      <CardContent className="p-6">
+                        <p className="text-muted-foreground">Aguardando ID do site...</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </Suspense>
             </TabsContent>
           )}
 
           {/* Relatórios Tab */}
           <TabsContent value="reports">
-            <ReportsTab siteId={siteId || ""} siteName={site.site_name} />
+            <Suspense fallback={<PageLoadingFallback variant="tab" />}>
+              <ReportsTab siteId={siteId || ""} siteName={site.site_name} />
+            </Suspense>
           </TabsContent>
 
           {/* Google Search Console Tab */}
           <TabsContent value="gsc" className="space-y-6">
-            {userData?.id && siteId ? (
-              <GSCTabContent
-                siteId={siteId}
-                userId={userData.id}
-                site={{
-                  url: site.site_url,
-                  name: site.site_name
-                }}
-              />
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">
-                    Carregando informações de autenticação...
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            <Suspense fallback={<PageLoadingFallback variant="tab" />}>
+              {userData?.id && siteId ? (
+                <GSCTabContent
+                  siteId={siteId}
+                  userId={userData.id}
+                  site={{
+                    url: site.site_url,
+                    name: site.site_name
+                  }}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-muted-foreground">
+                      Carregando informações de autenticação...
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </Suspense>
           </TabsContent>
 
           {/* Plugin WordPress Tab */}
@@ -1536,22 +1545,28 @@ const SiteDetails = () => {
 
           {/* Pixel & E-commerce Tab */}
           <TabsContent value="pixel-tracking">
-            <PixelTrackingTab 
-              siteId={siteId || ""}
-              trackingToken={site.tracking_token}
-              siteName={site.site_name}
-              pixelInstalled={site.tracking_pixel_installed}
-            />
+            <Suspense fallback={<PageLoadingFallback variant="tab" />}>
+              <PixelTrackingTab 
+                siteId={siteId || ""}
+                trackingToken={site.tracking_token}
+                siteName={site.site_name}
+                pixelInstalled={site.tracking_pixel_installed}
+              />
+            </Suspense>
           </TabsContent>
 
           {/* Jornada do Usuário Tab */}
           <TabsContent value="journey">
-            <UserJourneyTab siteId={siteId || ""} />
+            <Suspense fallback={<PageLoadingFallback variant="tab" />}>
+              <UserJourneyTab siteId={siteId || ""} />
+            </Suspense>
           </TabsContent>
 
           {/* Metas de Conversão Tab */}
           <TabsContent value="conversion-goals">
-            <ConversionGoalsManager siteId={siteId || ""} siteUrl={site?.site_url} />
+            <Suspense fallback={<PageLoadingFallback variant="tab" />}>
+              <ConversionGoalsManager siteId={siteId || ""} siteUrl={site?.site_url} />
+            </Suspense>
           </TabsContent>
 
         </Tabs>
