@@ -291,12 +291,11 @@ const SiteDetails = () => {
     enabled: !!siteId,
   });
   
-  // Fetch user's plan limit
+  // Fetch user's plan limit - reuses currentUser instead of extra getUser() call
   const { data: userPlanLimit } = useQuery({
-    queryKey: ["user-plan-limit"],
+    queryKey: ["user-plan-limit", currentUser?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!currentUser) return null;
       
       const { data, error } = await supabase
         .from('user_subscriptions')
@@ -306,7 +305,7 @@ const SiteDetails = () => {
             max_pages_per_site
           )
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1)
@@ -320,16 +319,11 @@ const SiteDetails = () => {
         isUnlimited: data?.subscription_plans?.max_pages_per_site === null
       };
     },
+    enabled: !!currentUser,
   });
   
-  // Fetch authenticated user ID for GSC
-  const { data: userData } = useQuery({
-    queryKey: ["current-user"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      return user;
-    },
-  });
+  // Reuse currentUser for GSC - eliminates duplicate getUser() call
+  const userData = currentUser;
   
   // Get unique clients for filter dropdown - usar tabela base
   const { data: allClientsData } = useQuery({
@@ -363,21 +357,21 @@ const SiteDetails = () => {
   
   const uniqueClients = allClientsData || [];
   
-  // Fetch clients for bulk assignment
+  // Fetch clients for bulk assignment - reuses currentUser
   const { data: clients } = useQuery({
-    queryKey: ["rank-rent-clients-bulk"],
+    queryKey: ["rank-rent-clients-bulk", currentUser?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+      if (!currentUser) throw new Error("Usuário não autenticado");
 
       const { data, error } = await supabase
         .from("rank_rent_clients")
         .select("id, name")
-        .eq("user_id", user.id)
+        .eq("user_id", currentUser.id)
         .order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!currentUser,
   });
 
 
@@ -417,9 +411,8 @@ const SiteDetails = () => {
         endDateTime: isAllPeriod ? 'N/A' : `${endDate}T23:59:59`
       });
       
-      // Verificar autenticação
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Reuse currentUser instead of calling getUser() again
+      if (!currentUser) {
         console.error('❌ Usuário não autenticado');
         throw new Error('Usuário não autenticado');
       }
