@@ -126,8 +126,8 @@ export const useAnalytics = ({
       return fetchAllPaginated<RawEvent>(query);
     },
     enabled: isEnabled,
-    staleTime: 60000,
-    gcTime: 120000,
+    staleTime: 120000, // 2 minutes
+    gcTime: 300000, // 5 minutes
   });
 
   // ==========================================
@@ -152,8 +152,8 @@ export const useAnalytics = ({
       return fetchAllPaginated<{ event_type: string; ip_address: string; page_path: string }>(query);
     },
     enabled: isEnabled,
-    staleTime: 60000,
-    gcTime: 120000,
+    staleTime: 120000, // 2 minutes
+    gcTime: 300000, // 5 minutes
   });
 
   // ==========================================

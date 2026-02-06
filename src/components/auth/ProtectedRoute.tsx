@@ -1,65 +1,41 @@
-import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { useRole } from "@/contexts/RoleContext";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: 'super_admin' | 'client' | 'end_client';
 }
 
+/**
+ * ProtectedRoute - Optimized authentication guard
+ * 
+ * Uses RoleContext for auth state (no duplicate auth requests).
+ * Only fetches profile when needed for approval check.
+ */
 export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const { user, role, isLoading } = useRole();
   const location = useLocation();
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        // Use getSession() for faster session restoration from cache
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          setUser(session.user);
-          
-          // Check if account is active (approved)
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('is_active')
-            .eq('id', session.user.id)
-            .single();
-          
-          // If account not approved, redirect to pending page
-          if (profile && !profile.is_active) {
-            setLoading(false);
-            window.location.href = '/pending-approval';
-            return;
-          }
-          
-          // Fetch role only if required
-          if (requiredRole) {
-            const { data } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id)
-              .maybeSingle();
-            
-            setUserRole(data?.role || null);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkSession();
-  }, [requiredRole]);
+  // Only check profile for approval status (uses cache from AppDataProvider)
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_active')
+        .eq('id', user!.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+    staleTime: 1800000, // 30 minutes - matches AppDataProvider
+    gcTime: 3600000,
+  });
 
   // Loading state - blocks rendering
-  if (loading) {
+  if (isLoading || (user && profileLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
         <div className="text-center space-y-4">
@@ -75,10 +51,15 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  // Account not approved - redirect to pending page
+  if (profile && !profile.is_active) {
+    return <Navigate to="/pending-approval" replace />;
+  }
+
   // Role check if required
-  if (requiredRole && userRole !== requiredRole) {
+  if (requiredRole && role !== requiredRole) {
     // Redirect based on user role
-    if (userRole === 'end_client') {
+    if (role === 'end_client') {
       return <Navigate to="/end-client-portal" replace />;
     }
     return <Navigate to="/dashboard" replace />;

@@ -25,8 +25,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { ContractStatusBadge } from "./ContractStatusBadge";
 import { useContractStatus } from "@/hooks/useContractStatus";
+import { format, subDays } from "date-fns";
 
 interface SitesGridProps {
   sites: any[];
@@ -50,6 +53,47 @@ export const SitesGrid = ({
   onDelete,
 }: SitesGridProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Prefetch site data on hover for instant navigation
+  const handlePrefetch = (siteId: string) => {
+    const startDate = format(subDays(new Date(), 30), "yyyy-MM-dd");
+    const endDate = format(new Date(), "yyyy-MM-dd");
+
+    // Prefetch site details
+    queryClient.prefetchQuery({
+      queryKey: ["site-details", siteId],
+      queryFn: async () => {
+        const { data: siteData } = await supabase
+          .from("rank_rent_sites")
+          .select("is_ecommerce, site_name, site_url, niche, location, tracking_token")
+          .eq("id", siteId)
+          .single();
+        const { data: metricsData } = await supabase
+          .from("rank_rent_metrics")
+          .select("*")
+          .eq("site_id", siteId)
+          .single();
+        return { ...metricsData, is_ecommerce: siteData?.is_ecommerce };
+      },
+      staleTime: 120000,
+    });
+
+    // Prefetch pages list
+    queryClient.prefetchQuery({
+      queryKey: ["site-pages", siteId, 10, "total_page_views", false, "", "all", "all"],
+      queryFn: async () => {
+        const { data, count } = await supabase
+          .from("rank_rent_page_metrics")
+          .select("*", { count: 'exact' })
+          .eq("site_id", siteId)
+          .order("total_page_views", { ascending: false })
+          .range(0, 9);
+        return { pages: data || [], total: count || 0 };
+      },
+      staleTime: 120000,
+    });
+  };
 
   const SiteCard = ({ site }: { site: any }) => {
     const { contractStatus, daysRemaining } = useContractStatus({
@@ -58,7 +102,10 @@ export const SitesGrid = ({
     });
 
     return (
-      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+      <Card 
+        className="group hover:shadow-lg transition-all duration-200 hover:border-primary/50"
+        onMouseEnter={() => handlePrefetch(site.id)}
+      >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-start gap-2 flex-1 min-w-0">
