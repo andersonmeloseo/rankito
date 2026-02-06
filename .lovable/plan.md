@@ -1,134 +1,154 @@
 
-# Correção: Conversões Detalhadas e Visualizações de Página
 
-## Problemas Identificados
+# Correção: Conversões Não Aparecem - Bug na Paginação
 
-### Problema 1: PageViewsTable recebe array vazio
-**Console log confirma**: `pageViews: [], count: 0`
+## Causa Raiz
 
-A query `pageViewsData` tem uma condição `enabled` incorreta:
+A função `fetchAllPaginated` no arquivo `src/hooks/useAnalytics.ts` tem um bug crítico:
 
 ```typescript
-// src/pages/SiteDetails.tsx, linha 454
-enabled: !!siteId && activeTab === 'pageviews', // ❌ ERRADO
+async function fetchAllPaginated<T>(queryBuilder: any, pageSize: number = 5000): Promise<T[]> {
+  let allData: T[] = [];
+  let offset = 0;
+  
+  while (true) {
+    // BUG: Reutiliza o mesmo queryBuilder com .range() múltiplas vezes
+    const { data, error } = await queryBuilder.range(offset, offset + pageSize - 1);
+    // ...
+  }
+}
 ```
 
-- `activeTab` é a aba **principal** = `'advanced-analytics'`
-- `'pageviews'` é uma **sub-aba** dentro de `advanced-analytics`
-- Resultado: a condição `activeTab === 'pageviews'` **nunca é verdadeira**
-- A query **nunca executa**, retornando array vazio
+O problema é que o Supabase JS **modifica** o query builder internamente quando `.range()` é chamado. Na segunda iteração do loop, a query já tem o range anterior aplicado, e chamar `.range()` novamente não substitui corretamente.
 
-### Problema 2: Campos faltantes nas queries
-
-A query do `useAnalytics.ts` seleciona campos limitados:
-
-```typescript
-// Linha 112 - useAnalytics.ts
-.select("id, created_at, event_type, page_path, page_url, ip_address, cta_text, city, referrer, metadata, is_ecommerce_event")
-```
-
-**Campos faltantes** que as tabelas precisam:
-| Campo | Usado em | Para |
-|-------|----------|------|
-| `user_agent` | ConversionsTable, PageViewsTable | Detectar browser |
-| `region` | ConversionsTable, PageViewsTable | Localização completa |
-| `country` | ConversionsTable, PageViewsTable | Localização completa |
-
-### Problema 3: PageViewsData não busca campos necessários
-
-A query separada em `SiteDetails.tsx` (linha 422):
-```typescript
-.select("id, created_at, page_url, page_path, ip_address, city, referrer, metadata")
-```
-
-**Faltam**: `user_agent`, `region`, `country`
+**Resultado**: Apenas a primeira página (5000 registros) é buscada, e os `whatsapp_click` (100 conversões) ficam além desse limite.
 
 ---
 
-## Correções Necessárias
+## Solução
 
-### Correção 1: Habilitar query pageViewsData corretamente
-
-**Arquivo**: `src/pages/SiteDetails.tsx`  
-**Linha**: 454
+Refatorar `fetchAllPaginated` para criar uma nova query builder a cada iteração, usando uma função factory:
 
 ```typescript
-// ANTES (incorreto)
-enabled: !!siteId && activeTab === 'pageviews',
+// Arquivo: src/hooks/useAnalytics.ts
 
-// DEPOIS (correto) - Executar quando na aba de analytics
-enabled: !!siteId && activeTab === 'advanced-analytics',
-```
-
-### Correção 2: Adicionar campos faltantes na query pageViewsData
-
-**Arquivo**: `src/pages/SiteDetails.tsx`  
-**Linha**: 422
-
-```typescript
-// ANTES
-.select("id, created_at, page_url, page_path, ip_address, city, referrer, metadata")
-
-// DEPOIS - Adicionar user_agent, region, country
-.select("id, created_at, page_url, page_path, ip_address, city, region, country, referrer, metadata, user_agent")
-```
-
-### Correção 3: Adicionar campos faltantes no useAnalytics
-
-**Arquivo**: `src/hooks/useAnalytics.ts`  
-**Linha**: 112
-
-```typescript
-// ANTES
-.select("id, created_at, event_type, page_path, page_url, ip_address, cta_text, city, referrer, metadata, is_ecommerce_event")
-
-// DEPOIS - Adicionar user_agent, region, country
-.select("id, created_at, event_type, page_path, page_url, ip_address, cta_text, city, region, country, referrer, metadata, is_ecommerce_event, user_agent")
-```
-
-### Correção 4: Atualizar interface RawEvent
-
-**Arquivo**: `src/hooks/useAnalytics.ts`  
-**Linhas**: 44-57
-
-```typescript
-// Adicionar campos à interface
-interface RawEvent {
-  id: string;
-  created_at: string;
-  event_type: string;
-  page_path: string;
-  page_url: string | null;
-  ip_address: string | null;
-  cta_text: string | null;
-  city: string | null;
-  region: string | null;      // ✅ ADICIONAR
-  country: string | null;     // ✅ ADICIONAR
-  referrer: string | null;
-  metadata: any;
-  is_ecommerce_event: boolean | null;
-  user_agent: string | null;  // ✅ ADICIONAR
+async function fetchAllPaginated<T>(
+  createQuery: () => any,  // Factory function que cria nova query
+  pageSize: number = 5000
+): Promise<T[]> {
+  let allData: T[] = [];
+  let offset = 0;
+  
+  while (true) {
+    // Cria uma NOVA query a cada iteração
+    const query = createQuery();
+    const { data, error } = await query.range(offset, offset + pageSize - 1);
+    
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    
+    allData = [...allData, ...data];
+    
+    if (data.length < pageSize) break;
+    offset += pageSize;
+  }
+  
+  return allData;
 }
 ```
 
 ---
 
-## Resumo das Alterações
+## Alterações nos Chamadores
 
-| Arquivo | Linha | Alteração |
-|---------|-------|-----------|
-| `src/pages/SiteDetails.tsx` | 454 | Corrigir condição `enabled` |
-| `src/pages/SiteDetails.tsx` | 422 | Adicionar `user_agent, region, country` no select |
-| `src/hooks/useAnalytics.ts` | 112 | Adicionar `user_agent, region, country` no select |
-| `src/hooks/useAnalytics.ts` | 44-57 | Atualizar interface `RawEvent` |
+### Query 1: allEvents (linha 110-130)
+
+```typescript
+// ANTES
+const { data: allEvents } = useQuery({
+  queryFn: async () => {
+    let query = supabase
+      .from("rank_rent_conversions")
+      .select("...")
+      .eq("site_id", siteId)
+      // ...filtros
+    return fetchAllPaginated<RawEvent>(query);
+  },
+});
+
+// DEPOIS
+const { data: allEvents } = useQuery({
+  queryFn: async () => {
+    const createQuery = () => {
+      let query = supabase
+        .from("rank_rent_conversions")
+        .select("id, created_at, event_type, page_path, page_url, ip_address, cta_text, city, region, country, referrer, metadata, is_ecommerce_event, user_agent")
+        .eq("site_id", siteId)
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+
+      if (device !== "all") {
+        query = query.filter('metadata->>device', 'eq', device);
+      }
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+      return query;
+    };
+    
+    return fetchAllPaginated<RawEvent>(createQuery);
+  },
+});
+```
+
+### Query 2: previousEvents (linha 139-160)
+
+```typescript
+// DEPOIS
+const { data: previousEvents } = useQuery({
+  queryFn: async () => {
+    const createQuery = () => {
+      let query = supabase
+        .from("rank_rent_conversions")
+        .select("event_type, ip_address, page_path")
+        .eq("site_id", siteId)
+        .gte("created_at", previousStart)
+        .lte("created_at", previousEnd);
+
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
+      return query;
+    };
+    
+    return fetchAllPaginated<{ event_type: string; ip_address: string; page_path: string }>(createQuery);
+  },
+});
+```
+
+---
+
+## Arquivos a Modificar
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/hooks/useAnalytics.ts` | Refatorar `fetchAllPaginated` para usar factory function |
 
 ---
 
 ## Resultado Esperado
 
-Após as correções:
+Após a correção:
 
-1. **PageViewsTable** receberá dados reais (não array vazio)
-2. **ConversionsTable** mostrará browser e localização completa
-3. **Paginação** continuará funcionando normalmente (já existe nos componentes)
-4. Filtros e ordenação também funcionarão com os campos adicionais
+| Métrica | Antes | Depois |
+|---------|-------|--------|
+| Conversões exibidas | 5 | 100 (todas) |
+| Páginas buscadas | 1 (5000 registros) | 2 (7070 registros) |
+| Requisições de rede | 1 | 2 |
+
+A tabela "Conversões Detalhadas" mostrará todas as 100 conversões do período, com paginação funcionando corretamente (20 por página).
+
