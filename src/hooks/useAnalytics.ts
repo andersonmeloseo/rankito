@@ -7,20 +7,16 @@ import { isConversionEvent } from "@/lib/conversionUtils";
 /**
  * Helper function to fetch all records bypassing Supabase 1000-record limit
  * Uses pagination with multiple .range() calls until all data is retrieved
- * IMPORTANT: Uses factory function to create fresh query on each iteration
- * (Supabase query builder is mutated by .range(), so reusing breaks pagination)
  */
 async function fetchAllPaginated<T>(
-  createQuery: () => any,
+  queryBuilder: any,
   pageSize: number = 5000
 ): Promise<T[]> {
   let allData: T[] = [];
   let offset = 0;
   
   while (true) {
-    // Create a NEW query instance for each page request
-    const query = createQuery();
-    const { data, error } = await query.range(offset, offset + pageSize - 1);
+    const { data, error } = await queryBuilder.range(offset, offset + pageSize - 1);
     
     if (error) throw error;
     if (!data || data.length === 0) break;
@@ -55,12 +51,9 @@ interface RawEvent {
   ip_address: string | null;
   cta_text: string | null;
   city: string | null;
-  region: string | null;
-  country: string | null;
   referrer: string | null;
   metadata: any;
   is_ecommerce_event: boolean | null;
-  user_agent: string | null;
 }
 
 export const useAnalytics = ({
@@ -114,30 +107,27 @@ export const useAnalytics = ({
   const { data: allEvents, isLoading: eventsLoading } = useQuery({
     queryKey: ["analytics-all-events", siteId, startDate, endDate, device, conversionType],
     queryFn: async () => {
-      const createQuery = () => {
-        let query = supabase
-          .from("rank_rent_conversions")
-          .select("id, created_at, event_type, page_path, page_url, ip_address, cta_text, city, region, country, referrer, metadata, is_ecommerce_event, user_agent")
-          .eq("site_id", siteId)
-          .gte("created_at", startDate)
-          .lte("created_at", endDate);
+      let query = supabase
+        .from("rank_rent_conversions")
+        .select("id, created_at, event_type, page_path, page_url, ip_address, cta_text, city, referrer, metadata, is_ecommerce_event")
+        .eq("site_id", siteId)
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
 
-        if (device !== "all") {
-          query = query.filter('metadata->>device', 'eq', device);
-        }
-        if (conversionType === "ecommerce") {
-          query = query.eq("is_ecommerce_event", true);
-        } else if (conversionType === "normal") {
-          query = query.eq("is_ecommerce_event", false);
-        }
-        return query;
-      };
+      if (device !== "all") {
+        query = query.filter('metadata->>device', 'eq', device);
+      }
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
 
-      return fetchAllPaginated<RawEvent>(createQuery);
+      return fetchAllPaginated<RawEvent>(query);
     },
     enabled: isEnabled,
-    staleTime: 120000, // 2 minutes
-    gcTime: 300000, // 5 minutes
+    staleTime: 60000,
+    gcTime: 120000,
   });
 
   // ==========================================
@@ -146,27 +136,24 @@ export const useAnalytics = ({
   const { data: previousEvents } = useQuery({
     queryKey: ["analytics-previous-events", siteId, previousStart, previousEnd, conversionType],
     queryFn: async () => {
-      const createQuery = () => {
-        let query = supabase
-          .from("rank_rent_conversions")
-          .select("event_type, ip_address, page_path")
-          .eq("site_id", siteId)
-          .gte("created_at", previousStart)
-          .lte("created_at", previousEnd);
+      let query = supabase
+        .from("rank_rent_conversions")
+        .select("event_type, ip_address, page_path")
+        .eq("site_id", siteId)
+        .gte("created_at", previousStart)
+        .lte("created_at", previousEnd);
 
-        if (conversionType === "ecommerce") {
-          query = query.eq("is_ecommerce_event", true);
-        } else if (conversionType === "normal") {
-          query = query.eq("is_ecommerce_event", false);
-        }
-        return query;
-      };
+      if (conversionType === "ecommerce") {
+        query = query.eq("is_ecommerce_event", true);
+      } else if (conversionType === "normal") {
+        query = query.eq("is_ecommerce_event", false);
+      }
 
-      return fetchAllPaginated<{ event_type: string; ip_address: string; page_path: string }>(createQuery);
+      return fetchAllPaginated<{ event_type: string; ip_address: string; page_path: string }>(query);
     },
     enabled: isEnabled,
-    staleTime: 120000, // 2 minutes
-    gcTime: 300000, // 5 minutes
+    staleTime: 60000,
+    gcTime: 120000,
   });
 
   // ==========================================

@@ -1,154 +1,44 @@
 
+# Correção: Dados do Analytics Sumiram
 
-# Correção: Conversões Não Aparecem - Bug na Paginação
+## Causa Raiz Identificada
 
-## Causa Raiz
+O hook `useAnalytics` está desabilitado porque há um **erro de nome de aba**:
 
-A função `fetchAllPaginated` no arquivo `src/hooks/useAnalytics.ts` tem um bug crítico:
+| Componente | Nome usado | Nome esperado |
+|------------|------------|---------------|
+| `TabsContent` (linha 1326) | `"advanced-analytics"` | - |
+| `useAnalytics enabled` (linha 475) | `"analytics"` | `"advanced-analytics"` |
 
-```typescript
-async function fetchAllPaginated<T>(queryBuilder: any, pageSize: number = 5000): Promise<T[]> {
-  let allData: T[] = [];
-  let offset = 0;
-  
-  while (true) {
-    // BUG: Reutiliza o mesmo queryBuilder com .range() múltiplas vezes
-    const { data, error } = await queryBuilder.range(offset, offset + pageSize - 1);
-    // ...
-  }
-}
-```
-
-O problema é que o Supabase JS **modifica** o query builder internamente quando `.range()` é chamado. Na segunda iteração do loop, a query já tem o range anterior aplicado, e chamar `.range()` novamente não substitui corretamente.
-
-**Resultado**: Apenas a primeira página (5000 registros) é buscada, e os `whatsapp_click` (100 conversões) ficam além desse limite.
+Como `'advanced-analytics' !== 'analytics'`, a condição `enabled: activeTab === 'analytics'` sempre retorna `false` quando o usuário está na aba de analytics, fazendo com que a query **nunca seja executada**.
 
 ---
 
-## Solução
+## Correção
 
-Refatorar `fetchAllPaginated` para criar uma nova query builder a cada iteração, usando uma função factory:
+Alterar uma única linha no arquivo `src/pages/SiteDetails.tsx`:
 
+**Linha 475:**
 ```typescript
-// Arquivo: src/hooks/useAnalytics.ts
+// ANTES (incorreto)
+enabled: activeTab === 'analytics',
 
-async function fetchAllPaginated<T>(
-  createQuery: () => any,  // Factory function que cria nova query
-  pageSize: number = 5000
-): Promise<T[]> {
-  let allData: T[] = [];
-  let offset = 0;
-  
-  while (true) {
-    // Cria uma NOVA query a cada iteração
-    const query = createQuery();
-    const { data, error } = await query.range(offset, offset + pageSize - 1);
-    
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-    
-    allData = [...allData, ...data];
-    
-    if (data.length < pageSize) break;
-    offset += pageSize;
-  }
-  
-  return allData;
-}
+// DEPOIS (correto)
+enabled: activeTab === 'advanced-analytics',
 ```
 
 ---
 
-## Alterações nos Chamadores
+## Impacto
 
-### Query 1: allEvents (linha 110-130)
-
-```typescript
-// ANTES
-const { data: allEvents } = useQuery({
-  queryFn: async () => {
-    let query = supabase
-      .from("rank_rent_conversions")
-      .select("...")
-      .eq("site_id", siteId)
-      // ...filtros
-    return fetchAllPaginated<RawEvent>(query);
-  },
-});
-
-// DEPOIS
-const { data: allEvents } = useQuery({
-  queryFn: async () => {
-    const createQuery = () => {
-      let query = supabase
-        .from("rank_rent_conversions")
-        .select("id, created_at, event_type, page_path, page_url, ip_address, cta_text, city, region, country, referrer, metadata, is_ecommerce_event, user_agent")
-        .eq("site_id", siteId)
-        .gte("created_at", startDate)
-        .lte("created_at", endDate);
-
-      if (device !== "all") {
-        query = query.filter('metadata->>device', 'eq', device);
-      }
-      if (conversionType === "ecommerce") {
-        query = query.eq("is_ecommerce_event", true);
-      } else if (conversionType === "normal") {
-        query = query.eq("is_ecommerce_event", false);
-      }
-      return query;
-    };
-    
-    return fetchAllPaginated<RawEvent>(createQuery);
-  },
-});
-```
-
-### Query 2: previousEvents (linha 139-160)
-
-```typescript
-// DEPOIS
-const { data: previousEvents } = useQuery({
-  queryFn: async () => {
-    const createQuery = () => {
-      let query = supabase
-        .from("rank_rent_conversions")
-        .select("event_type, ip_address, page_path")
-        .eq("site_id", siteId)
-        .gte("created_at", previousStart)
-        .lte("created_at", previousEnd);
-
-      if (conversionType === "ecommerce") {
-        query = query.eq("is_ecommerce_event", true);
-      } else if (conversionType === "normal") {
-        query = query.eq("is_ecommerce_event", false);
-      }
-      return query;
-    };
-    
-    return fetchAllPaginated<{ event_type: string; ip_address: string; page_path: string }>(createQuery);
-  },
-});
-```
+- **Positivo**: Os dados de analytics voltarão a aparecer imediatamente quando o usuário acessar a aba "Analytics Avançado"
+- **Sem riscos**: Mudança de 1 linha, apenas corrige uma string
 
 ---
 
-## Arquivos a Modificar
+## Validação
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/hooks/useAnalytics.ts` | Refatorar `fetchAllPaginated` para usar factory function |
-
----
-
-## Resultado Esperado
-
-Após a correção:
-
-| Métrica | Antes | Depois |
-|---------|-------|--------|
-| Conversões exibidas | 5 | 100 (todas) |
-| Páginas buscadas | 1 (5000 registros) | 2 (7070 registros) |
-| Requisições de rede | 1 | 2 |
-
-A tabela "Conversões Detalhadas" mostrará todas as 100 conversões do período, com paginação funcionando corretamente (20 por página).
-
+Após a correção, ao acessar a aba `advanced-analytics`:
+1. O console deve parar de mostrar `isLoading: true` infinito
+2. A requisição para `rank_rent_conversions` deve aparecer no Network
+3. Os gráficos e métricas devem renderizar com dados

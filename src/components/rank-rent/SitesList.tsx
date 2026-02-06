@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,6 @@ export const SitesList = ({
   const isMobile = useIsMobile();
   const effectiveViewMode = isMobile ? "grid" : viewMode;
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRentDialog, setShowRentDialog] = useState(false);
   const [showRenewDialog, setShowRenewDialog] = useState(false);
@@ -81,8 +80,8 @@ export const SitesList = ({
       if (error) throw error;
       return data;
     },
-    staleTime: 300000, // 5 minutes - synced with AppDataProvider
-    refetchInterval: 300000,
+    staleTime: 60000,
+    refetchInterval: 60000,
   });
 
   // Get unique niches for filter
@@ -153,43 +152,6 @@ export const SitesList = ({
     );
   }
 
-  // Prefetch site data on hover for instant navigation
-  const handlePrefetch = (siteId: string) => {
-    // Prefetch site details
-    queryClient.prefetchQuery({
-      queryKey: ["site-details", siteId],
-      queryFn: async () => {
-        const { data: siteData } = await supabase
-          .from("rank_rent_sites")
-          .select("is_ecommerce, site_name, site_url, niche, location, tracking_token")
-          .eq("id", siteId)
-          .single();
-        const { data: metricsData } = await supabase
-          .from("rank_rent_metrics")
-          .select("*")
-          .eq("site_id", siteId)
-          .single();
-        return { ...metricsData, is_ecommerce: siteData?.is_ecommerce };
-      },
-      staleTime: 120000,
-    });
-
-    // Prefetch pages list
-    queryClient.prefetchQuery({
-      queryKey: ["site-pages", siteId, 10, "total_page_views", false, "", "all", "all"],
-      queryFn: async () => {
-        const { data, count } = await supabase
-          .from("rank_rent_page_metrics")
-          .select("*", { count: 'exact' })
-          .eq("site_id", siteId)
-          .order("total_page_views", { ascending: false })
-          .range(0, 9);
-        return { pages: data || [], total: count || 0 };
-      },
-      staleTime: 120000,
-    });
-  };
-
   const SiteRow = ({ site }: { site: any }) => {
     const { contractStatus, daysRemaining } = useContractStatus({
       isRented: site.is_rented,
@@ -197,10 +159,7 @@ export const SitesList = ({
     });
 
     return (
-      <tr 
-        className="border-b hover:bg-muted/50 transition-colors h-16"
-        onMouseEnter={() => handlePrefetch(site.id)}
-      >
+      <tr className="border-b hover:bg-muted/50 transition-colors h-16">
         <td className="p-4 w-12">
           <Checkbox
             checked={selectedSites.has(site.id)}

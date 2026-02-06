@@ -137,7 +137,7 @@ export const useUserResources = (userId: string | undefined) => {
       } as UserResourcesData;
     },
     enabled: !!userId,
-    staleTime: 300000, // 5 minutos de cache
-    gcTime: 600000, // 10 minutos em memória
+    staleTime: 60000, // 1 minuto de cache
+    gcTime: 120000, // 2 minutos em memória
   });
 };
