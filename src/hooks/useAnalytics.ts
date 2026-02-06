@@ -51,9 +51,12 @@ interface RawEvent {
   ip_address: string | null;
   cta_text: string | null;
   city: string | null;
+  region: string | null;
+  country: string | null;
   referrer: string | null;
   metadata: any;
   is_ecommerce_event: boolean | null;
+  user_agent: string | null;
 }
 
 export const useAnalytics = ({
@@ -109,7 +112,7 @@ export const useAnalytics = ({
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_conversions")
-        .select("id, created_at, event_type, page_path, page_url, ip_address, cta_text, city, referrer, metadata, is_ecommerce_event")
+        .select("id, created_at, event_type, page_path, page_url, ip_address, cta_text, city, region, country, referrer, metadata, is_ecommerce_event, user_agent")
         .eq("site_id", siteId)
         .gte("created_at", startDate)
         .lte("created_at", endDate);

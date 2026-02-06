@@ -419,7 +419,7 @@ const SiteDetails = () => {
       
       let query = supabase
         .from("rank_rent_conversions")
-        .select("id, created_at, page_url, page_path, ip_address, city, referrer, metadata") // Campos específicos
+        .select("id, created_at, page_url, page_path, ip_address, city, region, country, referrer, metadata, user_agent") // Campos específicos
         .eq("site_id", siteId)
         .eq("event_type", "page_view");
       
@@ -451,7 +451,7 @@ const SiteDetails = () => {
       
       return data || [];
     },
-    enabled: !!siteId && activeTab === 'pageviews', // Lazy load - só busca quando na aba
+    enabled: !!siteId && activeTab === 'advanced-analytics', // Lazy load - só busca quando na aba analytics
     staleTime: 60000,
   });
   
