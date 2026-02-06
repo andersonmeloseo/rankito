@@ -100,9 +100,9 @@ const SiteDetails = () => {
   const [showCompleteTutorial, setShowCompleteTutorial] = useState(false);
   const [showAddSiteDialog, setShowAddSiteDialog] = useState(false);
   
-  // Pagination States
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100);
+  // Load More States
+  const [loadedCount, setLoadedCount] = useState(10);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   // Sorting States
   const [sortColumn, setSortColumn] = useState<string>("total_page_views");
@@ -131,10 +131,17 @@ const SiteDetails = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setCurrentPage(1); // Reset to first page on search
+      setLoadedCount(10); // Reset to initial count on search
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Reset loading state when data arrives
+  // Handler para carregar mais páginas
+  const handleLoadMore = () => {
+    setIsLoadingMore(true);
+    setLoadedCount(prev => prev + 100);
+  };
 
   // Fetch site details
   const { data: site, isLoading: siteLoading } = useQuery({
@@ -210,13 +217,10 @@ const SiteDetails = () => {
     enabled: !!siteId && !!site?.last_conversion_at,
   });
 
-  // Fetch pages for this site with pagination, sorting, and filters
+  // Fetch pages for this site with load more pattern
   const { data: pagesData, isLoading: pagesLoading } = useQuery({
-    queryKey: ["site-pages", siteId, currentPage, pageSize, sortColumn, sortAscending, debouncedSearch, statusFilter, clientFilter],
+    queryKey: ["site-pages", siteId, loadedCount, sortColumn, sortAscending, debouncedSearch, statusFilter, clientFilter],
     queryFn: async () => {
-      const from = (currentPage - 1) * pageSize;
-      const to = from + pageSize - 1;
-      
       let query = supabase
         .from("rank_rent_page_metrics")
         .select("*", { count: 'exact' })
@@ -248,8 +252,8 @@ const SiteDetails = () => {
       // Apply sorting
       query = query.order(sortColumn, { ascending: sortAscending });
       
-      // Apply pagination
-      query = query.range(from, to);
+      // Load more pattern: always from 0 to loadedCount - 1
+      query = query.range(0, loadedCount - 1);
       
       const { data, error, count } = await query;
 
@@ -257,11 +261,17 @@ const SiteDetails = () => {
       return { pages: data || [], total: count || 0 };
     },
     enabled: !!siteId,
-    refetchInterval: 30000,
+    staleTime: 30000,
   });
   
   const pages = pagesData?.pages || [];
-  const totalPages = Math.ceil((pagesData?.total || 0) / pageSize);
+  
+  // Reset loading state when data arrives
+  useEffect(() => {
+    if (!pagesLoading) {
+      setIsLoadingMore(false);
+    }
+  }, [pagesLoading]);
   
   // Get total count of ALL pages for this site (without filters)
   const { data: totalPagesCount } = useQuery({
@@ -469,28 +479,14 @@ const SiteDetails = () => {
       setSortColumn(column);
       setSortAscending(false);
     }
-    setCurrentPage(1); // Reset to first page on sort
+    setLoadedCount(10); // Reset to initial count on sort
   };
   
   const handleClearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
     setClientFilter("all");
-    setCurrentPage(1);
-  };
-  
-  const handlePageSizeChange = (newSize: string) => {
-    const size = Number(newSize);
-    if (size === 99999 && (pagesData?.total || 0) > 1000) {
-      toast({
-        title: "⚠️ Muitas Páginas",
-        description: "Para melhor performance, use os filtros ou selecione até 500 por página",
-        variant: "destructive",
-      });
-      return;
-    }
-    setPageSize(size);
-    setCurrentPage(1);
+    setLoadedCount(10);
   };
   
   const handleSelectAll = (checked: boolean) => {
@@ -962,7 +958,7 @@ const SiteDetails = () => {
                       <div>
                         <Select value={statusFilter} onValueChange={(value) => {
                           setStatusFilter(value);
-                          setCurrentPage(1);
+                          setLoadedCount(10);
                         }}>
                           <SelectTrigger>
                             <SelectValue placeholder="Status" />
@@ -979,7 +975,7 @@ const SiteDetails = () => {
                       <div>
                         <Select value={clientFilter} onValueChange={(value) => {
                           setClientFilter(value);
-                          setCurrentPage(1);
+                          setLoadedCount(10);
                         }}>
                           <SelectTrigger>
                             <SelectValue placeholder="Cliente" />
@@ -1267,65 +1263,42 @@ const SiteDetails = () => {
                       </Table>
                     </div>
                     
-                    {/* Pagination Controls */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                    {/* Load More Controls */}
+                    <div className="flex flex-col items-center gap-4 pt-4 border-t">
                       <div className="text-sm text-muted-foreground">
-                        Mostrando {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, pagesData?.total || 0)} de {pagesData?.total || 0} páginas
+                        Mostrando {pages.length} de {pagesData?.total || 0} páginas
                       </div>
                       
-                      <div className="flex items-center gap-2">
-                        <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="10">10 por página</SelectItem>
-                            <SelectItem value="50">50 por página</SelectItem>
-                            <SelectItem value="100">100 por página</SelectItem>
-                            <SelectItem value="200">200 por página</SelectItem>
-                            <SelectItem value="500">500 por página</SelectItem>
-                            <SelectItem value="99999">Mostrar Tudo</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        
-                        <div className="flex items-center gap-1">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            disabled={currentPage === 1}
-                            onClick={() => setCurrentPage(1)}
-                          >
-                            Primeira
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            disabled={currentPage === 1}
-                            onClick={() => setCurrentPage(p => p - 1)}
-                          >
-                            Anterior
-                          </Button>
-                          <span className="px-3 py-1 text-sm">
-                            Página {currentPage} de {totalPages}
-                          </span>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            disabled={currentPage === totalPages}
-                            onClick={() => setCurrentPage(p => p + 1)}
-                          >
-                            Próxima
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            disabled={currentPage === totalPages}
-                            onClick={() => setCurrentPage(totalPages)}
-                          >
-                            Última
-                          </Button>
+                      {/* Load More Button */}
+                      {pagesData?.total && loadedCount < pagesData.total && (
+                        <Button 
+                          onClick={handleLoadMore}
+                          disabled={isLoadingMore}
+                          variant="outline"
+                          className="min-w-[280px]"
+                        >
+                          {isLoadingMore ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Carregando...
+                            </>
+                          ) : (
+                            <>
+                              Carregar Mais
+                              <Badge variant="secondary" className="ml-2">
+                                +{Math.min(100, pagesData.total - loadedCount)} de {pagesData.total - loadedCount} restantes
+                              </Badge>
+                            </>
+                          )}
+                        </Button>
+                      )}
+
+                      {/* Info quando todas foram carregadas */}
+                      {loadedCount >= (pagesData?.total || 0) && pages.length > 0 && (
+                        <div className="text-sm text-muted-foreground">
+                          ✓ Todas as {pagesData?.total} páginas foram carregadas
                         </div>
-                      </div>
+                      )}
                     </div>
                   </>
                 ) : (
