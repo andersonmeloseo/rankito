@@ -22,7 +22,7 @@ interface GlobalEcommerceMetrics {
   }>;
 }
 
-export const useGlobalEcommerceMetrics = (userId: string | undefined) => {
+export const useGlobalEcommerceMetrics = (userId: string | undefined, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['global-ecommerce-metrics', userId],
     queryFn: async () => {
@@ -144,7 +144,7 @@ export const useGlobalEcommerceMetrics = (userId: string | undefined) => {
         revenueEvolution
       } as GlobalEcommerceMetrics;
     },
-    enabled: !!userId,
+    enabled: !!userId && (options?.enabled !== false),
     staleTime: 120000, // 2 minutos de cache
     refetchInterval: 300000 // 5 minutos ao invés de 30s
   });

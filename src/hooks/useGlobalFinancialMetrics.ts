@@ -30,7 +30,7 @@ export interface SiteFinancialSummary {
   total_conversions: number;
 }
 
-export const useGlobalFinancialMetrics = (userId: string) => {
+export const useGlobalFinancialMetrics = (userId: string, options?: { enabled?: boolean }) => {
   const { data: sitesMetrics, isLoading } = useQuery({
     queryKey: ["global-financial-metrics", userId],
     queryFn: async () => {
@@ -116,7 +116,7 @@ export const useGlobalFinancialMetrics = (userId: string) => {
 
       return sitesArray;
     },
-    enabled: !!userId,
+    enabled: !!userId && (options?.enabled !== false),
     staleTime: 60000, // 1 minuto de cache
     gcTime: 120000, // 2 minutos em memória
   });
