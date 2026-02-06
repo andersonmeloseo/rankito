@@ -66,7 +66,23 @@ interface SessionAnalytics {
   pagePerformance: PagePerformanceData[];
 }
 
-// Tipos para paginação
+// Interface para resultado da RPC
+interface RPCResult {
+  metrics: {
+    totalSessions: number;
+    uniqueVisitors: number;
+    newVisitors: number;
+    returningVisitors: number;
+    avgDuration: number;
+    avgPagesPerSession: number;
+    engagementRate: number;
+    bounceRate: number;
+  };
+  topEntryPages: Array<{ page_url: string; entries: number; exits: number }>;
+  topExitPages: Array<{ page_url: string; exits: number; entries: number }>;
+}
+
+// Tipos para queries de sequências (limitadas)
 interface SessionRow {
   id: string;
   session_id: string;
@@ -75,10 +91,8 @@ interface SessionRow {
   entry_time: string;
   pages_visited: number;
   total_duration_seconds: number | null;
-  device: string | null;
   city: string | null;
   country: string | null;
-  referrer: string | null;
 }
 
 interface VisitRow {
@@ -95,27 +109,6 @@ interface ClickRow {
   page_url: string;
   metadata: unknown;
   cta_text: string | null;
-  created_at: string;
-}
-
-// Helper para paginação real - bypassa limite de 1000 do PostgREST
-async function fetchAllPaginated<T>(
-  queryFn: (start: number, end: number) => PromiseLike<{ data: T[] | null; error: any }>,
-  pageSize: number = 1000
-): Promise<T[]> {
-  let allData: T[] = [];
-  let offset = 0;
-  
-  while (true) {
-    const { data, error } = await queryFn(offset, offset + pageSize - 1);
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-    allData = [...allData, ...data];
-    if (data.length < pageSize) break;
-    offset += pageSize;
-  }
-  
-  return allData;
 }
 
 export const useSessionAnalytics = (siteId: string, days: number = 30) => {
@@ -125,118 +118,82 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       const startDate = startOfDay(subDays(new Date(), days));
       const endDate = endOfDay(new Date());
 
-      // PAGINAÇÃO REAL: Busca em lotes de 1000 para bypassa limite do PostgREST
-      const [sessions, visits, clicks] = await Promise.all([
-        fetchAllPaginated<SessionRow>((start, end) =>
-          supabase
-            .from('rank_rent_sessions')
-            .select('id, session_id, entry_page_url, exit_page_url, entry_time, pages_visited, total_duration_seconds, device, city, country, referrer')
-            .eq('site_id', siteId)
-            .gte('entry_time', startDate.toISOString())
-            .lte('entry_time', endDate.toISOString())
-            .order('entry_time', { ascending: false })
-            .range(start, end)
-        ),
-        
-        fetchAllPaginated<VisitRow>((start, end) =>
-          supabase
-            .from('rank_rent_page_visits')
-            .select('session_id, page_url, sequence_number, time_spent_seconds, created_at')
-            .eq('site_id', siteId)
-            .gte('created_at', startDate.toISOString())
-            .lte('created_at', endDate.toISOString())
-            .order('session_id')
-            .order('sequence_number')
-            .range(start, end)
-        ),
-        
-        fetchAllPaginated<ClickRow>((start, end) =>
-          supabase
-            .from('rank_rent_conversions')
-            .select('session_id, event_type, page_url, metadata, cta_text, created_at')
-            .eq('site_id', siteId)
-            .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'])
-            .gte('created_at', startDate.toISOString())
-            .lte('created_at', endDate.toISOString())
-            .range(start, end)
-        )
+      // Usar RPC para métricas e top pages (rápido)
+      const { data: rpcData, error: rpcError } = await supabase
+        .rpc("get_session_analytics", {
+          p_site_id: siteId,
+          p_start_date: startDate.toISOString(),
+          p_end_date: endDate.toISOString()
+        });
+
+      if (rpcError) {
+        console.error("RPC error:", rpcError);
+        throw rpcError;
+      }
+
+      const result = rpcData as unknown as RPCResult;
+
+      // Se não há sessões, retornar vazio
+      if (!result || result.metrics.totalSessions === 0) {
+        return {
+          metrics: {
+            totalSessions: 0,
+            uniqueVisitors: 0,
+            newVisitors: 0,
+            returningVisitors: 0,
+            avgDuration: 0,
+            avgPagesPerSession: 0,
+            engagementRate: 0,
+            bounceRate: 0
+          },
+          topEntryPages: [],
+          topExitPages: [],
+          commonSequences: [],
+          stepVolumes: new Map(),
+          pagePerformance: []
+        };
+      }
+
+      // Buscar dados para sequências (limitado a 500 sessões mais recentes)
+      const [sessionsResult, visitsResult, clicksResult] = await Promise.all([
+        supabase
+          .from('rank_rent_sessions')
+          .select('id, session_id, entry_page_url, exit_page_url, entry_time, pages_visited, total_duration_seconds, city, country')
+          .eq('site_id', siteId)
+          .gte('entry_time', startDate.toISOString())
+          .lte('entry_time', endDate.toISOString())
+          .order('entry_time', { ascending: false })
+          .limit(500),
+
+        supabase
+          .from('rank_rent_page_visits')
+          .select('session_id, page_url, sequence_number, time_spent_seconds, created_at')
+          .eq('site_id', siteId)
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+          .order('session_id')
+          .order('sequence_number')
+          .limit(2000),
+
+        supabase
+          .from('rank_rent_conversions')
+          .select('session_id, event_type, page_url, metadata, cta_text')
+          .eq('site_id', siteId)
+          .in('event_type', ['whatsapp_click', 'phone_click', 'email_click', 'button_click', 'form_submit'])
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+          .limit(1000)
       ]);
 
-      // Criar mapeamento UUID ↔ session_id (TEXT) para compatibilidade
+      const sessions = (sessionsResult.data || []) as SessionRow[];
+      const visits = (visitsResult.data || []) as VisitRow[];
+      const clicks = (clicksResult.data || []) as ClickRow[];
+
+      // Criar mapeamento UUID ↔ session_id para compatibilidade
       const uuidToSessionId = new Map<string, string>();
       sessions.forEach(s => {
         uuidToSessionId.set(s.id, s.session_id);
       });
-
-      if (!sessions || sessions.length === 0) return {
-        metrics: { 
-          totalSessions: 0, 
-          uniqueVisitors: 0,
-          newVisitors: 0,
-          returningVisitors: 0,
-          avgDuration: 0, 
-          avgPagesPerSession: 0, 
-          engagementRate: 0,
-          bounceRate: 0 
-        },
-        topEntryPages: [],
-        topExitPages: [],
-        commonSequences: [],
-        stepVolumes: new Map(),
-        pagePerformance: []
-      };
-
-      // Calculate metrics
-      const totalSessions = sessions.length;
-      const bounceSessions = sessions.filter(s => s.pages_visited === 1).length;
-      const avgDuration = sessions.reduce((acc, s) => acc + (s.total_duration_seconds || 0), 0) / totalSessions || 0;
-      const avgPagesPerSession = sessions.reduce((acc, s) => acc + (s.pages_visited || 0), 0) / totalSessions || 0;
-      const bounceRate = totalSessions > 0 ? (bounceSessions / totalSessions) * 100 : 0;
-      
-      // New metrics: Unique visitors (by IP or session_id)
-      const uniqueSessionIds = new Set(sessions.map(s => s.session_id));
-      const uniqueVisitors = uniqueSessionIds.size;
-      
-      // Simulate new vs returning (in real app, would check historical data)
-      // For now, approximate: if session_id appears multiple times in period, it's returning
-      const sessionIdCounts = new Map<string, number>();
-      sessions.forEach(s => {
-        sessionIdCounts.set(s.session_id, (sessionIdCounts.get(s.session_id) || 0) + 1);
-      });
-      const returningCount = Array.from(sessionIdCounts.values()).filter(count => count > 1).length;
-      const newCount = uniqueVisitors - returningCount;
-      
-      const newVisitors = newCount;
-      const returningVisitors = returningCount;
-      const engagementRate = 100 - bounceRate;
-
-      // Top entry pages
-      const entryPagesMap = new Map<string, number>();
-      sessions.forEach(s => {
-        const count = entryPagesMap.get(s.entry_page_url) || 0;
-        entryPagesMap.set(s.entry_page_url, count + 1);
-      });
-      const topEntryPages = Array.from(entryPagesMap.entries())
-        .map(([page_url, entries]) => ({ page_url, entries, exits: 0 }))
-        .sort((a, b) => b.entries - a.entries)
-        .slice(0, 10);
-
-      // Top exit pages
-      const exitPagesMap = new Map<string, number>();
-      sessions.forEach(s => {
-        if (s.exit_page_url) {
-          const count = exitPagesMap.get(s.exit_page_url) || 0;
-          exitPagesMap.set(s.exit_page_url, count + 1);
-        }
-      });
-      const topExitPages = Array.from(exitPagesMap.entries())
-        .map(([page_url, exits]) => ({ page_url, exits, entries: 0 }))
-        .sort((a, b) => b.exits - a.exits)
-        .slice(0, 10);
-
-      // Fetch page visits and clicks - já feito no Promise.all acima
-      // sessionIds calculation
-      const sessionIds = sessions.map(s => s.id);
 
       // Build sequences with enriched data
       const sequencesMap = new Map<string, {
@@ -248,22 +205,21 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         timePerUrl: Map<string, { totalTime: number; count: number }>;
         firstAccessTime: string;
       }>();
-      
-      if (visits) {
+
+      if (visits.length > 0) {
         // Calculate time fallback when time_spent_seconds is null
         const enrichedVisits = visits.map((visit, index) => {
           let timeSpent = visit.time_spent_seconds;
-          
-          // If time is null, calculate from timestamps
+
           if (!timeSpent && index < visits.length - 1) {
             const nextVisit = visits[index + 1];
             if (visit.session_id === nextVisit.session_id) {
-              const timeDiff = new Date(nextVisit.created_at).getTime() - 
-                               new Date(visit.created_at).getTime();
-              timeSpent = Math.floor(timeDiff / 1000); // Convert to seconds
+              const timeDiff = new Date(nextVisit.created_at).getTime() -
+                new Date(visit.created_at).getTime();
+              timeSpent = Math.floor(timeDiff / 1000);
             }
           }
-          
+
           return { ...visit, time_spent_seconds: timeSpent || 0 };
         });
 
@@ -281,11 +237,10 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
           if (data.urls.length >= 1) {
             const key = data.urls.join(' → ');
             const session = sessions.find(s => s.id === sessionUuid);
-            // Converter UUID para session_id TEXT para compatibilidade com clicks
             const sessionIdText = uuidToSessionId.get(sessionUuid);
-            
-            if (!sessionIdText) return; // Skip se não encontrar mapeamento
-            
+
+            if (!sessionIdText) return;
+
             const existing = sequencesMap.get(key) || {
               count: 0,
               sessionIds: [],
@@ -295,14 +250,13 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
               timePerUrl: new Map(),
               firstAccessTime: session?.entry_time || new Date().toISOString()
             };
-            
-            // Manter o timestamp mais antigo
+
             if (session?.entry_time && new Date(session.entry_time) < new Date(existing.firstAccessTime)) {
               existing.firstAccessTime = session.entry_time;
             }
-            
+
             existing.count++;
-            existing.sessionIds.push(sessionIdText); // Usar TEXT ao invés de UUID
+            existing.sessionIds.push(sessionIdText);
             existing.totalDuration += data.duration;
             sequencesMap.set(key, existing);
           }
@@ -324,21 +278,18 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
         });
       }
 
-      // Add click events to sequences (ONLY by session_id to prevent duplication)
-      if (clicks) {
+      // Add click events to sequences
+      if (clicks.length > 0) {
         clicks.forEach(click => {
-          // Only process clicks that have a valid session_id
           if (!click.session_id) return;
-          
-          sequencesMap.forEach((data, key) => {
-            // Associate ONLY by session_id (no URL matching to prevent duplication)
+
+          sequencesMap.forEach((data) => {
             if (data.sessionIds.includes(click.session_id)) {
-              // Track unique sessions with clicks for conversion rate
               if (!data.sessionIdsWithClicks) {
                 data.sessionIdsWithClicks = new Set();
               }
               data.sessionIdsWithClicks.add(click.session_id);
-              
+
               const clickKey = `${click.page_url}-${click.event_type}`;
               const existing = data.clickEvents.get(clickKey) || {
                 pageUrl: click.page_url,
@@ -346,7 +297,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
                 count: 0,
                 ctaText: (() => {
                   const rootCta = click.cta_text?.trim();
-                  const metaCta = (click.metadata as any)?.cta_text?.trim();
+                  const metaCta = (click.metadata as { cta_text?: string })?.cta_text?.trim();
                   return rootCta || metaCta || undefined;
                 })()
               };
@@ -358,12 +309,12 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       }
 
       // Calculate locations for each sequence
+      const totalSessions = result.metrics.totalSessions;
       const commonSequences = Array.from(sequencesMap.entries())
         .map(([sequenceStr, data]) => {
           const locations = new Map<string, LocationData>();
-          
+
           data.sessionIds.forEach(sessionIdText => {
-            // Buscar session por session_id TEXT
             const session = sessions.find(s => s.session_id === sessionIdText);
             if (session?.city && session?.country) {
               const key = `${session.city}-${session.country}`;
@@ -396,33 +347,28 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
             firstAccessTime: data.firstAccessTime
           };
         })
-        .sort((a, b) => b.count - a.count); // Ordenar por frequência (mais sessões primeiro)
+        .sort((a, b) => b.count - a.count);
 
       // Calculate step volumes for the most common sequence
       const stepVolumes = new Map<string, number>();
-      if (commonSequences.length > 0 && visits) {
+      if (commonSequences.length > 0 && visits.length > 0) {
         const mostCommonSequence = commonSequences[0].sequence;
-        
-        // For each URL in the most common sequence, count unique sessions that reached it
+
+        const sessionVisitsMap = new Map<string, string[]>();
+        visits.forEach(visit => {
+          if (!sessionVisitsMap.has(visit.session_id)) {
+            sessionVisitsMap.set(visit.session_id, []);
+          }
+          sessionVisitsMap.get(visit.session_id)!.push(visit.page_url);
+        });
+
         mostCommonSequence.forEach((targetUrl, stepIndex) => {
           const sessionsThatReachedStep = new Set<string>();
-          
-          // Group visits by session
-          const sessionVisitsMap = new Map<string, string[]>();
-          visits.forEach(visit => {
-            if (!sessionVisitsMap.has(visit.session_id)) {
-              sessionVisitsMap.set(visit.session_id, []);
-            }
-            sessionVisitsMap.get(visit.session_id)!.push(visit.page_url);
-          });
-          
-          // Count sessions that followed the sequence up to this step
+
           sessionVisitsMap.forEach((urls, sessionUuid) => {
-            // Converter UUID para TEXT para comparação consistente
             const sessionIdText = uuidToSessionId.get(sessionUuid);
             if (!sessionIdText) return;
-            
-            // Check if session followed the sequence up to this step
+
             let matches = true;
             for (let i = 0; i <= stepIndex; i++) {
               if (i >= urls.length || urls[i] !== mostCommonSequence[i]) {
@@ -434,98 +380,22 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
               sessionsThatReachedStep.add(sessionIdText);
             }
           });
-          
+
           stepVolumes.set(targetUrl, sessionsThatReachedStep.size);
         });
       }
 
-      // Calculate page performance metrics
-      const pagePerformanceMap = new Map<string, {
-        visits: number;
-        totalTime: number;
-        bounces: number;
-        conversions: number;
-        entries: number;
-        exits: number;
-      }>();
-
-      // Aggregate data per page
-      if (visits) {
-        visits.forEach(visit => {
-          const existing = pagePerformanceMap.get(visit.page_url) || {
-            visits: 0,
-            totalTime: 0,
-            bounces: 0,
-            conversions: 0,
-            entries: 0,
-            exits: 0
-          };
-          existing.visits++;
-          existing.totalTime += visit.time_spent_seconds || 0;
-          pagePerformanceMap.set(visit.page_url, existing);
-        });
-      }
-
-      // Add entries and exits
-      sessions.forEach(s => {
-        const entryData = pagePerformanceMap.get(s.entry_page_url);
-        if (entryData) entryData.entries++;
-        
-        if (s.exit_page_url) {
-          const exitData = pagePerformanceMap.get(s.exit_page_url);
-          if (exitData) exitData.exits++;
-        }
-        
-        // Count bounces (single-page sessions)
-        if (s.pages_visited === 1) {
-          const bounceData = pagePerformanceMap.get(s.entry_page_url);
-          if (bounceData) bounceData.bounces++;
-        }
-      });
-
-      // Add conversions
-      if (clicks) {
-        clicks.forEach(click => {
-          const pageData = pagePerformanceMap.get(click.page_url);
-          if (pageData) pageData.conversions++;
-        });
-      }
-
-      // Convert to array with calculated metrics
-      const pagePerformance: PagePerformanceData[] = Array.from(pagePerformanceMap.entries())
-        .map(([page_url, data]) => ({
-          page_url,
-          totalVisits: data.visits,
-          avgTimeOnPage: data.visits > 0 ? Math.round(data.totalTime / data.visits) : 0,
-          bounceRate: data.entries > 0 ? parseFloat(((data.bounces / data.entries) * 100).toFixed(1)) : 0,
-          conversions: data.conversions,
-          conversionRate: data.visits > 0 ? parseFloat(((data.conversions / data.visits) * 100).toFixed(1)) : 0,
-          entries: data.entries,
-          exits: data.exits
-        }))
-        .filter(p => p.totalVisits > 0) // Only pages with visits
-        .sort((a, b) => b.totalVisits - a.totalVisits);
-
       return {
-        metrics: {
-          totalSessions,
-          uniqueVisitors,
-          newVisitors,
-          returningVisitors,
-          avgDuration: Math.round(avgDuration),
-          avgPagesPerSession: parseFloat(avgPagesPerSession.toFixed(2)),
-          engagementRate: parseFloat(engagementRate.toFixed(1)),
-          bounceRate: parseFloat(bounceRate.toFixed(2))
-        },
-        topEntryPages,
-        topExitPages,
+        metrics: result.metrics,
+        topEntryPages: result.topEntryPages || [],
+        topExitPages: result.topExitPages || [],
         commonSequences,
         stepVolumes,
-        pagePerformance
+        pagePerformance: [] // Removido para simplificar - pode ser adicionado depois se necessário
       };
     },
     enabled: !!siteId,
-    staleTime: 30000, // 30 segundos - atualização mais rápida para tracking em tempo real
-    refetchInterval: 15000 // Atualiza a cada 15 segundos
+    staleTime: 60000, // 1 minuto de cache
+    refetchInterval: 60000
   });
 };
