@@ -4855,6 +4855,10 @@ export type Database = {
           user_count: number
         }[]
       }
+      get_session_analytics: {
+        Args: { p_end_date: string; p_site_id: string; p_start_date: string }
+        Returns: Json
+      }
       get_sites_with_metrics: {
         Args: { p_user_id: string }
         Returns: {
