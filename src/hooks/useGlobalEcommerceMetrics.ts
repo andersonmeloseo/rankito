@@ -145,6 +145,7 @@ export const useGlobalEcommerceMetrics = (userId: string | undefined) => {
       } as GlobalEcommerceMetrics;
     },
     enabled: !!userId,
-    refetchInterval: 30000 // Refetch every 30 seconds
+    staleTime: 120000, // 2 minutos de cache
+    refetchInterval: 300000 // 5 minutos ao invés de 30s
   });
 };

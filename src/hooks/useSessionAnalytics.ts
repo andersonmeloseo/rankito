@@ -135,7 +135,7 @@ export const useSessionAnalytics = (siteId: string, days: number = 30) => {
       };
     },
     enabled: !!siteId,
-    staleTime: 60000, // 1 minuto de cache
-    refetchInterval: 60000
+    staleTime: 120000, // 2 minutos de cache
+    refetchInterval: 180000 // 3 minutos ao invés de 1 min
   });
 };

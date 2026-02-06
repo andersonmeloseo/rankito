@@ -53,7 +53,7 @@ export const useRecentSessions = (siteId: string, limit: number = 50) => {
       }));
     },
     enabled: !!siteId,
-    staleTime: 30000,
-    refetchInterval: 15000
+    staleTime: 60000,
+    refetchInterval: 120000 // 2 minutos ao invés de 15s
   });
 };
