@@ -1,105 +1,62 @@
 
-# Plano: Implementar "Carregar Mais" na Lista de Páginas
+# Plano: Corrigir Lentidão da Lista de Páginas em SiteDetails.tsx
 
 ## Diagnóstico
 
-### O Problema
-A view `rank_rent_page_metrics` faz:
-- JOIN com `rank_rent_conversions` (487.000+ registros)
-- Agregações complexas: `COUNT`, `AVG`, `ROUND` para cada página
-- Carrega TUDO de uma vez sem limite
+### O Problema Real
+O componente `PagesList.tsx` que modificamos **não é usado**! A página `SiteDetails.tsx` tem sua própria implementação inline.
 
-### Comportamento Atual
+A paginação atual (`pageSize = 100`) não resolve o problema porque:
+- Views com `GROUP BY` no PostgreSQL calculam **TODAS** as agregações antes de aplicar `LIMIT`
+- Mesmo pedindo 100 registros, o banco processa todas as páginas primeiro
+
+### Código Atual (linhas 104-105)
 ```typescript
-// Carrega TODAS as páginas de uma vez
-const { data } = await supabase
-  .from("rank_rent_page_metrics")
-  .select("*")
-  .eq("site_id", siteId)
-  .order("total_page_views", { ascending: false });
+const [currentPage, setCurrentPage] = useState(1);
+const [pageSize, setPageSize] = useState(100); // 👈 Muito alto para inicial
 ```
 
 ---
 
-## Solução: "Load More" Pattern
+## Solução: Implementar "Load More" Pattern em SiteDetails.tsx
 
-Implementar carregamento progressivo:
-1. **Inicial**: Carrega 10 páginas (instantâneo)
-2. **Clique**: Carrega +100 páginas por vez
-3. **Botão**: "Carregar Mais" mostra quantas restam
+### Parte 1: Mudar Estado Inicial
 
----
-
-## Mudanças no Código
-
-### Arquivo: `src/components/rank-rent/PagesList.tsx`
-
-**1. Novo estado para controle de carregamento:**
 ```typescript
-const [loadedCount, setLoadedCount] = useState(10);
+// ANTES
+const [currentPage, setCurrentPage] = useState(1);
+const [pageSize, setPageSize] = useState(100);
+
+// DEPOIS
+const [loadedCount, setLoadedCount] = useState(10); // Começar com 10
 const [isLoadingMore, setIsLoadingMore] = useState(false);
 ```
 
-**2. Query com paginação no servidor:**
+### Parte 2: Modificar Query Principal
+
 ```typescript
-const { data: pages, isLoading, refetch } = useQuery({
-  queryKey: ["rank-rent-pages", userId, siteId, clientId, loadedCount],
-  queryFn: async () => {
-    let query = supabase
-      .from("rank_rent_page_metrics")
-      .select("*")
-      .range(0, loadedCount - 1); // Carregar apenas até loadedCount
+// ANTES (linha 216-260)
+const from = (currentPage - 1) * pageSize;
+const to = from + pageSize - 1;
+query = query.range(from, to);
 
-    if (siteId) query = query.eq("site_id", siteId);
-    if (clientId) query = query.eq("client_id", clientId);
-    
-    query = query.order("total_page_views", { ascending: false });
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return data;
-  },
-  staleTime: 30000,
-});
+// DEPOIS - sempre carregar do início até loadedCount
+query = query.range(0, loadedCount - 1);
 ```
 
-**3. Query separada para contar total:**
-```typescript
-const { data: totalCount } = useQuery({
-  queryKey: ["rank-rent-pages-count", userId, siteId, clientId],
-  queryFn: async () => {
-    let query = supabase
-      .from("rank_rent_pages")  // Tabela base, sem agregações
-      .select("id", { count: "exact", head: true });
+### Parte 3: Adicionar Botão "Carregar Mais"
 
-    if (siteId) query = query.eq("site_id", siteId);
-    if (clientId) query = query.eq("client_id", clientId);
+Substituir a paginação tradicional (linhas 1270-1329) por:
 
-    const { count } = await query;
-    return count || 0;
-  },
-});
-```
-
-**4. Função "Carregar Mais":**
-```typescript
-const handleLoadMore = async () => {
-  setIsLoadingMore(true);
-  setLoadedCount(prev => prev + 100);
-  await refetch();
-  setIsLoadingMore(false);
-};
-```
-
-**5. Novo UI do botão:**
 ```tsx
-{pages && totalCount && loadedCount < totalCount && (
-  <div className="flex justify-center py-4">
+{/* Load More Button */}
+{pagesData?.total && loadedCount < pagesData.total && (
+  <div className="flex justify-center py-6 border-t">
     <Button 
       onClick={handleLoadMore}
       disabled={isLoadingMore}
       variant="outline"
-      className="min-w-[200px]"
+      className="min-w-[280px]"
     >
       {isLoadingMore ? (
         <>
@@ -110,28 +67,36 @@ const handleLoadMore = async () => {
         <>
           Carregar Mais
           <Badge variant="secondary" className="ml-2">
-            +{Math.min(100, totalCount - loadedCount)} de {totalCount - loadedCount} restantes
+            +{Math.min(100, pagesData.total - loadedCount)} de {pagesData.total - loadedCount} restantes
           </Badge>
         </>
       )}
     </Button>
   </div>
 )}
+
+{/* Info quando todas foram carregadas */}
+{loadedCount >= (pagesData?.total || 0) && pages.length > 0 && (
+  <div className="flex justify-center py-4 border-t text-sm text-muted-foreground">
+    Todas as {pagesData?.total} páginas foram carregadas
+  </div>
+)}
 ```
 
----
+### Parte 4: Handler para Carregar Mais
 
-## Resultado Visual
+```typescript
+const handleLoadMore = async () => {
+  setIsLoadingMore(true);
+  setLoadedCount(prev => prev + 100);
+};
 
-### Antes:
-```
-⏳ Carregando... (10+ segundos, timeout frequente)
-```
-
-### Depois:
-```
-📊 10 páginas exibidas de 2.500 total
-[Carregar Mais (+100 de 2.490 restantes)]
+// Reset loading state quando dados chegarem
+useEffect(() => {
+  if (!pagesLoading) {
+    setIsLoadingMore(false);
+  }
+}, [pagesLoading, pagesData]);
 ```
 
 ---
@@ -140,35 +105,37 @@ const handleLoadMore = async () => {
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/components/rank-rent/PagesList.tsx` | Implementar load more pattern |
+| `src/pages/SiteDetails.tsx` | Implementar load more pattern |
 
 ---
 
-## Detalhes Técnicos
+## Mudanças Específicas por Linha
 
-### Por que `.range(0, 9)` é mais rápido?
+### 1. Estados (linhas 103-117)
+- Remover: `currentPage`, `pageSize`
+- Adicionar: `loadedCount = 10`, `isLoadingMore = false`
 
-O PostgreSQL pode usar o índice para ordenar e retornar apenas os primeiros N registros SEM calcular agregações para TODAS as páginas:
+### 2. Query (linhas 214-261)
+- Remover cálculo de `from/to` baseado em currentPage
+- Usar `.range(0, loadedCount - 1)` direto
+- Adicionar `loadedCount` na queryKey
 
-```sql
--- ANTES (lento): Calcula tudo, retorna tudo
-SELECT * FROM rank_rent_page_metrics WHERE site_id = '...'
+### 3. Paginação UI (linhas 1270-1329)
+- Remover controles de paginação (Primeira, Anterior, Próxima, Última)
+- Remover seletor de "por página"
+- Adicionar botão "Carregar Mais" com badge de contagem
 
--- DEPOIS (rápido): Para após encontrar os primeiros 10
-SELECT * FROM rank_rent_page_metrics WHERE site_id = '...'
-ORDER BY total_page_views DESC LIMIT 10
-```
+### 4. Funções de paginação
+- Remover: `handlePageSizeChange`
+- Adicionar: `handleLoadMore`
+- Adicionar: `useEffect` para resetar `isLoadingMore`
 
-### Fluxo de Carregamento
+---
 
-1. **Primeiro render**: Carrega 10 páginas (rápido)
-2. **Usuário clica "Carregar Mais"**: Carrega 110 (0-109)
-3. **Clica novamente**: Carrega 210 (0-209)
-4. **E assim por diante...** até ter todas
+## Resultado Esperado
 
-### Vantagens da Abordagem
-
-- Carregamento inicial instantâneo
-- Usuário vê dados imediatamente
-- Pode continuar carregando se precisar
-- Sem timeout
+| Métrica | Antes | Depois |
+|---------|-------|--------|
+| Carregamento inicial | Timeout | **< 500ms** (10 páginas) |
+| Interação | Paginação lenta | Carregar +100 sob demanda |
+| UX | Página em branco | Dados visíveis imediatamente |
