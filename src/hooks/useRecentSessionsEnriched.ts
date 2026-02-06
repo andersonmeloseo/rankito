@@ -102,11 +102,11 @@ export const useRecentSessionsEnriched = (
       const totalCount = count || 0;
       const totalPages = Math.ceil(totalCount / pageSize);
 
-      // Construir query de dados com filtros - SELECT campos específicos
+      // Construir query de dados com filtros
       const offset = (page - 1) * pageSize;
       let dataQuery = supabase
         .from('rank_rent_sessions')
-        .select('id, session_id, entry_page_url, exit_page_url, entry_time, exit_time, total_duration_seconds, pages_visited, device, referrer, city, country, bot_name')
+        .select('*')
         .eq('site_id', siteId)
         .gte('entry_time', startDate.toISOString())
         .lte('entry_time', endDate.toISOString());
@@ -149,10 +149,10 @@ export const useRecentSessionsEnriched = (
       // Usar session_id (string token) ao invés de id (UUID)
       const sessionTokens = sessions.map(s => s.session_id);
 
-      // Buscar eventos - SELECT campos específicos ao invés de *
+      // Buscar TODOS os eventos de rank_rent_conversions
       const { data: allEvents, error: eventsError } = await supabase
         .from('rank_rent_conversions')
-        .select('id, session_id, event_type, page_url, created_at, cta_text, metadata, sequence_number')
+        .select('*')
         .in('session_id', sessionTokens)
         .order('sequence_number');
 
@@ -241,7 +241,7 @@ export const useRecentSessionsEnriched = (
       };
     },
     enabled: !!siteId,
-    staleTime: 60000,
-    refetchInterval: 120000, // 2 minutos ao invés de 15s
+    staleTime: 30000,
+    refetchInterval: 15000,
   });
 };

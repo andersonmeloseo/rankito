@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,21 +54,18 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { format, subDays } from "date-fns";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { ReportsTab } from "@/components/reports/ReportsTab";
+import { GSCTabContent } from "@/components/gsc/GSCTabContent";
 
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PixelTrackingTab } from "@/components/integrations/PixelTrackingTab";
+import { EcommerceAnalytics } from "@/components/integrations/ecommerce/EcommerceAnalytics";
+import { UserJourneyTab } from "@/components/rank-rent/journey/UserJourneyTab";
+import { ConversionGoalsManager } from "@/components/conversion-goals/ConversionGoalsManager";
 
 import { CompleteTutorialModal } from "@/components/onboarding/CompleteTutorialModal";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { PageLoadingFallback } from "@/components/ui/PageLoadingFallback";
-
-// Lazy loaded tab components - only downloaded when their tab is activated
-const ReportsTab = lazy(() => import("@/components/reports/ReportsTab").then(m => ({ default: m.ReportsTab })));
-const GSCTabContent = lazy(() => import("@/components/gsc/GSCTabContent").then(m => ({ default: m.GSCTabContent })));
-const PixelTrackingTab = lazy(() => import("@/components/integrations/PixelTrackingTab").then(m => ({ default: m.PixelTrackingTab })));
-const EcommerceAnalytics = lazy(() => import("@/components/integrations/ecommerce/EcommerceAnalytics").then(m => ({ default: m.EcommerceAnalytics })));
-const UserJourneyTab = lazy(() => import("@/components/rank-rent/journey/UserJourneyTab").then(m => ({ default: m.UserJourneyTab })));
-const ConversionGoalsManager = lazy(() => import("@/components/conversion-goals/ConversionGoalsManager").then(m => ({ default: m.ConversionGoalsManager })));
 
 const SiteDetails = () => {
   const { siteId } = useParams<{ siteId: string }>();
@@ -183,8 +180,8 @@ const SiteDetails = () => {
       return finalData;
     },
     enabled: !!siteId,
-    staleTime: 60000, // 1 minuto de cache
-    refetchOnMount: 'always',
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   // Debug log when site data changes
@@ -291,11 +288,12 @@ const SiteDetails = () => {
     enabled: !!siteId,
   });
   
-  // Fetch user's plan limit - reuses currentUser instead of extra getUser() call
+  // Fetch user's plan limit
   const { data: userPlanLimit } = useQuery({
-    queryKey: ["user-plan-limit", currentUser?.id],
+    queryKey: ["user-plan-limit"],
     queryFn: async () => {
-      if (!currentUser) return null;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
       
       const { data, error } = await supabase
         .from('user_subscriptions')
@@ -305,7 +303,7 @@ const SiteDetails = () => {
             max_pages_per_site
           )
         `)
-        .eq('user_id', currentUser.id)
+        .eq('user_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1)
@@ -319,59 +317,53 @@ const SiteDetails = () => {
         isUnlimited: data?.subscription_plans?.max_pages_per_site === null
       };
     },
-    enabled: !!currentUser,
   });
   
-  // Reuse currentUser for GSC - eliminates duplicate getUser() call
-  const userData = currentUser;
+  // Fetch authenticated user ID for GSC
+  const { data: userData } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
+  });
   
-  // Get unique clients for filter dropdown - usar tabela base
+  // Get unique clients for filter dropdown
   const { data: allClientsData } = useQuery({
     queryKey: ["all-clients-for-filter", siteId],
     queryFn: async () => {
-      // Usar tabela base rank_rent_pages ao invés da view pesada
       const { data, error } = await supabase
-        .from("rank_rent_pages")
-        .select("client_id")
+        .from("rank_rent_page_metrics")
+        .select("client_name")
         .eq("site_id", siteId)
-        .not("client_id", "is", null);
+        .not("client_name", "is", null);
       
       if (error) throw error;
       
-      // Get unique client IDs
-      const uniqueClientIds = [...new Set(data?.map(p => p.client_id).filter(Boolean))];
-      
-      // Fetch client names
-      if (uniqueClientIds.length === 0) return [];
-      
-      const { data: clients } = await supabase
-        .from("rank_rent_clients")
-        .select("name")
-        .in("id", uniqueClientIds);
-      
-      return clients?.map(c => c.name).filter(Boolean) || [];
+      // Get unique client names
+      const uniqueClients = [...new Set(data?.map(p => p.client_name).filter(Boolean))];
+      return uniqueClients;
     },
     enabled: !!siteId,
-    staleTime: 60000,
   });
   
   const uniqueClients = allClientsData || [];
   
-  // Fetch clients for bulk assignment - reuses currentUser
+  // Fetch clients for bulk assignment
   const { data: clients } = useQuery({
-    queryKey: ["rank-rent-clients-bulk", currentUser?.id],
+    queryKey: ["rank-rent-clients-bulk"],
     queryFn: async () => {
-      if (!currentUser) throw new Error("Usuário não autenticado");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
 
       const { data, error } = await supabase
         .from("rank_rent_clients")
         .select("id, name")
-        .eq("user_id", currentUser.id)
+        .eq("user_id", user.id)
         .order("name");
       if (error) throw error;
       return data;
     },
-    enabled: !!currentUser,
   });
 
 
@@ -395,7 +387,7 @@ const SiteDetails = () => {
     };
   };
 
-  // Fetch page views using the same period as analytics - SELECT campos específicos
+  // Fetch page views using the same period as analytics
   const { data: pageViewsData, isLoading: pageViewsLoading, refetch: refetchPageViews } = useQuery({
     queryKey: ["page-views-detailed", siteId, analyticsPeriod, customStartDate, customEndDate],
     queryFn: async () => {
@@ -411,15 +403,16 @@ const SiteDetails = () => {
         endDateTime: isAllPeriod ? 'N/A' : `${endDate}T23:59:59`
       });
       
-      // Reuse currentUser instead of calling getUser() again
-      if (!currentUser) {
+      // Verificar autenticação
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         console.error('❌ Usuário não autenticado');
         throw new Error('Usuário não autenticado');
       }
       
       let query = supabase
         .from("rank_rent_conversions")
-        .select("id, created_at, page_url, page_path, ip_address, city, referrer, metadata") // Campos específicos
+        .select("*")
         .eq("site_id", siteId)
         .eq("event_type", "page_view");
       
@@ -432,7 +425,7 @@ const SiteDetails = () => {
       
       query = query
         .order("created_at", { ascending: false })
-        .limit(500); // Reduzido de 1000 para 500
+        .limit(1000);
       
       const { data, error } = await query;
       
@@ -451,8 +444,8 @@ const SiteDetails = () => {
       
       return data || [];
     },
-    enabled: !!siteId && activeTab === 'pageviews', // Lazy load - só busca quando na aba
-    staleTime: 60000,
+    enabled: !!siteId,
+    staleTime: 30000, // Cache de 30 segundos
   });
   
   // Handler para mudança de período com invalidação de cache
@@ -463,7 +456,7 @@ const SiteDetails = () => {
     queryClient.invalidateQueries({ queryKey: ['analytics-metrics'] });
   }, [analyticsPeriod, queryClient]);
 
-  // Analytics hook - Lazy loading: só carrega quando na aba analytics
+  // Analytics hook
   const analyticsData = useAnalytics({
     siteId: siteId || "",
     period: analyticsPeriod,
@@ -472,7 +465,6 @@ const SiteDetails = () => {
     conversionType: analyticsConversionType,
     customStartDate,
     customEndDate,
-    enabled: activeTab === 'advanced-analytics', // Lazy loading
   });
 
   const handleEditPage = (page: any) => {
@@ -1478,51 +1470,45 @@ const SiteDetails = () => {
           {/* E-commerce Analytics Tab (Conditional) */}
           {site?.is_ecommerce && (
             <TabsContent value="ecommerce" className="min-h-[400px]">
-              <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-                {siteId ? (
-                  <EcommerceAnalytics siteId={siteId} />
-                ) : (
-                  <div className="p-4">
-                    <Card>
-                      <CardContent className="p-6">
-                        <p className="text-muted-foreground">Aguardando ID do site...</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-              </Suspense>
+              {siteId ? (
+                <EcommerceAnalytics siteId={siteId} />
+              ) : (
+                <div className="p-4">
+                  <Card>
+                    <CardContent className="p-6">
+                      <p className="text-muted-foreground">Aguardando ID do site...</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </TabsContent>
           )}
 
           {/* Relatórios Tab */}
           <TabsContent value="reports">
-            <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-              <ReportsTab siteId={siteId || ""} siteName={site.site_name} />
-            </Suspense>
+            <ReportsTab siteId={siteId || ""} siteName={site.site_name} />
           </TabsContent>
 
           {/* Google Search Console Tab */}
           <TabsContent value="gsc" className="space-y-6">
-            <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-              {userData?.id && siteId ? (
-                <GSCTabContent
-                  siteId={siteId}
-                  userId={userData.id}
-                  site={{
-                    url: site.site_url,
-                    name: site.site_name
-                  }}
-                />
-              ) : (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <p className="text-muted-foreground">
-                      Carregando informações de autenticação...
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </Suspense>
+            {userData?.id && siteId ? (
+              <GSCTabContent
+                siteId={siteId}
+                userId={userData.id}
+                site={{
+                  url: site.site_url,
+                  name: site.site_name
+                }}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">
+                    Carregando informações de autenticação...
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Plugin WordPress Tab */}
@@ -1538,28 +1524,22 @@ const SiteDetails = () => {
 
           {/* Pixel & E-commerce Tab */}
           <TabsContent value="pixel-tracking">
-            <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-              <PixelTrackingTab 
-                siteId={siteId || ""}
-                trackingToken={site.tracking_token}
-                siteName={site.site_name}
-                pixelInstalled={site.tracking_pixel_installed}
-              />
-            </Suspense>
+            <PixelTrackingTab 
+              siteId={siteId || ""}
+              trackingToken={site.tracking_token}
+              siteName={site.site_name}
+              pixelInstalled={site.tracking_pixel_installed}
+            />
           </TabsContent>
 
           {/* Jornada do Usuário Tab */}
           <TabsContent value="journey">
-            <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-              <UserJourneyTab siteId={siteId || ""} />
-            </Suspense>
+            <UserJourneyTab siteId={siteId || ""} />
           </TabsContent>
 
           {/* Metas de Conversão Tab */}
           <TabsContent value="conversion-goals">
-            <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-              <ConversionGoalsManager siteId={siteId || ""} siteUrl={site?.site_url} />
-            </Suspense>
+            <ConversionGoalsManager siteId={siteId || ""} siteUrl={site?.site_url} />
           </TabsContent>
 
         </Tabs>

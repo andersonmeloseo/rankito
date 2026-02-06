@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/contexts/RoleContext";
@@ -15,6 +15,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { CRMHub } from "@/components/crm/CRMHub";
 import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
 import { ClickUpTabTrigger } from "@/components/ui/custom-tabs";
 import { OverviewCards } from "@/components/rank-rent/OverviewCards";
@@ -25,15 +26,24 @@ import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { QuickAlerts } from "@/components/dashboard/QuickAlerts";
 import { SitesList } from "@/components/rank-rent/SitesList";
 import { AddSiteDialog } from "@/components/rank-rent/AddSiteDialog";
+import { ClientsListIntegrated } from "@/components/rank-rent/ClientsListIntegrated";
+import { GlobalFinancialOverview } from "@/components/rank-rent/financial/GlobalFinancialOverview";
+import { GlobalFinancialTable } from "@/components/rank-rent/financial/GlobalFinancialTable";
+import { GlobalCostSettings } from "@/components/rank-rent/financial/GlobalCostSettings";
+import { PaymentAlerts } from "@/components/rank-rent/financial/PaymentAlerts";
+import { PaymentsList } from "@/components/rank-rent/financial/PaymentsList";
 import { useGlobalFinancialMetrics } from "@/hooks/useGlobalFinancialMetrics";
 import { useGlobalEcommerceMetrics } from "@/hooks/useGlobalEcommerceMetrics";
 import { EcommerceOverviewCards } from "@/components/dashboard/EcommerceOverviewCards";
 import { TopProjectsByRevenue } from "@/components/dashboard/TopProjectsByRevenue";
 import { RevenueEvolutionChart } from "@/components/dashboard/RevenueEvolutionChart";
+import { EcommerceTab } from "@/components/dashboard/ecommerce/EcommerceTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SuperAdminBanner } from "@/components/super-admin/SuperAdminBanner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { PlanUsageCard } from "@/components/subscription/PlanUsageCard";
+import { LimitWarningBanner } from "@/components/subscription/LimitWarningBanner";
 import { SubscriptionStatusBar } from "@/components/subscription/SubscriptionStatusBar";
 import { TrialExpiredBanner } from "@/components/subscription/TrialExpiredBanner";
 import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
@@ -46,27 +56,16 @@ import { BulkDeleteDialog } from "@/components/rank-rent/BulkDeleteDialog";
 
 import { LeadNotificationBanner } from "@/components/crm/LeadNotificationBanner";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
+import { GeolocationAnalyticsTab } from "@/components/dashboard/geolocation/GeolocationAnalyticsTab";
 import { useUnreadCommunications } from "@/hooks/useUnreadCommunications";
 import { CommunicationNotificationBadge } from "@/components/dashboard/CommunicationNotificationBadge";
+import { UserCommunicationsTab } from "@/components/dashboard/UserCommunicationsTab";
+import { AcademyTab } from "@/components/training/AcademyTab";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { CompleteTutorialModal } from "@/components/onboarding/CompleteTutorialModal";
+import { PublicRoadmapTab } from "@/components/backlog/user/PublicRoadmapTab";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { PageLoadingFallback } from "@/components/ui/PageLoadingFallback";
-
-// Lazy loaded tab components - only downloaded when tab is activated
-const CRMHub = lazy(() => import("@/components/crm/CRMHub").then(m => ({ default: m.CRMHub })));
-const ClientsListIntegrated = lazy(() => import("@/components/rank-rent/ClientsListIntegrated").then(m => ({ default: m.ClientsListIntegrated })));
-const GlobalFinancialOverview = lazy(() => import("@/components/rank-rent/financial/GlobalFinancialOverview").then(m => ({ default: m.GlobalFinancialOverview })));
-const GlobalFinancialTable = lazy(() => import("@/components/rank-rent/financial/GlobalFinancialTable").then(m => ({ default: m.GlobalFinancialTable })));
-const GlobalCostSettings = lazy(() => import("@/components/rank-rent/financial/GlobalCostSettings").then(m => ({ default: m.GlobalCostSettings })));
-const PaymentAlerts = lazy(() => import("@/components/rank-rent/financial/PaymentAlerts").then(m => ({ default: m.PaymentAlerts })));
-const PaymentsList = lazy(() => import("@/components/rank-rent/financial/PaymentsList").then(m => ({ default: m.PaymentsList })));
-const EcommerceTab = lazy(() => import("@/components/dashboard/ecommerce/EcommerceTab").then(m => ({ default: m.EcommerceTab })));
-const GeolocationAnalyticsTab = lazy(() => import("@/components/dashboard/geolocation/GeolocationAnalyticsTab").then(m => ({ default: m.GeolocationAnalyticsTab })));
-const UserCommunicationsTab = lazy(() => import("@/components/dashboard/UserCommunicationsTab").then(m => ({ default: m.UserCommunicationsTab })));
-const AcademyTab = lazy(() => import("@/components/training/AcademyTab").then(m => ({ default: m.AcademyTab })));
-const PublicRoadmapTab = lazy(() => import("@/components/backlog/user/PublicRoadmapTab").then(m => ({ default: m.PublicRoadmapTab })));
 
 const Dashboard = () => {
   const [showAddSite, setShowAddSite] = useState(false);
@@ -100,14 +99,10 @@ const Dashboard = () => {
   // Subscription limits
   const { data: limits, isLoading: limitsLoading } = useSubscriptionLimits();
 
-  // Conditional hooks - only run when relevant tabs are active
-  const isFinancialOrOverview = activeTab === 'financial' || activeTab === 'overview';
-  const isEcommerceOrOverview = activeTab === 'ecommerce' || activeTab === 'overview';
-  
-  const { sitesMetrics, summary, isLoading: financialLoading } = useGlobalFinancialMetrics(user?.id || "", { enabled: isFinancialOrOverview });
+  const { sitesMetrics, summary, isLoading: financialLoading } = useGlobalFinancialMetrics(user?.id || "");
 
   // Global e-commerce metrics
-  const { data: ecommerceMetrics, isLoading: ecommerceLoading } = useGlobalEcommerceMetrics(user?.id, { enabled: isEcommerceOrOverview });
+  const { data: ecommerceMetrics, isLoading: ecommerceLoading } = useGlobalEcommerceMetrics(user?.id);
 
   // Buscar perfil completo do usuário
   const { data: profile } = useQuery({
@@ -551,55 +546,39 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="crm" className="space-y-8">
-              <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-                <CRMHub userId={user.id} />
-              </Suspense>
+              <CRMHub userId={user.id} />
             </TabsContent>
 
             <TabsContent value="financial" className="space-y-8">
-              <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-                <PaymentAlerts userId={user.id} />
-                <GlobalFinancialOverview summary={summary} userId={user.id} />
-                <GlobalFinancialTable sitesMetrics={sitesMetrics} />
-                <GlobalCostSettings userId={user.id} />
-                <PaymentsList userId={user.id} />
-              </Suspense>
+              <PaymentAlerts userId={user.id} />
+              <GlobalFinancialOverview summary={summary} userId={user.id} />
+              <GlobalFinancialTable sitesMetrics={sitesMetrics} />
+              <GlobalCostSettings userId={user.id} />
+              <PaymentsList userId={user.id} />
             </TabsContent>
 
             <TabsContent value="ecommerce" className="space-y-8">
-              <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-                <EcommerceTab />
-              </Suspense>
+              <EcommerceTab />
             </TabsContent>
 
             <TabsContent value="geolocation" className="space-y-8">
-              <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-                <GeolocationAnalyticsTab userId={user.id} />
-              </Suspense>
+              <GeolocationAnalyticsTab userId={user.id} />
             </TabsContent>
 
             <TabsContent value="clients" className="space-y-8">
-              <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-                <ClientsListIntegrated userId={user.id} />
-              </Suspense>
+              <ClientsListIntegrated userId={user.id} />
             </TabsContent>
 
             <TabsContent value="communication" className="space-y-8">
-              <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-                <UserCommunicationsTab />
-              </Suspense>
+              <UserCommunicationsTab />
             </TabsContent>
 
             <TabsContent value="academia" className="space-y-8">
-              <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-                <AcademyTab />
-              </Suspense>
+              <AcademyTab />
             </TabsContent>
 
             <TabsContent value="atualizacoes" className="space-y-8">
-              <Suspense fallback={<PageLoadingFallback variant="tab" />}>
-                <PublicRoadmapTab />
-              </Suspense>
+              <PublicRoadmapTab />
             </TabsContent>
           </Tabs>
         </div>

@@ -48,8 +48,7 @@ export const useClientIntegration = (userId: string) => {
 
       return data as ClientWithPortalStatus[];
     },
-    staleTime: 60000,
-    refetchInterval: 120000, // 2 minutos ao invés de 30s
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Toggle portal activation
