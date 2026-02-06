@@ -20,7 +20,16 @@ import ExternalLeadsAPI from "./pages/ExternalLeadsAPI";
 import ExternalLeadsTestAPI from "./pages/ExternalLeadsTestAPI";
 import PendingApproval from "./pages/PendingApproval";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30000, // 30s - dados considerados frescos
+      gcTime: 300000,   // 5min - tempo em cache após não usado
+      retry: 1,         // Apenas 1 retry em falhas
+      refetchOnWindowFocus: false, // Não refetch ao focar janela
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

@@ -114,6 +114,7 @@ export const useEcommerceComparison = (userId: string | undefined, days: number 
       return { current, previous, growth };
     },
     enabled: !!userId,
-    refetchInterval: 30000,
+    staleTime: 120000, // 2 minutos de cache
+    refetchInterval: 300000, // 5 minutos ao invés de 30s
   });
 };

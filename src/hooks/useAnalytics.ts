@@ -40,6 +40,7 @@ interface UseAnalyticsParams {
   conversionType: string;
   customStartDate?: Date;
   customEndDate?: Date;
+  enabled?: boolean; // Lazy loading - só carrega quando aba ativa
 }
 
 export const useAnalytics = ({
@@ -50,7 +51,11 @@ export const useAnalytics = ({
   conversionType,
   customStartDate,
   customEndDate,
+  enabled = true, // Default habilitado para retrocompatibilidade
 }: UseAnalyticsParams) => {
+  
+  // Flag final de habilitação
+  const isEnabled = !!siteId && enabled;
   
   // Usar useMemo para garantir recálculo quando período muda
   const { startDate, endDate } = useMemo(() => {
@@ -208,7 +213,7 @@ export const useAnalytics = ({
         totalEvents: (pageViews || 0) + (conversions || 0),
       };
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
     staleTime: 60000, // 1 minuto de cache para reduzir queries
     gcTime: 120000,   // 2 minutos em memória
   });
@@ -259,7 +264,7 @@ export const useAnalytics = ({
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Distribuição de eventos
@@ -296,7 +301,7 @@ export const useAnalytics = ({
         value: count,
       }));
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Top páginas
@@ -377,16 +382,16 @@ export const useAnalytics = ({
         .sort((a: any, b: any) => b.count - a.count)
         .slice(0, 10);
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
-  // Métricas do período anterior para comparação
+  // Métricas do período anterior para comparação - SELECT campos específicos
   const { data: previousMetrics } = useQuery({
     queryKey: ["analytics-previous-metrics", siteId, previousStart, previousEnd, conversionType],
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_conversions")
-        .select("*")
+        .select("event_type, ip_address, page_path") // Apenas campos necessários
         .eq("site_id", siteId)
         .gte("created_at", previousStart)
         .lte("created_at", previousEnd);
@@ -413,16 +418,16 @@ export const useAnalytics = ({
 
       return { uniqueVisitors, uniquePages, pageViews, conversions, conversionRate };
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
-  // Lista completa de conversões (últimas 100, ou todas se período = "all")
+  // Lista completa de conversões - SELECT campos específicos
   const { data: conversions, isLoading: conversionsLoading } = useQuery({
     queryKey: ["analytics-conversions", siteId, startDate, endDate, eventType, device, conversionType, period],
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_conversions")
-        .select("*")
+        .select("id, event_type, page_path, page_url, created_at, cta_text, city, ip_address, referrer, metadata")
         .eq("site_id", siteId)
         .neq("event_type", "page_view")
         .neq("event_type", "page_exit")
@@ -450,7 +455,7 @@ export const useAnalytics = ({
 
       return data;
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Timeline de Conversões - Query dedicada sem limite para gráficos
@@ -482,16 +487,16 @@ export const useAnalytics = ({
 
       return data;
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
-  // Lista de page views separada
+  // Lista de page views separada - SELECT campos específicos
   const { data: pageViewsList, isLoading: pageViewsLoading } = useQuery({
     queryKey: ["analytics-page-views", siteId, period, startDate, endDate, device, conversionType],
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_conversions")
-        .select("*")
+        .select("id, created_at, page_path, page_url, ip_address, referrer, metadata")
         .eq("site_id", siteId)
         .eq("event_type", "page_view");
 
@@ -524,7 +529,7 @@ export const useAnalytics = ({
 
       return data;
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Dados para funil de conversão
@@ -581,7 +586,7 @@ export const useAnalytics = ({
         conversions: conversions || 0,
       };
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Heatmap por hora do dia
@@ -615,7 +620,7 @@ export const useAnalytics = ({
 
       return hourCounts;
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Sparkline data (últimos 7 dias)
@@ -667,7 +672,7 @@ export const useAnalytics = ({
         conversions: dailyCounts.map(d => d.conversions),
       };
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Conversion rate over time
@@ -712,7 +717,7 @@ export const useAnalytics = ({
         }))
         .sort((a, b) => a.date.localeCompare(b.date));
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Timeline comparativa de Page Views
@@ -775,7 +780,7 @@ export const useAnalytics = ({
         }))
         .sort((a, b) => a.date.localeCompare(b.date));
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Top Referrers
@@ -819,7 +824,7 @@ export const useAnalytics = ({
         }))
         .sort((a, b) => b.count - a.count);
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Page Performance (views + conversions por página)
@@ -868,7 +873,7 @@ export const useAnalytics = ({
         }))
         .sort((a, b) => b.views - a.views);
     },
-    enabled: !!siteId,
+    enabled: isEnabled,
   });
 
   // Conversions timeline (agrupado por data + tipo)

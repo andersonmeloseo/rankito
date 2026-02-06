@@ -180,8 +180,8 @@ const SiteDetails = () => {
       return finalData;
     },
     enabled: !!siteId,
-    staleTime: 0,
-    refetchOnMount: true,
+    staleTime: 60000, // 1 minuto de cache
+    refetchOnMount: 'always',
   });
 
   // Debug log when site data changes
@@ -328,23 +328,34 @@ const SiteDetails = () => {
     },
   });
   
-  // Get unique clients for filter dropdown
+  // Get unique clients for filter dropdown - usar tabela base
   const { data: allClientsData } = useQuery({
     queryKey: ["all-clients-for-filter", siteId],
     queryFn: async () => {
+      // Usar tabela base rank_rent_pages ao invés da view pesada
       const { data, error } = await supabase
-        .from("rank_rent_page_metrics")
-        .select("client_name")
+        .from("rank_rent_pages")
+        .select("client_id")
         .eq("site_id", siteId)
-        .not("client_name", "is", null);
+        .not("client_id", "is", null);
       
       if (error) throw error;
       
-      // Get unique client names
-      const uniqueClients = [...new Set(data?.map(p => p.client_name).filter(Boolean))];
-      return uniqueClients;
+      // Get unique client IDs
+      const uniqueClientIds = [...new Set(data?.map(p => p.client_id).filter(Boolean))];
+      
+      // Fetch client names
+      if (uniqueClientIds.length === 0) return [];
+      
+      const { data: clients } = await supabase
+        .from("rank_rent_clients")
+        .select("name")
+        .in("id", uniqueClientIds);
+      
+      return clients?.map(c => c.name).filter(Boolean) || [];
     },
     enabled: !!siteId,
+    staleTime: 60000,
   });
   
   const uniqueClients = allClientsData || [];
@@ -387,7 +398,7 @@ const SiteDetails = () => {
     };
   };
 
-  // Fetch page views using the same period as analytics
+  // Fetch page views using the same period as analytics - SELECT campos específicos
   const { data: pageViewsData, isLoading: pageViewsLoading, refetch: refetchPageViews } = useQuery({
     queryKey: ["page-views-detailed", siteId, analyticsPeriod, customStartDate, customEndDate],
     queryFn: async () => {
@@ -412,7 +423,7 @@ const SiteDetails = () => {
       
       let query = supabase
         .from("rank_rent_conversions")
-        .select("*")
+        .select("id, created_at, page_url, page_path, ip_address, city, referrer, metadata") // Campos específicos
         .eq("site_id", siteId)
         .eq("event_type", "page_view");
       
@@ -425,7 +436,7 @@ const SiteDetails = () => {
       
       query = query
         .order("created_at", { ascending: false })
-        .limit(1000);
+        .limit(500); // Reduzido de 1000 para 500
       
       const { data, error } = await query;
       
@@ -444,8 +455,8 @@ const SiteDetails = () => {
       
       return data || [];
     },
-    enabled: !!siteId,
-    staleTime: 30000, // Cache de 30 segundos
+    enabled: !!siteId && activeTab === 'pageviews', // Lazy load - só busca quando na aba
+    staleTime: 60000,
   });
   
   // Handler para mudança de período com invalidação de cache
@@ -456,7 +467,7 @@ const SiteDetails = () => {
     queryClient.invalidateQueries({ queryKey: ['analytics-metrics'] });
   }, [analyticsPeriod, queryClient]);
 
-  // Analytics hook
+  // Analytics hook - Lazy loading: só carrega quando na aba analytics
   const analyticsData = useAnalytics({
     siteId: siteId || "",
     period: analyticsPeriod,
@@ -465,6 +476,7 @@ const SiteDetails = () => {
     conversionType: analyticsConversionType,
     customStartDate,
     customEndDate,
+    enabled: activeTab === 'analytics', // Lazy loading
   });
 
   const handleEditPage = (page: any) => {
