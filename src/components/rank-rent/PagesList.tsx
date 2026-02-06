@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -13,8 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ExternalLink, Edit, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { ExternalLink, Edit, ChevronUp, ChevronDown, ChevronsUpDown, Loader2 } from "lucide-react";
+import { useState, useMemo } from "react";
 import { EditPageDialog } from "./EditPageDialog";
 
 interface PagesListProps {
@@ -29,15 +28,37 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [sortColumn, setSortColumn] = useState<string>("total_page_views");
   const [sortAscending, setSortAscending] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100);
+  const [loadedCount, setLoadedCount] = useState(10);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const { data: pages, isLoading } = useQuery({
-    queryKey: ["rank-rent-pages", userId, siteId, clientId],
+  // Query para contar total de páginas (rápida, sem agregações)
+  const { data: totalCount } = useQuery({
+    queryKey: ["rank-rent-pages-count", userId, siteId, clientId],
+    queryFn: async () => {
+      let query = supabase
+        .from("rank_rent_pages")
+        .select("id", { count: "exact", head: true });
+
+      if (siteId) {
+        query = query.eq("site_id", siteId);
+      }
+      if (clientId) {
+        query = query.eq("client_id", clientId);
+      }
+
+      const { count } = await query;
+      return count || 0;
+    },
+  });
+
+  // Query principal com paginação no servidor
+  const { data: pages, isLoading, refetch } = useQuery({
+    queryKey: ["rank-rent-pages", userId, siteId, clientId, loadedCount],
     queryFn: async () => {
       let query = supabase
         .from("rank_rent_page_metrics")
-        .select("*");
+        .select("*")
+        .range(0, loadedCount - 1);
 
       if (siteId) {
         query = query.eq("site_id", siteId);
@@ -52,7 +73,7 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 30000,
+    staleTime: 30000,
   });
 
   const handleEditPage = (page: any) => {
@@ -69,6 +90,14 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
     }
   };
 
+  const handleLoadMore = async () => {
+    setIsLoadingMore(true);
+    setLoadedCount(prev => prev + 100);
+  };
+
+  // Quando loadedCount mudar, refetch será chamado automaticamente pelo react-query
+  // devido à queryKey incluir loadedCount
+
   const SortIcon = ({ column }: { column: string }) => {
     if (sortColumn !== column) {
       return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />;
@@ -76,21 +105,14 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
     return sortAscending ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
   };
 
-  const handlePageSizeChange = (newSize: string) => {
-    const size = Number(newSize);
-    setPageSize(size);
-    setCurrentPage(1);
-  };
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  // Filtrar páginas
-  const filteredPages = pages?.filter((page) =>
-    page.page_url?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    page.page_title?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filtrar páginas pelo termo de busca
+  const filteredPages = useMemo(() => {
+    if (!pages) return [];
+    return pages.filter((page) =>
+      page.page_url?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      page.page_title?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [pages, searchTerm]);
 
   // Ordenar páginas
   const sortedPages = useMemo(() => {
@@ -114,18 +136,17 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
     });
   }, [filteredPages, sortColumn, sortAscending]);
 
-  // Paginar páginas
-  const paginatedPages = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    
-    if (pageSize === 99999) return sortedPages;
-    
-    return sortedPages.slice(startIndex, startIndex + pageSize);
-  }, [sortedPages, currentPage, pageSize]);
+  // Reset isLoadingMore quando os dados chegarem
+  useMemo(() => {
+    if (!isLoading) {
+      setIsLoadingMore(false);
+    }
+  }, [isLoading, pages]);
 
-  const totalPages = Math.ceil(sortedPages.length / pageSize);
+  const hasMoreToLoad = totalCount !== undefined && loadedCount < totalCount;
+  const remainingCount = totalCount ? totalCount - loadedCount : 0;
 
-  if (isLoading) {
+  if (isLoading && loadedCount === 10) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-10 w-full" />
@@ -144,7 +165,7 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
           className="max-w-md"
         />
         <div className="text-sm text-muted-foreground">
-          {sortedPages?.length || 0} páginas encontradas
+          {sortedPages?.length || 0} de {totalCount || 0} páginas carregadas
         </div>
       </div>
 
@@ -238,8 +259,8 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedPages && paginatedPages.length > 0 ? (
-                paginatedPages.map((page) => (
+              {sortedPages && sortedPages.length > 0 ? (
+                sortedPages.map((page) => (
                 <TableRow key={page.page_id} className="hover:bg-muted/50 transition-colors group">
                   <TableCell className="px-4 py-3">
                     <div className="max-w-xs">
@@ -286,7 +307,6 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center px-4 py-3">
-                    {/* Quick Actions - aparecem no hover */}
                     <div className="flex gap-2 justify-center items-center">
                       <Button
                         variant="ghost"
@@ -317,68 +337,36 @@ export const PagesList = ({ userId, siteId, clientId }: PagesListProps) => {
           </Table>
         </div>
 
-        {/* Pagination Controls */}
-        {sortedPages.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-            <div className="text-sm text-muted-foreground">
-              Mostrando {pageSize === 99999 ? sortedPages.length : Math.min(((currentPage - 1) * pageSize) + 1, sortedPages.length)}-{pageSize === 99999 ? sortedPages.length : Math.min(currentPage * pageSize, sortedPages.length)} de {sortedPages.length} páginas
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10 por página</SelectItem>
-                  <SelectItem value="50">50 por página</SelectItem>
-                  <SelectItem value="100">100 por página</SelectItem>
-                  <SelectItem value="200">200 por página</SelectItem>
-                  <SelectItem value="500">500 por página</SelectItem>
-                  <SelectItem value="99999">Mostrar Tudo</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {pageSize !== 99999 && (
-                <div className="flex items-center gap-1">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(1)}
-                  >
-                    Primeira
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(p => p - 1)}
-                  >
-                    Anterior
-                  </Button>
-                  <span className="px-3 py-1 text-sm">
-                    Página {currentPage} de {totalPages}
-                  </span>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(p => p + 1)}
-                  >
-                    Próxima
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(totalPages)}
-                  >
-                    Última
-                  </Button>
-                </div>
+        {/* Load More Button */}
+        {hasMoreToLoad && (
+          <div className="flex justify-center py-6 border-t">
+            <Button 
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              variant="outline"
+              className="min-w-[280px]"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Carregando...
+                </>
+              ) : (
+                <>
+                  Carregar Mais
+                  <Badge variant="secondary" className="ml-2">
+                    +{Math.min(100, remainingCount)} de {remainingCount} restantes
+                  </Badge>
+                </>
               )}
-            </div>
+            </Button>
+          </div>
+        )}
+
+        {/* Info quando todas foram carregadas */}
+        {!hasMoreToLoad && sortedPages.length > 0 && (
+          <div className="flex justify-center py-4 border-t text-sm text-muted-foreground">
+            Todas as {totalCount} páginas foram carregadas
           </div>
         )}
       </div>
