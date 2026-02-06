@@ -75,14 +75,13 @@ export const SitesList = ({
     queryKey: ["rank-rent-site-metrics", userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("rank_rent_site_metrics")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .rpc("get_sites_with_metrics", { p_user_id: userId });
 
       if (error) throw error;
       return data;
     },
-    refetchInterval: 30000,
+    staleTime: 60000,
+    refetchInterval: 60000,
   });
 
   // Get unique niches for filter

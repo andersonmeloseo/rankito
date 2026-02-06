@@ -4855,6 +4855,41 @@ export type Database = {
           user_count: number
         }[]
       }
+      get_sites_with_metrics: {
+        Args: { p_user_id: string }
+        Returns: {
+          auto_renew: boolean
+          client_email: string
+          client_id: string
+          client_name: string
+          client_phone: string
+          contract_end_date: string
+          contract_start_date: string
+          contract_status: string
+          conversion_rate: number
+          created_at: string
+          id: string
+          indexnow_key: string
+          indexnow_validated: boolean
+          is_ecommerce: boolean
+          is_rented: boolean
+          location: string
+          monthly_rent_value: number
+          next_payment_date: string
+          niche: string
+          notes: string
+          owner_user_id: string
+          payment_status: string
+          site_name: string
+          site_url: string
+          total_conversions: number
+          total_page_views: number
+          total_pages: number
+          tracking_pixel_installed: boolean
+          tracking_token: string
+          updated_at: string
+        }[]
+      }
       get_subscription_limits_data: {
         Args: { p_user_id: string }
         Returns: Json
