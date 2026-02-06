@@ -10,6 +10,7 @@ import { JourneySequenceDiagram } from "./visualizations/JourneySequenceDiagram"
 import { TemporalComparison } from "./insights/TemporalComparison";
 import { PagePerformanceAnalysis } from "./PagePerformanceAnalysis";
 import { useSessionAnalytics } from "@/hooks/useSessionAnalytics";
+import { useSessionSequences } from "@/hooks/useSessionSequences";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, BarChart3, Route, Calendar, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -32,29 +33,38 @@ interface UserJourneyTabProps {
 export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
   const queryClient = useQueryClient();
   const [selectedDays, setSelectedDays] = useState<number>(30);
+  const [activeTab, setActiveTab] = useState<string>("overview");
   
+  // Métricas principais - carrega instantaneamente via RPC v2 otimizada
   const { data: analytics, isLoading, error } = useSessionAnalytics(siteId, selectedDays);
-  const { data: previousAnalytics } = useSessionAnalytics(siteId, selectedDays * 2); // Período anterior para comparação
+  const { data: previousAnalytics } = useSessionAnalytics(siteId, selectedDays * 2);
+  
+  // Sequências - carrega APENAS quando aba "Sequências" está ativa (lazy loading)
+  const { data: sequencesData, isLoading: isLoadingSequences } = useSessionSequences(
+    siteId, 
+    selectedDays, 
+    activeTab === "sequences" // Só habilita quando na aba de sequências
+  );
 
   const handleRefresh = async () => {
-    // Invalidar TODAS as queries relacionadas a jornada do usuário
     await queryClient.invalidateQueries({
       predicate: (query) => {
         const key = query.queryKey[0] as string;
         return (
           key === 'session-analytics' || 
+          key === 'session-sequences' ||
           key === 'recent-sessions-enriched' || 
           key === 'recent-sessions'
         );
       }
     });
     
-    // Forçar refetch imediato de todas as queries ativas
     await queryClient.refetchQueries({
       predicate: (query) => {
         const key = query.queryKey[0] as string;
         return (
           key === 'session-analytics' || 
+          key === 'session-sequences' ||
           key === 'recent-sessions-enriched' || 
           key === 'recent-sessions'
         );
@@ -105,9 +115,12 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
     );
   }
 
-  // Heatmap data (hour x day)
+  // Usar sequências do lazy loading quando disponível
+  const commonSequences = sequencesData?.commonSequences || [];
+
+  // Heatmap data (hour x day) - usando dados básicos das métricas
   const heatmapData: Array<{ day: number; hour: number; count: number }> = [];
-  analytics.commonSequences.forEach(seq => {
+  commonSequences.forEach(seq => {
     if (seq.firstAccessTime) {
       const date = new Date(seq.firstAccessTime);
       const day = date.getDay();
@@ -122,28 +135,30 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
   });
 
   // Determinar se usar diagrama multi-etapas ou simples
-  const maxSequenceLength = Math.max(...analytics.commonSequences.map(s => s.sequence.length));
+  const maxSequenceLength = commonSequences.length > 0 
+    ? Math.max(...commonSequences.map(s => s.sequence.length))
+    : 0;
   
-  // Filtrar e priorizar sequências longas (3+ páginas) limitando a 4 etapas
-  const longSequences = analytics.commonSequences.filter(s => s.sequence.length >= 3);
+  // Filtrar e priorizar sequências longas (3+ páginas)
+  const longSequences = commonSequences.filter(s => s.sequence.length >= 3);
   
   const topSequences = longSequences.length > 0
     ? longSequences
         .map(seq => ({
           ...seq,
-          sequence: seq.sequence.slice(0, 5), // Limitar a 5 etapas
+          sequence: seq.sequence.slice(0, 5),
           originalLength: seq.sequence.length,
           score: calculateSequenceScore(seq)
         }))
         .sort((a, b) => b.score - a.score)
         .slice(0, 8)
-    : analytics.commonSequences
+    : commonSequences
         .sort((a, b) => b.count - a.count)
         .slice(0, 8);
 
-  // Flow connections (para diagrama simples de 2 colunas)
+  // Flow connections
   const connectionMap = new Map<string, number>();
-  analytics.commonSequences.forEach(seq => {
+  commonSequences.forEach(seq => {
     for (let i = 0; i < seq.sequence.length - 1; i++) {
       const key = `${seq.sequence[i]}->${seq.sequence[i + 1]}`;
       connectionMap.set(key, (connectionMap.get(key) || 0) + seq.count);
@@ -155,19 +170,19 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
     return { from, to, count };
   }).sort((a, b) => b.count - a.count).slice(0, 20);
 
-  const topPages = [...new Set(analytics.commonSequences.flatMap(s => s.sequence))].slice(0, 10);
+  const topPages = [...new Set(commonSequences.flatMap(s => s.sequence))].slice(0, 10);
 
   // Temporal comparison
   const currentMetrics = {
     sessions: analytics.metrics.totalSessions,
-    conversions: analytics.commonSequences.reduce((acc, s) => acc + s.sessionsWithClicks, 0),
+    conversions: commonSequences.reduce((acc, s) => acc + s.sessionsWithClicks, 0),
     avgDuration: analytics.metrics.avgDuration,
     bounceRate: analytics.metrics.bounceRate,
   };
 
   const previousMetrics = previousAnalytics ? {
     sessions: previousAnalytics.metrics.totalSessions,
-    conversions: previousAnalytics.commonSequences.reduce((acc, s) => acc + s.sessionsWithClicks, 0),
+    conversions: 0, // Sequências não carregadas para período anterior
     avgDuration: previousAnalytics.metrics.avgDuration,
     bounceRate: previousAnalytics.metrics.bounceRate,
   } : currentMetrics;
@@ -177,7 +192,7 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <div>
           <h2 className="text-2xl font-bold">Jornada do Usuário</h2>
-          <p className="text-muted-foreground text-sm">Atualização automática a cada 15 segundos</p>
+          <p className="text-muted-foreground text-sm">Atualização automática a cada 60 segundos</p>
         </div>
         <div className="flex items-center gap-3">
           <Select 
@@ -206,7 +221,7 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
         </div>
       </div>
       
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -229,18 +244,20 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
           {/* Temporal Comparison */}
           <TemporalComparison current={currentMetrics} previous={previousMetrics} />
 
-            {/* Flow Diagram - Multi-etapas ou Simples (visualmente mais impactante) */}
-            {maxSequenceLength > 2 ? (
+          {/* Flow Diagram - apenas se tiver sequências carregadas */}
+          {commonSequences.length > 0 && (
+            maxSequenceLength > 2 ? (
               <JourneySequenceDiagram sequences={topSequences} />
             ) : (
               <JourneyFlowDiagram connections={flowConnections} topPages={topPages} />
-            )}
+            )
+          )}
 
-            {/* Page Performance Analysis - 4 Strategic Cards */}
-            <PagePerformanceAnalysis pagePerformance={analytics.pagePerformance} days={selectedDays} />
+          {/* Page Performance Analysis */}
+          <PagePerformanceAnalysis pagePerformance={analytics.pagePerformance} days={selectedDays} />
 
-            {/* Heatmap de Atividade */}
-            <JourneyHeatmapGrid data={heatmapData} />
+          {/* Heatmap de Atividade */}
+          {heatmapData.length > 0 && <JourneyHeatmapGrid data={heatmapData} />}
 
           {/* Top Pages Analysis */}
           <TopPagesAnalysis 
@@ -250,7 +267,14 @@ export const UserJourneyTab = ({ siteId }: UserJourneyTabProps) => {
         </TabsContent>
 
         <TabsContent value="sequences" className="space-y-6 mt-6">
-          <SessionCards siteId={siteId} />
+          {isLoadingSequences ? (
+            <div className="space-y-4">
+              <Skeleton className="h-[200px]" />
+              <Skeleton className="h-[200px]" />
+            </div>
+          ) : (
+            <SessionCards siteId={siteId} />
+          )}
         </TabsContent>
 
         <TabsContent value="sessions" className="space-y-6 mt-6">
