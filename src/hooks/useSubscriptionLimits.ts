@@ -98,7 +98,7 @@ export const useSubscriptionLimits = () => {
         isLoading: false,
       } as SubscriptionLimits;
     },
-    staleTime: 120000, // 2 minutos de cache
-    gcTime: 300000, // 5 minutos em memória
+    staleTime: 600000, // 10 minutos de cache (plano raramente muda)
+    gcTime: 900000, // 15 minutos em memória
   });
 };

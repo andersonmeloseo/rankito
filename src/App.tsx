@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { RoleProvider } from "@/contexts/RoleContext";
+import { AppDataProvider } from "@/contexts/AppDataContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PageLoadingFallback } from "@/components/ui/PageLoadingFallback";
 
@@ -39,9 +40,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <RoleProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+        <AppDataProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Suspense fallback={<PageLoadingFallback variant="page" />}>
             <Routes>
               <Route path="/" element={<LandingPage />} />
@@ -96,7 +98,8 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
-        </BrowserRouter>
+          </BrowserRouter>
+        </AppDataProvider>
       </RoleProvider>
     </TooltipProvider>
   </QueryClientProvider>
