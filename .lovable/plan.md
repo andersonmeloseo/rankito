@@ -1,208 +1,157 @@
 
-# Plano: Eliminar Lentidão no Carregamento de Projetos
+# Plano: Corrigir Timeout na Jornada do Usuário
 
-## Diagnóstico Definitivo
+## Diagnóstico Completo
 
-### Problema Principal
-Os componentes `SitesList.tsx` e `Dashboard.tsx` estão usando a **VIEW `rank_rent_site_metrics`** que faz cálculos pesados em tempo real sobre **487.000+ conversões**, causando timeouts constantes.
+### O Problema
+A aba "Jornada do Usuário" está dando timeout porque:
 
-### Evidências dos Logs
-Os logs mostram múltiplos erros consecutivos:
-```
-"canceling statement due to statement timeout"
-```
+1. **Hook `useSessionAnalytics`** faz 3 queries pesadas em paralelo:
+   - `rank_rent_sessions` (7.362 registros para este site)
+   - `rank_rent_page_visits` (10.721 registros para este site)  
+   - `rank_rent_conversions` (487.000+ registros TOTAIS)
+
+2. **Índices compostos ausentes**: Queries filtram por `site_id + created_at/entry_time` mas não existem índices compostos para esse padrão
+
+3. **Processamento pesado no frontend**: Após carregar TODOS os dados, o JavaScript faz agregações complexas que deveriam estar no banco
 
 ---
 
-## Solução Definitiva
+## Solução em 2 Fases
 
-### Criar RPC `get_sites_with_metrics`
+### Fase 1: Adicionar Índices Compostos
 
-Uma única função que retorna todos os dados necessários usando a **tabela cache** ao invés da view pesada:
+Criar índices que otimizam o padrão de filtro `site_id + data`:
 
 ```sql
-CREATE OR REPLACE FUNCTION get_sites_with_metrics(p_user_id UUID)
-RETURNS TABLE (
-  id UUID,
-  site_name TEXT,
-  site_url TEXT,
-  niche TEXT,
-  location TEXT,
-  monthly_rent_value NUMERIC,
-  client_name TEXT,
-  client_email TEXT,
-  client_phone TEXT,
-  is_rented BOOLEAN,
-  contract_start_date DATE,
-  contract_end_date DATE,
-  tracking_pixel_installed BOOLEAN,
-  notes TEXT,
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ,
-  tracking_token TEXT,
-  client_id UUID,
-  contract_status TEXT,
-  payment_status TEXT,
-  next_payment_date DATE,
-  auto_renew BOOLEAN,
-  owner_user_id UUID,
-  indexnow_key TEXT,
-  indexnow_validated BOOLEAN,
-  is_ecommerce BOOLEAN,
-  -- Métricas do cache (instantâneas)
-  total_pages BIGINT,
-  total_page_views BIGINT,
-  total_conversions BIGINT,
-  conversion_rate NUMERIC
+-- Índice composto para page_visits (site + data)
+CREATE INDEX idx_visits_site_created ON rank_rent_page_visits (site_id, created_at DESC);
+
+-- Índice composto para sessions (site + entry_time)
+CREATE INDEX idx_sessions_site_entry ON rank_rent_sessions (site_id, entry_time DESC);
+```
+
+### Fase 2: Criar RPC `get_session_analytics`
+
+RPC que retorna dados pré-agregados, eliminando processamento pesado no frontend:
+
+```sql
+CREATE OR REPLACE FUNCTION get_session_analytics(
+  p_site_id UUID,
+  p_start_date TIMESTAMPTZ,
+  p_end_date TIMESTAMPTZ
 )
+RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  result JSON;
 BEGIN
-  RETURN QUERY
-  SELECT 
-    s.id,
-    s.site_name,
-    s.site_url,
-    s.niche,
-    s.location,
-    s.monthly_rent_value,
-    s.client_name,
-    s.client_email,
-    s.client_phone,
-    s.is_rented,
-    s.contract_start_date,
-    s.contract_end_date,
-    s.tracking_pixel_installed,
-    s.notes,
-    s.created_at,
-    s.updated_at,
-    s.tracking_token,
-    s.client_id,
-    s.contract_status,
-    s.payment_status,
-    s.next_payment_date,
-    s.auto_renew,
-    s.owner_user_id,
-    s.indexnow_key,
-    s.indexnow_validated,
-    s.is_ecommerce,
-    -- Métricas
-    COALESCE(pc.page_count, 0)::BIGINT AS total_pages,
-    COALESCE(m.total_page_views, 0)::BIGINT,
-    COALESCE(m.total_conversions, 0)::BIGINT,
-    CASE 
-      WHEN COALESCE(m.total_page_views, 0) > 0 
-      THEN ROUND((COALESCE(m.total_conversions, 0)::NUMERIC / m.total_page_views) * 100, 2)
-      ELSE 0
-    END AS conversion_rate
-  FROM rank_rent_sites s
-  LEFT JOIN rank_rent_site_metrics_cache m ON m.site_id = s.id
-  LEFT JOIN (
-    SELECT site_id, COUNT(*) AS page_count
-    FROM rank_rent_pages
-    GROUP BY site_id
-  ) pc ON pc.site_id = s.id
-  WHERE s.owner_user_id = p_user_id
-  ORDER BY s.created_at DESC;
+  SELECT json_build_object(
+    'metrics', (
+      SELECT json_build_object(
+        'totalSessions', COUNT(*),
+        'uniqueVisitors', COUNT(DISTINCT session_id),
+        'avgDuration', COALESCE(AVG(total_duration_seconds), 0),
+        'avgPagesPerSession', COALESCE(AVG(pages_visited), 0),
+        'bounceRate', CASE 
+          WHEN COUNT(*) > 0 THEN (COUNT(*) FILTER (WHERE pages_visited = 1)::NUMERIC / COUNT(*)) * 100 
+          ELSE 0 
+        END
+      )
+      FROM rank_rent_sessions
+      WHERE site_id = p_site_id
+        AND entry_time >= p_start_date
+        AND entry_time <= p_end_date
+    ),
+    'topEntryPages', (
+      SELECT COALESCE(json_agg(row_to_json(t)), '[]')
+      FROM (
+        SELECT entry_page_url as page_url, COUNT(*) as entries
+        FROM rank_rent_sessions
+        WHERE site_id = p_site_id
+          AND entry_time >= p_start_date
+          AND entry_time <= p_end_date
+        GROUP BY entry_page_url
+        ORDER BY entries DESC
+        LIMIT 10
+      ) t
+    ),
+    'topExitPages', (
+      SELECT COALESCE(json_agg(row_to_json(t)), '[]')
+      FROM (
+        SELECT exit_page_url as page_url, COUNT(*) as exits
+        FROM rank_rent_sessions
+        WHERE site_id = p_site_id
+          AND entry_time >= p_start_date
+          AND entry_time <= p_end_date
+          AND exit_page_url IS NOT NULL
+        GROUP BY exit_page_url
+        ORDER BY exits DESC
+        LIMIT 10
+      ) t
+    )
+  ) INTO result;
+  
+  RETURN result;
 END;
 $$;
 ```
 
-### Por que esta RPC é rápida
+### Fase 3: Refatorar Hook `useSessionAnalytics`
 
-| Aspecto | VIEW Atual | Nova RPC |
-|---------|------------|----------|
-| Contagem de conversões | Conta 487k+ registros em tempo real | Usa valor pré-calculado do cache |
-| JOINs | Múltiplos JOINs pesados | JOIN simples com tabela cache |
-| Contagem de páginas | Recalcula a cada request | Sub-query agregada eficiente |
-| Tempo esperado | 8-15 segundos (timeout) | 50-200ms |
+Substituir queries pesadas pela chamada RPC:
+
+```typescript
+// Antes: 3 queries paralelas com fetchAllPaginated
+const [sessions, visits, clicks] = await Promise.all([...]);
+// Processamento pesado em JavaScript...
+
+// Depois: Uma única chamada RPC
+const { data, error } = await supabase
+  .rpc("get_session_analytics", {
+    p_site_id: siteId,
+    p_start_date: startDate.toISOString(),
+    p_end_date: endDate.toISOString()
+  });
+```
 
 ---
 
 ## Arquivos a Modificar
 
-### 1. `src/components/rank-rent/SitesList.tsx`
-
-**Antes (linha 74-86):**
-```typescript
-const { data: sites, isLoading } = useQuery({
-  queryKey: ["rank-rent-site-metrics", userId],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("rank_rent_site_metrics")  // VIEW PESADA
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return data;
-  },
-  refetchInterval: 30000,
-});
-```
-
-**Depois:**
-```typescript
-const { data: sites, isLoading } = useQuery({
-  queryKey: ["rank-rent-site-metrics", userId],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .rpc("get_sites_with_metrics", { p_user_id: userId });
-    if (error) throw error;
-    return data;
-  },
-  staleTime: 60000, // 1 minuto de cache
-  refetchInterval: 60000,
-});
-```
-
-### 2. `src/pages/Dashboard.tsx`
-
-**Antes (linha 162-173):**
-```typescript
-const { data: allSites } = useQuery({
-  queryKey: ["rank-rent-site-metrics", user?.id],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("rank_rent_site_metrics")  // VIEW PESADA
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return data;
-  },
-});
-```
-
-**Depois:**
-```typescript
-const { data: allSites } = useQuery({
-  queryKey: ["rank-rent-site-metrics", user?.id],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .rpc("get_sites_with_metrics", { p_user_id: user?.id });
-    if (error) throw error;
-    return data;
-  },
-  enabled: !!user?.id,
-  staleTime: 60000,
-});
-```
+| Arquivo | Alteração |
+|---------|-----------|
+| `supabase/migrations/` | Criar índices + RPC `get_session_analytics` |
+| `src/hooks/useSessionAnalytics.ts` | Usar RPC ao invés de 3 queries + JS processing |
 
 ---
 
 ## Resultado Esperado
 
-- Carregamento de projetos: de **8-15s (timeout)** para **menos de 1 segundo**
-- Eliminação completa dos erros de timeout
-- Cache de 1 minuto reduz requisições repetidas
-- Dados consistentes com o cache de métricas já implementado
+- **Carregamento**: de **8-15s (timeout)** para **menos de 1 segundo**
+- **Eliminação** de erros "statement timeout"
+- **Processamento no banco** (otimizado) ao invés do frontend
 
 ---
 
-## Resumo das Alterações
+## Detalhes Técnicos
 
-| Componente | Alteração |
-|------------|-----------|
-| Migration SQL | Criar RPC `get_sites_with_metrics` |
-| `SitesList.tsx` | Usar RPC + staleTime 60s |
-| `Dashboard.tsx` | Usar RPC + staleTime 60s |
+### Índices Atuais (Insuficientes)
+- `idx_visits_site` - apenas site_id (não cobre filtro de data)
+- `idx_visits_entry_time` - apenas data (não cobre site_id)
+- `idx_sessions_entry_time` - apenas data (não cobre site_id)
 
+### Novos Índices (Compostos)
+- `idx_visits_site_created (site_id, created_at DESC)` - otimiza filtro combinado
+- `idx_sessions_site_entry (site_id, entry_time DESC)` - otimiza filtro combinado
+
+### Por que a RPC é Mais Rápida
+
+| Aspecto | Hooks Atuais | Nova RPC |
+|---------|-------------|----------|
+| Queries | 3 paralelas + paginação | 1 única |
+| Dados transferidos | Todos os registros | Apenas agregados |
+| Processamento | JavaScript no browser | SQL no banco (índices) |
+| Tempo esperado | 8-15s (timeout) | 100-500ms |
