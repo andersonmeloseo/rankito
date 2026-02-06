@@ -163,13 +163,13 @@ const Dashboard = () => {
     queryKey: ["rank-rent-site-metrics", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("rank_rent_site_metrics")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .rpc("get_sites_with_metrics", { p_user_id: user?.id });
 
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id,
+    staleTime: 60000,
   });
 
   const selectedSitesData = allSites?.filter(site => selectedSites.has(site.id)) || [];
