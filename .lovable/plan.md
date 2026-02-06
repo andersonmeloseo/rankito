@@ -1,78 +1,137 @@
 
+# Plano: Implementar "Carregar Mais" na Lista de Páginas
 
-# Plano Definitivo: Corrigir Lentidão da Jornada do Usuário
+## Diagnóstico
 
-## Diagnóstico REAL (confirmado por EXPLAIN ANALYZE)
+### O Problema
+A view `rank_rent_page_metrics` faz:
+- JOIN com `rank_rent_conversions` (487.000+ registros)
+- Agregações complexas: `COUNT`, `AVG`, `ROUND` para cada página
+- Carrega TUDO de uma vez sem limite
 
-### O Culpado
-O `COUNT(DISTINCT session_id)` na RPC `get_session_analytics` causa **20+ segundos** de processamento, mesmo com índices otimizados.
-
-**Prova:**
+### Comportamento Atual
+```typescript
+// Carrega TODAS as páginas de uma vez
+const { data } = await supabase
+  .from("rank_rent_page_metrics")
+  .select("*")
+  .eq("site_id", siteId)
+  .order("total_page_views", { ascending: false });
 ```
-Com COUNT(DISTINCT session_id): 20,302 ms (timeout)
-Sem COUNT(DISTINCT session_id): 96 ms (instantâneo)
-```
-
-### Por que DISTINCT é tão lento?
-- O PostgreSQL precisa ordenar/comparar TODOS os valores para contar distintos
-- Em 4931 registros isso gera uma operação de Sort muito pesada
-- Ironicamente, há apenas 92 session_ids duplicados (7362 rows vs 7270 distintos)
 
 ---
 
-## Solução em 3 Partes
+## Solução: "Load More" Pattern
 
-### Parte 1: Corrigir RPC (eliminar DISTINCT)
+Implementar carregamento progressivo:
+1. **Inicial**: Carrega 10 páginas (instantâneo)
+2. **Clique**: Carrega +100 páginas por vez
+3. **Botão**: "Carregar Mais" mostra quantas restam
 
-Substituir `COUNT(DISTINCT session_id)` por `COUNT(*)` já que cada row representa uma sessão:
+---
 
-```sql
--- ANTES (20+ segundos)
-SELECT COUNT(DISTINCT session_id) INTO v_unique_visitors ...
+## Mudanças no Código
 
--- DEPOIS (< 100ms)
-SELECT COUNT(*) INTO v_session_count ...
--- uniqueVisitors = totalSessions (cada row = 1 sessão)
-```
+### Arquivo: `src/components/rank-rent/PagesList.tsx`
 
-### Parte 2: Otimizar RPC com CTE único
-
-Usar uma única CTE para evitar 3 scans separados na tabela:
-
-```sql
-WITH session_data AS (
-  SELECT 
-    entry_page_url,
-    exit_page_url,
-    pages_visited,
-    total_duration_seconds
-  FROM rank_rent_sessions
-  WHERE site_id = p_site_id
-    AND entry_time BETWEEN p_start_date AND p_end_date
-)
-SELECT json_build_object(
-  'metrics', (SELECT ... FROM session_data),
-  'topEntryPages', (SELECT ... FROM session_data GROUP BY entry_page_url),
-  'topExitPages', (SELECT ... FROM session_data GROUP BY exit_page_url)
-);
-```
-
-### Parte 3: Simplificar Hook (lazy loading de sequências)
-
-O hook atual faz 3 queries PESADAS após a RPC para construir sequências. Solução:
-
-1. **Visão Geral**: Carregar APENAS métricas + top pages (instantâneo via RPC)
-2. **Sequências**: Carregar sob demanda quando usuário clicar na aba "Sequências"
-3. **Sessões**: Já tem paginação, manter como está
-
+**1. Novo estado para controle de carregamento:**
 ```typescript
-// ANTES: Tudo de uma vez (lento)
-const { data: rpcData } = await supabase.rpc(...);
-const [sessions, visits, clicks] = await Promise.all([...]); // PESADO
+const [loadedCount, setLoadedCount] = useState(10);
+const [isLoadingMore, setIsLoadingMore] = useState(false);
+```
 
-// DEPOIS: Lazy loading
-const { data: rpcData } = await supabase.rpc(...); // Instantâneo
-// Sequências carregadas apenas quando necessário via useSessionSequences(siteId)
+**2. Query com paginação no servidor:**
+```typescript
+const { data: pages, isLoading, refetch } = useQuery({
+  queryKey: ["rank-rent-pages", userId, siteId, clientId, loadedCount],
+  queryFn: async () => {
+    let query = supabase
+      .from("rank_rent_page_metrics")
+      .select("*")
+      .range(0, loadedCount - 1); // Carregar apenas até loadedCount
+
+    if (siteId) query = query.eq("site_id", siteId);
+    if (clientId) query = query.eq("client_id", clientId);
+    
+    query = query.order("total_page_views", { ascending: false });
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  },
+  staleTime: 30000,
+});
+```
+
+**3. Query separada para contar total:**
+```typescript
+const { data: totalCount } = useQuery({
+  queryKey: ["rank-rent-pages-count", userId, siteId, clientId],
+  queryFn: async () => {
+    let query = supabase
+      .from("rank_rent_pages")  // Tabela base, sem agregações
+      .select("id", { count: "exact", head: true });
+
+    if (siteId) query = query.eq("site_id", siteId);
+    if (clientId) query = query.eq("client_id", clientId);
+
+    const { count } = await query;
+    return count || 0;
+  },
+});
+```
+
+**4. Função "Carregar Mais":**
+```typescript
+const handleLoadMore = async () => {
+  setIsLoadingMore(true);
+  setLoadedCount(prev => prev + 100);
+  await refetch();
+  setIsLoadingMore(false);
+};
+```
+
+**5. Novo UI do botão:**
+```tsx
+{pages && totalCount && loadedCount < totalCount && (
+  <div className="flex justify-center py-4">
+    <Button 
+      onClick={handleLoadMore}
+      disabled={isLoadingMore}
+      variant="outline"
+      className="min-w-[200px]"
+    >
+      {isLoadingMore ? (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Carregando...
+        </>
+      ) : (
+        <>
+          Carregar Mais
+          <Badge variant="secondary" className="ml-2">
+            +{Math.min(100, totalCount - loadedCount)} de {totalCount - loadedCount} restantes
+          </Badge>
+        </>
+      )}
+    </Button>
+  </div>
+)}
+```
+
+---
+
+## Resultado Visual
+
+### Antes:
+```
+⏳ Carregando... (10+ segundos, timeout frequente)
+```
+
+### Depois:
+```
+📊 10 páginas exibidas de 2.500 total
+[Carregar Mais (+100 de 2.490 restantes)]
 ```
 
 ---
@@ -81,147 +140,35 @@ const { data: rpcData } = await supabase.rpc(...); // Instantâneo
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `supabase/migrations/` | Nova RPC otimizada sem DISTINCT + com CTE |
-| `src/hooks/useSessionAnalytics.ts` | Remover queries de sequências (mover para hook separado) |
-| `src/hooks/useSessionSequences.ts` | **NOVO** - Hook dedicado para sequências (lazy) |
-| `src/components/rank-rent/journey/UserJourneyTab.tsx` | Carregar sequências apenas na aba "Sequências" |
+| `src/components/rank-rent/PagesList.tsx` | Implementar load more pattern |
 
 ---
 
 ## Detalhes Técnicos
 
-### Nova RPC `get_session_analytics_v2`
+### Por que `.range(0, 9)` é mais rápido?
+
+O PostgreSQL pode usar o índice para ordenar e retornar apenas os primeiros N registros SEM calcular agregações para TODAS as páginas:
 
 ```sql
-CREATE OR REPLACE FUNCTION get_session_analytics_v2(
-  p_site_id UUID,
-  p_start_date TIMESTAMPTZ,
-  p_end_date TIMESTAMPTZ
-)
-RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  result JSON;
-BEGIN
-  WITH session_data AS (
-    SELECT 
-      entry_page_url,
-      exit_page_url,
-      pages_visited,
-      total_duration_seconds
-    FROM rank_rent_sessions
-    WHERE site_id = p_site_id
-      AND entry_time >= p_start_date
-      AND entry_time <= p_end_date
-  ),
-  metrics AS (
-    SELECT 
-      COUNT(*)::bigint as total_sessions,
-      COUNT(*) FILTER (WHERE pages_visited = 1)::bigint as bounce_count,
-      COALESCE(AVG(total_duration_seconds), 0) as avg_duration,
-      COALESCE(AVG(pages_visited), 0) as avg_pages
-    FROM session_data
-  )
-  SELECT json_build_object(
-    'metrics', (
-      SELECT json_build_object(
-        'totalSessions', m.total_sessions,
-        'uniqueVisitors', m.total_sessions,
-        'newVisitors', m.total_sessions,
-        'returningVisitors', 0,
-        'avgDuration', ROUND(m.avg_duration),
-        'avgPagesPerSession', ROUND(m.avg_pages::numeric, 2),
-        'engagementRate', CASE WHEN m.total_sessions > 0 
-          THEN ROUND(((m.total_sessions - m.bounce_count)::numeric / m.total_sessions) * 100, 1) 
-          ELSE 0 END,
-        'bounceRate', CASE WHEN m.total_sessions > 0 
-          THEN ROUND((m.bounce_count::numeric / m.total_sessions) * 100, 2) 
-          ELSE 0 END
-      ) FROM metrics m
-    ),
-    'topEntryPages', COALESCE((
-      SELECT json_agg(row_to_json(t))
-      FROM (
-        SELECT entry_page_url as page_url, COUNT(*)::bigint as entries, 0::bigint as exits
-        FROM session_data
-        GROUP BY entry_page_url
-        ORDER BY COUNT(*) DESC
-        LIMIT 10
-      ) t
-    ), '[]'::json),
-    'topExitPages', COALESCE((
-      SELECT json_agg(row_to_json(t))
-      FROM (
-        SELECT exit_page_url as page_url, COUNT(*)::bigint as exits, 0::bigint as entries
-        FROM session_data
-        WHERE exit_page_url IS NOT NULL
-        GROUP BY exit_page_url
-        ORDER BY COUNT(*) DESC
-        LIMIT 10
-      ) t
-    ), '[]'::json)
-  ) INTO result;
-  
-  RETURN result;
-END;
-$$;
+-- ANTES (lento): Calcula tudo, retorna tudo
+SELECT * FROM rank_rent_page_metrics WHERE site_id = '...'
+
+-- DEPOIS (rápido): Para após encontrar os primeiros 10
+SELECT * FROM rank_rent_page_metrics WHERE site_id = '...'
+ORDER BY total_page_views DESC LIMIT 10
 ```
 
-### Hook Refatorado `useSessionAnalytics`
+### Fluxo de Carregamento
 
-```typescript
-export const useSessionAnalytics = (siteId: string, days: number = 30) => {
-  return useQuery({
-    queryKey: ['session-analytics', siteId, days],
-    queryFn: async () => {
-      const startDate = startOfDay(subDays(new Date(), days));
-      const endDate = endOfDay(new Date());
+1. **Primeiro render**: Carrega 10 páginas (rápido)
+2. **Usuário clica "Carregar Mais"**: Carrega 110 (0-109)
+3. **Clica novamente**: Carrega 210 (0-209)
+4. **E assim por diante...** até ter todas
 
-      // APENAS a RPC - sem queries extras
-      const { data, error } = await supabase
-        .rpc("get_session_analytics_v2", {
-          p_site_id: siteId,
-          p_start_date: startDate.toISOString(),
-          p_end_date: endDate.toISOString()
-        });
+### Vantagens da Abordagem
 
-      if (error) throw error;
-      
-      return {
-        metrics: data.metrics,
-        topEntryPages: data.topEntryPages || [],
-        topExitPages: data.topExitPages || [],
-        commonSequences: [], // Carregado via useSessionSequences
-        stepVolumes: new Map(),
-        pagePerformance: []
-      };
-    },
-    enabled: !!siteId,
-    staleTime: 60000
-  });
-};
-```
-
----
-
-## Resultado Esperado
-
-| Métrica | Antes | Depois |
-|---------|-------|--------|
-| Carregamento Visão Geral | 20+ segundos (timeout) | **< 200ms** |
-| Carregamento Sequências | Junto com visão geral | Sob demanda (lazy) |
-| Erros de timeout | Constantes | Eliminados |
-
----
-
-## Resumo das Mudanças
-
-1. **RPC**: Remover `COUNT(DISTINCT)` que causa 20+ segundos de delay
-2. **RPC**: Usar CTE para scan único na tabela ao invés de 3 scans
-3. **Hook**: Remover carregamento de sequências do analytics principal
-4. **Novo Hook**: `useSessionSequences` para carregar sequências apenas quando necessário
-5. **UI**: Lazy loading na aba "Sequências"
-
+- Carregamento inicial instantâneo
+- Usuário vê dados imediatamente
+- Pode continuar carregando se precisar
+- Sem timeout
