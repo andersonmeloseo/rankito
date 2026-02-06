@@ -472,7 +472,7 @@ const SiteDetails = () => {
     conversionType: analyticsConversionType,
     customStartDate,
     customEndDate,
-    enabled: activeTab === 'analytics', // Lazy loading
+    enabled: activeTab === 'advanced-analytics', // Lazy loading
   });
 
   const handleEditPage = (page: any) => {
