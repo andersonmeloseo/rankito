@@ -209,8 +209,8 @@ export const useAnalytics = ({
       };
     },
     enabled: !!siteId,
-    staleTime: 0, // Garantir refetch quando queryKey muda
-    gcTime: 0,    // Não manter cache em memória
+    staleTime: 60000, // 1 minuto de cache para reduzir queries
+    gcTime: 120000,   // 2 minutos em memória
   });
 
   // Timeline (últimos N dias)
