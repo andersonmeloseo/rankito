@@ -356,16 +356,8 @@ export const useAnalytics = ({
       currentStats[dateStr] = (currentStats[dateStr] || 0) + 1;
     });
 
-    previousEvents
-      .filter(e => e.event_type === "page_view")
-      .forEach(pv => {
-        const dateStr = new Date(pv.page_path ? pv.page_path : "").toISOString?.().split?.('T')?.[0];
-        // previous events don't have created_at in this shape, so we use a different approach
-      });
-
-    // For previous period page views, we need to re-derive from previousEvents
-    // Since previousEvents only has event_type, ip_address, page_path - no created_at
-    // We'll skip previous comparison here as it would need a separate query
+    // Note: previousEvents doesn't include created_at, so previous period comparison
+    // is not available. Would need a separate query with created_at to enable this.
     
     const allDates = Object.keys(currentStats);
     return allDates
