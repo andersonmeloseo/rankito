@@ -273,7 +273,7 @@ export const landingTranslations: Record<LandingLocale, LandingTranslations> = {
     },
     hero: {
       badge: 'Rank & Rent CRM',
-      title: 'Gerencie Seu Império de Rank & Rent com Inteligência',
+      title: 'Descubra Todas as Ações Realizadas no Seu Site com Precisão de um Sniper',
       painPoint: 'Pare de perder dinheiro com sites sem controle, conversões invisíveis e indexação manual que consome seu tempo.',
       description: 'A única plataforma completa para profissionais de SEO que gerenciam portfólios de sites de lead generation. Centralize gestão, financeiro, CRM e indexação automática em um só lugar.',
       ctaPrimary: 'Comece Grátis Agora',
