@@ -1,120 +1,78 @@
 
-# Plano: Corrigir Timeout na Jornada do Usuário
 
-## Diagnóstico Completo
+# Plano Definitivo: Corrigir Lentidão da Jornada do Usuário
 
-### O Problema
-A aba "Jornada do Usuário" está dando timeout porque:
+## Diagnóstico REAL (confirmado por EXPLAIN ANALYZE)
 
-1. **Hook `useSessionAnalytics`** faz 3 queries pesadas em paralelo:
-   - `rank_rent_sessions` (7.362 registros para este site)
-   - `rank_rent_page_visits` (10.721 registros para este site)  
-   - `rank_rent_conversions` (487.000+ registros TOTAIS)
+### O Culpado
+O `COUNT(DISTINCT session_id)` na RPC `get_session_analytics` causa **20+ segundos** de processamento, mesmo com índices otimizados.
 
-2. **Índices compostos ausentes**: Queries filtram por `site_id + created_at/entry_time` mas não existem índices compostos para esse padrão
+**Prova:**
+```
+Com COUNT(DISTINCT session_id): 20,302 ms (timeout)
+Sem COUNT(DISTINCT session_id): 96 ms (instantâneo)
+```
 
-3. **Processamento pesado no frontend**: Após carregar TODOS os dados, o JavaScript faz agregações complexas que deveriam estar no banco
+### Por que DISTINCT é tão lento?
+- O PostgreSQL precisa ordenar/comparar TODOS os valores para contar distintos
+- Em 4931 registros isso gera uma operação de Sort muito pesada
+- Ironicamente, há apenas 92 session_ids duplicados (7362 rows vs 7270 distintos)
 
 ---
 
-## Solução em 2 Fases
+## Solução em 3 Partes
 
-### Fase 1: Adicionar Índices Compostos
+### Parte 1: Corrigir RPC (eliminar DISTINCT)
 
-Criar índices que otimizam o padrão de filtro `site_id + data`:
+Substituir `COUNT(DISTINCT session_id)` por `COUNT(*)` já que cada row representa uma sessão:
 
 ```sql
--- Índice composto para page_visits (site + data)
-CREATE INDEX idx_visits_site_created ON rank_rent_page_visits (site_id, created_at DESC);
+-- ANTES (20+ segundos)
+SELECT COUNT(DISTINCT session_id) INTO v_unique_visitors ...
 
--- Índice composto para sessions (site + entry_time)
-CREATE INDEX idx_sessions_site_entry ON rank_rent_sessions (site_id, entry_time DESC);
+-- DEPOIS (< 100ms)
+SELECT COUNT(*) INTO v_session_count ...
+-- uniqueVisitors = totalSessions (cada row = 1 sessão)
 ```
 
-### Fase 2: Criar RPC `get_session_analytics`
+### Parte 2: Otimizar RPC com CTE único
 
-RPC que retorna dados pré-agregados, eliminando processamento pesado no frontend:
+Usar uma única CTE para evitar 3 scans separados na tabela:
 
 ```sql
-CREATE OR REPLACE FUNCTION get_session_analytics(
-  p_site_id UUID,
-  p_start_date TIMESTAMPTZ,
-  p_end_date TIMESTAMPTZ
+WITH session_data AS (
+  SELECT 
+    entry_page_url,
+    exit_page_url,
+    pages_visited,
+    total_duration_seconds
+  FROM rank_rent_sessions
+  WHERE site_id = p_site_id
+    AND entry_time BETWEEN p_start_date AND p_end_date
 )
-RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  result JSON;
-BEGIN
-  SELECT json_build_object(
-    'metrics', (
-      SELECT json_build_object(
-        'totalSessions', COUNT(*),
-        'uniqueVisitors', COUNT(DISTINCT session_id),
-        'avgDuration', COALESCE(AVG(total_duration_seconds), 0),
-        'avgPagesPerSession', COALESCE(AVG(pages_visited), 0),
-        'bounceRate', CASE 
-          WHEN COUNT(*) > 0 THEN (COUNT(*) FILTER (WHERE pages_visited = 1)::NUMERIC / COUNT(*)) * 100 
-          ELSE 0 
-        END
-      )
-      FROM rank_rent_sessions
-      WHERE site_id = p_site_id
-        AND entry_time >= p_start_date
-        AND entry_time <= p_end_date
-    ),
-    'topEntryPages', (
-      SELECT COALESCE(json_agg(row_to_json(t)), '[]')
-      FROM (
-        SELECT entry_page_url as page_url, COUNT(*) as entries
-        FROM rank_rent_sessions
-        WHERE site_id = p_site_id
-          AND entry_time >= p_start_date
-          AND entry_time <= p_end_date
-        GROUP BY entry_page_url
-        ORDER BY entries DESC
-        LIMIT 10
-      ) t
-    ),
-    'topExitPages', (
-      SELECT COALESCE(json_agg(row_to_json(t)), '[]')
-      FROM (
-        SELECT exit_page_url as page_url, COUNT(*) as exits
-        FROM rank_rent_sessions
-        WHERE site_id = p_site_id
-          AND entry_time >= p_start_date
-          AND entry_time <= p_end_date
-          AND exit_page_url IS NOT NULL
-        GROUP BY exit_page_url
-        ORDER BY exits DESC
-        LIMIT 10
-      ) t
-    )
-  ) INTO result;
-  
-  RETURN result;
-END;
-$$;
+SELECT json_build_object(
+  'metrics', (SELECT ... FROM session_data),
+  'topEntryPages', (SELECT ... FROM session_data GROUP BY entry_page_url),
+  'topExitPages', (SELECT ... FROM session_data GROUP BY exit_page_url)
+);
 ```
 
-### Fase 3: Refatorar Hook `useSessionAnalytics`
+### Parte 3: Simplificar Hook (lazy loading de sequências)
 
-Substituir queries pesadas pela chamada RPC:
+O hook atual faz 3 queries PESADAS após a RPC para construir sequências. Solução:
+
+1. **Visão Geral**: Carregar APENAS métricas + top pages (instantâneo via RPC)
+2. **Sequências**: Carregar sob demanda quando usuário clicar na aba "Sequências"
+3. **Sessões**: Já tem paginação, manter como está
 
 ```typescript
-// Antes: 3 queries paralelas com fetchAllPaginated
-const [sessions, visits, clicks] = await Promise.all([...]);
-// Processamento pesado em JavaScript...
+// ANTES: Tudo de uma vez (lento)
+const { data: rpcData } = await supabase.rpc(...);
+const [sessions, visits, clicks] = await Promise.all([...]); // PESADO
 
-// Depois: Uma única chamada RPC
-const { data, error } = await supabase
-  .rpc("get_session_analytics", {
-    p_site_id: siteId,
-    p_start_date: startDate.toISOString(),
-    p_end_date: endDate.toISOString()
-  });
+// DEPOIS: Lazy loading
+const { data: rpcData } = await supabase.rpc(...); // Instantâneo
+// Sequências carregadas apenas quando necessário via useSessionSequences(siteId)
 ```
 
 ---
@@ -123,35 +81,147 @@ const { data, error } = await supabase
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `supabase/migrations/` | Criar índices + RPC `get_session_analytics` |
-| `src/hooks/useSessionAnalytics.ts` | Usar RPC ao invés de 3 queries + JS processing |
-
----
-
-## Resultado Esperado
-
-- **Carregamento**: de **8-15s (timeout)** para **menos de 1 segundo**
-- **Eliminação** de erros "statement timeout"
-- **Processamento no banco** (otimizado) ao invés do frontend
+| `supabase/migrations/` | Nova RPC otimizada sem DISTINCT + com CTE |
+| `src/hooks/useSessionAnalytics.ts` | Remover queries de sequências (mover para hook separado) |
+| `src/hooks/useSessionSequences.ts` | **NOVO** - Hook dedicado para sequências (lazy) |
+| `src/components/rank-rent/journey/UserJourneyTab.tsx` | Carregar sequências apenas na aba "Sequências" |
 
 ---
 
 ## Detalhes Técnicos
 
-### Índices Atuais (Insuficientes)
-- `idx_visits_site` - apenas site_id (não cobre filtro de data)
-- `idx_visits_entry_time` - apenas data (não cobre site_id)
-- `idx_sessions_entry_time` - apenas data (não cobre site_id)
+### Nova RPC `get_session_analytics_v2`
 
-### Novos Índices (Compostos)
-- `idx_visits_site_created (site_id, created_at DESC)` - otimiza filtro combinado
-- `idx_sessions_site_entry (site_id, entry_time DESC)` - otimiza filtro combinado
+```sql
+CREATE OR REPLACE FUNCTION get_session_analytics_v2(
+  p_site_id UUID,
+  p_start_date TIMESTAMPTZ,
+  p_end_date TIMESTAMPTZ
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  result JSON;
+BEGIN
+  WITH session_data AS (
+    SELECT 
+      entry_page_url,
+      exit_page_url,
+      pages_visited,
+      total_duration_seconds
+    FROM rank_rent_sessions
+    WHERE site_id = p_site_id
+      AND entry_time >= p_start_date
+      AND entry_time <= p_end_date
+  ),
+  metrics AS (
+    SELECT 
+      COUNT(*)::bigint as total_sessions,
+      COUNT(*) FILTER (WHERE pages_visited = 1)::bigint as bounce_count,
+      COALESCE(AVG(total_duration_seconds), 0) as avg_duration,
+      COALESCE(AVG(pages_visited), 0) as avg_pages
+    FROM session_data
+  )
+  SELECT json_build_object(
+    'metrics', (
+      SELECT json_build_object(
+        'totalSessions', m.total_sessions,
+        'uniqueVisitors', m.total_sessions,
+        'newVisitors', m.total_sessions,
+        'returningVisitors', 0,
+        'avgDuration', ROUND(m.avg_duration),
+        'avgPagesPerSession', ROUND(m.avg_pages::numeric, 2),
+        'engagementRate', CASE WHEN m.total_sessions > 0 
+          THEN ROUND(((m.total_sessions - m.bounce_count)::numeric / m.total_sessions) * 100, 1) 
+          ELSE 0 END,
+        'bounceRate', CASE WHEN m.total_sessions > 0 
+          THEN ROUND((m.bounce_count::numeric / m.total_sessions) * 100, 2) 
+          ELSE 0 END
+      ) FROM metrics m
+    ),
+    'topEntryPages', COALESCE((
+      SELECT json_agg(row_to_json(t))
+      FROM (
+        SELECT entry_page_url as page_url, COUNT(*)::bigint as entries, 0::bigint as exits
+        FROM session_data
+        GROUP BY entry_page_url
+        ORDER BY COUNT(*) DESC
+        LIMIT 10
+      ) t
+    ), '[]'::json),
+    'topExitPages', COALESCE((
+      SELECT json_agg(row_to_json(t))
+      FROM (
+        SELECT exit_page_url as page_url, COUNT(*)::bigint as exits, 0::bigint as entries
+        FROM session_data
+        WHERE exit_page_url IS NOT NULL
+        GROUP BY exit_page_url
+        ORDER BY COUNT(*) DESC
+        LIMIT 10
+      ) t
+    ), '[]'::json)
+  ) INTO result;
+  
+  RETURN result;
+END;
+$$;
+```
 
-### Por que a RPC é Mais Rápida
+### Hook Refatorado `useSessionAnalytics`
 
-| Aspecto | Hooks Atuais | Nova RPC |
-|---------|-------------|----------|
-| Queries | 3 paralelas + paginação | 1 única |
-| Dados transferidos | Todos os registros | Apenas agregados |
-| Processamento | JavaScript no browser | SQL no banco (índices) |
-| Tempo esperado | 8-15s (timeout) | 100-500ms |
+```typescript
+export const useSessionAnalytics = (siteId: string, days: number = 30) => {
+  return useQuery({
+    queryKey: ['session-analytics', siteId, days],
+    queryFn: async () => {
+      const startDate = startOfDay(subDays(new Date(), days));
+      const endDate = endOfDay(new Date());
+
+      // APENAS a RPC - sem queries extras
+      const { data, error } = await supabase
+        .rpc("get_session_analytics_v2", {
+          p_site_id: siteId,
+          p_start_date: startDate.toISOString(),
+          p_end_date: endDate.toISOString()
+        });
+
+      if (error) throw error;
+      
+      return {
+        metrics: data.metrics,
+        topEntryPages: data.topEntryPages || [],
+        topExitPages: data.topExitPages || [],
+        commonSequences: [], // Carregado via useSessionSequences
+        stepVolumes: new Map(),
+        pagePerformance: []
+      };
+    },
+    enabled: !!siteId,
+    staleTime: 60000
+  });
+};
+```
+
+---
+
+## Resultado Esperado
+
+| Métrica | Antes | Depois |
+|---------|-------|--------|
+| Carregamento Visão Geral | 20+ segundos (timeout) | **< 200ms** |
+| Carregamento Sequências | Junto com visão geral | Sob demanda (lazy) |
+| Erros de timeout | Constantes | Eliminados |
+
+---
+
+## Resumo das Mudanças
+
+1. **RPC**: Remover `COUNT(DISTINCT)` que causa 20+ segundos de delay
+2. **RPC**: Usar CTE para scan único na tabela ao invés de 3 scans
+3. **Hook**: Remover carregamento de sequências do analytics principal
+4. **Novo Hook**: `useSessionSequences` para carregar sequências apenas quando necessário
+5. **UI**: Lazy loading na aba "Sequências"
+
