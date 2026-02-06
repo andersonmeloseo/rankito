@@ -34,37 +34,41 @@ export const useGlobalFinancialMetrics = (userId: string) => {
   const { data: sitesMetrics, isLoading } = useQuery({
     queryKey: ["global-financial-metrics", userId],
     queryFn: async () => {
-      // Buscar todos os sites do usuário
-      const { data: sites, error: sitesError } = await supabase
-        .from("rank_rent_sites")
-        .select("*")
-        .eq("owner_user_id", userId);
+      // OTIMIZAÇÃO: Paralelizar as 3 queries com Promise.all
+      const [sitesResult, metricsResult, configsResult] = await Promise.all([
+        supabase
+          .from("rank_rent_sites")
+          .select("*")
+          .eq("owner_user_id", userId),
+        supabase
+          .from("rank_rent_financial_metrics")
+          .select("*")
+          .eq("user_id", userId),
+        supabase
+          .from("rank_rent_financial_config")
+          .select("*")
+      ]);
 
-      if (sitesError) throw sitesError;
+      if (sitesResult.error) throw sitesResult.error;
+      if (metricsResult.error) throw metricsResult.error;
+      if (configsResult.error) throw configsResult.error;
+
+      const sites = sitesResult.data;
+      const metrics = metricsResult.data;
+      const configs = configsResult.data;
+
       if (!sites || sites.length === 0) return [];
 
-      // Buscar métricas financeiras
-      const { data: metrics, error: metricsError } = await supabase
-        .from("rank_rent_financial_metrics")
-        .select("*")
-        .eq("user_id", userId);
-
-      if (metricsError) throw metricsError;
-
-      // Buscar configurações de custos
-      const { data: configs, error: configsError } = await supabase
-        .from("rank_rent_financial_config")
-        .select("*")
-        .in("site_id", sites.map(s => s.id));
-
-      if (configsError) throw configsError;
+      // Filtrar configs apenas dos sites do usuário
+      const siteIds = new Set(sites.map(s => s.id));
+      const userConfigs = configs?.filter(c => siteIds.has(c.site_id)) || [];
 
       // Criar mapa de sites com suas métricas
       const siteMap = new Map<string, SiteFinancialSummary>();
       
       sites.forEach(site => {
         const siteMetrics = metrics?.filter(m => m.site_id === site.id) || [];
-        const siteConfig = configs?.find(c => c.site_id === site.id);
+        const siteConfig = userConfigs.find(c => c.site_id === site.id);
         
         // CORREÇÃO: Receita vem do monthly_rent_value do site quando está alugado
         const monthly_revenue = site.is_rented ? Number(site.monthly_rent_value || 0) : 0;
@@ -113,6 +117,8 @@ export const useGlobalFinancialMetrics = (userId: string) => {
       return sitesArray;
     },
     enabled: !!userId,
+    staleTime: 60000, // 1 minuto de cache
+    gcTime: 120000, // 2 minutos em memória
   });
 
   const summary: GlobalFinancialSummary = useMemo(() => {

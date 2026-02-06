@@ -21,6 +21,21 @@ export interface SubscriptionLimits {
   isLoading: boolean;
 }
 
+interface SubscriptionLimitsRPCResponse {
+  subscription: {
+    id: string;
+    user_id: string;
+    plan_id: string;
+    status: string;
+    name: string;
+    slug: string;
+    max_sites: number | null;
+    max_pages_per_site: number | null;
+  } | null;
+  sites_count: number;
+  pages_per_site: Record<string, number> | null;
+}
+
 export const useSubscriptionLimits = () => {
   return useQuery({
     queryKey: ['subscription-limits'],
@@ -29,52 +44,30 @@ export const useSubscriptionLimits = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // 2. Buscar assinatura ativa + plano
-      const { data: subscription } = await supabase
-        .from('user_subscriptions')
-        .select(`
-          *,
-          subscription_plans (
-            name,
-            slug,
-            max_sites,
-            max_pages_per_site
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      // 2. Usar RPC otimizada que retorna tudo em uma única query
+      const { data, error } = await supabase.rpc('get_subscription_limits_data', {
+        p_user_id: user.id
+      });
 
-      const plan = subscription?.subscription_plans;
+      if (error) throw error;
 
-      // 3. Buscar uso atual (sites)
-      const { count: sitesCount } = await supabase
-        .from('rank_rent_sites')
-        .select('*', { count: 'exact', head: true })
-        .eq('owner_user_id', user.id);
+      const rpcData = data as unknown as SubscriptionLimitsRPCResponse;
 
-      // 4. Buscar uso atual (páginas por site)
-      const { data: sites } = await supabase
-        .from('rank_rent_sites')
-        .select('id')
-        .eq('owner_user_id', user.id);
+      // Extrair dados da resposta
+      const subscription = rpcData?.subscription;
+      const plan = subscription ? {
+        name: subscription.name,
+        slug: subscription.slug,
+        max_sites: subscription.max_sites,
+        max_pages_per_site: subscription.max_pages_per_site,
+      } : null;
 
-      const pagesPerSite: Record<string, number> = {};
-      if (sites) {
-        for (const site of sites) {
-          const { count } = await supabase
-            .from('rank_rent_pages')
-            .select('*', { count: 'exact', head: true })
-            .eq('site_id', site.id);
-          pagesPerSite[site.id] = count || 0;
-        }
-      }
+      const sitesCount = rpcData?.sites_count || 0;
+      const pagesPerSite = rpcData?.pages_per_site || {};
 
-      // 5. Calcular permissões
+      // 3. Calcular permissões
       const isUnlimited = plan?.max_sites === null;
-      const canCreateSite = isUnlimited || (sitesCount || 0) < (plan?.max_sites || 0);
+      const canCreateSite = isUnlimited || sitesCount < (plan?.max_sites || 0);
 
       const canCreatePage = (siteId: string) => {
         if (plan?.max_pages_per_site === null) return true;
@@ -83,7 +76,7 @@ export const useSubscriptionLimits = () => {
 
       const remainingSites = isUnlimited 
         ? null 
-        : (plan?.max_sites || 0) - (sitesCount || 0);
+        : (plan?.max_sites || 0) - sitesCount;
 
       const remainingPages = (siteId: string) => {
         if (plan?.max_pages_per_site === null) return null;
@@ -94,7 +87,7 @@ export const useSubscriptionLimits = () => {
         subscription,
         plan,
         currentUsage: {
-          sitesCount: sitesCount || 0,
+          sitesCount,
           pagesPerSite,
         },
         canCreateSite,
@@ -105,5 +98,7 @@ export const useSubscriptionLimits = () => {
         isLoading: false,
       } as SubscriptionLimits;
     },
+    staleTime: 120000, // 2 minutos de cache
+    gcTime: 300000, // 5 minutos em memória
   });
 };

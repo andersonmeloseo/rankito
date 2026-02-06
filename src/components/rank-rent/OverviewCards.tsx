@@ -17,6 +17,17 @@ interface MetricCardProps {
   onClick?: () => void;
 }
 
+interface DashboardOverviewRPC {
+  total_sites: number;
+  rented_sites: number;
+  available_sites: number;
+  monthly_revenue: number;
+  total_conversions: number;
+  expiring_contracts: number;
+  occupancy_rate: number;
+  average_ticket: number;
+}
+
 const MetricCard = ({ title, value, icon: Icon, description, iconVariant, onClick }: MetricCardProps) => {
   const iconClasses = {
     blue: "icon-gradient-blue",
@@ -50,60 +61,29 @@ export const OverviewCards = ({ userId }: OverviewCardsProps) => {
   const { data: metrics, isLoading } = useQuery({
     queryKey: ["overview-metrics", userId],
     queryFn: async () => {
-      const { data: sites, error } = await supabase
-        .from("rank_rent_sites")
-        .select("*")
-        .eq("owner_user_id", userId);
+      // Usar RPC otimizada que retorna todas as métricas em uma única query
+      const { data, error } = await supabase.rpc('get_dashboard_overview', {
+        p_user_id: userId
+      });
 
       if (error) throw error;
 
-      const totalSites = sites?.length || 0;
-      const rentedSites = sites?.filter((s) => s.is_rented).length || 0;
-      const availableSites = totalSites - rentedSites;
-      const monthlyRevenue = sites?.reduce((acc, s) => acc + Number(s.monthly_rent_value || 0), 0) || 0;
-
-      // Contratos vencendo nos próximos 30 dias
-      const today = new Date();
-      const thirtyDaysFromNow = new Date(today);
-      thirtyDaysFromNow.setDate(today.getDate() + 30);
-
-      const expiringContracts = sites?.filter((s) => {
-        if (!s.contract_end_date || !s.is_rented) return false;
-        const endDate = new Date(s.contract_end_date);
-        return endDate >= today && endDate <= thirtyDaysFromNow;
-      }).length || 0;
-
-      // Taxa de ocupação
-      const occupancyRate = totalSites > 0 ? Math.round((rentedSites / totalSites) * 100) : 0;
-
-      // Ticket médio
-      const averageTicket = rentedSites > 0 ? monthlyRevenue / rentedSites : 0;
-
-      // Get total conversions
-      const { data: conversions, error: convError } = await supabase
-        .from("rank_rent_conversions")
-        .select("id, site_id")
-        .in(
-          "site_id",
-          sites?.map((s) => s.id) || []
-        );
-
-      if (convError) throw convError;
-
-      const totalConversions = conversions?.length || 0;
+      const rpcData = data as unknown as DashboardOverviewRPC;
 
       return {
-        totalSites,
-        rentedSites,
-        availableSites,
-        monthlyRevenue,
-        expiringContracts,
-        occupancyRate,
-        averageTicket,
-        totalConversions,
+        totalSites: rpcData?.total_sites || 0,
+        rentedSites: rpcData?.rented_sites || 0,
+        availableSites: rpcData?.available_sites || 0,
+        monthlyRevenue: Number(rpcData?.monthly_revenue || 0),
+        expiringContracts: rpcData?.expiring_contracts || 0,
+        occupancyRate: Number(rpcData?.occupancy_rate || 0),
+        averageTicket: Number(rpcData?.average_ticket || 0),
+        totalConversions: rpcData?.total_conversions || 0,
       };
     },
-    refetchInterval: 30000,
+    staleTime: 60000, // 1 minuto de cache
+    gcTime: 120000, // 2 minutos em memória
+    refetchInterval: 60000, // Refetch a cada 1 minuto
   });
 
   const handleCardClick = (cardTitle: string) => {

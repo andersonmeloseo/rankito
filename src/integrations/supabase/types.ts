@@ -4808,6 +4808,7 @@ export type Database = {
     Functions: {
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
       generate_indexnow_key: { Args: never; Returns: string }
+      get_dashboard_overview: { Args: { p_user_id: string }; Returns: Json }
       get_database_health_metrics: { Args: never; Returns: Json }
       get_detected_ctas: {
         Args: { p_site_id: string }
@@ -4853,6 +4854,10 @@ export type Database = {
           sites_count: number
           user_count: number
         }[]
+      }
+      get_subscription_limits_data: {
+        Args: { p_user_id: string }
+        Returns: Json
       }
       get_system_consumption_counts: { Args: never; Returns: Json }
       get_top_pages: {
