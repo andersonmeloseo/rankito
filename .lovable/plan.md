@@ -1,215 +1,165 @@
 
-# Auditoria de Performance: Gargalos Identificados no Rankito
+# Plano: Arquitetura de Carregamento Sob Demanda (Lazy Loading)
 
-## Resumo Executivo
+## O que acontece hoje
 
-Encontrei **9 gargalos criticos** que fazem o aplicativo parecer lento. O maior problema nao e uma unica query, mas sim o **padrao de uso**: queries duplicadas, dados carregados antes de serem necessarios, e refetch agressivo desnecessario.
+O sistema usa **React + Vite + React Router DOM** (SPA client-side). Nao existe "App Router" ou "Pages Router" como no Next.js. Porem, o problema que voce identificou e real e grave:
 
----
+### Problema 1: Bundle Monolitico
 
-## Gargalo 1: useAnalytics.ts - O Maior Vilao (15+ queries simultaneas)
+No `App.tsx`, todas as 15 paginas sao importadas **estaticamente**:
 
-**Impacto: CRITICO**
-
-O hook `useAnalytics` dispara **15 queries separadas** ao banco de dados quando voce abre a aba Analytics. Muitas buscam os **mesmos dados** da tabela `rank_rent_conversions` repetidamente:
-
-| Query | O que busca | Dados duplicados? |
-|-------|-------------|-------------------|
-| metrics (unique visitors) | `ip_address` de TODOS eventos | Sim - fetchAllPaginated |
-| metrics (unique pages) | `page_path` de TODOS eventos | Sim - fetchAllPaginated |
-| timeline | `created_at, event_type` TODOS | Sim |
-| events | `event_type` TODOS | Sim (subset da timeline) |
-| topPages | `page_path, event_type` TODOS | Sim |
-| previousMetrics | `*` (TUDO!) do periodo anterior | select("*") desnecessario |
-| conversions | `*` (TUDO!) das conversoes | select("*") desnecessario |
-| conversionsForTimeline | `created_at, event_type` conversoes | Duplica conversions |
-| pageViewsList | `*` (TUDO!) dos page views | select("*") desnecessario |
-| funnelData | count de page_views e conversoes | Duplica metrics |
-| hourlyData | `created_at` todas conversoes | fetchAllPaginated |
-| sparklineData | `created_at, event_type` 7 dias | Subset de timeline |
-| conversionRateData | `created_at, event_type` TODOS | Identica a timeline! |
-| pageViewsTimeline | `created_at` page views + anterior | Duplica |
-| topReferrers | `referrer` TODOS page views | fetchAllPaginated |
-| pagePerformance | `page_path, event_type` TODOS | Duplica topPages |
-
-**Solucao**: Consolidar em 2-3 queries maximas. Uma query busca TODOS os eventos do periodo (com campos selecionados), e o processamento das diferentes visualizacoes acontece no frontend via `useMemo`.
-
----
-
-## Gargalo 2: SiteDetails.tsx - Carrega TUDO ao Abrir
-
-**Impacto: CRITICO**
-
-Quando voce abre um site, o SiteDetails carrega dados de TODAS as abas simultaneamente, mesmo que voce so esteja na aba "Paginas":
-
-- Detalhes do site (2 queries: sites + metrics view)
-- Lista de paginas (query na view pesada)
-- Total de paginas (count query)
-- Limite do plano (query)
-- Clientes para filtro (query na view pesada)
-- Clientes para atribuicao (query)
-- Page views detalhados com `.select("*")` e `.limit(1000)` (query pesada)
-- **useAnalytics completo** (15+ queries!)
-- Ultimo city de conversao (query)
-
-**Total ao abrir**: ~25 queries simultaneas ao banco!
-
-**Solucao**: Lazy loading por aba. Queries de Analytics so devem rodar quando o usuario navega para a aba Analytics. Queries de page views so quando vai para Page Views.
-
----
-
-## Gargalo 3: refetchInterval Agressivo
-
-**Impacto: ALTO**
-
-Varias queries refazem polling ao banco a cada poucos segundos, mesmo quando o usuario nao esta olhando:
-
-| Hook | Intervalo | Impacto |
-|------|-----------|---------|
-| `useRecentSessions` | 15s | Busca sessoes + page visits a cada 15s |
-| `useRecentSessionsEnriched` | 15s | Busca sessoes + TODOS eventos com select("*") a cada 15s |
-| `useGlobalEcommerceMetrics` | 30s | Busca conversoes de todos os sites a cada 30s |
-| `useNotifications` | 30s | OK para notificacoes |
-| `useUnreadCommunications` | 30s | OK para comunicacao |
-| `useClientIntegration` | 30s | Desnecessario |
-| `useEcommerceComparison` | 30s | Desnecessario |
-| `useSessionAnalytics` | 60s | Pesado para 60s |
-
-**Solucao**: Aumentar intervalos para 5+ minutos em dados que nao mudam frequentemente. Usar `refetchOnWindowFocus` ao inves de polling constante.
-
----
-
-## Gargalo 4: select("*") em Queries Pesadas
-
-**Impacto: ALTO**
-
-Varias queries buscam TODAS as colunas quando precisam de apenas 2-3:
-
-1. **previousMetrics** (useAnalytics.ts L387): `.select("*").range(0, 49999)` - Busca ate 50.000 registros com TODAS as colunas so para contar page_views vs conversoes. Deveria usar `.select("created_at, event_type")`.
-
-2. **conversions** (useAnalytics.ts L423): `.select("*")` sem limite - Busca todas as colunas incluindo metadata, referrer, city, ip_address. So precisa de event_type, page_path, created_at, cta_text.
-
-3. **pageViewsList** (useAnalytics.ts L492): `.select("*")` - Busca tudo dos page views. So precisa de created_at, page_path, metadata.
-
-4. **useRecentSessionsEnriched** (L153): `.select('*').in('session_id', sessionTokens)` - Busca TODOS os campos de todas as conversoes das sessoes.
-
-5. **pageViewsData** (SiteDetails.tsx L413): `.select("*").limit(1000)` - Busca 1000 page views completos.
-
-**Solucao**: Especificar apenas os campos necessarios em cada query.
-
----
-
-## Gargalo 5: QueryClient sem Defaults
-
-**Impacto: MEDIO**
-
-```typescript
-// App.tsx - Sem configuracao!
-const queryClient = new QueryClient();
+```text
+import LandingPage from "./pages/LandingPage";       // 233 linhas + 15 componentes
+import Dashboard from "./pages/Dashboard";             // 614 linhas + 40 componentes
+import SuperAdminDashboard from "./pages/SuperAdmin";  // 138 linhas + 13 componentes
+import SiteDetails from "./pages/SiteDetails";         // 1.591 linhas + 30 componentes
+import EnhancedClientPortal from "./pages/Enhanced";   // 421 linhas + 12 componentes
+import EndClientPortal from "./pages/EndClient";       // 330 linhas + 10 componentes
+... (mais 9 paginas)
 ```
 
-Sem defaults globais, cada hook precisa configurar `staleTime`, `gcTime`, e `retry` individualmente. Muitos esqueceram, resultando em:
-- `staleTime: 0` (default) = refetch em TODA re-renderizacao
-- Sem `gcTime` definido = cache padrao de 5 minutos
+**Resultado**: Quando alguem abre a Landing Page (pagina publica), o navegador baixa o JavaScript de TODAS as paginas, incluindo Dashboard, SuperAdmin, Analytics, E-commerce - tudo num unico arquivo.
 
-**Solucao**: Configurar defaults globais sensatos.
+### Problema 2: Componentes Pesados Sempre Montados
 
----
+Dentro do Dashboard (614 linhas), todos os hooks de todas as abas rodam no mount:
+- `useGlobalFinancialMetrics` - roda mesmo na aba Overview
+- `useGlobalEcommerceMetrics` - roda mesmo na aba Overview
+- `useRealtimeLeads` - roda sempre
+- `useUnreadCommunications` - roda sempre
 
-## Gargalo 6: Queries Duplicadas de current-user
-
-**Impacto: MEDIO**
-
-Em `SiteDetails.tsx`, a query `["current-user"]` aparece **2 vezes** (linhas 79 e 323), e `supabase.auth.getUser()` e chamado dentro de varias queryFn (pageViewsData L407, userPlanLimit L295, clients L356). Cada chamada a `getUser()` faz um request HTTP ao servidor de autenticacao.
-
-**Solucao**: Usar o `user` do `useRole()` context que ja esta disponivel, eliminando calls redundantes a `getUser()`.
+Dentro do SiteDetails (1.591 linhas), 30+ componentes de analytics sao importados estaticamente, mesmo que o usuario so esteja na aba "Paginas".
 
 ---
 
-## Gargalo 7: Dashboard Carrega Todas as Abas
+## Solucao: Duas Camadas de Lazy Loading
 
-**Impacto: MEDIO**
+### Camada 1: Code Splitting por Rota (React.lazy)
 
-O Dashboard tem 10 abas mas carrega dados de TODAS ao mesmo tempo:
-- Overview (OverviewCards, TopProjects, RecentActivity, QuickAlerts)
-- Projetos (SitesList)
-- Financial (useGlobalFinancialMetrics - 3 queries paralelas)
-- E-commerce (useGlobalEcommerceMetrics - queries pesadas)
+Cada pagina so sera baixada quando o usuario navegar para ela:
 
-Os dados de Financial e E-commerce so deveriam carregar quando o usuario clica nessas abas.
+```text
+ANTES (tudo no bundle principal):
+┌─────────────────────────────────┐
+│         main.js (5MB+)          │
+│  LandingPage + Dashboard +     │
+│  SuperAdmin + SiteDetails +    │
+│  EndClient + EnhancedPortal +  │
+│  Auth + ClientReport + ...     │
+└─────────────────────────────────┘
 
-**Solucao**: Lazy loading condicional baseado na aba ativa.
-
----
-
-## Gargalo 8: View rank_rent_metrics com staleTime: 0
-
-**Impacto: MEDIO**
-
-```typescript
-// SiteDetails.tsx L182-184
-staleTime: 0,
-refetchOnMount: true,
+DEPOIS (bundles separados):
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│ main.js      │  │ dashboard.js │  │ sitedetails  │
+│ (core: 200K) │  │ (sob demanda)│  │ (sob demanda)│
+└──────────────┘  └──────────────┘  └──────────────┘
+                  ┌──────────────┐  ┌──────────────┐
+                  │ superadmin   │  │ clientportal │
+                  │ (sob demanda)│  │ (sob demanda)│
+                  └──────────────┘  └──────────────┘
 ```
 
-A query de `rank_rent_metrics` (view com JOINs complexos) roda com staleTime 0, forcando recalculo em CADA mount. Metricas de site nao mudam a cada segundo.
+### Camada 2: Lazy Loading por Aba (Dashboard e SiteDetails)
 
-**Solucao**: `staleTime: 60000` (1 minuto).
+Componentes pesados dentro de paginas com abas so serao importados quando a aba for ativada:
 
----
+```text
+Dashboard aba "Overview" ativa:
+  ✅ OverviewCards (carregado)
+  ❌ CRMHub (NAO carregado)
+  ❌ GlobalFinancialOverview (NAO carregado)
+  ❌ EcommerceTab (NAO carregado)
+  ❌ GeolocationAnalyticsTab (NAO carregado)
 
-## Gargalo 9: allClientsData Usa View Pesada
-
-**Impacto: BAIXO**
-
-```typescript
-// SiteDetails.tsx L332-348
-.from("rank_rent_page_metrics") // VIEW PESADA!
-.select("client_name")
+Usuario clica em "Financeiro":
+  ✅ OverviewCards (cache)
+  ❌ CRMHub (NAO carregado)
+  ✅ GlobalFinancialOverview (carrega agora!)
+  ❌ EcommerceTab (NAO carregado)
 ```
 
-Para pegar nomes unicos de clientes, faz query na view de metricas (com JOINs e agregacoes). Deveria consultar a tabela base `rank_rent_pages` ou `rank_rent_clients`.
-
 ---
 
-## Plano de Implementacao (Priorizado)
+## Mudancas por Arquivo
 
-### Fase 1: Ganhos Rapidos (Alto Impacto, Baixo Risco)
+### 1. `src/App.tsx` - Code Splitting por Rota
 
-1. **Configurar QueryClient defaults** em App.tsx
-   - `staleTime: 30000` (30s default)
-   - `gcTime: 300000` (5 min)
-   - `retry: 1`
+**O que muda**: Todas as 15 importacoes estaticas viram `React.lazy()` com `Suspense`.
 
-2. **Reduzir refetchInterval** em todos os hooks agressivos
-   - Sessions: 15s -> 120s
-   - E-commerce: 30s -> 300s
-   - Client integration: 30s -> 120s
+```typescript
+// ANTES
+import Dashboard from "./pages/Dashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import SiteDetails from "./pages/SiteDetails";
 
-3. **Fixar staleTime: 0** no SiteDetails para `staleTime: 60000`
+// DEPOIS
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const SuperAdminDashboard = lazy(() => import("./pages/SuperAdminDashboard"));
+const SiteDetails = lazy(() => import("./pages/SiteDetails"));
+```
 
-4. **Eliminar queries duplicadas** de `current-user` no SiteDetails
+Adicionar `Suspense` com fallback de loading ao redor das `Routes`.
 
-### Fase 2: Otimizacao de Queries (Alto Impacto, Medio Risco)
+### 2. `src/pages/Dashboard.tsx` - Lazy Loading por Aba
 
-5. **Substituir select("*")** por campos especificos em:
-   - useAnalytics (previousMetrics, conversions, pageViewsList)
-   - useRecentSessionsEnriched (allEvents)
-   - SiteDetails (pageViewsData)
+**O que muda**: Componentes pesados de abas inativas nao serao importados ate serem necessarios.
 
-6. **allClientsData**: Trocar view `rank_rent_page_metrics` por tabela `rank_rent_pages` ou `rank_rent_clients`
+Componentes a converter para lazy:
+- `CRMHub` (aba CRM)
+- `GlobalFinancialOverview`, `GlobalFinancialTable`, `GlobalCostSettings`, `PaymentAlerts`, `PaymentsList` (aba Financial)
+- `EcommerceTab` (aba E-commerce)
+- `GeolocationAnalyticsTab` (aba Geolocation)
+- `ClientsListIntegrated` (aba Clients)
+- `UserCommunicationsTab` (aba Communication)
+- `AcademyTab` (aba Academia)
+- `PublicRoadmapTab` (aba Atualizacoes)
 
-### Fase 3: Refatoracao Estrutural (Maior Impacto, Maior Risco)
+Alem disso, os hooks pesados (`useGlobalFinancialMetrics`, `useGlobalEcommerceMetrics`) precisam de `enabled` condicional para so executar quando a aba correspondente estiver ativa:
 
-7. **Lazy loading por aba** no SiteDetails:
-   - useAnalytics so roda quando `activeTab === 'analytics'`
-   - pageViewsData so roda quando precisa
-   
-8. **Lazy loading por aba** no Dashboard:
-   - Financial so quando `activeTab === 'financial'`
-   - E-commerce so quando `activeTab === 'ecommerce'`
+```typescript
+// ANTES - roda SEMPRE
+const { sitesMetrics, summary } = useGlobalFinancialMetrics(user?.id || "");
+const { data: ecommerceMetrics } = useGlobalEcommerceMetrics(user?.id);
 
-9. **Consolidar useAnalytics**: Reduzir de 15+ queries para 2-3 queries com processamento client-side via `useMemo`
+// DEPOIS - so roda quando necessario
+const isFinancialOrOverview = activeTab === 'financial' || activeTab === 'overview';
+const isEcommerceOrOverview = activeTab === 'ecommerce' || activeTab === 'overview';
+```
+
+**Nota**: Os dados de e-commerce e financial aparecem no Overview, entao esses hooks precisam rodar tanto na aba propria quanto no overview.
+
+### 3. `src/pages/SiteDetails.tsx` - Lazy Loading por Aba
+
+**O que muda**: Componentes de analytics, GSC, e-commerce, etc. so serao carregados quando a aba for ativada.
+
+Componentes a converter para lazy:
+- Todos os 20+ componentes de analytics (aba Analytics)
+- `GSCTabContent` (aba GSC)
+- `EcommerceAnalytics` (aba E-commerce)
+- `UserJourneyTab` (aba Journey)
+- `ReportsTab` (aba Reports)
+- `PixelTrackingTab` (aba Integracoes)
+- `ConversionGoalsManager` (aba Metas)
+
+### 4. `src/pages/SuperAdminDashboard.tsx` - Lazy Loading por Aba
+
+**O que muda**: Ja usa switch/case (bom!), mas todos os 13 componentes sao importados estaticamente. Converter para lazy.
+
+Componentes a converter:
+- `UnifiedUsersTab`
+- `PlansManagementTable`
+- `SubscriptionMetricsCards`, `SubscriptionsTable`, `PaymentsHistoryTable`
+- `GeolocationApisManager`
+- `AuditLogsTab`
+- `RetentionAnalytics`
+- `AdminAutomationsTab`
+- `CommunicationTab`
+- `VideoTrainingManagementTab`
+- `MarketingTab`
+- `TechnicalDocumentationTab`
+- `BacklogManagementTab`
+- Componentes de monitoring
 
 ---
 
@@ -217,11 +167,11 @@ Para pegar nomes unicos de clientes, faz query na view de metricas (com JOINs e 
 
 | Metrica | Antes | Depois |
 |---------|-------|--------|
-| Queries ao abrir SiteDetails | ~25 | ~5 (aba atual) |
-| Queries ao abrir Dashboard | ~15 | ~5 (overview) |
-| Polling requests/minuto | ~12 | ~2 |
-| Dados transferidos (Analytics) | ~15 queries x dados duplicados | ~3 queries otimizadas |
-| Tempo ate interacao | 3-8s (com timeouts) | < 1s |
+| Bundle inicial (Landing Page) | Todo o app (~5MB+) | Core apenas (~500KB) |
+| Tempo de carregamento inicial | 3-5s | < 1s |
+| Memoria no Dashboard | Todos os componentes montados | So aba ativa |
+| JavaScript baixado por sessao | 100% do app | 20-30% (paginas visitadas) |
+| Primeira interacao (SiteDetails) | Carrega 30+ componentes | Carrega 5 (aba ativa) |
 
 ---
 
@@ -229,15 +179,36 @@ Para pegar nomes unicos de clientes, faz query na view de metricas (com JOINs e 
 
 ### Arquivos a Modificar
 
-| Arquivo | Mudanca |
-|---------|---------|
-| `src/App.tsx` | QueryClient defaults |
-| `src/pages/SiteDetails.tsx` | Lazy loading por aba, eliminar duplicatas, otimizar staleTime |
-| `src/pages/Dashboard.tsx` | Lazy loading por aba |
-| `src/hooks/useAnalytics.ts` | Consolidar queries, select campos especificos |
-| `src/hooks/useRecentSessions.ts` | Aumentar refetchInterval |
-| `src/hooks/useRecentSessionsEnriched.ts` | Aumentar refetchInterval, select campos |
-| `src/hooks/useGlobalEcommerceMetrics.ts` | Aumentar refetchInterval |
-| `src/hooks/useSessionAnalytics.ts` | Ajustar refetchInterval |
-| `src/hooks/useClientIntegration.ts` | Ajustar refetchInterval |
-| `src/hooks/useEcommerceComparison.ts` | Ajustar refetchInterval |
+| Arquivo | Linhas | Mudanca |
+|---------|--------|---------|
+| `src/App.tsx` | ~99 | React.lazy() para todas as 15 paginas + Suspense wrapper |
+| `src/pages/Dashboard.tsx` | ~614 | Lazy import de componentes de abas + enabled condicional nos hooks |
+| `src/pages/SiteDetails.tsx` | ~1591 | Lazy import de componentes de abas (analytics, GSC, ecommerce, journey) |
+| `src/pages/SuperAdminDashboard.tsx` | ~138 | Lazy import dos 13 componentes de abas |
+
+### Padrao de Implementacao
+
+Para cada pagina com abas, o padrao sera:
+
+```typescript
+// Lazy imports
+const HeavyComponent = lazy(() => import("@/components/path/HeavyComponent"));
+
+// No render, com Suspense por aba
+<TabsContent value="heavy-tab">
+  <Suspense fallback={<TabSkeleton />}>
+    <HeavyComponent />
+  </Suspense>
+</TabsContent>
+```
+
+### Componente de Loading Reutilizavel
+
+Criar um componente `PageLoadingFallback` para ser usado em todos os Suspense boundaries, tanto a nivel de rota quanto a nivel de aba, mantendo uma experiencia visual consistente.
+
+### Compatibilidade
+
+- `React.lazy()` e nativo do React 18 (ja instalado)
+- Vite automaticamente faz code splitting quando detecta `import()` dinamico
+- Nao precisa de configuracao adicional no Vite
+- Funciona com React Router DOM v6
